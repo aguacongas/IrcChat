@@ -1,0 +1,168 @@
+﻿@page "/admin"
+@using IrcChat.Shared.Models
+@using IrcChat.Client.Services
+@inject HttpClient Http
+@inject AuthStateService AuthState
+@inject NavigationManager Navigation
+
+<PageTitle>Administration</PageTitle>
+
+<div class="admin-container">
+    @if (!AuthState.IsAuthenticated)
+    {
+        <div class="admin-login">
+            <h2>Connexion Administrateur</h2>
+            <input @bind="loginUsername" placeholder="Nom d'utilisateur" />
+            <input @bind="loginPassword" type="password" placeholder="Mot de passe" 
+                   @onkeypress="HandleLoginKeyPress" />
+            <button @onclick="Login">Se connecter</button>
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="error">@errorMessage</div>
+            }
+            <a href="/" class="back-link">← Retour au chat</a>
+        </div>
+    }
+    else
+    {
+        <div class="admin-panel">
+            <div class="admin-header">
+                <h2>Administration - @AuthState.Username</h2>
+                <button @onclick="Logout">Déconnexion</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Messages totaux</h3>
+                    <div class="stat-value">@stats?.TotalMessages</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Canaux actifs</h3>
+                    <div class="stat-value">@stats?.TotalChannels</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Messages aujourd'hui</h3>
+                    <div class="stat-value">@stats?.MessagesToday</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Canaux actifs (24h)</h3>
+                    <div class="stat-value">@stats?.ActiveChannels</div>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h3>Utilisateurs les plus actifs</h3>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Utilisateur</th>
+                            <th>Messages</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in topUsers)
+                        {
+                            <tr>
+                                <td>@user.Username</td>
+                                <td>@user.MessageCount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <a href="/" class="back-link">← Retour au chat</a>
+        </div>
+    }
+</div>
+
+@code {
+    private string loginUsername = "";
+    private string loginPassword = "";
+    private string errorMessage = "";
+    private AdminStats? stats;
+    private List<UserStats> topUsers = new();
+
+    class AdminStats
+    {
+        public int TotalMessages { get; set; }
+        public int TotalChannels { get; set; }
+        public int MessagesToday { get; set; }
+        public int ActiveChannels { get; set; }
+    }
+
+    class UserStats
+    {
+        public string Username { get; set; } = "";
+        public int MessageCount { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState.IsAuthenticated)
+        {
+            await LoadAdminData();
+        }
+    }
+
+    private async Task Login()
+    {
+        errorMessage = "";
+        
+        try
+        {
+            var request = new LoginRequest 
+            { 
+                Username = loginUsername, 
+                Password = loginPassword 
+            };
+            
+            var response = await Http.PostAsJsonAsync("/api/auth/login", request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+                if (result != null)
+                {
+                    AuthState.SetAuthState(result.Token, result.Username);
+                    Http.DefaultRequestHeaders.Authorization = 
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.Token);
+                    await LoadAdminData();
+                }
+            }
+            else
+            {
+                errorMessage = "Identifiants incorrects";
+            }
+        }
+        catch
+        {
+            errorMessage = "Erreur de connexion";
+        }
+    }
+
+    private void Logout()
+    {
+        AuthState.ClearAuthState();
+        Http.DefaultRequestHeaders.Authorization = null;
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task LoadAdminData()
+    {
+        try
+        {
+            stats = await Http.GetFromJsonAsync<AdminStats>("/api/admin/stats");
+            topUsers = await Http.GetFromJsonAsync<List<UserStats>>("/api/admin/users") ?? new();
+        }
+        catch { }
+    }
+
+    private async void HandleLoginKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await Login();
+        }
+    }
+}
