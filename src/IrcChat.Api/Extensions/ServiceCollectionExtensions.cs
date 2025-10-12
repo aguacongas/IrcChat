@@ -15,8 +15,8 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.AddDbContext<ChatDbContext>(options =>
-            options.UseSqlite(configuration.GetConnectionString("DefaultConnection")
-                ?? "Data Source=ircchat.db"));
+            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")
+                ?? "Host=localhost;Database=ircchat;Username=postgres;Password=postgres"));
 
         return services;
     }

@@ -14,8 +14,17 @@ public static class WebApplicationExtensions
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
 
-        // Créer la base de données
-        await db.Database.EnsureCreatedAsync();
+        try
+        {
+            // Appliquer les migrations automatiquement
+            await db.Database.MigrateAsync();
+            Console.WriteLine("✅ Base de données PostgreSQL migrée avec succès");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Erreur lors de la migration de la base de données: {ex.Message}");
+            throw;
+        }
 
         // Créer un admin par défaut si aucun n'existe
         if (!await db.Admins.AnyAsync())
@@ -32,19 +41,19 @@ public static class WebApplicationExtensions
         // Swagger en développement uniquement
         if (app.Environment.IsDevelopment())
         {
-            app.UseSwagger()
-                .UseSwaggerUI(options =>
-                {
-                    options.SwaggerEndpoint("/swagger/v1/swagger.json", "IRC Chat API v1");
-                    options.RoutePrefix = "swagger";
-                });
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "IRC Chat API v1");
+                options.RoutePrefix = "swagger";
+            });
         }
 
         // Pipeline middleware
-        app.UseCors("AllowBlazor")
-            .UseHttpsRedirection()
-            .UseAuthentication()
-            .UseAuthorization();
+        app.UseCors("AllowBlazor");
+        app.UseHttpsRedirection();
+        app.UseAuthentication();
+        app.UseAuthorization();
 
         return app;
     }
@@ -52,10 +61,10 @@ public static class WebApplicationExtensions
     public static WebApplication MapApiEndpoints(this WebApplication app)
     {
         app.MapAuthEndpoints()
-            .MapMessageEndpoints()
-            .MapChannelEndpoints()
-            .MapAdminEndpoints()
-            .MapHub<ChatHub>("/chathub");
+           .MapMessageEndpoints()
+           .MapChannelEndpoints()
+           .MapAdminEndpoints()
+           .MapSignalRHub();
 
         return app;
     }
@@ -101,6 +110,10 @@ public static class WebApplicationExtensions
             .WithName("CreateChannel")
             .WithOpenApi();
 
+        group.MapGet("/{channel}/users", GetConnectedUsersAsync)
+            .WithName("GetConnectedUsers")
+            .WithOpenApi();
+
         return app;
     }
 
@@ -122,6 +135,20 @@ public static class WebApplicationExtensions
             .WithName("GetUsers")
             .WithOpenApi();
 
+        group.MapGet("/connected-users", GetAllConnectedUsersAsync)
+            .WithName("GetAllConnectedUsers")
+            .WithOpenApi();
+
+        group.MapDelete("/connected-users/cleanup", CleanupInactiveUsersAsync)
+            .WithName("CleanupInactiveUsers")
+            .WithOpenApi();
+
+        return app;
+    }
+
+    private static WebApplication MapSignalRHub(this WebApplication app)
+    {
+        app.MapHub<ChatHub>("/chathub");
         return app;
     }
 
@@ -161,6 +188,7 @@ public static class WebApplicationExtensions
     {
         var msg = new Message
         {
+            Id = Guid.NewGuid(),
             Username = req.Username,
             Content = req.Content,
             Channel = req.Channel,
@@ -186,16 +214,35 @@ public static class WebApplicationExtensions
         Channel channel,
         ChatDbContext db)
     {
+        channel.Id = Guid.NewGuid();
         channel.CreatedAt = DateTime.UtcNow;
         db.Channels.Add(channel);
         await db.SaveChangesAsync();
         return Results.Created($"/api/channels/{channel.Id}", channel);
     }
 
+    private static async Task<IResult> GetConnectedUsersAsync(
+        string channel,
+        ChatDbContext db)
+    {
+        var users = await db.ConnectedUsers
+            .Where(u => u.Channel == channel)
+            .OrderBy(u => u.Username)
+            .Select(u => new User
+            {
+                Username = u.Username,
+                ConnectedAt = u.ConnectedAt,
+                ConnectionId = u.ConnectionId
+            })
+            .ToListAsync();
+
+        return Results.Ok(users);
+    }
+
     // ===== HANDLERS ADMIN =====
 
     private static async Task<IResult> DeleteMessageAsync(
-        int id,
+        Guid id,
         ChatDbContext db)
     {
         var msg = await db.Messages.FindAsync(id);
@@ -234,5 +281,42 @@ public static class WebApplicationExtensions
             .ToListAsync();
 
         return Results.Ok(users);
+    }
+
+    private static async Task<IResult> GetAllConnectedUsersAsync(ChatDbContext db)
+    {
+        var users = await db.ConnectedUsers
+            .GroupBy(u => u.Channel)
+            .Select(g => new
+            {
+                Channel = g.Key,
+                Users = g.Select(u => new
+                {
+                    u.Username,
+                    u.ConnectedAt,
+                    u.LastActivity
+                }).ToList(),
+                Count = g.Count()
+            })
+            .ToListAsync();
+
+        return Results.Ok(users);
+    }
+
+    private static async Task<IResult> CleanupInactiveUsersAsync(ChatDbContext db)
+    {
+        var inactiveThreshold = DateTime.UtcNow.AddMinutes(-30);
+
+        var inactiveUsers = await db.ConnectedUsers
+            .Where(u => u.LastActivity < inactiveThreshold)
+            .ToListAsync();
+
+        if (inactiveUsers.Any())
+        {
+            db.ConnectedUsers.RemoveRange(inactiveUsers);
+            await db.SaveChangesAsync();
+        }
+
+        return Results.Ok(new { Removed = inactiveUsers.Count });
     }
 }

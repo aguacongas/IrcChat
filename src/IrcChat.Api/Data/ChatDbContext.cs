@@ -3,11 +3,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IrcChat.Api.Data;
 
-public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(options)
+public class ChatDbContext : DbContext
 {
+    public ChatDbContext(DbContextOptions<ChatDbContext> options) : base(options) { }
+
     public DbSet<Message> Messages { get; set; }
     public DbSet<Channel> Channels { get; set; }
     public DbSet<Admin> Admins { get; set; }
+    public DbSet<ConnectedUser> ConnectedUsers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -28,6 +31,14 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Username).IsUnique();
+        });
+
+        modelBuilder.Entity<ConnectedUser>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ConnectionId).IsUnique();
+            entity.HasIndex(e => e.Channel);
+            entity.HasIndex(e => new { e.Username, e.Channel });
         });
     }
 }
