@@ -1,3 +1,4 @@
+using IrcChat.Client;
 using IrcChat.Client.Models;
 using IrcChat.Client.Services;
 using Microsoft.AspNetCore.Components.Web;
