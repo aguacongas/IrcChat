@@ -1,15 +1,21 @@
+using IrcChat.Client.Models;
+using IrcChat.Client.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using IrcChat.Client;
-using IrcChat.Client.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddScoped(sp => new HttpClient 
-{ 
-    BaseAddress = new Uri("https://localhost:7000") 
+// Configuration des paramètres API depuis appsettings.json
+builder.Services.Configure<ApiSettings>(apiSessing => builder.Configuration.GetSection("Api").Bind(apiSessing));
+
+// Récupérer l'URL de base depuis la configuration
+var apiBaseUrl = builder.Configuration["Api:BaseUrl"] ?? "https://localhost:7000";
+
+builder.Services.AddScoped(sp => new HttpClient
+{
+    BaseAddress = new Uri(apiBaseUrl)
 });
 
 builder.Services.AddScoped<ChatService>();

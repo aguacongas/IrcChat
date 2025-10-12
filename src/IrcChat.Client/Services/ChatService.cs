@@ -1,11 +1,14 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Options;
 using IrcChat.Shared.Models;
+using IrcChat.Client.Models;
 
 namespace IrcChat.Client.Services;
 
-public class ChatService : IAsyncDisposable
+public class ChatService(IOptions<ApiSettings> apiSettings) : IAsyncDisposable
 {
     private HubConnection? _hubConnection;
+    private readonly ApiSettings _apiSettings = apiSettings.Value;
 
     public event Action<Message>? OnMessageReceived;
     public event Action<string, string>? OnUserJoined;
@@ -14,10 +17,12 @@ public class ChatService : IAsyncDisposable
 
     public async Task InitializeAsync(string? token = null)
     {
-        var url = "https://localhost:7000/chathub";
+        var hubUrl = !string.IsNullOrEmpty(_apiSettings.SignalRHubUrl)
+            ? _apiSettings.SignalRHubUrl
+            : $"{_apiSettings.BaseUrl}/chathub";
 
         _hubConnection = new HubConnectionBuilder()
-            .WithUrl(url, options =>
+            .WithUrl(hubUrl, options =>
             {
                 if (!string.IsNullOrEmpty(token))
                 {
@@ -53,33 +58,24 @@ public class ChatService : IAsyncDisposable
     public async Task JoinChannel(string username, string channel)
     {
         if (_hubConnection != null)
-        {
             await _hubConnection.SendAsync("JoinChannel", username, channel);
-        }
     }
 
     public async Task LeaveChannel(string channel)
     {
         if (_hubConnection != null)
-        {
             await _hubConnection.SendAsync("LeaveChannel", channel);
-        }
     }
 
     public async Task SendMessage(SendMessageRequest request)
     {
         if (_hubConnection != null)
-        {
             await _hubConnection.SendAsync("SendMessage", request);
-        }            
     }
 
     public async ValueTask DisposeAsync()
     {
         if (_hubConnection != null)
-        {
             await _hubConnection.DisposeAsync();
-        }
-        GC.SuppressFinalize(this);
     }
 }

@@ -5,21 +5,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IrcChat.Api.Hubs;
 
-public class ChatHub : Hub
+public class ChatHub(ChatDbContext db) : Hub
 {
-    private readonly ChatDbContext _db;
-
-    public ChatHub(ChatDbContext db)
-    {
-        _db = db;
-    }
-
     public async Task JoinChannel(string username, string channel)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, channel);
 
         // Vérifier si l'utilisateur est déjà connecté à ce canal
-        var existingUser = await _db.ConnectedUsers
+        var existingUser = await db.ConnectedUsers
             .FirstOrDefaultAsync(u => u.Username == username && u.Channel == channel);
 
         if (existingUser != null)
@@ -41,10 +34,10 @@ public class ChatHub : Hub
                 LastActivity = DateTime.UtcNow
             };
 
-            _db.ConnectedUsers.Add(connectedUser);
+            db.ConnectedUsers.Add(connectedUser);
         }
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
 
         // Notifier les autres utilisateurs
         await Clients.Group(channel).SendAsync("UserJoined", username, channel);
@@ -58,13 +51,13 @@ public class ChatHub : Hub
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, channel);
 
-        var connectedUser = await _db.ConnectedUsers
+        var connectedUser = await db.ConnectedUsers
             .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId && u.Channel == channel);
 
         if (connectedUser != null)
         {
-            _db.ConnectedUsers.Remove(connectedUser);
-            await _db.SaveChangesAsync();
+            db.ConnectedUsers.Remove(connectedUser);
+            await db.SaveChangesAsync();
 
             await Clients.Group(channel).SendAsync("UserLeft", connectedUser.Username, channel);
 
@@ -76,7 +69,7 @@ public class ChatHub : Hub
     public async Task SendMessage(SendMessageRequest request)
     {
         // Mettre à jour la dernière activité
-        var connectedUser = await _db.ConnectedUsers
+        var connectedUser = await db.ConnectedUsers
             .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId && u.Channel == request.Channel);
 
         if (connectedUser != null)
@@ -94,8 +87,8 @@ public class ChatHub : Hub
             IsDeleted = false
         };
 
-        _db.Messages.Add(message);
-        await _db.SaveChangesAsync();
+        db.Messages.Add(message);
+        await db.SaveChangesAsync();
 
         await Clients.Group(request.Channel).SendAsync("ReceiveMessage", message);
     }
@@ -103,7 +96,7 @@ public class ChatHub : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         // Récupérer toutes les connexions de cet utilisateur
-        var userConnections = await _db.ConnectedUsers
+        var userConnections = await db.ConnectedUsers
             .Where(u => u.ConnectionId == Context.ConnectionId)
             .ToListAsync();
 
@@ -115,7 +108,7 @@ public class ChatHub : Hub
                 await Clients.Group(connection.Channel)
                     .SendAsync("UserLeft", connection.Username, connection.Channel);
 
-                _db.ConnectedUsers.Remove(connection);
+                db.ConnectedUsers.Remove(connection);
 
                 // Envoyer la liste mise à jour
                 var channelUsers = await GetChannelUsers(connection.Channel);
@@ -123,7 +116,7 @@ public class ChatHub : Hub
                     .SendAsync("UpdateUserList", channelUsers);
             }
 
-            await _db.SaveChangesAsync();
+            await db.SaveChangesAsync();
         }
 
         await base.OnDisconnectedAsync(exception);
@@ -131,7 +124,7 @@ public class ChatHub : Hub
 
     private async Task<List<User>> GetChannelUsers(string channel)
     {
-        return await _db.ConnectedUsers
+        return await db.ConnectedUsers
             .Where(u => u.Channel == channel)
             .OrderBy(u => u.Username)
             .Select(u => new User

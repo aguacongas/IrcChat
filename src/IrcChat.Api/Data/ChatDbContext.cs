@@ -3,10 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IrcChat.Api.Data;
 
-public class ChatDbContext : DbContext
+public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(options)
 {
-    public ChatDbContext(DbContextOptions<ChatDbContext> options) : base(options) { }
-
     public DbSet<Message> Messages { get; set; }
     public DbSet<Channel> Channels { get; set; }
     public DbSet<Admin> Admins { get; set; }
