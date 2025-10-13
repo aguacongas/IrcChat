@@ -13,10 +13,7 @@ RUN dotnet restore
 RUN dotnet publish /src/src/IrcChat.Client/IrcChat.Client.csproj -c Release -o /app
 
 # final stage/image
-FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_SDK_VERSION}
-ENV ASPNETCORE_URLS http://+:8080
-ENV ASPNETCORE_ENVIRONMENT Production
-EXPOSE 8080
-WORKDIR /app
-COPY --from=build /app .
-ENTRYPOINT [ "dotnet", "IrcChat.Client.dll" ]
+FROM nginx:1.29.1-alpine3.22-slim AS final
+WORKDIR /usr/share/nginx/html
+COPY --from=publish /app/wwwroot .
+COPY --from=build /src/src/IrcChat.Client/nginx.conf /etc/nginx/nginx.conf
