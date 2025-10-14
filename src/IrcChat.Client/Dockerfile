@@ -1,19 +1,29 @@
-# Adjust DOTNET_OS_VERSION as desired
-ARG DOTNET_OS_VERSION="-alpine"
-ARG DOTNET_SDK_VERSION=9.0
-
-FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_SDK_VERSION}${DOTNET_OS_VERSION} AS build
+# Étape 1: Build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # copy everything
 COPY . ./
+
 # restore as distinct layers
 RUN dotnet restore
-# build and publish a release
-RUN dotnet publish /src/src/IrcChat.Client/IrcChat.Client.csproj -c Release -o /app
 
-# final stage/image
-FROM nginx:1.29.1-alpine3.22-slim AS final
+# Build et publish l'application Blazor WASM
+WORKDIR "/src/src/IrcChat.Client"
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+
+# Étape 2: Runtime avec Nginx
+FROM nginx:alpine AS final
 WORKDIR /usr/share/nginx/html
-COPY --from=publish /app/wwwroot .
+
+# Copier les fichiers Blazor WASM publiés
+COPY --from=build /app/publish/wwwroot .
+
+# Copier la configuration Nginx personnalisée
 COPY --from=build /src/src/IrcChat.Client/nginx.conf /etc/nginx/nginx.conf
+
+# Exposer le port 80
+EXPOSE 80
+
+# Démarrer Nginx
+CMD ["nginx", "-g", "daemon off;"]
