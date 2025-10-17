@@ -1,0 +1,22 @@
+﻿@using IrcChat.Shared.Models
+
+<div class="messages" @ref="messagesContainer">
+    @foreach (var msg in Messages)
+    {
+        <div class="message @(msg.Username == CurrentUsername ? "own" : string.Empty)">
+            <span class="username">@msg.Username</span>
+            <span class="time">@msg.Timestamp.ToLocalTime().ToString("HH:mm")</span>
+            <span class="content">@msg.Content</span>
+        </div>
+    }
+</div>
+
+@code {
+    private ElementReference messagesContainer;
+
+    [Parameter]
+    public List<Message> Messages { get; set; } = new();
+
+    [Parameter]
+    public string CurrentUsername { get; set; } = string.Empty;
+}

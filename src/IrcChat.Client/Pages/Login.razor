@@ -1,0 +1,48 @@
+﻿@page "/login"
+@using IrcChat.Client.Services
+@inject NavigationManager Navigation
+@inject UserSessionService UserSession
+
+<PageTitle>Connexion - IRC Chat</PageTitle>
+
+<div class="login-fullscreen">
+    <div class="login-card">
+        <h1>IRC Chat</h1>
+        <h2>Bienvenue</h2>
+        <p>Choisissez un pseudo pour commencer</p>
+        <input @bind="username"
+               placeholder="Votre pseudo..."
+               @onkeypress="HandleKeyPress"
+               autofocus />
+        <button @onclick="HandleLogin">Se connecter</button>
+    </div>
+</div>
+
+@code {
+    private string username = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        if (UserSession.IsLoggedIn)
+        {
+            Navigation.NavigateTo("/chat");
+        }
+    }
+
+    private void HandleLogin()
+    {
+        if (!string.IsNullOrWhiteSpace(username))
+        {
+            UserSession.SetUsername(username.Trim());
+            Navigation.NavigateTo("/chat");
+        }
+    }
+
+    private void HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            HandleLogin();
+        }
+    }
+}

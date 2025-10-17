@@ -1,0 +1,75 @@
+﻿@using IrcChat.Shared.Models
+
+<div class="sidebar">
+    <div class="user-info">
+        <span class="current-user">👤 @Username</span>
+        <button class="logout-btn" @onclick="OnLogoutClicked">Déconnexion</button>
+    </div>
+
+    <h3>Canaux</h3>
+    <input @bind="newChannel" placeholder="Nouveau canal..." />
+    <button @onclick="CreateChannel">Créer</button>
+
+    <ul class="channel-list">
+        @foreach (var ch in Channels)
+        {
+            <li class="@(ch.Name == CurrentChannel ? "active" : string.Empty)"
+                @onclick="() => OnChannelSelected.InvokeAsync(ch.Name)">
+                #@ch.Name
+            </li>
+        }
+    </ul>
+
+    @if (!string.IsNullOrEmpty(CurrentChannel))
+    {
+        <div class="users">
+            <h4>Utilisateurs (@Users.Count)</h4>
+            <ul>
+                @foreach (var user in Users)
+                {
+                    <li class="@(user.Username == Username ? "current" : string.Empty)">
+                        @(user.Username == Username ? "👤 " : "")@user.Username
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+
+    <div class="admin-link">
+        <a href="/admin">🔧 Admin</a>
+    </div>
+</div>
+
+@code {
+    private string newChannel = string.Empty;
+
+    [Parameter]
+    public string Username { get; set; } = string.Empty;
+
+    [Parameter]
+    public string CurrentChannel { get; set; } = string.Empty;
+
+    [Parameter]
+    public List<Channel> Channels { get; set; } = new();
+
+    [Parameter]
+    public List<User> Users { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<string> OnChannelSelected { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnChannelCreated { get; set; }
+
+    [Parameter]
+    public EventCallback OnLogoutClicked { get; set; }
+
+    private async Task CreateChannel()
+    {
+        if (!string.IsNullOrWhiteSpace(newChannel))
+        {
+            await OnChannelCreated.InvokeAsync(newChannel.Trim().ToLower());
+            newChannel = string.Empty;
+        }
+    }
+}

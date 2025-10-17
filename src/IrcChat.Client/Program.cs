@@ -19,7 +19,8 @@ builder.Services.AddScoped(sp => new HttpClient
     BaseAddress = new Uri(apiBaseUrl)
 });
 
-builder.Services.AddScoped<ChatService>();
-builder.Services.AddScoped<AuthStateService>();
+builder.Services.AddScoped<ChatService>()
+    .AddScoped<AuthStateService>()
+    .AddScoped<UserSessionService>();
 
 await builder.Build().RunAsync();

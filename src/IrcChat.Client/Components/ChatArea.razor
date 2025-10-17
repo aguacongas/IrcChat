@@ -1,0 +1,42 @@
+﻿@using IrcChat.Shared.Models
+
+<div class="chat-main">
+    @if (string.IsNullOrEmpty(CurrentChannel))
+    {
+        <div class="welcome">
+            <h2>Bienvenue @Username!</h2>
+            <p>Créez ou rejoignez un canal pour commencer à chatter.</p>
+        </div>
+    }
+    else
+    {
+        <div class="chat-header">
+            <h2>#@CurrentChannel</h2>
+            <span class="status @(IsConnected ? "connected" : "disconnected")">
+                @(IsConnected ? "● Connecté" : "○ Déconnecté")
+            </span>
+        </div>
+
+        <MessageList Messages="Messages" CurrentUsername="@Username" />
+
+        <MessageInput IsConnected="IsConnected"
+                      OnSendMessage="OnMessageSent" />
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Username { get; set; } = string.Empty;
+
+    [Parameter]
+    public string CurrentChannel { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsConnected { get; set; }
+
+    [Parameter]
+    public List<Message> Messages { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<string> OnMessageSent { get; set; }
+}

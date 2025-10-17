@@ -1,0 +1,35 @@
+﻿<div class="input-area">
+    <input @bind="messageInput"
+           @bind:event="oninput"
+           placeholder="Tapez votre message..."
+           @onkeyup="HandleKeyUp"
+           disabled="@(!IsConnected)" />
+    <button @onclick="SendMessage" disabled="@(!IsConnected)">Envoyer</button>
+</div>
+
+@code {
+    private string messageInput = string.Empty;
+
+    [Parameter]
+    public bool IsConnected { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnSendMessage { get; set; }
+
+    private async Task SendMessage()
+    {        
+        if (!string.IsNullOrWhiteSpace(messageInput))
+        {
+            await OnSendMessage.InvokeAsync(messageInput.Trim());
+            messageInput = string.Empty;
+        }
+    }
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendMessage();
+        }
+    }
+}

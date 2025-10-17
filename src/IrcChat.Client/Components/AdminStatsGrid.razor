@@ -1,0 +1,31 @@
+﻿<div class="stats-grid">
+    <div class="stat-card">
+        <h3>Messages totaux</h3>
+        <div class="stat-value">@Stats?.TotalMessages</div>
+    </div>
+    <div class="stat-card">
+        <h3>Canaux actifs</h3>
+        <div class="stat-value">@Stats?.TotalChannels</div>
+    </div>
+    <div class="stat-card">
+        <h3>Messages aujourd'hui</h3>
+        <div class="stat-value">@Stats?.MessagesToday</div>
+    </div>
+    <div class="stat-card">
+        <h3>Canaux actifs (24h)</h3>
+        <div class="stat-value">@Stats?.ActiveChannels</div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public AdminStats? Stats { get; set; }
+
+    public class AdminStats
+    {
+        public int TotalMessages { get; set; }
+        public int TotalChannels { get; set; }
+        public int MessagesToday { get; set; }
+        public int ActiveChannels { get; set; }
+    }
+}

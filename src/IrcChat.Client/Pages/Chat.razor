@@ -1,117 +1,41 @@
 ﻿@page "/"
+@page "/chat"
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Services
+@using IrcChat.Client.Components
 @inject HttpClient Http
 @inject ChatService ChatService
+@inject UserSessionService UserSession
+@inject NavigationManager Navigation
 @implements IAsyncDisposable
 
 <PageTitle>IRC Chat</PageTitle>
 
-<div class="chat-container">
-    @if (string.IsNullOrEmpty(username))
-    {
-        <div class="login-fullscreen">
-            <div class="login-card">
-                <h1>IRC Chat</h1>
-                <h2>Bienvenue</h2>
-                <p>Choisissez un pseudo pour commencer</p>
-                <input @bind="tempUsername"
-                       placeholder="Votre pseudo..."
-                       @onkeypress="HandleUsernameKeyPress"
-                       autofocus />
-                <button @onclick="SetUsername">Se connecter</button>
-            </div>
-        </div>
-    }
-    else
-    {
-        <div class="sidebar">
-            <div class="user-info">
-                <span class="current-user">👤 @username</span>
-                <button class="logout-btn" @onclick="Logout">Déconnexion</button>
-            </div>
+@if (!UserSession.IsLoggedIn)
+{
+    Navigation.NavigateTo("/login");
+}
+else
+{
+    <div class="chat-container">
+        <Sidebar Username="@UserSession.Username"
+                 CurrentChannel="@currentChannel"
+                 Channels="@channels"
+                 Users="@users"
+                 OnChannelSelected="SwitchChannel"
+                 OnChannelCreated="CreateChannel"
+                 OnLogoutClicked="Logout" />
 
-            <h3>Canaux</h3>
-            <input @bind="newChannel" placeholder="Nouveau canal..." />
-            <button @onclick="CreateChannel">Créer</button>
-
-            <ul class="channel-list">
-                @foreach (var ch in channels)
-                {
-                    <li class="@(ch.Name == currentChannel ? "active" : "")"
-                        @onclick="() => SwitchChannel(ch.Name)">
-                        #@ch.Name
-                    </li>
-                }
-            </ul>
-
-            @if (!string.IsNullOrEmpty(currentChannel))
-            {
-                <div class="users">
-                    <h4>Utilisateurs (@users.Count)</h4>
-                    <ul>
-                        @foreach (var user in users)
-                        {
-                            <li class="@(user.Username == username ? "current" : "")">
-                                @(user.Username == username ? "👤 " : "")@user.Username
-                            </li>
-                        }
-                    </ul>
-                </div>
-            }
-
-            <div class="admin-link">
-                <a href="/admin">🔧 Admin</a>
-            </div>
-        </div>
-
-        <div class="chat-main">
-            @if (string.IsNullOrEmpty(currentChannel))
-            {
-                <div class="welcome">
-                    <h2>Bienvenue @username!</h2>
-                    <p>Créez ou rejoignez un canal pour commencer à chatter.</p>
-                </div>
-            }
-            else
-            {
-                <div class="chat-header">
-                    <h2>#@currentChannel</h2>
-                    <span class="status @(isConnected ? "connected" : "disconnected")">
-                        @(isConnected ? "● Connecté" : "○ Déconnecté")
-                    </span>
-                </div>
-
-                <div class="messages" @ref="messagesContainer">
-                    @foreach (var msg in messages)
-                    {
-                        <div class="message @(msg.Username == username ? "own" : "")">
-                            <span class="username">@msg.Username</span>
-                            <span class="time">@msg.Timestamp.ToLocalTime().ToString("HH:mm")</span>
-                            <div class="content">@msg.Content</div>
-                        </div>
-                    }
-                </div>
-
-                <div class="input-area">
-                    <input @bind="messageInput"
-                           placeholder="Tapez votre message..."
-                           @onkeypress="HandleKeyPress"
-                           disabled="@(!isConnected)" />
-                    <button @onclick="SendMessage" disabled="@(!isConnected)">Envoyer</button>
-                </div>
-            }
-        </div>
-    }
-</div>
+        <ChatArea Username="@UserSession.Username"
+                  CurrentChannel="@currentChannel"
+                  IsConnected="@isConnected"
+                  Messages="@messages"
+                  OnMessageSent="SendMessage" />
+    </div>
+}
 
 @code {
-    private ElementReference messagesContainer;
-    private string username = "";
-    private string tempUsername = "";
-    private string currentChannel = "";
-    private string newChannel = "";
-    private string messageInput = "";
+    private string currentChannel = string.Empty;
     private List<Message> messages = new();
     private List<Channel> channels = new();
     private List<User> users = new();
@@ -119,13 +43,11 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Ne charger les canaux qu'après la connexion
-    }
-
-    private async Task InitializeAfterLogin()
-    {
-        await LoadChannels();
-        await InitializeSignalR();
+        if (UserSession.IsLoggedIn)
+        {
+            await LoadChannels();
+            await InitializeSignalR();
+        }
     }
 
     private async Task InitializeSignalR()
@@ -178,56 +100,34 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private async Task SetUsername()
-    {
-        if (!string.IsNullOrWhiteSpace(tempUsername))
-        {
-            username = tempUsername.Trim();
-            await InitializeAfterLogin();
-        }
-    }
-
-    private async void HandleUsernameKeyPress(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            await SetUsername();
-        }
-    }
-
     private async Task Logout()
     {
         if (!string.IsNullOrEmpty(currentChannel))
         {
             await ChatService.LeaveChannel(currentChannel);
         }
-
-        username = "";
-        tempUsername = "";
+        
         currentChannel = "";
         channels.Clear();
         messages.Clear();
         users.Clear();
         isConnected = false;
-
-        StateHasChanged();
+        
+        UserSession.ClearSession();
+        Navigation.NavigateTo("/login");
     }
 
-    private async Task CreateChannel()
+    private async Task CreateChannel(string channelName)
     {
-        if (!string.IsNullOrWhiteSpace(newChannel))
+        var channel = new Channel { Name = channelName };
+        
+        try
         {
-            var channel = new Channel { Name = newChannel.Trim().ToLower() };
-
-            try
-            {
-                await Http.PostAsJsonAsync("/api/channels", channel);
-                await LoadChannels();
-                await SwitchChannel(channel.Name);
-                newChannel = "";
-            }
-            catch { }
+            await Http.PostAsJsonAsync("/api/channels", channel);
+            await LoadChannels();
+            await SwitchChannel(channelName);
         }
+        catch { }
     }
 
     private async Task SwitchChannel(string channel)
@@ -239,7 +139,7 @@
 
         currentChannel = channel;
         await LoadMessages();
-        await ChatService.JoinChannel(username, channel);
+        await ChatService.JoinChannel(UserSession.Username ?? "", channel);
     }
 
     private async Task LoadChannels()
@@ -268,31 +168,22 @@
         catch { }
     }
 
-    private async Task SendMessage()
+    private async Task SendMessage(string content)
     {
-        if (!string.IsNullOrWhiteSpace(messageInput) && !string.IsNullOrEmpty(username) && isConnected)
+        if (UserSession.IsLoggedIn && isConnected)
         {
             var req = new SendMessageRequest
             {
-                Username = username,
-                Content = messageInput.Trim(),
+                Username = UserSession.Username ?? "",
+                Content = content,
                 Channel = currentChannel
             };
 
             try
             {
                 await ChatService.SendMessage(req);
-                messageInput = "";
             }
             catch { }
-        }
-    }
-
-    private async void HandleKeyPress(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            await SendMessage();
         }
     }
 
@@ -302,7 +193,7 @@
         ChatService.OnUserJoined -= OnUserJoined;
         ChatService.OnUserLeft -= OnUserLeft;
         ChatService.OnUserListUpdated -= OnUserListUpdated;
-
+        
         await ChatService.DisposeAsync();
     }
 }

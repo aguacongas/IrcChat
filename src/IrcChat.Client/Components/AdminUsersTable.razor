@@ -1,0 +1,31 @@
+﻿<div class="admin-section">
+    <h3>Utilisateurs les plus actifs</h3>
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Utilisateur</th>
+                <th>Messages</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in Users)
+            {
+                <tr>
+                    <td>@user.Username</td>
+                    <td>@user.MessageCount</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter]
+    public List<UserStats> Users { get; set; } = new();
+
+    public class UserStats
+    {
+        public string Username { get; set; } = "";
+        public int MessageCount { get; set; }
+    }
+}
