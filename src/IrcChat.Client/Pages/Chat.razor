@@ -1,24 +1,26 @@
-﻿@page "/"
-@page "/chat"
+﻿@page "/chat"
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Services
 @using IrcChat.Client.Components
 @inject HttpClient Http
 @inject ChatService ChatService
 @inject UserSessionService UserSession
+@inject OAuthStateService OAuthState
 @inject NavigationManager Navigation
 @implements IAsyncDisposable
 
 <PageTitle>IRC Chat</PageTitle>
 
-@if (!UserSession.IsLoggedIn)
+@if (!UserSession.IsLoggedIn && !OAuthState.IsAuthenticated)
 {
-    Navigation.NavigateTo("/login");
+    Navigation.NavigateTo("/oauth-login");
 }
 else
 {
     <div class="chat-container">
-        <Sidebar Username="@UserSession.Username"
+        <Sidebar Username="@currentUsername"
+                 AvatarUrl="@avatarUrl"
+                 IsOAuthUser="@OAuthState.IsAuthenticated"
                  CurrentChannel="@currentChannel"
                  Channels="@channels"
                  Users="@users"
@@ -26,7 +28,7 @@ else
                  OnChannelCreated="CreateChannel"
                  OnLogoutClicked="Logout" />
 
-        <ChatArea Username="@UserSession.Username"
+        <ChatArea Username="@currentUsername"
                   CurrentChannel="@currentChannel"
                   IsConnected="@isConnected"
                   Messages="@messages"
@@ -35,7 +37,9 @@ else
 }
 
 @code {
-    private string currentChannel = string.Empty;
+    private string currentChannel = "";
+    private string currentUsername = "";
+    private string? avatarUrl = null;
     private List<Message> messages = new();
     private List<Channel> channels = new();
     private List<User> users = new();
@@ -43,7 +47,13 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        if (UserSession.IsLoggedIn)
+        currentUsername = OAuthState.IsAuthenticated 
+            ? OAuthState.Username ?? "" 
+            : UserSession.Username ?? "";
+            
+        avatarUrl = OAuthState.AvatarUrl;
+
+        if (!string.IsNullOrEmpty(currentUsername))
         {
             await LoadChannels();
             await InitializeSignalR();
@@ -59,7 +69,7 @@ else
 
         try
         {
-            await ChatService.InitializeAsync();
+            await ChatService.InitializeAsync(OAuthState.Token);
             isConnected = true;
             StateHasChanged();
         }
@@ -113,8 +123,16 @@ else
         users.Clear();
         isConnected = false;
         
-        UserSession.ClearSession();
-        Navigation.NavigateTo("/login");
+        if (OAuthState.IsAuthenticated)
+        {
+            await OAuthState.ClearAuthStateAsync();
+        }
+        else
+        {
+            UserSession.ClearSession();
+        }
+        
+        Navigation.NavigateTo("/oauth-login");
     }
 
     private async Task CreateChannel(string channelName)
@@ -139,7 +157,7 @@ else
 
         currentChannel = channel;
         await LoadMessages();
-        await ChatService.JoinChannel(UserSession.Username ?? "", channel);
+        await ChatService.JoinChannel(currentUsername, channel);
     }
 
     private async Task LoadChannels()
@@ -170,11 +188,11 @@ else
 
     private async Task SendMessage(string content)
     {
-        if (UserSession.IsLoggedIn && isConnected)
+        if (!string.IsNullOrEmpty(currentUsername) && isConnected)
         {
             var req = new SendMessageRequest
             {
-                Username = UserSession.Username ?? "",
+                Username = currentUsername,
                 Content = content,
                 Channel = currentChannel
             };

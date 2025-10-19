@@ -60,11 +60,140 @@ public static class WebApplicationExtensions
 
     public static WebApplication MapApiEndpoints(this WebApplication app)
     {
-        app.MapAuthEndpoints()
+        app.MapOAuthEndpoints()
+           .MapAuthEndpoints()
            .MapMessageEndpoints()
            .MapChannelEndpoints()
            .MapAdminEndpoints()
            .MapSignalRHub();
+
+        return app;
+    }
+
+    private static WebApplication MapOAuthEndpoints(this WebApplication app)
+    {
+        var oauth = app.MapGroup("/api/oauth");
+
+        // Endpoint pour échanger le code contre un token et créer la session
+        oauth.MapPost("/token", async (
+            OAuthTokenRequest request,
+            ChatDbContext context,
+            OAuthService oauthService,
+            IConfiguration configuration) =>
+        {
+            // Échanger le code contre un access token (avec code_verifier)
+            var tokenResponse = await oauthService.ExchangeCodeForTokenAsync(
+                request.Provider,
+                request.Code,
+                request.RedirectUri,
+                request.CodeVerifier); // AJOUT du code_verifier
+
+            if (tokenResponse == null)
+                return Results.Unauthorized();
+
+            // Obtenir les informations utilisateur
+            var userInfo = await oauthService.GetUserInfoAsync(request.Provider, tokenResponse.AccessToken);
+
+            if (userInfo == null)
+                return Results.Unauthorized();
+
+            // Chercher ou créer l'utilisateur
+            var reservedUser = await context.ReservedUsernames
+                .FirstOrDefaultAsync(r => r.Provider == request.Provider && r.ExternalUserId == userInfo.Id);
+
+            bool isNewUser = false;
+
+            if (reservedUser == null)
+            {
+                var baseUsername = GenerateUsername(userInfo.Name ?? userInfo.Email);
+                var username = await GetUniqueUsername(baseUsername, context);
+
+                reservedUser = new ReservedUsername
+                {
+                    Id = Guid.NewGuid(),
+                    Username = username,
+                    Provider = request.Provider,
+                    ExternalUserId = userInfo.Id,
+                    Email = userInfo.Email,
+                    DisplayName = userInfo.Name,
+                    AvatarUrl = userInfo.AvatarUrl,
+                    CreatedAt = DateTime.UtcNow,
+                    LastLoginAt = DateTime.UtcNow
+                };
+
+                context.ReservedUsernames.Add(reservedUser);
+                isNewUser = true;
+            }
+            else
+            {
+                reservedUser.LastLoginAt = DateTime.UtcNow;
+                reservedUser.AvatarUrl = userInfo.AvatarUrl;
+            }
+
+            await context.SaveChangesAsync();
+
+            // Générer notre JWT pour l'application
+            var appToken = GenerateJwtToken(reservedUser, configuration);
+
+            return Results.Ok(new OAuthLoginResponse
+            {
+                Token = appToken,
+                Username = reservedUser.Username,
+                Email = reservedUser.Email,
+                AvatarUrl = reservedUser.AvatarUrl,
+                UserId = reservedUser.Id,
+                IsNewUser = isNewUser
+            });
+        });
+
+        // Endpoint pour obtenir la configuration OAuth d'un provider
+        oauth.MapGet("/config/{provider}", (ExternalAuthProvider provider, OAuthService oauthService) =>
+        {
+            try
+            {
+                var config = oauthService.GetProviderConfig(provider);
+                // Ne pas exposer le client secret
+                return Results.Ok(new
+                {
+                    provider,
+                    config.AuthorizationEndpoint,
+                    config.ClientId,
+                    config.Scope
+                });
+            }
+            catch
+            {
+                return Results.BadRequest("Provider not supported");
+            }
+        });
+
+        oauth.MapGet("/check-username/{username}", async (string username, ChatDbContext context) =>
+        {
+            var exists = await context.ReservedUsernames
+                .AnyAsync(r => r.Username.ToLower() == username.ToLower());
+
+            return Results.Ok(!exists);
+        });
+
+        oauth.MapPost("/update-username", async (UpdateUsernameRequest request, ChatDbContext context) =>
+        {
+            var user = await context.ReservedUsernames
+                .FirstOrDefaultAsync(r => r.Id == request.UserId);
+
+            if (user == null)
+                return Results.NotFound();
+
+            var exists = await context.ReservedUsernames
+                .AnyAsync(r => r.Username.ToLower() == request.NewUsername.ToLower() && r.Id != request.UserId);
+
+            if (exists)
+                return Results.BadRequest("Ce pseudo est déjà pris");
+
+            user.Username = request.NewUsername;
+            await context.SaveChangesAsync();
+
+            return Results.Ok();
+        });
 
         return app;
     }
@@ -311,12 +440,66 @@ public static class WebApplicationExtensions
             .Where(u => u.LastActivity < inactiveThreshold)
             .ToListAsync();
 
-        if (inactiveUsers.Any())
+        if (inactiveUsers.Count != 0)
         {
             db.ConnectedUsers.RemoveRange(inactiveUsers);
             await db.SaveChangesAsync();
         }
 
         return Results.Ok(new { Removed = inactiveUsers.Count });
+    }
+
+    private static string GenerateUsername(string baseName)
+    {
+        var username = new string([.. baseName
+            .ToLower()
+            .Where(c => char.IsLetterOrDigit(c) || c == '_')
+            .Take(20)]);
+
+        return string.IsNullOrEmpty(username) ? "user" : username;
+    }
+
+    private static async Task<string> GetUniqueUsername(string baseUsername, ChatDbContext context)
+    {
+        var username = baseUsername;
+        var counter = 1;
+
+        while (await context.ReservedUsernames.AnyAsync(r => r.Username == username))
+        {
+            username = $"{baseUsername}{counter}";
+            counter++;
+        }
+
+        return username;
+    }
+
+    private static string GenerateJwtToken(ReservedUsername user, IConfiguration configuration)
+    {
+        using var hmac = new System.Security.Cryptography.HMACSHA256(
+            System.Text.Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? "your-secret-key-minimum-32-characters-long-for-security"));
+
+        var key = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+            System.Text.Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? "your-secret-key-minimum-32-characters-long-for-security"));
+
+        var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(
+            key, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.Username),
+            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, user.Email),
+            new System.Security.Claims.Claim("provider", user.Provider.ToString())
+        };
+
+        var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
+            issuer: configuration["Jwt:Issuer"],
+            audience: configuration["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddDays(30),
+            signingCredentials: credentials
+        );
+
+        return new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token);
     }
 }

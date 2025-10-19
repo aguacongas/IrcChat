@@ -21,6 +21,9 @@ builder.Services.AddScoped(sp => new HttpClient
 
 builder.Services.AddScoped<ChatService>()
     .AddScoped<AuthStateService>()
-    .AddScoped<UserSessionService>();
+    .AddScoped<UserSessionService>()
+    .AddScoped<LocalStorageService>()
+    .AddScoped<OAuthStateService>()
+    .AddScoped<OAuthClientService>();
 
 await builder.Build().RunAsync();

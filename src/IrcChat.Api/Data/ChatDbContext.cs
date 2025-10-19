@@ -10,6 +10,8 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
     public DbSet<Admin> Admins { get; set; }
     public DbSet<ConnectedUser> ConnectedUsers { get; set; }
 
+    public DbSet<ReservedUsername> ReservedUsernames { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Message>(entity =>
@@ -38,5 +40,13 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
             entity.HasIndex(e => e.Channel);
             entity.HasIndex(e => new { e.Username, e.Channel });
         });
+
+        modelBuilder.Entity<ReservedUsername>()
+            .HasIndex(r => r.Username)
+            .IsUnique();
+
+        modelBuilder.Entity<ReservedUsername>()
+            .HasIndex(r => new { r.Provider, r.ExternalUserId })
+            .IsUnique();
     }
 }

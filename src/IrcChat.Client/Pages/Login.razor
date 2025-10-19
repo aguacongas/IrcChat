@@ -2,28 +2,56 @@
 @using IrcChat.Client.Services
 @inject NavigationManager Navigation
 @inject UserSessionService UserSession
+@inject OAuthStateService OAuthState
 
-<PageTitle>Connexion - IRC Chat</PageTitle>
+<PageTitle>Mode Invité - IRC Chat</PageTitle>
 
 <div class="login-fullscreen">
-    <div class="login-card">
-        <h1>IRC Chat</h1>
-        <h2>Bienvenue</h2>
-        <p>Choisissez un pseudo pour commencer</p>
-        <input @bind="username"
-               placeholder="Votre pseudo..."
-               @onkeypress="HandleKeyPress"
-               autofocus />
-        <button @onclick="HandleLogin">Se connecter</button>
+    <div class="login-card guest">
+        <div class="login-header">
+            <h1>👤 Mode Invité</h1>
+            <h2>Choisissez un pseudo temporaire</h2>
+            <p>Votre pseudo ne sera pas réservé</p>
+        </div>
+
+        <div class="guest-form">
+            <input @bind="username"
+                   placeholder="Votre pseudo..."
+                   @onkeypress="HandleKeyPress"
+                   maxlength="20"
+                   autofocus />
+            <button @onclick="HandleLogin" disabled="@string.IsNullOrWhiteSpace(username)">
+                Entrer dans le chat
+            </button>
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="error-message">
+                <span>⚠️</span> @errorMessage
+            </div>
+        }
+
+        <div class="divider">
+            <span>OU</span>
+        </div>
+
+        <a href="/oauth-login" class="oauth-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            Réserver mon pseudo avec un compte
+        </a>
     </div>
 </div>
 
 @code {
     private string username = string.Empty;
+    private string errorMessage = string.Empty;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        if (UserSession.IsLoggedIn)
+        if (UserSession.IsLoggedIn || OAuthState.IsAuthenticated)
         {
             Navigation.NavigateTo("/chat");
         }
@@ -33,7 +61,15 @@
     {
         if (!string.IsNullOrWhiteSpace(username))
         {
-            UserSession.SetUsername(username.Trim());
+            var cleanUsername = username.Trim();
+
+            if (cleanUsername.Length < 3)
+            {
+                errorMessage = "Le pseudo doit contenir au moins 3 caractères";
+                return;
+            }
+
+            UserSession.SetUsername(cleanUsername);
             Navigation.NavigateTo("/chat");
         }
     }

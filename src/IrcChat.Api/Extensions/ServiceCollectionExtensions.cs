@@ -23,8 +23,11 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
-        services.AddScoped<AuthService>();
-        services.AddSignalR();
+        services.AddHttpClient<OAuthService>();
+
+        services.AddScoped<AuthService>()
+            .AddScoped<OAuthService>()
+            .AddSignalR();
 
         return services;
     }
@@ -78,7 +81,7 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-            ?? new[] { "https://localhost:7001", "http://localhost:5001" };
+            ?? ["https://localhost:7001", "http://localhost:5001"];
 
         services.AddCors(options =>
         {
