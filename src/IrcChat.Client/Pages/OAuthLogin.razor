@@ -6,7 +6,6 @@
 @inject OAuthStateService OAuthState
 @inject OAuthClientService OAuthClient
 @inject NavigationManager Navigation
-@inject IJSRuntime JS
 
 <PageTitle>Connexion - IRC Chat</PageTitle>
 
@@ -94,13 +93,20 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Console.WriteLine($"OAuthLogin: OnInitializedAsync called IsAuthenticated: {OAuthState.IsAuthenticated}, Username: {OAuthState.Username}");
         if (OAuthState.IsAuthenticated)
         {
-            Navigation.NavigateTo("/chat");
+            if (string.IsNullOrEmpty(OAuthState.Username))
+            {
+                Navigation.NavigateTo("/choose-username");
+            }
+            else
+            {
+                Navigation.NavigateTo("/chat");
+            }
             return;
         }
 
-        // Vérifier si on revient d'un callback OAuth
         var uri = new Uri(Navigation.Uri);
         var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
         var code = query["code"];
@@ -131,7 +137,6 @@
             var redirectUri = $"{Navigation.BaseUri}oauth-login";
             var authUrl = await OAuthClient.InitiateAuthorizationFlowAsync(provider, redirectUri);
 
-            // Rediriger vers le provider OAuth
             Navigation.NavigateTo(authUrl, forceLoad: true);
         }
         catch (Exception ex)
@@ -165,7 +170,14 @@
                 Http.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.Token);
 
-                Navigation.NavigateTo("/chat");
+                if (result.IsNewUser || string.IsNullOrEmpty(result.Username))
+                {
+                    Navigation.NavigateTo("/choose-username");
+                }
+                else
+                {
+                    Navigation.NavigateTo("/chat");
+                }
             }
             else
             {

@@ -5,19 +5,8 @@ using IrcChat.Shared.Models;
 
 namespace IrcChat.Api.Services;
 
-public class OAuthService
+public class OAuthService(HttpClient httpClient, IConfiguration configuration, ILogger<OAuthService> logger)
 {
-    private readonly HttpClient _httpClient;
-    private readonly IConfiguration _configuration;
-    private readonly ILogger<OAuthService> _logger;
-
-    public OAuthService(HttpClient httpClient, IConfiguration configuration, ILogger<OAuthService> logger)
-    {
-        _httpClient = httpClient;
-        _configuration = configuration;
-        _logger = logger;
-    }
-
     public OAuthConfig GetProviderConfig(ExternalAuthProvider provider)
     {
         return provider switch
@@ -27,8 +16,8 @@ public class OAuthService
                 AuthorizationEndpoint = "https://accounts.google.com/o/oauth2/v2/auth",
                 TokenEndpoint = "https://oauth2.googleapis.com/token",
                 UserInfoEndpoint = "https://www.googleapis.com/oauth2/v2/userinfo",
-                ClientId = _configuration["OAuth:Google:ClientId"] ?? "",
-                ClientSecret = _configuration["OAuth:Google:ClientSecret"] ?? "",
+                ClientId = configuration["OAuth:Google:ClientId"] ?? "",
+                ClientSecret = configuration["OAuth:Google:ClientSecret"] ?? "",
                 Scope = "openid email profile"
             },
             ExternalAuthProvider.Facebook => new OAuthConfig
@@ -36,8 +25,8 @@ public class OAuthService
                 AuthorizationEndpoint = "https://www.facebook.com/v18.0/dialog/oauth",
                 TokenEndpoint = "https://graph.facebook.com/v18.0/oauth/access_token",
                 UserInfoEndpoint = "https://graph.facebook.com/me",
-                ClientId = _configuration["OAuth:Facebook:AppId"] ?? "",
-                ClientSecret = _configuration["OAuth:Facebook:AppSecret"] ?? "",
+                ClientId = configuration["OAuth:Facebook:AppId"] ?? "",
+                ClientSecret = configuration["OAuth:Facebook:AppSecret"] ?? "",
                 Scope = "email public_profile"
             },
             ExternalAuthProvider.Twitter => new OAuthConfig
@@ -45,8 +34,8 @@ public class OAuthService
                 AuthorizationEndpoint = "https://twitter.com/i/oauth2/authorize",
                 TokenEndpoint = "https://api.twitter.com/2/oauth2/token",
                 UserInfoEndpoint = "https://api.twitter.com/2/users/me",
-                ClientId = _configuration["OAuth:Twitter:ClientId"] ?? "",
-                ClientSecret = _configuration["OAuth:Twitter:ClientSecret"] ?? "",
+                ClientId = configuration["OAuth:Twitter:ClientId"] ?? "",
+                ClientSecret = configuration["OAuth:Twitter:ClientSecret"] ?? "",
                 Scope = "users.read tweet.read"
             },
             ExternalAuthProvider.Microsoft => new OAuthConfig
@@ -54,8 +43,8 @@ public class OAuthService
                 AuthorizationEndpoint = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
                 TokenEndpoint = "https://login.microsoftonline.com/common/oauth2/v2.0/token",
                 UserInfoEndpoint = "https://graph.microsoft.com/v1.0/me",
-                ClientId = _configuration["OAuth:Microsoft:ClientId"] ?? "",
-                ClientSecret = _configuration["OAuth:Microsoft:ClientSecret"] ?? "",
+                ClientId = configuration["OAuth:Microsoft:ClientId"] ?? "",
+                ClientSecret = configuration["OAuth:Microsoft:ClientSecret"] ?? "",
                 Scope = "openid email profile User.Read"
             },
             _ => throw new ArgumentException($"Provider {provider} not supported")
@@ -90,19 +79,19 @@ public class OAuthService
         {
             var authValue = Convert.ToBase64String(
                 Encoding.UTF8.GetBytes($"{config.ClientId}:{config.ClientSecret}"));
-            _httpClient.DefaultRequestHeaders.Authorization =
+            httpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Basic", authValue);
         }
 
         try
         {
             var content = new FormUrlEncodedContent(parameters);
-            var response = await _httpClient.PostAsync(config.TokenEndpoint, content);
+            var response = await httpClient.PostAsync(config.TokenEndpoint, content);
 
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();
-                _logger.LogError("Token exchange failed for {Provider}: {Error}", provider, error);
+                logger.LogError("Token exchange failed for {Provider}: {Error}", provider, error);
                 return null;
             }
 
@@ -120,13 +109,13 @@ public class OAuthService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error exchanging code for token with {Provider}", provider);
+            logger.LogError(ex, "Error exchanging code for token with {Provider}", provider);
             return null;
         }
         finally
         {
             // Nettoyer le header d'autorisation
-            _httpClient.DefaultRequestHeaders.Authorization = null;
+            httpClient.DefaultRequestHeaders.Authorization = null;
         }
     }
 
@@ -147,17 +136,17 @@ public class OAuthService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting user info from {Provider}", provider);
+            logger.LogError(ex, "Error getting user info from {Provider}", provider);
             return null;
         }
     }
 
     private async Task<ExternalUserInfo?> GetGoogleUserInfo(string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Authorization =
+        httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken);
 
-        var response = await _httpClient.GetAsync("https://www.googleapis.com/oauth2/v2/userinfo");
+        var response = await httpClient.GetAsync("https://www.googleapis.com/oauth2/v2/userinfo");
 
         if (!response.IsSuccessStatusCode) return null;
 
@@ -175,7 +164,7 @@ public class OAuthService
 
     private async Task<ExternalUserInfo?> GetFacebookUserInfo(string accessToken)
     {
-        var response = await _httpClient.GetAsync(
+        var response = await httpClient.GetAsync(
             $"https://graph.facebook.com/me?fields=id,name,email,picture&access_token={accessToken}");
 
         if (!response.IsSuccessStatusCode) return null;
@@ -196,10 +185,10 @@ public class OAuthService
 
     private async Task<ExternalUserInfo?> GetTwitterUserInfo(string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Authorization =
+        httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken);
 
-        var response = await _httpClient.GetAsync(
+        var response = await httpClient.GetAsync(
             "https://api.twitter.com/2/users/me?user.fields=profile_image_url");
 
         if (!response.IsSuccessStatusCode) return null;
@@ -219,10 +208,10 @@ public class OAuthService
 
     private async Task<ExternalUserInfo?> GetMicrosoftUserInfo(string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Authorization =
+        httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken);
 
-        var response = await _httpClient.GetAsync("https://graph.microsoft.com/v1.0/me");
+        var response = await httpClient.GetAsync("https://graph.microsoft.com/v1.0/me");
 
         if (!response.IsSuccessStatusCode) return null;
 

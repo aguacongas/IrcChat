@@ -3,6 +3,7 @@ using IrcChat.Api.Hubs;
 using IrcChat.Api.Services;
 using IrcChat.Shared.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics.CodeAnalysis;
 
 namespace IrcChat.Api.Extensions;
 
@@ -17,6 +18,7 @@ public static class WebApplicationExtensions
         try
         {
             // Appliquer les migrations automatiquement
+            await db.Database.EnsureDeletedAsync();
             await db.Database.MigrateAsync();
             Console.WriteLine("✅ Base de données PostgreSQL migrée avec succès");
         }
@@ -70,6 +72,7 @@ public static class WebApplicationExtensions
         return app;
     }
 
+    [SuppressMessage("Performance", "CA1862:Use the 'StringComparison' method overloads to perform case-insensitive string comparisons", Justification = "Not translated in SQL requests")]
     private static WebApplication MapOAuthEndpoints(this WebApplication app)
     {
         var oauth = app.MapGroup("/api/oauth");
@@ -105,13 +108,9 @@ public static class WebApplicationExtensions
 
             if (reservedUser == null)
             {
-                var baseUsername = GenerateUsername(userInfo.Name ?? userInfo.Email);
-                var username = await GetUniqueUsername(baseUsername, context);
-
                 reservedUser = new ReservedUsername
                 {
                     Id = Guid.NewGuid(),
-                    Username = username,
                     Provider = request.Provider,
                     ExternalUserId = userInfo.Id,
                     Email = userInfo.Email,
@@ -133,7 +132,7 @@ public static class WebApplicationExtensions
             await context.SaveChangesAsync();
 
             // Générer notre JWT pour l'application
-            var appToken = GenerateJwtToken(reservedUser, configuration);
+            var appToken = GenerateJwtToken(reservedUser, isNewUser, configuration);
 
             return Results.Ok(new OAuthLoginResponse
             {
@@ -145,6 +144,66 @@ public static class WebApplicationExtensions
                 IsNewUser = isNewUser
             });
         });
+
+        oauth.MapPost("/complete-profile", async (
+            CompleteProfileRequest request,
+            ChatDbContext context,
+            IConfiguration configuration,
+            HttpContext httpContext) =>
+        {
+            var userIdClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            var isTempClaim = httpContext.User.FindFirst("is_temp");
+
+            if (userIdClaim == null || isTempClaim?.Value != "True")
+                return Results.Unauthorized();
+
+            if (!Guid.TryParse(userIdClaim.Value, out var userId) || userId != request.TempUserId)
+                return Results.Unauthorized();
+
+            var usernameExists = await context.ReservedUsernames
+                .AnyAsync(r => r.Username.ToLower() == request.Username.ToLower()); 
+
+            if (usernameExists)
+                return Results.BadRequest(new { error = "username_taken", message = "Ce pseudo est déjà pris" });
+
+            if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Length < 3)
+                return Results.BadRequest(new { error = "invalid_username", message = "Le pseudo doit contenir au moins 3 caractères" });
+
+            var providerClaim = httpContext.User.FindFirst("provider");
+            var externalIdClaim = httpContext.User.FindFirst("external_id");
+            var emailClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Email);
+            var displayNameClaim = httpContext.User.FindFirst("display_name");
+            var avatarUrlClaim = httpContext.User.FindFirst("avatar_url");
+
+            if (providerClaim == null || externalIdClaim == null)
+                return Results.BadRequest(new { error = "invalid_token", message = "Token invalide" });
+
+            if (!Enum.TryParse<ExternalAuthProvider>(providerClaim.Value, out var provider))
+                return Results.BadRequest(new { error = "invalid_provider", message = "Provider invalide" });
+
+            var user = await context.ReservedUsernames
+                .FindAsync(userId);
+
+            if (user == null)
+            {
+                return Results.BadRequest(new { error = "invalid_user_id", message = "User not found" });
+            }
+            user.Username = request.Username;
+
+            await context.SaveChangesAsync();
+
+            var token = GenerateJwtToken(user, false, configuration);
+
+            return Results.Ok(new OAuthLoginResponse
+            {
+                Token = token,
+                Username = user.Username,
+                Email = user.Email,
+                AvatarUrl = user.AvatarUrl,
+                UserId = user.Id,
+                IsNewUser = false
+            });
+        }).RequireAuthorization();
 
         // Endpoint pour obtenir la configuration OAuth d'un provider
         oauth.MapGet("/config/{provider}", (ExternalAuthProvider provider, OAuthService oauthService) =>
@@ -473,7 +532,7 @@ public static class WebApplicationExtensions
         return username;
     }
 
-    private static string GenerateJwtToken(ReservedUsername user, IConfiguration configuration)
+    private static string GenerateJwtToken(ReservedUsername user, bool isTemp, IConfiguration configuration)
     {
         using var hmac = new System.Security.Cryptography.HMACSHA256(
             System.Text.Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? "your-secret-key-minimum-32-characters-long-for-security"));
@@ -489,7 +548,9 @@ public static class WebApplicationExtensions
             new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id.ToString()),
             new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.Username),
             new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, user.Email),
-            new System.Security.Claims.Claim("provider", user.Provider.ToString())
+            new System.Security.Claims.Claim("provider", user.Provider.ToString()),
+            new System.Security.Claims.Claim("external_id", user.ExternalUserId.ToString()),
+            new System.Security.Claims.Claim("is_temp", isTemp.ToString())
         };
 
         var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(

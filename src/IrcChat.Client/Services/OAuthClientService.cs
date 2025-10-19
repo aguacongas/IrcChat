@@ -9,17 +9,13 @@ namespace IrcChat.Client.Services;
 
 public class OAuthClientService(
     IJSRuntime jsRuntime,
-    HttpClient httpClient,
-    NavigationManager navigationManager)
+    HttpClient httpClient)
 {
     public async Task<string> InitiateAuthorizationFlowAsync(ExternalAuthProvider provider, string redirectUri)
     {
         // Obtenir la configuration du provider
         var response = await httpClient.GetFromJsonAsync<OAuthProviderConfig>(
-            $"/api/oauth/config/{provider}");
-
-        if (response == null)
-            throw new Exception("Failed to get OAuth configuration");
+            $"/api/oauth/config/{provider}") ?? throw new Exception("Failed to get OAuth configuration");
 
         // Générer state et code_verifier pour PKCE
         var state = GenerateRandomString(32);
@@ -89,7 +85,7 @@ public class OAuthClientService(
         return result;
     }
 
-    private string GenerateRandomString(int length)
+    private static string GenerateRandomString(int length)
     {
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
         var random = new byte[length];
@@ -97,13 +93,12 @@ public class OAuthClientService(
         {
             rng.GetBytes(random);
         }
-        return new string(random.Select(b => chars[b % chars.Length]).ToArray());
+        return new string([.. random.Select(b => chars[b % chars.Length])]);
     }
 
-    private string GenerateCodeChallenge(string codeVerifier)
+    private static string GenerateCodeChallenge(string codeVerifier)
     {
-        using var sha256 = SHA256.Create();
-        var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(codeVerifier));
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(codeVerifier));
         return Convert.ToBase64String(hash)
             .TrimEnd('=')
             .Replace('+', '-')

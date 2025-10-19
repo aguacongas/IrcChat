@@ -1,0 +1,279 @@
+﻿@page "/choose-username"
+@using IrcChat.Shared.Models
+@using IrcChat.Client.Services
+@inject HttpClient Http
+@inject OAuthStateService OAuthState
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>Choisissez votre pseudo - IRC Chat</PageTitle>
+
+<div class="login-fullscreen">
+    <div class="login-card">
+        <div class="login-header">
+            <h1>👋 Bienvenue !</h1>
+            <h2>Choisissez votre pseudo</h2>
+            <p>Ce sera votre identité sur IRC Chat</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(OAuthState.AvatarUrl))
+        {
+            <div class="profile-preview">
+                <img src="@OAuthState.AvatarUrl" alt="Avatar" class="avatar-large" />
+                <p class="email">@OAuthState.Email</p>
+            </div>
+        }
+
+        <div class="username-form">
+            <label for="username">Votre pseudo</label>
+            <input id="username"
+                   @bind="username" 
+                   @bind:event="oninput"
+                   @onkeypress="HandleKeyPress"
+                   placeholder="Entrez un pseudo..."
+                   maxlength="20"
+                   autofocus />
+            
+            @if (isChecking)
+            {
+                <div class="checking">
+                    <div class="spinner-small"></div>
+                    <span>Vérification...</span>
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(usernameStatus))
+            {
+                <div class="@($"status {(isUsernameAvailable ? "available" : "unavailable")}")">
+                    @usernameStatus
+                </div>
+            }
+
+            <button @onclick="CompleteProfile" 
+                    disabled="@(!CanSubmit)">
+                @if (isSubmitting)
+                {
+                    <div class="spinner-small"></div>
+                    <span>Création du compte...</span>
+                }
+                else
+                {
+                    <span>Créer mon compte</span>
+                }
+            </button>
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="error-message">
+                <span>⚠️</span> @errorMessage
+            </div>
+        }
+
+        <div class="suggestions">
+            <p>Suggestions basées sur votre nom :</p>
+            <div class="suggestion-chips">
+                @foreach (var suggestion in usernameSuggestions)
+                {
+                    <button class="chip" @onclick="() => SelectSuggestion(suggestion)">
+                        @suggestion
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string username = "";
+    private string usernameStatus = "";
+    private bool isUsernameAvailable = false;
+    private bool isChecking = false;
+    private bool isSubmitting = false;
+    private string errorMessage = "";
+    private List<string> usernameSuggestions = new();
+    private System.Threading.Timer? _debounceTimer;
+
+    private bool CanSubmit => !string.IsNullOrWhiteSpace(username) 
+        && username.Length >= 3 
+        && isUsernameAvailable 
+        && !isSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!OAuthState.IsAuthenticated || !string.IsNullOrEmpty(OAuthState.Username))
+        {
+            Navigation.NavigateTo("/oauth-login");
+            return;
+        }
+
+        GenerateSuggestions();
+    }
+
+    private void GenerateSuggestions()
+    {
+        var email = OAuthState.Email ?? "";
+        var baseName = email.Split('@').FirstOrDefault() ?? "user";
+
+        baseName = new string(baseName
+            .ToLower()
+            .Where(c => char.IsLetterOrDigit(c))
+            .Take(15)
+            .ToArray());
+
+        if (string.IsNullOrEmpty(baseName))
+            baseName = "user";
+
+        usernameSuggestions = new List<string>
+        {
+            baseName,
+            $"{baseName}{DateTime.Now.Year}",
+            $"{baseName}_{new Random().Next(100, 999)}",
+            $"{baseName}_chat"
+        };
+    }
+
+    private Task SelectSuggestion(string suggestion)
+    {
+        username = suggestion;
+        return CheckUsernameAvailability();
+    }
+
+    // Méthode appelée automatiquement par @bind:event="oninput"
+    private void OnUsernameInput()
+    {
+        usernameStatus = "";
+        isUsernameAvailable = false;
+
+        if (string.IsNullOrWhiteSpace(username))
+            return;
+
+        if (username.Length < 3)
+        {
+            usernameStatus = "Le pseudo doit contenir au moins 3 caractères";
+            return;
+        }
+
+        _debounceTimer?.Dispose();
+        _debounceTimer = new System.Threading.Timer(_ =>
+        {
+            InvokeAsync(CheckUsernameAvailability);
+        }, null, 500, System.Threading.Timeout.Infinite);
+    }
+
+    private async Task CheckUsernameAvailability()
+    {
+        if (string.IsNullOrWhiteSpace(username) || username.Length < 3)
+            return;
+
+        isChecking = true;
+        StateHasChanged();
+
+        try
+        {
+            var response = await Http.GetFromJsonAsync<bool>(
+                $"/api/oauth/check-username/{Uri.EscapeDataString(username)}");
+
+            if (response)
+            {
+                isUsernameAvailable = true;
+                usernameStatus = "✓ Ce pseudo est disponible";
+            }
+            else
+            {
+                isUsernameAvailable = false;
+                usernameStatus = "✗ Ce pseudo est déjà pris";
+            }
+        }
+        catch
+        {
+            usernameStatus = "Erreur lors de la vérification";
+        }
+        finally
+        {
+            isChecking = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CompleteProfile()
+    {
+        if (!CanSubmit)
+            return;
+
+        isSubmitting = true;
+        errorMessage = "";
+        StateHasChanged();
+
+        try
+        {
+            var request = new CompleteProfileRequest
+            {
+                TempUserId = OAuthState.UserId ?? Guid.Empty,
+                Username = username.Trim()
+            };
+
+            Http.DefaultRequestHeaders.Authorization = 
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", OAuthState.Token);
+
+            var response = await Http.PostAsJsonAsync("/api/oauth/complete-profile", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<OAuthLoginResponse>();
+                if (result != null)
+                {
+                    await OAuthState.SetAuthStateAsync(
+                        result.Token,
+                        result.Username,
+                        result.Email,
+                        result.AvatarUrl,
+                        result.UserId
+                    );
+
+                    Http.DefaultRequestHeaders.Authorization = 
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.Token);
+
+                    Navigation.NavigateTo("/chat");
+                }
+            }
+            else
+            {
+                var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                errorMessage = error?.Message ?? "Erreur lors de la création du compte";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && CanSubmit)
+        {
+            await CompleteProfile();
+        }
+    }
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+    }
+
+    private class UsernameCheckResponse
+    {
+        public bool Available { get; set; }
+    }
+
+    private class ErrorResponse
+    {
+        public string Error { get; set; } = "";
+        public string Message { get; set; } = "";
+    }
+}
