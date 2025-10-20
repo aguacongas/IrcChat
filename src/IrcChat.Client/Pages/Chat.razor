@@ -11,9 +11,16 @@
 
 <PageTitle>IRC Chat</PageTitle>
 
-@if (!UserSession.IsLoggedIn && !OAuthState.IsAuthenticated)
+@if (!isInitialized)
 {
-    Navigation.NavigateTo("/oauth-login");
+    <div class="loading">
+        <div class="spinner"></div>
+        <p>Chargement...</p>
+    </div>
+}
+else if (!UserSession.IsLoggedIn && !OAuthState.IsAuthenticated)
+{
+    <p>Redirection vers la page de connexion...</p>
 }
 else
 {
@@ -44,9 +51,20 @@ else
     private List<Channel> channels = new();
     private List<User> users = new();
     private bool isConnected = false;
+    private bool isInitialized = false;
 
     protected override async Task OnInitializedAsync()
     {
+        await OAuthState.InitializeAsync();
+        await UserSession.InitializeAsync();
+        isInitialized = true;
+
+        if (!UserSession.IsLoggedIn && !OAuthState.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/oauth-login");
+            return;
+        }
+
         currentUsername = OAuthState.IsAuthenticated 
             ? OAuthState.Username ?? "" 
             : UserSession.Username ?? "";
@@ -55,6 +73,12 @@ else
 
         if (!string.IsNullOrEmpty(currentUsername))
         {
+            if (OAuthState.IsAuthenticated && !string.IsNullOrEmpty(OAuthState.Token))
+            {
+                Http.DefaultRequestHeaders.Authorization = 
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", OAuthState.Token);
+            }
+
             await LoadChannels();
             await InitializeSignalR();
         }
@@ -126,10 +150,12 @@ else
         if (OAuthState.IsAuthenticated)
         {
             await OAuthState.ClearAuthStateAsync();
+            Http.DefaultRequestHeaders.Authorization = null;
         }
-        else
+        
+        if (UserSession.IsLoggedIn)
         {
-            UserSession.ClearSession();
+            await UserSession.ClearSessionAsync();
         }
         
         Navigation.NavigateTo("/oauth-login");

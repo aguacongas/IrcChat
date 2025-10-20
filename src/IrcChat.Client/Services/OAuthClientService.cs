@@ -7,27 +7,24 @@ using System.Text;
 
 namespace IrcChat.Client.Services;
 
-public class OAuthClientService(
-    IJSRuntime jsRuntime,
-    HttpClient httpClient)
+public class OAuthClientService(IJSRuntime jsRuntime, HttpClient httpClient)
 {
     public async Task<string> InitiateAuthorizationFlowAsync(ExternalAuthProvider provider, string redirectUri)
     {
-        // Obtenir la configuration du provider
         var response = await httpClient.GetFromJsonAsync<OAuthProviderConfig>(
-            $"/api/oauth/config/{provider}") ?? throw new Exception("Failed to get OAuth configuration");
+            $"/api/oauth/config/{provider}");
 
-        // Générer state et code_verifier pour PKCE
+        if (response == null)
+            throw new Exception("Failed to get OAuth configuration");
+
         var state = GenerateRandomString(32);
         var codeVerifier = GenerateRandomString(128);
         var codeChallenge = GenerateCodeChallenge(codeVerifier);
 
-        // Sauvegarder dans le sessionStorage
         await jsRuntime.InvokeVoidAsync("sessionStorage.setItem", "oauth_state", state);
         await jsRuntime.InvokeVoidAsync("sessionStorage.setItem", "oauth_code_verifier", codeVerifier);
         await jsRuntime.InvokeVoidAsync("sessionStorage.setItem", "oauth_provider", provider.ToString());
 
-        // Construire l'URL d'autorisation
         var authUrl = $"{response.AuthorizationEndpoint}" +
             $"?client_id={Uri.EscapeDataString(response.ClientId)}" +
             $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
@@ -42,29 +39,22 @@ public class OAuthClientService(
 
     public async Task<OAuthLoginResponse?> HandleCallbackAsync(string code, string state, string redirectUri)
     {
-        // Vérifier le state
         var savedState = await jsRuntime.InvokeAsync<string>("sessionStorage.getItem", "oauth_state");
         if (state != savedState)
-        {
             throw new Exception("Invalid state parameter - possible CSRF attack");
-        }
 
-        // Récupérer le provider et code_verifier
         var providerStr = await jsRuntime.InvokeAsync<string>("sessionStorage.getItem", "oauth_provider");
         var codeVerifier = await jsRuntime.InvokeAsync<string>("sessionStorage.getItem", "oauth_code_verifier");
 
         if (!Enum.TryParse<ExternalAuthProvider>(providerStr, out var provider))
-        {
             throw new Exception("Invalid provider");
-        }
 
-        // Échanger le code contre un token via notre API (avec code_verifier)
         var tokenRequest = new OAuthTokenRequest
         {
             Provider = provider,
             Code = code,
             RedirectUri = redirectUri,
-            CodeVerifier = codeVerifier // AJOUT du code_verifier
+            CodeVerifier = codeVerifier
         };
 
         var response = await httpClient.PostAsJsonAsync("/api/oauth/token", tokenRequest);
@@ -77,7 +67,6 @@ public class OAuthClientService(
 
         var result = await response.Content.ReadFromJsonAsync<OAuthLoginResponse>();
 
-        // Nettoyer le sessionStorage
         await jsRuntime.InvokeVoidAsync("sessionStorage.removeItem", "oauth_state");
         await jsRuntime.InvokeVoidAsync("sessionStorage.removeItem", "oauth_code_verifier");
         await jsRuntime.InvokeVoidAsync("sessionStorage.removeItem", "oauth_provider");
@@ -89,16 +78,15 @@ public class OAuthClientService(
     {
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
         var random = new byte[length];
-        using (var rng = RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(random);
-        }
-        return new string([.. random.Select(b => chars[b % chars.Length])]);
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(random);
+        return new string(random.Select(b => chars[b % chars.Length]).ToArray());
     }
 
     private static string GenerateCodeChallenge(string codeVerifier)
     {
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(codeVerifier));
+        using var sha256 = SHA256.Create();
+        var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(codeVerifier));
         return Convert.ToBase64String(hash)
             .TrimEnd('=')
             .Replace('+', '-')

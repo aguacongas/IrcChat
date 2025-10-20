@@ -6,58 +6,77 @@
 
 <PageTitle>Mode Invité - IRC Chat</PageTitle>
 
-<div class="login-fullscreen">
-    <div class="login-card guest">
-        <div class="login-header">
-            <h1>👤 Mode Invité</h1>
-            <h2>Choisissez un pseudo temporaire</h2>
-            <p>Votre pseudo ne sera pas réservé</p>
-        </div>
-
-        <div class="guest-form">
-            <input @bind="username"
-                   placeholder="Votre pseudo..."
-                   @onkeypress="HandleKeyPress"
-                   maxlength="20"
-                   autofocus />
-            <button @onclick="HandleLogin" disabled="@string.IsNullOrWhiteSpace(username)">
-                Entrer dans le chat
-            </button>
-        </div>
-
-        @if (!string.IsNullOrEmpty(errorMessage))
-        {
-            <div class="error-message">
-                <span>⚠️</span> @errorMessage
+@if (!isInitialized)
+{
+    <div class="login-fullscreen">
+        <div class="login-card">
+            <div class="loading-message">
+                <div class="spinner"></div>
+                <span>Chargement...</span>
             </div>
-        }
-
-        <div class="divider">
-            <span>OU</span>
         </div>
-
-        <a href="/oauth-login" class="oauth-link">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-            Réserver mon pseudo avec un compte
-        </a>
     </div>
-</div>
+}
+else
+{
+    <div class="login-fullscreen">
+        <div class="login-card guest">
+            <div class="login-header">
+                <h1>👤 Mode Invité</h1>
+                <h2>Choisissez un pseudo temporaire</h2>
+                <p>Votre pseudo ne sera pas réservé</p>
+            </div>
+
+            <div class="guest-form">
+                <input @bind="username"
+                       placeholder="Votre pseudo..."
+                       @onkeypress="HandleKeyPress"
+                       maxlength="20"
+                       autofocus />
+                <button @onclick="HandleLogin" disabled="@string.IsNullOrWhiteSpace(username)">
+                    Entrer dans le chat
+                </button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="error-message">
+                    <span>⚠️</span> @errorMessage
+                </div>
+            }
+
+            <div class="divider">
+                <span>OU</span>
+            </div>
+
+            <a href="/oauth-login" class="oauth-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                Réserver mon pseudo avec un compte
+            </a>
+        </div>
+    </div>
+}
 
 @code {
     private string username = string.Empty;
     private string errorMessage = string.Empty;
+    private bool isInitialized = false;
 
     protected override async Task OnInitializedAsync()
     {
+        await UserSession.InitializeAsync();
+        await OAuthState.InitializeAsync();
+        isInitialized = true;
+
         if (UserSession.IsLoggedIn || OAuthState.IsAuthenticated)
         {
             Navigation.NavigateTo("/chat");
         }
     }
 
-    private void HandleLogin()
+    private async Task HandleLogin()
     {
         if (!string.IsNullOrWhiteSpace(username))
         {
@@ -69,16 +88,16 @@
                 return;
             }
 
-            UserSession.SetUsername(cleanUsername);
+            await UserSession.SetUsernameAsync(cleanUsername);
             Navigation.NavigateTo("/chat");
         }
     }
 
-    private void HandleKeyPress(KeyboardEventArgs e)
+    private async Task HandleKeyPress(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
-            HandleLogin();
+            await HandleLogin();
         }
     }
 }

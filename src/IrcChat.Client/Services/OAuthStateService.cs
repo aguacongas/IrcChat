@@ -11,6 +11,7 @@ public class OAuthStateService(LocalStorageService localStorage)
     private string? _email;
     private string? _avatarUrl;
     private Guid? _userId;
+    private bool _isInitialized = false;
 
     public event Action? OnAuthStateChanged;
 
@@ -23,7 +24,11 @@ public class OAuthStateService(LocalStorageService localStorage)
 
     public async Task InitializeAsync()
     {
+        if (_isInitialized)
+            return;
+
         await RestoreFromLocalStorageAsync();
+        _isInitialized = true;
     }
 
     public async Task SetAuthStateAsync(string token, string username, string email, string? avatarUrl, Guid userId)
@@ -52,7 +57,7 @@ public class OAuthStateService(LocalStorageService localStorage)
 
     private async Task SaveToLocalStorageAsync()
     {
-        var authData = new
+        var authData = new AuthData
         {
             Token = _token,
             Username = _username,
@@ -80,7 +85,6 @@ public class OAuthStateService(LocalStorageService localStorage)
                     _email = authData.Email;
                     _avatarUrl = authData.AvatarUrl;
                     _userId = authData.UserId;
-                    OnAuthStateChanged?.Invoke();
                 }
             }
         }

@@ -18,7 +18,6 @@ public static class WebApplicationExtensions
         try
         {
             // Appliquer les migrations automatiquement
-            await db.Database.EnsureDeletedAsync();
             await db.Database.MigrateAsync();
             Console.WriteLine("✅ Base de données PostgreSQL migrée avec succès");
         }
@@ -84,33 +83,47 @@ public static class WebApplicationExtensions
             OAuthService oauthService,
             IConfiguration configuration) =>
         {
-            // Échanger le code contre un access token (avec code_verifier)
             var tokenResponse = await oauthService.ExchangeCodeForTokenAsync(
                 request.Provider,
                 request.Code,
                 request.RedirectUri,
-                request.CodeVerifier); // AJOUT du code_verifier
+                request.CodeVerifier);
 
             if (tokenResponse == null)
                 return Results.Unauthorized();
 
-            // Obtenir les informations utilisateur
             var userInfo = await oauthService.GetUserInfoAsync(request.Provider, tokenResponse.AccessToken);
 
             if (userInfo == null)
                 return Results.Unauthorized();
 
-            // Chercher ou créer l'utilisateur
-            var reservedUser = await context.ReservedUsernames
+            var existingUser = await context.ReservedUsernames
                 .FirstOrDefaultAsync(r => r.Provider == request.Provider && r.ExternalUserId == userInfo.Id);
 
-            bool isNewUser = false;
-
-            if (reservedUser == null)
+            if (existingUser != null)
             {
-                reservedUser = new ReservedUsername
+                existingUser.LastLoginAt = DateTime.UtcNow;
+                existingUser.AvatarUrl = userInfo.AvatarUrl;
+                await context.SaveChangesAsync();
+
+                var token = GenerateJwtToken(existingUser, configuration);
+
+                return Results.Ok(new OAuthLoginResponse
+                {
+                    Token = token,
+                    Username = existingUser.Username,
+                    Email = existingUser.Email,
+                    AvatarUrl = existingUser.AvatarUrl,
+                    UserId = existingUser.Id,
+                    IsNewUser = false
+                });
+            }
+            else
+            {
+                var tempUser = new ReservedUsername
                 {
                     Id = Guid.NewGuid(),
+                    Username = "",
                     Provider = request.Provider,
                     ExternalUserId = userInfo.Id,
                     Email = userInfo.Email,
@@ -120,29 +133,18 @@ public static class WebApplicationExtensions
                     LastLoginAt = DateTime.UtcNow
                 };
 
-                context.ReservedUsernames.Add(reservedUser);
-                isNewUser = true;
+                var tempToken = GenerateTempJwtToken(tempUser, configuration);
+
+                return Results.Ok(new OAuthLoginResponse
+                {
+                    Token = tempToken,
+                    Username = "",
+                    Email = tempUser.Email,
+                    AvatarUrl = tempUser.AvatarUrl,
+                    UserId = tempUser.Id,
+                    IsNewUser = true
+                });
             }
-            else
-            {
-                reservedUser.LastLoginAt = DateTime.UtcNow;
-                reservedUser.AvatarUrl = userInfo.AvatarUrl;
-            }
-
-            await context.SaveChangesAsync();
-
-            // Générer notre JWT pour l'application
-            var appToken = GenerateJwtToken(reservedUser, isNewUser, configuration);
-
-            return Results.Ok(new OAuthLoginResponse
-            {
-                Token = appToken,
-                Username = reservedUser.Username,
-                Email = reservedUser.Email,
-                AvatarUrl = reservedUser.AvatarUrl,
-                UserId = reservedUser.Id,
-                IsNewUser = isNewUser
-            });
         });
 
         oauth.MapPost("/complete-profile", async (
@@ -154,14 +156,14 @@ public static class WebApplicationExtensions
             var userIdClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
             var isTempClaim = httpContext.User.FindFirst("is_temp");
 
-            if (userIdClaim == null || isTempClaim?.Value != "True")
+            if (userIdClaim == null || isTempClaim?.Value != "true")
                 return Results.Unauthorized();
 
             if (!Guid.TryParse(userIdClaim.Value, out var userId) || userId != request.TempUserId)
                 return Results.Unauthorized();
 
             var usernameExists = await context.ReservedUsernames
-                .AnyAsync(r => r.Username.ToLower() == request.Username.ToLower()); 
+                .AnyAsync(r => r.Username.ToLower() == request.Username.ToLower());
 
             if (usernameExists)
                 return Results.BadRequest(new { error = "username_taken", message = "Ce pseudo est déjà pris" });
@@ -181,18 +183,23 @@ public static class WebApplicationExtensions
             if (!Enum.TryParse<ExternalAuthProvider>(providerClaim.Value, out var provider))
                 return Results.BadRequest(new { error = "invalid_provider", message = "Provider invalide" });
 
-            var user = await context.ReservedUsernames
-                .FindAsync(userId);
-
-            if (user == null)
+            var user = new ReservedUsername
             {
-                return Results.BadRequest(new { error = "invalid_user_id", message = "User not found" });
-            }
-            user.Username = request.Username;
+                Id = userId,
+                Username = request.Username.Trim(),
+                Provider = provider,
+                ExternalUserId = externalIdClaim.Value,
+                Email = emailClaim?.Value ?? "",
+                DisplayName = displayNameClaim?.Value,
+                AvatarUrl = avatarUrlClaim?.Value,
+                CreatedAt = DateTime.UtcNow,
+                LastLoginAt = DateTime.UtcNow
+            };
 
+            context.ReservedUsernames.Add(user);
             await context.SaveChangesAsync();
 
-            var token = GenerateJwtToken(user, false, configuration);
+            var token = GenerateJwtToken(user, configuration);
 
             return Results.Ok(new OAuthLoginResponse
             {
@@ -532,11 +539,8 @@ public static class WebApplicationExtensions
         return username;
     }
 
-    private static string GenerateJwtToken(ReservedUsername user, bool isTemp, IConfiguration configuration)
+    private static string GenerateJwtToken(ReservedUsername user, IConfiguration configuration)
     {
-        using var hmac = new System.Security.Cryptography.HMACSHA256(
-            System.Text.Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? "your-secret-key-minimum-32-characters-long-for-security"));
-
         var key = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
             System.Text.Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? "your-secret-key-minimum-32-characters-long-for-security"));
 
@@ -548,9 +552,7 @@ public static class WebApplicationExtensions
             new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id.ToString()),
             new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.Username),
             new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, user.Email),
-            new System.Security.Claims.Claim("provider", user.Provider.ToString()),
-            new System.Security.Claims.Claim("external_id", user.ExternalUserId.ToString()),
-            new System.Security.Claims.Claim("is_temp", isTemp.ToString())
+            new System.Security.Claims.Claim("provider", user.Provider.ToString())
         };
 
         var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
@@ -558,6 +560,36 @@ public static class WebApplicationExtensions
             audience: configuration["Jwt:Audience"],
             claims: claims,
             expires: DateTime.UtcNow.AddDays(30),
+            signingCredentials: credentials
+        );
+
+        return new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private static string GenerateTempJwtToken(ReservedUsername user, IConfiguration configuration)
+    {
+        var key = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+            System.Text.Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? "your-secret-key-minimum-32-characters-long-for-security"));
+
+        var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(
+            key, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, user.Email),
+            new System.Security.Claims.Claim("provider", user.Provider.ToString()),
+            new System.Security.Claims.Claim("external_id", user.ExternalUserId),
+            new System.Security.Claims.Claim("display_name", user.DisplayName ?? ""),
+            new System.Security.Claims.Claim("avatar_url", user.AvatarUrl ?? ""),
+            new System.Security.Claims.Claim("is_temp", "true")
+        };
+
+        var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
+            issuer: configuration["Jwt:Issuer"],
+            audience: configuration["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(15),
             signingCredentials: credentials
         );
 
