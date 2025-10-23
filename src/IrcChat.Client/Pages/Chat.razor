@@ -4,8 +4,7 @@
 @using IrcChat.Client.Components
 @inject HttpClient Http
 @inject ChatService ChatService
-@inject UserSessionService UserSession
-@inject OAuthStateService OAuthState
+@inject UnifiedAuthService Auth
 @inject NavigationManager Navigation
 @implements IAsyncDisposable
 
@@ -18,7 +17,7 @@
         <p>Chargement...</p>
     </div>
 }
-else if (!UserSession.IsLoggedIn && !OAuthState.IsAuthenticated)
+else if (!Auth.HasUsername)
 {
     <p>Redirection vers la page de connexion...</p>
 }
@@ -27,7 +26,7 @@ else
     <div class="chat-container">
         <Sidebar Username="@currentUsername"
                  AvatarUrl="@avatarUrl"
-                 IsOAuthUser="@OAuthState.IsAuthenticated"
+                 IsOAuthUser="@Auth.IsReserved"
                  CurrentChannel="@currentChannel"
                  Channels="@channels"
                  Users="@users"
@@ -55,28 +54,25 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await OAuthState.InitializeAsync();
-        await UserSession.InitializeAsync();
+        await Auth.InitializeAsync();
         isInitialized = true;
 
-        if (!UserSession.IsLoggedIn && !OAuthState.IsAuthenticated)
+        if (!Auth.HasUsername)
         {
-            Navigation.NavigateTo("/oauth-login");
+            Navigation.NavigateTo("/login");
             return;
         }
 
-        currentUsername = OAuthState.IsAuthenticated 
-            ? OAuthState.Username ?? "" 
-            : UserSession.Username ?? "";
+        currentUsername = Auth.Username!;
             
-        avatarUrl = OAuthState.AvatarUrl;
+        avatarUrl = Auth.AvatarUrl;
 
         if (!string.IsNullOrEmpty(currentUsername))
         {
-            if (OAuthState.IsAuthenticated && !string.IsNullOrEmpty(OAuthState.Token))
+            if (Auth.IsAuthenticated && !string.IsNullOrEmpty(Auth.Token))
             {
                 Http.DefaultRequestHeaders.Authorization = 
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", OAuthState.Token);
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Auth.Token);
             }
 
             await LoadChannels();
@@ -93,7 +89,7 @@ else
 
         try
         {
-            await ChatService.InitializeAsync(OAuthState.Token);
+            await ChatService.InitializeAsync(Auth.Token);
             isConnected = true;
             StateHasChanged();
         }
@@ -147,23 +143,19 @@ else
         users.Clear();
         isConnected = false;
         
-        if (OAuthState.IsAuthenticated)
-        {
-            await OAuthState.ClearAuthStateAsync();
-            Http.DefaultRequestHeaders.Authorization = null;
-        }
-        
-        if (UserSession.IsLoggedIn)
-        {
-            await UserSession.ClearSessionAsync();
-        }
-        
-        Navigation.NavigateTo("/oauth-login");
+        await Auth.ClearAllAsync();
+        Http.DefaultRequestHeaders.Authorization = null;
+                
+        Navigation.NavigateTo("/login");
     }
 
     private async Task CreateChannel(string channelName)
     {
-        var channel = new Channel { Name = channelName };
+        var channel = new Channel 
+        {
+            Name = channelName,
+            CreatedBy = currentUsername,
+        };
         
         try
         {

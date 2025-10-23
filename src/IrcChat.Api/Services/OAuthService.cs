@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Headers;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using IrcChat.Shared.Models;
@@ -29,14 +30,14 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
                 ClientSecret = configuration["OAuth:Facebook:AppSecret"] ?? "",
                 Scope = "email public_profile"
             },
-            ExternalAuthProvider.Twitter => new OAuthConfig
+            ExternalAuthProvider.Apple => new OAuthConfig
             {
-                AuthorizationEndpoint = "https://twitter.com/i/oauth2/authorize",
-                TokenEndpoint = "https://api.twitter.com/2/oauth2/token",
+                AuthorizationEndpoint = "https://appleid.apple.com/auth/authorize",
+                TokenEndpoint = "https://appleid.apple.com/auth/token",
                 UserInfoEndpoint = "https://api.twitter.com/2/users/me",
                 ClientId = configuration["OAuth:Twitter:ClientId"] ?? "",
                 ClientSecret = configuration["OAuth:Twitter:ClientSecret"] ?? "",
-                Scope = "users.read tweet.read"
+                Scope = "name email"
             },
             ExternalAuthProvider.Microsoft => new OAuthConfig
             {
@@ -69,13 +70,13 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
         };
 
         // Ajouter client_secret sauf pour Twitter qui utilise Basic Auth
-        if (provider != ExternalAuthProvider.Twitter)
+        if (provider != ExternalAuthProvider.Apple)
         {
             parameters.Add("client_secret", config.ClientSecret);
         }
 
         // Twitter nécessite une authentification Basic
-        if (provider == ExternalAuthProvider.Twitter)
+        if (provider == ExternalAuthProvider.Apple)
         {
             var authValue = Convert.ToBase64String(
                 Encoding.UTF8.GetBytes($"{config.ClientId}:{config.ClientSecret}"));
@@ -121,7 +122,8 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
 
     public async Task<ExternalUserInfo?> GetUserInfoAsync(
         ExternalAuthProvider provider,
-        string accessToken)
+        string accessToken,
+        string? idToken)
     {
         try
         {
@@ -129,7 +131,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
             {
                 ExternalAuthProvider.Google => await GetGoogleUserInfo(accessToken),
                 ExternalAuthProvider.Facebook => await GetFacebookUserInfo(accessToken),
-                ExternalAuthProvider.Twitter => await GetTwitterUserInfo(accessToken),
+                ExternalAuthProvider.Apple => idToken != null ? await GetAppleUserInfo(idToken) : null,
                 ExternalAuthProvider.Microsoft => await GetMicrosoftUserInfo(accessToken),
                 _ => null
             };
@@ -183,27 +185,26 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
         };
     }
 
-    private async Task<ExternalUserInfo?> GetTwitterUserInfo(string accessToken)
+    private async Task<ExternalUserInfo?> GetAppleUserInfo(string idToken)
     {
-        httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", accessToken);
-
-        var response = await httpClient.GetAsync(
-            "https://api.twitter.com/2/users/me?user.fields=profile_image_url");
-
-        if (!response.IsSuccessStatusCode) return null;
-
-        var json = await response.Content.ReadAsStringAsync();
-        var data = JsonSerializer.Deserialize<JsonElement>(json);
-        var userData = data.GetProperty("data");
-
-        return new ExternalUserInfo
+        try
         {
-            Id = userData.GetProperty("id").GetString() ?? "",
-            Email = userData.GetProperty("username").GetString() + "@twitter.placeholder",
-            Name = userData.TryGetProperty("name", out var name) ? name.GetString() : null,
-            AvatarUrl = userData.TryGetProperty("profile_image_url", out var pic) ? pic.GetString() : null
-        };
+            var handler = new JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(idToken);
+
+            return new ExternalUserInfo
+            {
+                Id = jwt.Claims.FirstOrDefault(c => c.Type == "sub")?.Value ?? "",
+                Email = jwt.Claims.FirstOrDefault(c => c.Type == "email")?.Value ?? "",
+                Name = jwt.Claims.FirstOrDefault(c => c.Type == "name")?.Value,
+                AvatarUrl = null // Apple ne fournit pas d'avatar
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error parsing Apple ID token");
+            return null;
+        }
     }
 
     private async Task<ExternalUserInfo?> GetMicrosoftUserInfo(string accessToken)

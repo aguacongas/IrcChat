@@ -1,6 +1,4 @@
 ﻿@using IrcChat.Client.Services
-@inject OAuthStateService OAuthState
-@inject UserSessionService UserSession
 
 <Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
@@ -14,11 +12,3 @@
         </LayoutView>
     </NotFound>
 </Router>
-
-@code {
-    protected override async Task OnInitializedAsync()
-    {
-        await OAuthState.InitializeAsync();
-        await UserSession.InitializeAsync();
-    }
-}

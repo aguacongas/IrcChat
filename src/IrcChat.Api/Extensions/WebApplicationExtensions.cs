@@ -76,13 +76,43 @@ public static class WebApplicationExtensions
     {
         var oauth = app.MapGroup("/api/oauth");
 
-        // Endpoint pour échanger le code contre un token et créer la session
-        oauth.MapPost("/token", async (
-            OAuthTokenRequest request,
+        // Vérifier la disponibilité et le statut d'un pseudo
+        oauth.MapPost("/check-username", async (UsernameCheckRequest request, ChatDbContext context) =>
+        {
+            var username = request.Username.ToLower();
+
+            // Vérifier si réservé en DB
+            var reservedUser = await context.ReservedUsernames
+                .FirstOrDefaultAsync(r => r.Username.ToLower() == username);
+
+            // Vérifier si utilisé actuellement (connecté)
+            var currentlyUsed = await context.ConnectedUsers
+                .AnyAsync(u => u.Username.ToLower() == username);
+
+            return Results.Ok(new UsernameCheckResponse
+            {
+                Available = reservedUser == null && !currentlyUsed,
+                IsReserved = reservedUser != null,
+                ReservedProvider = reservedUser?.Provider,
+                IsCurrentlyUsed = currentlyUsed
+            });
+        });
+
+        // Réserver un pseudo avec OAuth
+        oauth.MapPost("/reserve-username", async (
+            ReserveUsernameRequest request,
             ChatDbContext context,
             OAuthService oauthService,
             IConfiguration configuration) =>
         {
+            // Vérifier que le pseudo n'est pas déjà réservé
+            var exists = await context.ReservedUsernames
+                .AnyAsync(r => r.Username.ToLower() == request.Username.ToLower());
+
+            if (exists)
+                return Results.BadRequest(new { error = "username_taken", message = "Ce pseudo est déjà réservé" });
+
+            // Échanger le code contre un token
             var tokenResponse = await oauthService.ExchangeCodeForTokenAsync(
                 request.Provider,
                 request.Code,
@@ -92,106 +122,29 @@ public static class WebApplicationExtensions
             if (tokenResponse == null)
                 return Results.Unauthorized();
 
-            var userInfo = await oauthService.GetUserInfoAsync(request.Provider, tokenResponse.AccessToken);
+            // Obtenir les infos utilisateur
+            var userInfo = await oauthService.GetUserInfoAsync(request.Provider, tokenResponse.AccessToken, tokenResponse.IdToken);
 
             if (userInfo == null)
                 return Results.Unauthorized();
 
+            // Vérifier si cet utilisateur OAuth n'a pas déjà un pseudo réservé
             var existingUser = await context.ReservedUsernames
                 .FirstOrDefaultAsync(r => r.Provider == request.Provider && r.ExternalUserId == userInfo.Id);
 
             if (existingUser != null)
-            {
-                existingUser.LastLoginAt = DateTime.UtcNow;
-                existingUser.AvatarUrl = userInfo.AvatarUrl;
-                await context.SaveChangesAsync();
+                return Results.BadRequest(new { error = "already_reserved", message = "Vous avez déjà un pseudo réservé", username = existingUser.Username });
 
-                var token = GenerateJwtToken(existingUser, configuration);
-
-                return Results.Ok(new OAuthLoginResponse
-                {
-                    Token = token,
-                    Username = existingUser.Username,
-                    Email = existingUser.Email,
-                    AvatarUrl = existingUser.AvatarUrl,
-                    UserId = existingUser.Id,
-                    IsNewUser = false
-                });
-            }
-            else
-            {
-                var tempUser = new ReservedUsername
-                {
-                    Id = Guid.NewGuid(),
-                    Username = "",
-                    Provider = request.Provider,
-                    ExternalUserId = userInfo.Id,
-                    Email = userInfo.Email,
-                    DisplayName = userInfo.Name,
-                    AvatarUrl = userInfo.AvatarUrl,
-                    CreatedAt = DateTime.UtcNow,
-                    LastLoginAt = DateTime.UtcNow
-                };
-
-                var tempToken = GenerateTempJwtToken(tempUser, configuration);
-
-                return Results.Ok(new OAuthLoginResponse
-                {
-                    Token = tempToken,
-                    Username = "",
-                    Email = tempUser.Email,
-                    AvatarUrl = tempUser.AvatarUrl,
-                    UserId = tempUser.Id,
-                    IsNewUser = true
-                });
-            }
-        });
-
-        oauth.MapPost("/complete-profile", async (
-            CompleteProfileRequest request,
-            ChatDbContext context,
-            IConfiguration configuration,
-            HttpContext httpContext) =>
-        {
-            var userIdClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            var isTempClaim = httpContext.User.FindFirst("is_temp");
-
-            if (userIdClaim == null || isTempClaim?.Value != "true")
-                return Results.Unauthorized();
-
-            if (!Guid.TryParse(userIdClaim.Value, out var userId) || userId != request.TempUserId)
-                return Results.Unauthorized();
-
-            var usernameExists = await context.ReservedUsernames
-                .AnyAsync(r => r.Username.ToLower() == request.Username.ToLower());
-
-            if (usernameExists)
-                return Results.BadRequest(new { error = "username_taken", message = "Ce pseudo est déjà pris" });
-
-            if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Length < 3)
-                return Results.BadRequest(new { error = "invalid_username", message = "Le pseudo doit contenir au moins 3 caractères" });
-
-            var providerClaim = httpContext.User.FindFirst("provider");
-            var externalIdClaim = httpContext.User.FindFirst("external_id");
-            var emailClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Email);
-            var displayNameClaim = httpContext.User.FindFirst("display_name");
-            var avatarUrlClaim = httpContext.User.FindFirst("avatar_url");
-
-            if (providerClaim == null || externalIdClaim == null)
-                return Results.BadRequest(new { error = "invalid_token", message = "Token invalide" });
-
-            if (!Enum.TryParse<ExternalAuthProvider>(providerClaim.Value, out var provider))
-                return Results.BadRequest(new { error = "invalid_provider", message = "Provider invalide" });
-
+            // Créer la réservation
             var user = new ReservedUsername
             {
-                Id = userId,
+                Id = Guid.NewGuid(),
                 Username = request.Username.Trim(),
-                Provider = provider,
-                ExternalUserId = externalIdClaim.Value,
-                Email = emailClaim?.Value ?? "",
-                DisplayName = displayNameClaim?.Value,
-                AvatarUrl = avatarUrlClaim?.Value,
+                Provider = request.Provider,
+                ExternalUserId = userInfo.Id,
+                Email = userInfo.Email,
+                DisplayName = userInfo.Name,
+                AvatarUrl = userInfo.AvatarUrl,
                 CreatedAt = DateTime.UtcNow,
                 LastLoginAt = DateTime.UtcNow
             };
@@ -199,6 +152,56 @@ public static class WebApplicationExtensions
             context.ReservedUsernames.Add(user);
             await context.SaveChangesAsync();
 
+            // Générer le token JWT
+            var token = GenerateJwtToken(user, configuration);
+
+            return Results.Ok(new OAuthLoginResponse
+            {
+                Token = token,
+                Username = user.Username,
+                Email = user.Email,
+                AvatarUrl = user.AvatarUrl,
+                UserId = user.Id,
+                IsNewUser = true
+            });
+        });
+
+        // Se connecter avec un pseudo réservé
+        oauth.MapPost("/login-reserved", async (
+            OAuthTokenRequest request,
+            ChatDbContext context,
+            OAuthService oauthService,
+            IConfiguration configuration) =>
+        {
+            // Échanger le code contre un token
+            var tokenResponse = await oauthService.ExchangeCodeForTokenAsync(
+                request.Provider,
+                request.Code,
+                request.RedirectUri,
+                request.CodeVerifier);
+
+            if (tokenResponse == null)
+                return Results.Unauthorized();
+
+            // Obtenir les infos utilisateur
+            var userInfo = await oauthService.GetUserInfoAsync(request.Provider, tokenResponse.AccessToken, tokenResponse.IdToken);
+
+            if (userInfo == null)
+                return Results.Unauthorized();
+
+            // Chercher l'utilisateur
+            var user = await context.ReservedUsernames
+                .FirstOrDefaultAsync(r => r.Provider == request.Provider && r.ExternalUserId == userInfo.Id);
+
+            if (user == null)
+                return Results.NotFound(new { error = "not_found", message = "Aucun pseudo réservé trouvé" });
+
+            // Mettre à jour
+            user.LastLoginAt = DateTime.UtcNow;
+            user.AvatarUrl = userInfo.AvatarUrl;
+            await context.SaveChangesAsync();
+
+            // Générer le token JWT
             var token = GenerateJwtToken(user, configuration);
 
             return Results.Ok(new OAuthLoginResponse
@@ -210,15 +213,13 @@ public static class WebApplicationExtensions
                 UserId = user.Id,
                 IsNewUser = false
             });
-        }).RequireAuthorization();
+        });
 
-        // Endpoint pour obtenir la configuration OAuth d'un provider
         oauth.MapGet("/config/{provider}", (ExternalAuthProvider provider, OAuthService oauthService) =>
         {
             try
             {
                 var config = oauthService.GetProviderConfig(provider);
-                // Ne pas exposer le client secret
                 return Results.Ok(new
                 {
                     provider,
@@ -231,34 +232,6 @@ public static class WebApplicationExtensions
             {
                 return Results.BadRequest("Provider not supported");
             }
-        });
-
-        oauth.MapGet("/check-username/{username}", async (string username, ChatDbContext context) =>
-        {
-            var exists = await context.ReservedUsernames
-                .AnyAsync(r => r.Username.ToLower() == username.ToLower());
-
-            return Results.Ok(!exists);
-        });
-
-        oauth.MapPost("/update-username", async (UpdateUsernameRequest request, ChatDbContext context) =>
-        {
-            var user = await context.ReservedUsernames
-                .FirstOrDefaultAsync(r => r.Id == request.UserId);
-
-            if (user == null)
-                return Results.NotFound();
-
-            var exists = await context.ReservedUsernames
-                .AnyAsync(r => r.Username.ToLower() == request.NewUsername.ToLower() && r.Id != request.UserId);
-
-            if (exists)
-                return Results.BadRequest("Ce pseudo est déjà pris");
-
-            user.Username = request.NewUsername;
-            await context.SaveChangesAsync();
-
-            return Results.Ok();
         });
 
         return app;

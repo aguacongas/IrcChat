@@ -1,10 +1,13 @@
-﻿@page "/login"
+﻿@page "/"
+@page "/login"
+@using IrcChat.Shared.Models
 @using IrcChat.Client.Services
+@inject HttpClient Http
+@inject UnifiedAuthService Auth
 @inject NavigationManager Navigation
-@inject UserSessionService UserSession
-@inject OAuthStateService OAuthState
+@inject IJSRuntime JS
 
-<PageTitle>Mode Invité - IRC Chat</PageTitle>
+<PageTitle>Connexion - IRC Chat</PageTitle>
 
 @if (!isInitialized)
 {
@@ -20,22 +23,58 @@
 else
 {
     <div class="login-fullscreen">
-        <div class="login-card guest">
+        <div class="login-card">
             <div class="login-header">
-                <h1>👤 Mode Invité</h1>
-                <h2>Choisissez un pseudo temporaire</h2>
-                <p>Votre pseudo ne sera pas réservé</p>
+                <h1>💬 IRC Chat</h1>
+                <h2>Bienvenue</h2>
+                <p>Entrez votre pseudo pour commencer</p>
             </div>
 
-            <div class="guest-form">
-                <input @bind="username"
+            <div class="username-form">
+                <input value="@username"
+                       @oninput="OnUsernameInput"
                        placeholder="Votre pseudo..."
-                       @onkeypress="HandleKeyPress"
                        maxlength="20"
+                       @onkeypress="HandleKeyPress"
+                       disabled="@(Auth.IsReserved && !Auth.IsAuthenticated)"
                        autofocus />
-                <button @onclick="HandleLogin" disabled="@string.IsNullOrWhiteSpace(username)">
-                    Entrer dans le chat
-                </button>
+
+                @if (isChecking)
+                {
+                    <div class="checking">
+                        <div class="spinner-small"></div>
+                        <span>Vérification...</span>
+                    </div>
+                }
+                else if (usernameStatus != null)
+                {
+                    @if (usernameStatus.IsReserved && usernameStatus.ReservedProvider.HasValue)
+                    {
+                        <div class="status reserved">
+                            <span>🔒</span> Ce pseudo est réservé avec @usernameStatus.ReservedProvider.Value
+                        </div>
+                        <button class="btn-primary" @onclick="() => LoginWithProvider(usernameStatus.ReservedProvider.Value)">
+                            Se connecter
+                        </button>
+                    }
+                    else if (usernameStatus.IsCurrentlyUsed)
+                    {
+                        <div class="status unavailable">
+                            <span>⚠️</span> Ce pseudo est actuellement utilisé
+                        </div>
+                    }
+                    else if (usernameStatus.Available)
+                    {
+                        <div class="status-actions">
+                            <button class="btn-primary" @onclick="EnterAsGuest">
+                                Entrer en tant qu'invité
+                            </button>
+                            <button class="btn-secondary" @onclick="NavigateToReserve">
+                                🔒 Réserver ce pseudo
+                            </button>
+                        </div>
+                    }
+                }
             </div>
 
             @if (!string.IsNullOrEmpty(errorMessage))
@@ -45,59 +84,191 @@ else
                 </div>
             }
 
-            <div class="divider">
-                <span>OU</span>
-            </div>
-
-            <a href="/oauth-login" class="oauth-link">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-                Réserver mon pseudo avec un compte
-            </a>
+            @if (Auth.HasUsername && !string.IsNullOrEmpty(Auth.Username))
+            {
+                <div class="saved-username">
+                    <p>Pseudo mémorisé: <strong>@Auth.Username</strong></p>
+                    @if (Auth.IsReserved)
+                    {
+                        <span class="badge-reserved">🔒 Réservé avec @Auth.ReservedProvider</span>
+                        
+                        @if (!Auth.IsAuthenticated)
+                        {
+                            <div class="auth-required-notice">
+                                <span>⚠️</span> Vous devez vous connecter pour utiliser ce pseudo réservé
+                            </div>
+                            <button class="btn-primary" @onclick="() => LoginWithProvider(Auth.ReservedProvider!.Value)">
+                                Se connecter avec @Auth.ReservedProvider
+                            </button>
+                            <button class="btn-link" @onclick="UseAnotherUsername">
+                                Utiliser un autre pseudo
+                            </button>
+                        }
+                        else
+                        {
+                            <div class="auth-success-notice">
+                                <span>✅</span> Connecté en tant que @Auth.Email
+                            </div>
+                            <button class="btn-secondary" @onclick="Logout">
+                                Se déconnecter
+                            </button>
+                        }
+                    }
+                    else
+                    {
+                        @* Pseudo invité - peut être oublié librement *@
+                        <button class="btn-forget" @onclick="ForgetUsername">
+                            Oublier ce pseudo
+                        </button>
+                    }
+                </div>
+            }
         </div>
     </div>
 }
 
 @code {
-    private string username = string.Empty;
-    private string errorMessage = string.Empty;
+    private string username = "";
+    private string errorMessage = "";
     private bool isInitialized = false;
+    private bool isChecking = false;
+    private UsernameCheckResponse? usernameStatus = null;
+    private System.Threading.Timer? _debounceTimer;
 
     protected override async Task OnInitializedAsync()
     {
-        await UserSession.InitializeAsync();
-        await OAuthState.InitializeAsync();
+        await Auth.InitializeAsync();
         isInitialized = true;
 
-        if (UserSession.IsLoggedIn || OAuthState.IsAuthenticated)
+        // Si déjà authentifié, aller au chat
+        if (Auth.IsAuthenticated)
         {
             Navigation.NavigateTo("/chat");
+            return;
+        }
+
+        // Pré-remplir avec le pseudo mémorisé
+        if (Auth.HasUsername)
+        {
+            username = Auth.Username ?? "";
+            await CheckUsername();
         }
     }
 
-    private async Task HandleLogin()
+    private void OnUsernameInput(ChangeEventArgs e)
     {
-        if (!string.IsNullOrWhiteSpace(username))
+        username = e.Value?.ToString() ?? "";
+        usernameStatus = null;
+        errorMessage = "";
+
+        if (string.IsNullOrWhiteSpace(username) || username.Length < 3)
+            return;
+
+        _debounceTimer?.Dispose();
+        _debounceTimer = new System.Threading.Timer(_ =>
         {
-            var cleanUsername = username.Trim();
+            InvokeAsync(CheckUsername);
+        }, null, 500, System.Threading.Timeout.Infinite);
+    }
 
-            if (cleanUsername.Length < 3)
+    private async Task CheckUsername()
+    {
+        if (string.IsNullOrWhiteSpace(username) || username.Length < 3)
+            return;
+
+        isChecking = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new UsernameCheckRequest { Username = username.Trim() };
+            var response = await Http.PostAsJsonAsync("/api/oauth/check-username", request);
+
+            if (response.IsSuccessStatusCode)
             {
-                errorMessage = "Le pseudo doit contenir au moins 3 caractères";
-                return;
+                usernameStatus = await response.Content.ReadFromJsonAsync<UsernameCheckResponse>();
             }
-
-            await UserSession.SetUsernameAsync(cleanUsername);
-            Navigation.NavigateTo("/chat");
         }
+        catch
+        {
+            errorMessage = "Erreur lors de la vérification";
+        }
+        finally
+        {
+            isChecking = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task EnterAsGuest()
+    {
+        var cleanUsername = username.Trim();
+        if (cleanUsername.Length < 3)
+        {
+            errorMessage = "Le pseudo doit contenir au moins 3 caractères";
+            return;
+        }
+
+        await Auth.SetUsernameAsync(cleanUsername, isReserved: false);
+        Navigation.NavigateTo("/chat");
+    }
+
+    private async Task LoginWithProvider(ExternalAuthProvider provider)
+    {
+        // Sauvegarder temporairement le username pour après l'OAuth
+        await JS.InvokeVoidAsync("sessionStorage.setItem", "temp_username_for_login", username);
+        Navigation.NavigateTo($"/oauth-login?provider={provider}&mode=login");
+    }
+
+    private async Task ForgetUsername()
+    {
+        var success = await Auth.ForgetUsernameAsync();
+        
+        if (!success)
+        {
+            errorMessage = "Impossible d'oublier un pseudo réservé sans être connecté. Veuillez vous connecter d'abord.";
+            return;
+        }
+        
+        username = "";
+        usernameStatus = null;
+        errorMessage = "";
+        StateHasChanged();
+    }
+
+    private async Task UseAnotherUsername()
+    {
+        // Permet de saisir un autre pseudo sans oublier le réservé
+        // Nettoie juste l'affichage temporaire
+        await Auth.ClearAllAsync();
+        username = "";
+        usernameStatus = null;
+        errorMessage = "";
+        StateHasChanged();
+    }
+
+    private async Task Logout()
+    {
+        await Auth.LogoutAsync();
+        StateHasChanged();
     }
 
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter")
+        if (e.Key == "Enter" && usernameStatus?.Available == true)
         {
-            await HandleLogin();
+            await EnterAsGuest();
         }
+    }
+
+    private void NavigateToReserve()
+    {
+        var url = $"/reserve?username={Uri.EscapeDataString(username)}";
+        Navigation.NavigateTo(url);
+    }
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
     }
 }

@@ -1,0 +1,241 @@
+﻿@page "/oauth-login"
+@using IrcChat.Shared.Models
+@using IrcChat.Client.Services
+@inject HttpClient Http
+@inject UnifiedAuthService Auth
+@inject OAuthClientService OAuthClient
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Connexion OAuth - IRC Chat</PageTitle>
+
+<div class="login-fullscreen">
+    <div class="login-card">
+        <div class="loading-message">
+            <div class="spinner"></div>
+            <span>@loadingMessage</span>
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="error-message">
+                <span>⚠️</span> @errorMessage
+            </div>
+            <a href="/login" class="back-link">← Retour</a>
+        }
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "provider")]
+    public string? ProviderParam { get; set; }
+
+    [SupplyParameterFromQuery(Name = "mode")]
+    public string? ModeParam { get; set; }
+
+    [SupplyParameterFromQuery(Name = "code")]
+    public string? CodeParam { get; set; }
+
+    [SupplyParameterFromQuery(Name = "state")]
+    public string? StateParam { get; set; }
+
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? ErrorParam { get; set; }
+
+    private string loadingMessage = "Connexion en cours...";
+    private string errorMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+
+        if (!string.IsNullOrEmpty(ErrorParam))
+        {
+            errorMessage = $"Erreur OAuth: {ErrorParam}";
+            loadingMessage = "";
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(CodeParam) && !string.IsNullOrEmpty(StateParam))
+        {
+            await HandleOAuthCallback();
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(ProviderParam) && !string.IsNullOrEmpty(ModeParam))
+        {
+            await InitiateOAuthFlow();
+        }
+        else
+        {
+            Navigation.NavigateTo("/login");
+        }
+    }
+
+    private async Task InitiateOAuthFlow()
+    {
+        try
+        {
+            if (!Enum.TryParse<ExternalAuthProvider>(ProviderParam, out var provider))
+            {
+                errorMessage = "Provider invalide";
+                return;
+            }
+
+            loadingMessage = $"Redirection vers {provider}...";
+            StateHasChanged();
+
+            await JS.InvokeVoidAsync("sessionStorage.setItem", "oauth_mode", ModeParam);
+
+            var redirectUri = $"{Navigation.BaseUri}oauth-login";
+            var authUrl = await OAuthClient.InitiateAuthorizationFlowAsync(provider, redirectUri);
+
+            Navigation.NavigateTo(authUrl, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur: {ex.Message}";
+            loadingMessage = "";
+        }
+    }
+
+    private async Task HandleOAuthCallback()
+    {
+        try
+        {
+            var mode = await JS.InvokeAsync<string>("sessionStorage.getItem", "oauth_mode");
+            var redirectUri = $"{Navigation.BaseUri}oauth-login";
+
+            if (mode == "reserve")
+            {
+                await HandleReserveCallback(redirectUri);
+            }
+            else if (mode == "login")
+            {
+                await HandleLoginCallback(redirectUri);
+            }
+            else
+            {
+                errorMessage = "Mode OAuth invalide";
+                loadingMessage = "";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur: {ex.Message}";
+            loadingMessage = "";
+        }
+    }
+
+    private async Task HandleReserveCallback(string redirectUri)
+    {
+        loadingMessage = "Réservation de votre pseudo...";
+        StateHasChanged();
+
+        var usernameToReserve = await JS.InvokeAsync<string>("sessionStorage.getItem", "temp_username_to_reserve");
+        if (string.IsNullOrEmpty(usernameToReserve))
+        {
+            errorMessage = "Pseudo à réserver introuvable";
+            loadingMessage = "";
+            return;
+        }
+
+        var providerStr = await JS.InvokeAsync<string>("sessionStorage.getItem", "oauth_provider");
+        var codeVerifier = await JS.InvokeAsync<string>("sessionStorage.getItem", "oauth_code_verifier");
+
+        if (!Enum.TryParse<ExternalAuthProvider>(providerStr, out var provider))
+        {
+            errorMessage = "Provider invalide";
+            loadingMessage = "";
+            return;
+        }
+
+        var request = new ReserveUsernameRequest
+        {
+            Username = usernameToReserve,
+            Provider = provider,
+            Code = CodeParam!,
+            RedirectUri = redirectUri,
+            CodeVerifier = codeVerifier
+        };
+
+        var response = await Http.PostAsJsonAsync("/api/oauth/reserve-username", request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var result = await response.Content.ReadFromJsonAsync<OAuthLoginResponse>();
+            if (result != null)
+            {
+                await Auth.SetAuthStateAsync(result.Token, result.Username, result.Email, result.AvatarUrl, result.UserId, provider);
+
+                Http.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.Token);
+
+                await JS.InvokeVoidAsync("sessionStorage.removeItem", "temp_username_to_reserve");
+                await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_mode");
+                await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_state");
+                await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_code_verifier");
+                await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_provider");
+
+                Navigation.NavigateTo("/chat");
+            }
+        }
+        else
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            errorMessage = $"Erreur: {errorContent}";
+            loadingMessage = "";
+        }
+    }
+
+    private async Task HandleLoginCallback(string redirectUri)
+    {
+        loadingMessage = "Connexion en cours...";
+        StateHasChanged();
+
+        var providerStr = await JS.InvokeAsync<string>("sessionStorage.getItem", "oauth_provider");
+        var codeVerifier = await JS.InvokeAsync<string>("sessionStorage.getItem", "oauth_code_verifier");
+
+        if (!Enum.TryParse<ExternalAuthProvider>(providerStr, out var provider))
+        {
+            errorMessage = "Provider invalide";
+            loadingMessage = "";
+            return;
+        }
+
+        var request = new OAuthTokenRequest
+        {
+            Provider = provider,
+            Code = CodeParam!,
+            RedirectUri = redirectUri,
+            CodeVerifier = codeVerifier
+        };
+
+        var response = await Http.PostAsJsonAsync("/api/oauth/login-reserved", request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var result = await response.Content.ReadFromJsonAsync<OAuthLoginResponse>();
+            if (result != null)
+            {
+                await Auth.SetAuthStateAsync(result.Token, result.Username, result.Email, result.AvatarUrl, result.UserId, provider);
+
+                Http.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.Token);
+
+                await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_mode");
+                await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_state");
+                await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_code_verifier");
+                await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_provider");
+
+                Navigation.NavigateTo("/chat");
+            }
+        }
+        else
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            errorMessage = $"Erreur: {errorContent}";
+            loadingMessage = "";
+        }
+    }
+}
