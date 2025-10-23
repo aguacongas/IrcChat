@@ -5,6 +5,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using IrcChat.Api.Data;
 using IrcChat.Api.Services;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace IrcChat.Api.Extensions;
 
@@ -14,9 +15,19 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+        // Regular DbContext for standard usage
         services.AddDbContext<ChatDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")
-                ?? "Host=localhost;Database=ircchat;Username=postgres;Password=postgres"));
+            options.UseNpgsql(connectionString));
+
+        // Separate factory with its own options for background service
+        services.AddSingleton<IDbContextFactory<ChatDbContext>>(sp =>
+        {
+            var optionsBuilder = new DbContextOptionsBuilder<ChatDbContext>();
+            optionsBuilder.UseNpgsql(connectionString);
+            return new PooledDbContextFactory<ChatDbContext>(optionsBuilder.Options);
+        });
 
         return services;
     }
@@ -28,6 +39,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<AuthService>()
             .AddScoped<OAuthService>()
             .AddSignalR();
+
+        services.AddHostedService<ConnectionManagerService>();
 
         return services;
     }

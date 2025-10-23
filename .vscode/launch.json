@@ -1,0 +1,50 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch API",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-api",
+            "program": "${workspaceFolder}/src/IrcChat.Api/bin/Debug/net9.0/IrcChat.Api.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/IrcChat.Api",
+            "stopAtEntry": false,
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            }
+        },
+        {
+            "name": "Launch Client",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-client",
+            "program": "${workspaceFolder}/src/IrcChat.Client/bin/Debug/net9.0/IrcChat.Client.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/IrcChat.Client",
+            "stopAtEntry": false,
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            }
+        },
+        {
+            "name": "Launch API & Client",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-all",
+            "programName": "API & Client",
+            "compounds": [
+                {
+                    "name": "API/Client",
+                    "configurations": ["Launch API", "Launch Client"]
+                }
+            ]
+        }
+    ],
+    "compounds": [
+        {
+            "name": "API/Client",
+            "configurations": ["Launch API", "Launch Client"]
+        }
+    ]
+}

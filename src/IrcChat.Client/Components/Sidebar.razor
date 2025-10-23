@@ -32,10 +32,10 @@
 
     <div class="channels-section">
         <h3>Canaux</h3>
-        <div class="channel-input">
-            <input @bind="newChannel" placeholder="Nouveau canal..." maxlength="20" />
-            <button @onclick="CreateChannel" disabled="@string.IsNullOrWhiteSpace(newChannel)">+</button>
-        </div>
+        @if (IsOAuthUser)
+        {
+            <ChannelCreator OnChannelCreated="OnChannelCreated" />
+        }
 
         <ul class="channel-list">
             @foreach (var ch in Channels)
@@ -50,18 +50,10 @@
 
     @if (!string.IsNullOrEmpty(CurrentChannel))
     {
-        <div class="users-section">
-            <h4>Utilisateurs (@Users.Count)</h4>
-            <ul class="user-list">
-                @foreach (var user in Users)
-                {
-                    <li class="@(user.Username == Username ? "current" : "")">
-                        <span class="status-dot online"></span>
-                        @user.Username
-                    </li>
-                }
-            </ul>
-        </div>
+        <ChannelUsersList CurrentChannel="CurrentChannel"
+                          Username="Username"
+                          Users="Users"
+                          OnUserClicked="OnUserClickedUser" />
     }
 
     <div class="admin-link">
@@ -112,5 +104,11 @@
             await OnChannelCreated.InvokeAsync(newChannel.Trim().ToLower());
             newChannel = string.Empty;
         }
+    }
+
+    private Task OnUserClickedUser(string username)
+    {
+        // comportement par défaut : rien, à personnaliser si nécessaire
+        return Task.CompletedTask;
     }
 }

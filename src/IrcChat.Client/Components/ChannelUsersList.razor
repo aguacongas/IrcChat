@@ -1,0 +1,25 @@
+@using IrcChat.Shared.Models
+
+@if (!string.IsNullOrEmpty(CurrentChannel))
+{
+    <div class="users-section">
+        <h4>Utilisateurs (@(Users?.Count ?? 0))</h4>
+        <ul class="user-list">
+            @foreach (var user in Users ?? Enumerable.Empty<User>())
+            {
+                <li class="@(user.Username == Username ? "current" : "")"
+                    @onclick="() => OnUserClicked.InvokeAsync(user.Username)">
+                    <span class="status-dot online"></span>
+                    @user.Username
+                </li>
+            }
+        </ul>
+    </div>
+}
+
+@code {
+    [Parameter] public string? CurrentChannel { get; set; }
+    [Parameter] public string Username { get; set; } = string.Empty;
+    [Parameter] public List<User>? Users { get; set; }
+    [Parameter] public EventCallback<string> OnUserClicked { get; set; }
+}

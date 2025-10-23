@@ -1,0 +1,35 @@
+@using IrcChat.Shared.Models
+
+<div class="channel-input">
+    <input @bind="newChannel" 
+           placeholder="Nouveau canal..." 
+           maxlength="20" 
+           @onkeyup="HandleKeyPress" />
+    <button @onclick="CreateChannel" 
+            disabled="@string.IsNullOrWhiteSpace(newChannel)">
+        +
+    </button>
+</div>
+
+@code {
+    private string newChannel = string.Empty;
+
+    [Parameter] public EventCallback<string> OnChannelCreated { get; set; }
+
+    private async Task CreateChannel()
+    {
+        if (!string.IsNullOrWhiteSpace(newChannel))
+        {
+            await OnChannelCreated.InvokeAsync(newChannel.Trim().ToLower());
+            newChannel = string.Empty;
+        }
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await CreateChannel();
+        }
+    }
+}

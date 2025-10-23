@@ -14,24 +14,25 @@ public static class WebApplicationExtensions
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
         try
         {
             // Appliquer les migrations automatiquement
             await db.Database.MigrateAsync();
-            Console.WriteLine("✅ Base de données PostgreSQL migrée avec succès");
+            logger.LogInformation("✅ Base de données PostgreSQL migrée avec succès");
+
+            // Créer un admin par défaut si aucun n'existe
+            if (!await db.Admins.AnyAsync())
+            {
+                await authService.CreateAdmin("admin", "admin123");
+                logger.LogInformation("✅ Admin par défaut créé: admin / admin123");
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Erreur lors de la migration de la base de données: {ex.Message}");
+            logger.LogError(ex, "❌ Erreur lors de l'initialisation de la base de données");
             throw;
-        }
-
-        // Créer un admin par défaut si aucun n'existe
-        if (!await db.Admins.AnyAsync())
-        {
-            await authService.CreateAdmin("admin", "admin123");
-            Console.WriteLine("✅ Admin par défaut créé: admin / admin123");
         }
 
         return app;
@@ -378,14 +379,44 @@ public static class WebApplicationExtensions
         return Results.Ok(channels);
     }
 
+    [SuppressMessage("Performance", "CA1862:Use the 'StringComparison' method overloads to perform case-insensitive string comparisons", Justification = "Not needed in SQL translation")]
     private static async Task<IResult> CreateChannelAsync(
         Channel channel,
         ChatDbContext db)
     {
+        // Récupérer le nom d'utilisateur depuis le context de la requête
+        var username = channel.CreatedBy;
+        if (string.IsNullOrEmpty(username))
+        {
+            return Results.BadRequest(new { error = "missing_username", message = "Le nom d'utilisateur est requis" });
+        }
+
+        // Vérifier si l'utilisateur a un pseudo réservé
+        var isReserved = await db.ReservedUsernames
+            .AnyAsync(r => r.Username.ToLower() == username.ToLower());
+
+        if (!isReserved)
+        {
+            return Results.Forbid();
+        }
+
+        // Vérifier si le canal existe déjà
+        var channelExists = await db.Channels
+            .AnyAsync(c => c.Name.ToLower() == channel.Name.ToLower());
+
+        if (channelExists)
+        {
+            return Results.BadRequest(new { error = "channel_exists", message = "Ce canal existe déjà" });
+        }
+
+        // Créer le canal
         channel.Id = Guid.NewGuid();
         channel.CreatedAt = DateTime.UtcNow;
+        channel.Name = channel.Name.Trim();
+
         db.Channels.Add(channel);
         await db.SaveChangesAsync();
+
         return Results.Created($"/api/channels/{channel.Id}", channel);
     }
 

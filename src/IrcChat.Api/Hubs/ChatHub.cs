@@ -2,39 +2,35 @@
 using IrcChat.Shared.Models;
 using IrcChat.Api.Data;
 using Microsoft.EntityFrameworkCore;
+using IrcChat.Api.Services;
 
 namespace IrcChat.Api.Hubs;
 
-public class ChatHub(ChatDbContext db) : Hub
+public class ChatHub(ChatDbContext db, ConnectionManagerService connectionManager) : Hub
 {
     public async Task JoinChannel(string username, string channel)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, channel);
 
-        // Vérifier si l'utilisateur est déjà connecté à ce canal
         var existingUser = await db.ConnectedUsers
             .FirstOrDefaultAsync(u => u.Username == username && u.Channel == channel);
 
         if (existingUser != null)
         {
-            // Mettre à jour la connexion existante
             existingUser.ConnectionId = Context.ConnectionId;
-            existingUser.LastActivity = DateTime.UtcNow;
+            existingUser.LastPing = DateTime.UtcNow;
+            existingUser.ServerInstanceId = connectionManager.GetInstanceId();
         }
         else
         {
-            // Créer une nouvelle connexion
-            var connectedUser = new ConnectedUser
+            db.ConnectedUsers.Add(new ConnectedUser
             {
-                Id = Guid.NewGuid(),
                 Username = username,
-                ConnectionId = Context.ConnectionId,
                 Channel = channel,
-                ConnectedAt = DateTime.UtcNow,
-                LastActivity = DateTime.UtcNow
-            };
-
-            db.ConnectedUsers.Add(connectedUser);
+                ConnectionId = Context.ConnectionId,
+                LastPing = DateTime.UtcNow,
+                ServerInstanceId = connectionManager.GetInstanceId()
+            });
         }
 
         await db.SaveChangesAsync();
@@ -91,6 +87,18 @@ public class ChatHub(ChatDbContext db) : Hub
         await db.SaveChangesAsync();
 
         await Clients.Group(request.Channel).SendAsync("ReceiveMessage", message);
+    }
+
+    public async Task Ping()
+    {
+        var user = await db.ConnectedUsers
+            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
+            
+        if (user != null)
+        {
+            user.LastPing = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+        }
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
