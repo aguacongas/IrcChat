@@ -2,8 +2,14 @@
 using IrcChat.Api.Hubs;
 using IrcChat.Api.Services;
 using IrcChat.Shared.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics.CodeAnalysis;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace IrcChat.Api.Extensions;
 
@@ -234,6 +240,39 @@ public static class WebApplicationExtensions
                 return Results.BadRequest("Provider not supported");
             }
         });
+
+        oauth.MapPost("/forget-username", async (
+        HttpContext context,
+        ChatDbContext db, // Injection directe du DbContext
+        ILogger<Program> logger) =>
+        {
+            var usernameClaim = context.User.Claims
+                .FirstOrDefault(c => c.Type == ClaimTypes.Name);
+
+            var username = usernameClaim?.Value;
+
+            if (string.IsNullOrEmpty(username))
+            {
+                return Results.Unauthorized();
+            }
+
+            // 1. Déconnexion côté BDD (Supprimer l'utilisateur réservé)
+            var userToDelete = await db.ReservedUsernames
+                .FirstOrDefaultAsync(r => r.Username.ToLower() == username);
+
+            if (userToDelete == null)
+            {
+                return Results.NotFound();
+            }
+
+            db.ReservedUsernames.Remove(userToDelete);
+            logger.LogInformation("Utilisateur réservé {Username} supprimé de la BDD.", username);
+
+            // Sauvegarder les suppressions
+            await db.SaveChangesAsync();
+
+            return Results.Ok();
+        }).RequireAuthorization();
 
         return app;
     }
@@ -519,47 +558,24 @@ public static class WebApplicationExtensions
         return Results.Ok(new { Removed = inactiveUsers.Count });
     }
 
-    private static string GenerateUsername(string baseName)
-    {
-        var username = new string([.. baseName
-            .ToLower()
-            .Where(c => char.IsLetterOrDigit(c) || c == '_')
-            .Take(20)]);
-
-        return string.IsNullOrEmpty(username) ? "user" : username;
-    }
-
-    private static async Task<string> GetUniqueUsername(string baseUsername, ChatDbContext context)
-    {
-        var username = baseUsername;
-        var counter = 1;
-
-        while (await context.ReservedUsernames.AnyAsync(r => r.Username == username))
-        {
-            username = $"{baseUsername}{counter}";
-            counter++;
-        }
-
-        return username;
-    }
-
+    
     private static string GenerateJwtToken(ReservedUsername user, IConfiguration configuration)
     {
-        var key = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-            System.Text.Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? "your-secret-key-minimum-32-characters-long-for-security"));
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? "your-secret-key-minimum-32-characters-long-for-security"));
 
-        var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(
-            key, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256);
+        var credentials = new SigningCredentials(
+            key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
         {
-            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.Username),
-            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, user.Email),
-            new System.Security.Claims.Claim("provider", user.Provider.ToString())
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim("provider", user.Provider.ToString())
         };
 
-        var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
+        var token = new JwtSecurityToken(
             issuer: configuration["Jwt:Issuer"],
             audience: configuration["Jwt:Audience"],
             claims: claims,
@@ -567,36 +583,6 @@ public static class WebApplicationExtensions
             signingCredentials: credentials
         );
 
-        return new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    private static string GenerateTempJwtToken(ReservedUsername user, IConfiguration configuration)
-    {
-        var key = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-            System.Text.Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? "your-secret-key-minimum-32-characters-long-for-security"));
-
-        var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(
-            key, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256);
-
-        var claims = new[]
-        {
-            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, user.Email),
-            new System.Security.Claims.Claim("provider", user.Provider.ToString()),
-            new System.Security.Claims.Claim("external_id", user.ExternalUserId),
-            new System.Security.Claims.Claim("display_name", user.DisplayName ?? ""),
-            new System.Security.Claims.Claim("avatar_url", user.AvatarUrl ?? ""),
-            new System.Security.Claims.Claim("is_temp", "true")
-        };
-
-        var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
-            issuer: configuration["Jwt:Issuer"],
-            audience: configuration["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(15),
-            signingCredentials: credentials
-        );
-
-        return new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token);
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

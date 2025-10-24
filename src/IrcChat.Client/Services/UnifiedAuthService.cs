@@ -3,7 +3,8 @@ using System.Text.Json;
 
 namespace IrcChat.Client.Services;
 
-public class UnifiedAuthService(LocalStorageService localStorage)
+public class UnifiedAuthService(LocalStorageService localStorage,
+    HttpClient httpClient)
 {
     private const string AUTH_KEY = "ircchat_unified_auth";
 
@@ -64,22 +65,41 @@ public class UnifiedAuthService(LocalStorageService localStorage)
         OnAuthStateChanged?.Invoke();
     }
 
-    public async Task<bool> ForgetUsernameAsync()
+    public async Task ForgetUsernameAndLogoutAsync()
     {
-        // SÉCURITÉ: On ne peut pas oublier un pseudo réservé si on n'est pas connecté
-        if (_isReserved && !IsAuthenticated)
+        if (IsAuthenticated && !string.IsNullOrEmpty(Token))
         {
-            return false; // Opération refusée
+            try
+            {
+                // Appel API pour la déconnexion serveur (efface BDD et cookie d'auth)
+                // L'appel doit utiliser le Token JWT comme Bearer.
+                httpClient.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
+
+                await httpClient.PostAsync("api/oauth/forget-username", null);
+
+                // Retirer le header après l'appel
+                httpClient.DefaultRequestHeaders.Authorization = null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erreur lors de l'appel API de déconnexion : {ex.Message}");
+            }
         }
 
+        // Nettoyage local (efface tous les cookies et le stockage)
+        await ClearLocalStorageAsync();
+
+        // Réinitialisation de l'état du service
         _username = null;
+        _token = null;
         _isReserved = false;
         _reservedProvider = null;
-        // Garder le token si connecté
+        _email = null;
+        _avatarUrl = null;
+        _userId = null;
 
-        await SaveToLocalStorageAsync();
         OnAuthStateChanged?.Invoke();
-        return true;
     }
 
     public async Task LogoutAsync()

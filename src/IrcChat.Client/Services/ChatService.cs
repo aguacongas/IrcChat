@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace IrcChat.Client.Services;
 
-public class ChatService(IOptions<ApiSettings> apiSettings) : IAsyncDisposable
+public class ChatService(IOptions<ApiSettings> apiSettings, ILogger<ChatService> logger) : IAsyncDisposable
 {
     private HubConnection? _hubConnection;
     private readonly ApiSettings _apiSettings = apiSettings.Value;
@@ -75,14 +75,36 @@ public class ChatService(IOptions<ApiSettings> apiSettings) : IAsyncDisposable
 
     public async Task JoinChannel(string username, string channel)
     {
-        if (_hubConnection != null)
-            await _hubConnection.SendAsync("JoinChannel", username, channel);
+        try
+        {
+            if (_hubConnection?.State != HubConnectionState.Connected)
+            {
+                await _hubConnection!.StartAsync();
+            }
+
+            await _hubConnection!.SendAsync("JoinChannel", username, channel);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Erreur lors de la connexion au canal {channel}", channel);
+            throw;
+        }
     }
 
     public async Task LeaveChannel(string channel)
     {
-        if (_hubConnection != null)
-            await _hubConnection.SendAsync("LeaveChannel", channel);
+        try
+        {
+            if (_hubConnection?.State == HubConnectionState.Connected)
+            {
+                await _hubConnection.SendAsync("LeaveChannel", channel);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Erreur lors de la déconnexion du canal {channel}", channel);
+            throw;
+        }
     }
 
     public async Task SendMessage(SendMessageRequest request)

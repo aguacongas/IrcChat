@@ -3,11 +3,17 @@ using IrcChat.Shared.Models;
 using IrcChat.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using IrcChat.Api.Services;
+using Microsoft.Extensions.Options;
+using IrcChat.Api.Extensions;
 
 namespace IrcChat.Api.Hubs;
 
-public class ChatHub(ChatDbContext db, ConnectionManagerService connectionManager) : Hub
+public class ChatHub(
+    ChatDbContext db, 
+    IOptions<ConnectionManagerOptions> options) : Hub
 {
+    private readonly string _instanceId = options.Value.GetInstanceId();
+
     public async Task JoinChannel(string username, string channel)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, channel);
@@ -19,7 +25,7 @@ public class ChatHub(ChatDbContext db, ConnectionManagerService connectionManage
         {
             existingUser.ConnectionId = Context.ConnectionId;
             existingUser.LastPing = DateTime.UtcNow;
-            existingUser.ServerInstanceId = connectionManager.GetInstanceId();
+            existingUser.ServerInstanceId = _instanceId;
         }
         else
         {
@@ -29,7 +35,7 @@ public class ChatHub(ChatDbContext db, ConnectionManagerService connectionManage
                 Channel = channel,
                 ConnectionId = Context.ConnectionId,
                 LastPing = DateTime.UtcNow,
-                ServerInstanceId = connectionManager.GetInstanceId()
+                ServerInstanceId = _instanceId
             });
         }
 
@@ -108,7 +114,7 @@ public class ChatHub(ChatDbContext db, ConnectionManagerService connectionManage
             .Where(u => u.ConnectionId == Context.ConnectionId)
             .ToListAsync();
 
-        if (userConnections.Any())
+        if (userConnections.Count != 0)
         {
             // Notifier chaque canal
             foreach (var connection in userConnections)

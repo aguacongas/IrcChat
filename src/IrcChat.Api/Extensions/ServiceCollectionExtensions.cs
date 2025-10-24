@@ -32,13 +32,18 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddHttpClient<OAuthService>();
 
+        // Configure ConnectionManager options
+        services.Configure<ConnectionManagerOptions>(
+            configuration.GetSection(ConnectionManagerOptions.SectionName));
+            
         services.AddScoped<AuthService>()
             .AddScoped<OAuthService>()
             .AddSignalR();
+
 
         services.AddHostedService<ConnectionManagerService>();
 

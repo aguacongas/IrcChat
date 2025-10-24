@@ -15,6 +15,10 @@
             @if (IsOAuthUser)
             {
                 <span class="badge verified">✓ Réservé</span>
+
+                <button class="btn-forget-small" @onclick="OnForgetUsernameClicked">
+                    Oublier ce pseudo
+                </button>
             }
             else
             {
@@ -47,14 +51,6 @@
             }
         </ul>
     </div>
-
-    @if (!string.IsNullOrEmpty(CurrentChannel))
-    {
-        <ChannelUsersList CurrentChannel="CurrentChannel"
-                          Username="Username"
-                          Users="Users"
-                          OnUserClicked="OnUserClickedUser" />
-    }
 
     <div class="admin-link">
         <a href="/admin">
@@ -96,6 +92,9 @@
 
     [Parameter]
     public EventCallback OnLogoutClicked { get; set; }
+
+    [Parameter]
+    public EventCallback OnForgetUsernameClicked { get; set; }
 
     private async Task CreateChannel()
     {

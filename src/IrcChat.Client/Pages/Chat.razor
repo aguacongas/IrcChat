@@ -29,16 +29,18 @@ else
                  IsOAuthUser="@Auth.IsReserved"
                  CurrentChannel="@currentChannel"
                  Channels="@channels"
-                 Users="@users"
                  OnChannelSelected="SwitchChannel"
                  OnChannelCreated="CreateChannel"
-                 OnLogoutClicked="Logout" />
+                 OnLogoutClicked="Logout"
+                 OnForgetUsernameClicked="ForgetUsername" />
 
         <ChatArea Username="@currentUsername"
                   CurrentChannel="@currentChannel"
                   IsConnected="@isConnected"
                   Messages="@messages"
-                  OnMessageSent="SendMessage" />
+                  Users="@users"
+                  OnMessageSent="SendMessage"
+                  OnUserClicked="HandleUserClicked" />
     </div>
 }
 
@@ -149,6 +151,29 @@ else
         Navigation.NavigateTo("/login");
     }
 
+    private async Task ForgetUsername()
+    {
+        if (!Auth.IsReserved) return;
+
+        // 1. Quitter le canal et déconnecter le Hub (avant d'oublier)
+        if (!string.IsNullOrEmpty(currentChannel))
+        {
+            await ChatService.LeaveChannel(currentChannel);
+        }
+
+        // 2. Appel de la nouvelle méthode de déconnexion complète
+        await Auth.ForgetUsernameAndLogoutAsync();
+
+        // 3. Nettoyage de l'état local et de la connexion HTTP
+        currentChannel = "";
+        // ... Nettoyage des listes ...
+        isConnected = false;
+        Http.DefaultRequestHeaders.Authorization = null;
+
+        // 4. Redirection vers la page de login
+        Navigation.NavigateTo("/login");
+    }
+
     private async Task CreateChannel(string channelName)
     {
         var channel = new Channel 
@@ -221,6 +246,13 @@ else
             }
             catch { }
         }
+    }
+
+    private void HandleUserClicked(string username)
+    {
+        // For now, just create a private message: "@username "
+        var messageInput = $"@{username} ";
+        // TODO: Implement private message functionality or user profile view
     }
 
     public async ValueTask DisposeAsync()

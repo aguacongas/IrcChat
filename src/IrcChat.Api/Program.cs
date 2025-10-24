@@ -5,7 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Configuration des services via les extensions
 builder.Services
     .AddDatabaseServices(builder.Configuration)
-    .AddApplicationServices()
+    .AddApplicationServices(builder.Configuration)
     .AddJwtAuthentication(builder.Configuration)
     .AddCorsConfiguration(builder.Configuration)
     .AddSwaggerConfiguration();

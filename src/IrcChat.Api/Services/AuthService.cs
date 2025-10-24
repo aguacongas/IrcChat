@@ -66,4 +66,9 @@ public class AuthService(ChatDbContext db, IConfiguration config)
         await db.SaveChangesAsync();
         return admin;
     }
+
+    internal async Task ForgetUsernameAndLogoutAsync(string value)
+    {
+        throw new NotImplementedException();
+    }
 }

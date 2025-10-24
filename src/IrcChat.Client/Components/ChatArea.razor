@@ -10,17 +10,28 @@
     }
     else
     {
-        <div class="chat-header">
-            <h2>#@CurrentChannel</h2>
-            <span class="status @(IsConnected ? "connected" : "disconnected")">
-                @(IsConnected ? "● Connecté" : "○ Déconnecté")
-            </span>
+        <div class="chat-content">
+            <div class="chat-messages">
+                <div class="chat-header">
+                    <h2>#@CurrentChannel</h2>
+                    <span class="status @(IsConnected ? "connected" : "disconnected")">
+                        @(IsConnected ? "● Connecté" : "○ Déconnecté")
+                    </span>
+                </div>
+
+                <MessageList Messages="Messages" CurrentUsername="@Username" />
+
+                <MessageInput IsConnected="IsConnected"
+                            OnSendMessage="OnMessageSent" />
+            </div>
+
+            <div class="chat-users">
+                <ChannelUsersList CurrentChannel="@CurrentChannel"
+                                Username="@Username"
+                                Users="@Users"
+                                OnUserClicked="OnUserClicked" />
+            </div>
         </div>
-
-        <MessageList Messages="Messages" CurrentUsername="@Username" />
-
-        <MessageInput IsConnected="IsConnected"
-                      OnSendMessage="OnMessageSent" />
     }
 </div>
 
@@ -38,5 +49,11 @@
     public List<Message> Messages { get; set; } = new();
 
     [Parameter]
+    public List<User> Users { get; set; } = new();
+
+    [Parameter]
     public EventCallback<string> OnMessageSent { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnUserClicked { get; set; }
 }

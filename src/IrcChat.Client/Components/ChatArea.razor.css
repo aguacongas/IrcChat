@@ -1,0 +1,16 @@
+.chat-content {
+    display: flex;
+    height: 100%;
+}
+
+.chat-messages {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-users {
+    width: 200px;
+    border-left: 1px solid var(--border-color);
+    background: var(--sidebar-bg);
+}
