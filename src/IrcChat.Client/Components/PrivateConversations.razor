@@ -15,8 +15,9 @@
         <ul class="conversation-list">
             @foreach (var conv in Conversations)
             {
-                <li class="@(conv.OtherUsername == SelectedUser ? "active" : "")">
-                    <div class="conversation-item" @onclick="() => OnConversationSelected.InvokeAsync(conv.OtherUsername)">
+                <li class="@(conv.OtherUsername == SelectedUser ? "active" : "")" 
+                    @onclick="() => OnConversationSelected.InvokeAsync(conv.OtherUsername)">
+                    <div class="conversation-item">
                         <div class="conversation-info">
                             <span class="username">@conv.OtherUsername</span>
                             @if (conv.UnreadCount > 0)
