@@ -1,4 +1,5 @@
-﻿@using IrcChat.Shared.Models
+﻿@* src/IrcChat.Client/Components/Sidebar.razor *@
+@using IrcChat.Shared.Models
 
 <div class="sidebar">
     <div class="user-info">
@@ -54,7 +55,8 @@
 
     <PrivateConversations Conversations="PrivateConversations"
                           SelectedUser="SelectedPrivateUser"
-                          OnConversationSelected="OnPrivateConversationSelected" />
+                          OnConversationSelected="OnPrivateConversationSelected"
+                          OnConversationDeleted="OnConversationDeleted" />
 
     <div class="admin-link">
         <a href="/admin">
@@ -105,6 +107,9 @@
 
     [Parameter]
     public EventCallback<string> OnPrivateConversationSelected { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnConversationDeleted { get; set; }
 
     [Parameter]
     public EventCallback OnLogoutClicked { get; set; }

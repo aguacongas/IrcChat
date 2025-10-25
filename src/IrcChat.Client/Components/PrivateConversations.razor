@@ -1,4 +1,5 @@
-﻿@using IrcChat.Shared.Models
+﻿@* src/IrcChat.Client/Components/PrivateConversations.razor *@
+@using IrcChat.Shared.Models
 
 <div class="private-conversations">
     <div class="section-header">
@@ -14,23 +15,35 @@
         <ul class="conversation-list">
             @foreach (var conv in Conversations)
             {
-                <li class="@(conv.OtherUsername == SelectedUser ? "active" : "")"
-                    @onclick="() => OnConversationSelected.InvokeAsync(conv.OtherUsername)">
-                    <div class="conversation-info">
-                        <span class="username">@conv.OtherUsername</span>
-                        @if (conv.UnreadCount > 0)
-                        {
-                            <span class="unread-count">@conv.UnreadCount</span>
-                        }
+                <li class="@(conv.OtherUsername == SelectedUser ? "active" : "")">
+                    <div class="conversation-item" @onclick="() => OnConversationSelected.InvokeAsync(conv.OtherUsername)">
+                        <div class="conversation-info">
+                            <span class="username">@conv.OtherUsername</span>
+                            @if (conv.UnreadCount > 0)
+                            {
+                                <span class="unread-count">@conv.UnreadCount</span>
+                            }
+                            @if (!string.IsNullOrEmpty(conv.LastMessage))
+                            {
+                                <span class="last-message">@TruncateMessage(conv.LastMessage)</span>
+                            }
+                            @if (conv.LastMessageTime.HasValue)
+                            {
+                                <span class="message-time">@FormatTime(conv.LastMessageTime.Value)</span>
+                            }
+                        </div>
                     </div>
-                    @if (!string.IsNullOrEmpty(conv.LastMessage))
-                    {
-                        <div class="last-message">@TruncateMessage(conv.LastMessage)</div>
-                    }
-                    @if (conv.LastMessageTime.HasValue)
-                    {
-                        <div class="message-time">@FormatTime(conv.LastMessageTime.Value)</div>
-                    }
+                    <button class="delete-conversation-btn"
+                            @onclick="async () => await DeleteConversation(conv.OtherUsername)"
+                            @onclick:stopPropagation="true"
+                            title="Supprimer la conversation">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    </button>
                 </li>
             }
         </ul>
@@ -54,11 +67,14 @@
     [Parameter]
     public EventCallback<string> OnConversationSelected { get; set; }
 
+    [Parameter]
+    public EventCallback<string> OnConversationDeleted { get; set; }
+
     private int TotalUnreadCount => Conversations.Sum(c => c.UnreadCount);
 
     private string TruncateMessage(string message)
     {
-        return message.Length > 30 ? message.Substring(0, 30) + "..." : message;
+        return message.Length > 25 ? message.Substring(0, 25) + "..." : message;
     }
 
     private string FormatTime(DateTime time)
@@ -67,14 +83,19 @@
         var diff = now - time;
 
         if (diff.TotalMinutes < 1)
-            return "À l'instant";
+            return "maintenant";
         if (diff.TotalMinutes < 60)
-            return $"Il y a {(int)diff.TotalMinutes}min";
+            return $"{(int)diff.TotalMinutes}min";
         if (diff.TotalHours < 24)
-            return $"Il y a {(int)diff.TotalHours}h";
+            return $"{(int)diff.TotalHours}h";
         if (diff.TotalDays < 7)
-            return $"Il y a {(int)diff.TotalDays}j";
+            return $"{(int)diff.TotalDays}j";
 
         return time.ToLocalTime().ToString("dd/MM");
+    }
+
+    private async Task DeleteConversation(string username)
+    {
+        await OnConversationDeleted.InvokeAsync(username);
     }
 }

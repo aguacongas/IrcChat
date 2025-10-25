@@ -1,4 +1,5 @@
-﻿@page "/chat"
+﻿@* src/IrcChat.Client/Pages/Chat.razor *@
+@page "/chat"
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Services
 @using IrcChat.Client.Components
@@ -32,11 +33,11 @@ else
                  Channels="@channels"
                  Users="@users"
                  PrivateConversations="@privateConversations"
-                 SelectedPrivateUser="@selectedPrivateUser"
                  OnChannelSelected="SwitchChannel"
                  OnChannelCreated="CreateChannel"
                  OnUserClicked="OpenPrivateChat"
                  OnPrivateConversationSelected="OpenPrivateChat"
+                 OnConversationDeleted="DeleteConversation"
                  OnLogoutClicked="Logout"
                  OnForgetUsernameClicked="ForgetUsername" />
 
@@ -45,7 +46,8 @@ else
                   IsConnected="@isConnected"
                   Messages="@messages"
                   Users="@users"
-                  OnMessageSent="SendMessage" />
+                  OnMessageSent="SendMessage"
+                  OnUserClicked="HandleUserClicked" />
     </div>
 
     @if (showPrivateChat && !string.IsNullOrEmpty(selectedPrivateUser))
@@ -113,6 +115,7 @@ else
         PrivateMessageService.OnPrivateMessageReceived += OnPrivateMessageReceived;
         PrivateMessageService.OnPrivateMessageSent += OnPrivateMessageSent;
         PrivateMessageService.OnUnreadCountChanged += OnUnreadCountChanged;
+        PrivateMessageService.OnConversationDeleted += OnConversationDeleted;
 
         try
         {
@@ -201,6 +204,20 @@ else
         });
     }
 
+    private void OnConversationDeleted(string username)
+    {
+        if (selectedPrivateUser == username)
+        {
+            ClosePrivateChat();
+        }
+
+        InvokeAsync(async () =>
+        {
+            await LoadPrivateConversations();
+            StateHasChanged();
+        });
+    }
+
     // Actions
     private async Task Logout()
     {
@@ -236,7 +253,9 @@ else
 
         // 3. Nettoyage de l'état local et de la connexion HTTP
         currentChannel = "";
-        // ... Nettoyage des listes ...
+        channels.Clear();
+        messages.Clear();
+        users.Clear();
         isConnected = false;
         Http.DefaultRequestHeaders.Authorization = null;
 
@@ -318,6 +337,14 @@ else
         }
     }
 
+    private async Task HandleUserClicked(string username)
+    {
+        if (username != currentUsername)
+        {
+            await OpenPrivateChat(username);
+        }
+    }
+
     // Méthodes pour messages privés
     private async Task LoadPrivateConversations()
     {
@@ -364,6 +391,24 @@ else
         catch { }
     }
 
+    private async Task DeleteConversation(string otherUsername)
+    {
+        var success = await PrivateMessageService.DeleteConversationAsync(currentUsername, otherUsername);
+
+        if (success)
+        {
+            // Fermer la fenêtre de chat si c'est la conversation active
+            if (selectedPrivateUser == otherUsername)
+            {
+                ClosePrivateChat();
+            }
+
+            // Recharger la liste des conversations
+            await LoadPrivateConversations();
+            StateHasChanged();
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
         ChatService.OnMessageReceived -= OnMessageReceived;
@@ -374,6 +419,7 @@ else
         PrivateMessageService.OnPrivateMessageReceived -= OnPrivateMessageReceived;
         PrivateMessageService.OnPrivateMessageSent -= OnPrivateMessageSent;
         PrivateMessageService.OnUnreadCountChanged -= OnUnreadCountChanged;
+        PrivateMessageService.OnConversationDeleted -= OnConversationDeleted;
 
         await ChatService.DisposeAsync();
     }

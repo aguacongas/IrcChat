@@ -26,6 +26,11 @@ public static class PrivateMessageEndpoints
             .WithName("GetUnreadCount")
             .WithOpenApi();
 
+        // Supprimer une conversation (soft delete)
+        group.MapDelete("/{username}/conversation/{otherUsername}", DeleteConversationAsync)
+            .WithName("DeleteConversation")
+            .WithOpenApi();
+
         return app;
     }
 
@@ -79,5 +84,31 @@ public static class PrivateMessageEndpoints
             .CountAsync(m => m.RecipientUsername == username && !m.IsRead && !m.IsDeleted);
 
         return Results.Ok(new { UnreadCount = count });
+    }
+
+    private static async Task<IResult> DeleteConversationAsync(
+        string username,
+        string otherUsername,
+        ChatDbContext db)
+    {
+        // Récupérer tous les messages de la conversation pour cet utilisateur
+        var messages = await db.PrivateMessages
+            .Where(m => ((m.SenderUsername == username && m.RecipientUsername == otherUsername) ||
+                        (m.SenderUsername == otherUsername && m.RecipientUsername == username))
+                     && !m.IsDeleted)
+            .ToListAsync();
+
+        if (messages.Count == 0)
+            return Results.NotFound();
+
+        // Marquer tous les messages comme supprimés
+        foreach (var message in messages)
+        {
+            message.IsDeleted = true;
+        }
+
+        await db.SaveChangesAsync();
+
+        return Results.Ok(new { Deleted = messages.Count });
     }
 }

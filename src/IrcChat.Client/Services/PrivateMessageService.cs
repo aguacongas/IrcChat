@@ -1,4 +1,5 @@
-﻿using IrcChat.Shared.Models;
+﻿// src/IrcChat.Client/Services/PrivateMessageService.cs
+using IrcChat.Shared.Models;
 using System.Net.Http.Json;
 
 namespace IrcChat.Client.Services;
@@ -9,6 +10,7 @@ public class PrivateMessageService(HttpClient httpClient)
     public event Action<PrivateMessage>? OnPrivateMessageSent;
     public event Action<string, List<Guid>>? OnMessagesRead;
     public event Action? OnUnreadCountChanged;
+    public event Action<string>? OnConversationDeleted;
 
     public void NotifyPrivateMessageReceived(PrivateMessage message)
     {
@@ -65,6 +67,28 @@ public class PrivateMessageService(HttpClient httpClient)
         catch
         {
             return 0;
+        }
+    }
+
+    public async Task<bool> DeleteConversationAsync(string username, string otherUsername)
+    {
+        try
+        {
+            var response = await httpClient.DeleteAsync(
+                $"/api/private-messages/{username}/conversation/{otherUsername}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                OnConversationDeleted?.Invoke(otherUsername);
+                OnUnreadCountChanged?.Invoke();
+                return true;
+            }
+
+            return false;
+        }
+        catch
+        {
+            return false;
         }
     }
 
