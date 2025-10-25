@@ -67,52 +67,49 @@
 }
 
 .private-message {
-    max-width: 80%;
+    margin-bottom: 10px;
     padding: 10px;
     border-radius: 8px;
     animation: slideIn 0.2s ease-out;
 }
 
     .private-message.sent {
-        align-self: flex-end;
-        background: #8ab4f8;
-        color: #000;
+        background: #2d3748;
+        border-left: 3px solid #48bb78;
     }
 
     .private-message.received {
-        align-self: flex-start;
-        background: #2d3748;
-        color: #fff;
+        background: #252525;
+        border-left: 3px solid #8ab4f8;
     }
-
-.message-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
-    font-size: 12px;
-}
 
 .sender {
     font-weight: bold;
+    color: #8ab4f8;
+    margin-right: 10px;
+}
+
+.private-message.sent .sender {
+    color: #48bb78;
 }
 
 .time {
-    opacity: 0.7;
+    font-size: 12px;
+    color: #888;
+    margin-right: 10px;
 }
 
 .message-content {
-    line-height: 1.4;
+    line-height: 1.5;
     word-wrap: break-word;
 }
 
 .read-indicator {
-    font-size: 10px;
-    text-align: right;
-    margin-top: 3px;
+    font-size: 11px;
+    color: #48bb78;
+    margin-left: 8px;
     opacity: 0.8;
 }
-
 .empty-messages {
     display: flex;
     flex-direction: column;

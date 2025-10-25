@@ -10,26 +10,26 @@
     }
     else
     {
+        <div class="chat-header">
+            <h2>#@CurrentChannel</h2>
+            <span class="status @(IsConnected ? "connected" : "disconnected")">
+                @(IsConnected ? "● Connecté" : "○ Déconnecté")
+            </span>
+        </div>
+
         <div class="chat-content">
             <div class="chat-messages">
-                <div class="chat-header">
-                    <h2>#@CurrentChannel</h2>
-                    <span class="status @(IsConnected ? "connected" : "disconnected")">
-                        @(IsConnected ? "● Connecté" : "○ Déconnecté")
-                    </span>
-                </div>
-
                 <MessageList Messages="Messages" CurrentUsername="@Username" />
 
                 <MessageInput IsConnected="IsConnected"
-                            OnSendMessage="OnMessageSent" />
+                              OnSendMessage="OnMessageSent" />
             </div>
 
             <div class="chat-users">
                 <ChannelUsersList CurrentChannel="@CurrentChannel"
-                                Username="@Username"
-                                Users="@Users"
-                                OnUserClicked="OnUserClicked" />
+                                  Username="@Username"
+                                  Users="@Users"
+                                  OnUserClicked="OnUserClicked" />
             </div>
         </div>
     }

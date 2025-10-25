@@ -20,14 +20,12 @@
             @foreach (var msg in Messages)
             {
                 <div class="private-message @(msg.SenderUsername == CurrentUsername ? "sent" : "received")">
-                    <div class="message-header">
-                        <span class="sender">@msg.SenderUsername</span>
-                        <span class="time">@msg.Timestamp.ToLocalTime().ToString("HH:mm")</span>
-                    </div>
-                    <div class="message-content">@msg.Content</div>
+                    <span class="sender">@msg.SenderUsername</span>
+                    <span class="time">@msg.Timestamp.ToLocalTime().ToString("HH:mm")</span>
+                    <span class="message-content">@msg.Content</span>
                     @if (msg.SenderUsername == CurrentUsername && msg.IsRead)
                     {
-                        <div class="read-indicator">✓✓ Lu</div>
+                        <span class="read-indicator">✓✓</span>
                     }
                 </div>
             }
