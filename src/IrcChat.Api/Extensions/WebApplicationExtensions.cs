@@ -73,6 +73,7 @@ public static class WebApplicationExtensions
            .MapMessageEndpoints()
            .MapChannelEndpoints()
            .MapAdminEndpoints()
+           .MapPrivateMessageEndpoints()
            .MapSignalRHub();
 
         return app;

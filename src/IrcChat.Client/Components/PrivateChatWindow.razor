@@ -1,0 +1,98 @@
+﻿@using IrcChat.Shared.Models
+
+<div class="private-chat-window">
+    <div class="chat-header">
+        <div class="header-left">
+            <h3>💬 @OtherUsername</h3>
+            <span class="status-indicator online">En ligne</span>
+        </div>
+        <button class="close-btn" @onclick="OnClose">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+    </div>
+
+    <div class="messages-container" @ref="messagesContainer">
+        @if (Messages.Any())
+        {
+            @foreach (var msg in Messages)
+            {
+                <div class="private-message @(msg.SenderUsername == CurrentUsername ? "sent" : "received")">
+                    <div class="message-header">
+                        <span class="sender">@msg.SenderUsername</span>
+                        <span class="time">@msg.Timestamp.ToLocalTime().ToString("HH:mm")</span>
+                    </div>
+                    <div class="message-content">@msg.Content</div>
+                    @if (msg.SenderUsername == CurrentUsername && msg.IsRead)
+                    {
+                        <div class="read-indicator">✓✓ Lu</div>
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-messages">
+                <p>Aucun message avec @OtherUsername</p>
+                <small>Envoyez un message pour démarrer la conversation</small>
+            </div>
+        }
+    </div>
+
+    <div class="input-area">
+        <input @bind="messageInput"
+               @bind:event="oninput"
+               placeholder="Écrivez votre message..."
+               @onkeyup="HandleKeyUp"
+               disabled="@(!IsConnected)" />
+        <button @onclick="SendMessage"
+                disabled="@(!IsConnected || string.IsNullOrWhiteSpace(messageInput))">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+        </button>
+    </div>
+</div>
+
+@code {
+    private ElementReference messagesContainer;
+    private string messageInput = string.Empty;
+
+    [Parameter]
+    public string CurrentUsername { get; set; } = string.Empty;
+
+    [Parameter]
+    public string OtherUsername { get; set; } = string.Empty;
+
+    [Parameter]
+    public List<PrivateMessage> Messages { get; set; } = new();
+
+    [Parameter]
+    public bool IsConnected { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnSendMessage { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private async Task SendMessage()
+    {
+        if (!string.IsNullOrWhiteSpace(messageInput))
+        {
+            await OnSendMessage.InvokeAsync(messageInput.Trim());
+            messageInput = string.Empty;
+        }
+    }
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(messageInput))
+        {
+            await SendMessage();
+        }
+    }
+}

@@ -12,11 +12,7 @@ public class OAuthClientService(IJSRuntime jsRuntime, HttpClient httpClient)
     public async Task<string> InitiateAuthorizationFlowAsync(ExternalAuthProvider provider, string redirectUri)
     {
         var response = await httpClient.GetFromJsonAsync<OAuthProviderConfig>(
-            $"/api/oauth/config/{provider}");
-
-        if (response == null)
-            throw new Exception("Failed to get OAuth configuration");
-
+            $"/api/oauth/config/{provider}") ?? throw new Exception("Failed to get OAuth configuration");
         var state = GenerateRandomString(32);
         var codeVerifier = GenerateRandomString(128);
         var codeChallenge = GenerateCodeChallenge(codeVerifier);
@@ -80,13 +76,12 @@ public class OAuthClientService(IJSRuntime jsRuntime, HttpClient httpClient)
         var random = new byte[length];
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(random);
-        return new string(random.Select(b => chars[b % chars.Length]).ToArray());
+        return new string([.. random.Select(b => chars[b % chars.Length])]);
     }
 
     private static string GenerateCodeChallenge(string codeVerifier)
     {
-        using var sha256 = SHA256.Create();
-        var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(codeVerifier));
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(codeVerifier));
         return Convert.ToBase64String(hash)
             .TrimEnd('=')
             .Replace('+', '-')

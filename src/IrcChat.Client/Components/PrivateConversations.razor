@@ -1,0 +1,80 @@
+﻿@using IrcChat.Shared.Models
+
+<div class="private-conversations">
+    <div class="section-header">
+        <h4>Messages Privés</h4>
+        @if (TotalUnreadCount > 0)
+        {
+            <span class="unread-badge">@TotalUnreadCount</span>
+        }
+    </div>
+
+    @if (Conversations.Any())
+    {
+        <ul class="conversation-list">
+            @foreach (var conv in Conversations)
+            {
+                <li class="@(conv.OtherUsername == SelectedUser ? "active" : "")"
+                    @onclick="() => OnConversationSelected.InvokeAsync(conv.OtherUsername)">
+                    <div class="conversation-info">
+                        <span class="username">@conv.OtherUsername</span>
+                        @if (conv.UnreadCount > 0)
+                        {
+                            <span class="unread-count">@conv.UnreadCount</span>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(conv.LastMessage))
+                    {
+                        <div class="last-message">@TruncateMessage(conv.LastMessage)</div>
+                    }
+                    @if (conv.LastMessageTime.HasValue)
+                    {
+                        <div class="message-time">@FormatTime(conv.LastMessageTime.Value)</div>
+                    }
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        <div class="empty-state">
+            <p>Aucune conversation</p>
+            <small>Cliquez sur un utilisateur pour démarrer une conversation</small>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public List<PrivateConversation> Conversations { get; set; } = new();
+
+    [Parameter]
+    public string? SelectedUser { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnConversationSelected { get; set; }
+
+    private int TotalUnreadCount => Conversations.Sum(c => c.UnreadCount);
+
+    private string TruncateMessage(string message)
+    {
+        return message.Length > 30 ? message.Substring(0, 30) + "..." : message;
+    }
+
+    private string FormatTime(DateTime time)
+    {
+        var now = DateTime.UtcNow;
+        var diff = now - time;
+
+        if (diff.TotalMinutes < 1)
+            return "À l'instant";
+        if (diff.TotalMinutes < 60)
+            return $"Il y a {(int)diff.TotalMinutes}min";
+        if (diff.TotalHours < 24)
+            return $"Il y a {(int)diff.TotalHours}h";
+        if (diff.TotalDays < 7)
+            return $"Il y a {(int)diff.TotalDays}j";
+
+        return time.ToLocalTime().ToString("dd/MM");
+    }
+}

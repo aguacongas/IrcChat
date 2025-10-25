@@ -23,6 +23,7 @@ builder.Services.AddScoped<ChatService>()
     .AddScoped<AuthStateService>()
     .AddScoped<LocalStorageService>()
     .AddScoped<UnifiedAuthService>()
-    .AddScoped<OAuthClientService>();
+    .AddScoped<OAuthClientService>()
+    .AddScoped<PrivateMessageService>();
 
 await builder.Build().RunAsync();

@@ -572,3 +572,179 @@ code {
     text-decoration: none;
     font-size: 14px;
 }
+
+/* Amélioration de la liste des utilisateurs pour le clic */
+.user-list li {
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+    .user-list li:hover {
+        background: #3e3e3e;
+    }
+
+    .user-list li.current {
+        color: #8ab4f8;
+        font-weight: bold;
+    }
+
+/* Indicateur de statut en ligne */
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+    .status-dot.online {
+        background: #48bb78;
+    }
+
+    .status-dot.offline {
+        background: #888;
+    }
+
+/* Badges */
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+    .badge.verified {
+        background: #48bb78;
+        color: white;
+    }
+
+    .badge.guest {
+        background: #666;
+        color: white;
+    }
+
+/* Avatar dans le user-info */
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    font-size: 24px;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+/* Scrollbar personnalisée */
+.messages-container::-webkit-scrollbar,
+.messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+.messages-container::-webkit-scrollbar-track,
+.messages::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+
+.messages-container::-webkit-scrollbar-thumb,
+.messages::-webkit-scrollbar-thumb {
+    background: #3e3e3e;
+    border-radius: 4px;
+}
+
+    .messages-container::-webkit-scrollbar-thumb:hover,
+    .messages::-webkit-scrollbar-thumb:hover {
+        background: #4e4e4e;
+    }
+
+/* Animation pour les notifications */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.unread-badge,
+.unread-count {
+    animation: pulse 2s infinite;
+}
+
+/* Responsive pour la fenêtre de chat privé */
+@media (max-width: 480px) {
+    .private-chat-window {
+        width: calc(100vw - 20px);
+        height: 400px;
+    }
+}
+
+/* Section des conversations privées dans le sidebar */
+.channels-section,
+.users-section,
+.private-conversations {
+    margin-bottom: 20px;
+}
+
+    .channels-section h3,
+    .users-section h4,
+    .private-conversations h4 {
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 10px;
+    }
+
+/* Amélioration du channel input */
+.channel-input {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+    .channel-input input {
+        flex: 1;
+        padding: 8px;
+        background: #1e1e1e;
+        border: 1px solid #3e3e3e;
+        color: #fff;
+        border-radius: 4px;
+        font-size: 13px;
+    }
+
+    .channel-input button {
+        padding: 8px 15px;
+        background: #8ab4f8;
+        border: none;
+        color: #000;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 16px;
+    }
+
+        .channel-input button:hover:not(:disabled) {
+            background: #9cc5ff;
+        }
+
+        .channel-input button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+/* Hash pour les canaux */
+.channel-hash {
+    color: #8ab4f8;
+    margin-right: 5px;
+    font-weight: bold;
+}

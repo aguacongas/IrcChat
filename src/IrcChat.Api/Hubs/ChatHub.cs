@@ -95,6 +95,71 @@ public class ChatHub(
         await Clients.Group(request.Channel).SendAsync("ReceiveMessage", message);
     }
 
+    public async Task SendPrivateMessage(SendPrivateMessageRequest request)
+    {
+        var privateMessage = new PrivateMessage
+        {
+            Id = Guid.NewGuid(),
+            SenderUsername = request.SenderUsername,
+            RecipientUsername = request.RecipientUsername,
+            Content = request.Content,
+            Timestamp = DateTime.UtcNow,
+            IsRead = false,
+            IsDeleted = false
+        };
+
+        db.PrivateMessages.Add(privateMessage);
+        await db.SaveChangesAsync();
+
+        // Trouver la connexion du destinataire
+        var recipientConnection = await db.ConnectedUsers
+            .Where(u => u.Username == request.RecipientUsername)
+            .Select(u => u.ConnectionId)
+            .FirstOrDefaultAsync();
+
+        // Envoyer au destinataire s'il est connecté
+        if (recipientConnection != null)
+        {
+            await Clients.Client(recipientConnection).SendAsync("ReceivePrivateMessage", privateMessage);
+        }
+
+        // Envoyer confirmation à l'expéditeur
+        await Clients.Caller.SendAsync("PrivateMessageSent", privateMessage);
+    }
+
+    public async Task MarkPrivateMessagesAsRead(string senderUsername)
+    {
+        var currentUser = await db.ConnectedUsers
+            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
+
+        if (currentUser == null) return;
+
+        var unreadMessages = await db.PrivateMessages
+            .Where(m => m.RecipientUsername == currentUser.Username
+                     && m.SenderUsername == senderUsername
+                     && !m.IsRead)
+            .ToListAsync();
+
+        foreach (var message in unreadMessages)
+        {
+            message.IsRead = true;
+        }
+
+        await db.SaveChangesAsync();
+
+        // Notifier l'expéditeur que ses messages ont été lus
+        var senderConnection = await db.ConnectedUsers
+            .Where(u => u.Username == senderUsername)
+            .Select(u => u.ConnectionId)
+            .FirstOrDefaultAsync();
+
+        if (senderConnection != null)
+        {
+            await Clients.Client(senderConnection)
+                .SendAsync("PrivateMessagesRead", currentUser.Username, unreadMessages.Select(m => m.Id).ToList());
+        }
+    }
+
     public async Task Ping()
     {
         var user = await db.ConnectedUsers

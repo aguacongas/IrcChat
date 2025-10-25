@@ -5,6 +5,7 @@
 @inject HttpClient Http
 @inject ChatService ChatService
 @inject UnifiedAuthService Auth
+@inject PrivateMessageService PrivateMessageService
 @inject NavigationManager Navigation
 @implements IAsyncDisposable
 
@@ -29,8 +30,13 @@ else
                  IsOAuthUser="@Auth.IsReserved"
                  CurrentChannel="@currentChannel"
                  Channels="@channels"
+                 Users="@users"
+                 PrivateConversations="@privateConversations"
+                 SelectedPrivateUser="@selectedPrivateUser"
                  OnChannelSelected="SwitchChannel"
                  OnChannelCreated="CreateChannel"
+                 OnUserClicked="OpenPrivateChat"
+                 OnPrivateConversationSelected="OpenPrivateChat"
                  OnLogoutClicked="Logout"
                  OnForgetUsernameClicked="ForgetUsername" />
 
@@ -39,9 +45,18 @@ else
                   IsConnected="@isConnected"
                   Messages="@messages"
                   Users="@users"
-                  OnMessageSent="SendMessage"
-                  OnUserClicked="HandleUserClicked" />
+                  OnMessageSent="SendMessage" />
     </div>
+
+    @if (showPrivateChat && !string.IsNullOrEmpty(selectedPrivateUser))
+    {
+        <PrivateChatWindow CurrentUsername="@currentUsername"
+                           OtherUsername="@selectedPrivateUser"
+                           Messages="@privateMessages"
+                           IsConnected="@isConnected"
+                           OnSendMessage="SendPrivateMessage"
+                           OnClose="ClosePrivateChat" />
+    }
 }
 
 @code {
@@ -53,6 +68,12 @@ else
     private List<User> users = new();
     private bool isConnected = false;
     private bool isInitialized = false;
+
+    // Messages privés
+    private List<PrivateConversation> privateConversations = new();
+    private List<PrivateMessage> privateMessages = new();
+    private string? selectedPrivateUser = null;
+    private bool showPrivateChat = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -66,19 +87,19 @@ else
         }
 
         currentUsername = Auth.Username!;
-            
         avatarUrl = Auth.AvatarUrl;
 
         if (!string.IsNullOrEmpty(currentUsername))
         {
             if (Auth.IsAuthenticated && !string.IsNullOrEmpty(Auth.Token))
             {
-                Http.DefaultRequestHeaders.Authorization = 
+                Http.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Auth.Token);
             }
 
             await LoadChannels();
             await InitializeSignalR();
+            await LoadPrivateConversations();
         }
     }
 
@@ -88,6 +109,10 @@ else
         ChatService.OnUserJoined += OnUserJoined;
         ChatService.OnUserLeft += OnUserLeft;
         ChatService.OnUserListUpdated += OnUserListUpdated;
+
+        PrivateMessageService.OnPrivateMessageReceived += OnPrivateMessageReceived;
+        PrivateMessageService.OnPrivateMessageSent += OnPrivateMessageSent;
+        PrivateMessageService.OnUnreadCountChanged += OnUnreadCountChanged;
 
         try
         {
@@ -101,6 +126,7 @@ else
         }
     }
 
+    // Handlers pour canaux publics
     private void OnMessageReceived(Message message)
     {
         if (message.Channel == currentChannel)
@@ -132,22 +158,66 @@ else
         InvokeAsync(StateHasChanged);
     }
 
+    // Handlers pour messages privés
+    private void OnPrivateMessageReceived(PrivateMessage message)
+    {
+        if (message.SenderUsername == selectedPrivateUser || message.RecipientUsername == selectedPrivateUser)
+        {
+            privateMessages.Add(message);
+
+            if (showPrivateChat && message.SenderUsername == selectedPrivateUser)
+            {
+                _ = ChatService.MarkPrivateMessagesAsRead(selectedPrivateUser);
+            }
+        }
+
+        InvokeAsync(async () =>
+        {
+            await LoadPrivateConversations();
+            StateHasChanged();
+        });
+    }
+
+    private void OnPrivateMessageSent(PrivateMessage message)
+    {
+        if (message.RecipientUsername == selectedPrivateUser)
+        {
+            privateMessages.Add(message);
+        }
+
+        InvokeAsync(async () =>
+        {
+            await LoadPrivateConversations();
+            StateHasChanged();
+        });
+    }
+
+    private void OnUnreadCountChanged()
+    {
+        InvokeAsync(async () =>
+        {
+            await LoadPrivateConversations();
+            StateHasChanged();
+        });
+    }
+
+    // Actions
     private async Task Logout()
     {
         if (!string.IsNullOrEmpty(currentChannel))
         {
             await ChatService.LeaveChannel(currentChannel);
         }
-        
+
         currentChannel = "";
         channels.Clear();
         messages.Clear();
         users.Clear();
         isConnected = false;
-        
+
         await Auth.ClearAllAsync();
         Http.DefaultRequestHeaders.Authorization = null;
-                
+
         Navigation.NavigateTo("/login");
     }
 
@@ -176,12 +246,12 @@ else
 
     private async Task CreateChannel(string channelName)
     {
-        var channel = new Channel 
+        var channel = new Channel
         {
             Name = channelName,
             CreatedBy = currentUsername,
         };
-        
+
         try
         {
             await Http.PostAsJsonAsync("/api/channels", channel);
@@ -248,11 +318,50 @@ else
         }
     }
 
-    private void HandleUserClicked(string username)
+    // Méthodes pour messages privés
+    private async Task LoadPrivateConversations()
     {
-        // For now, just create a private message: "@username "
-        var messageInput = $"@{username} ";
-        // TODO: Implement private message functionality or user profile view
+        privateConversations = await PrivateMessageService.GetConversationsAsync(currentUsername);
+    }
+
+    private async Task OpenPrivateChat(string username)
+    {
+        selectedPrivateUser = username;
+        showPrivateChat = true;
+
+        privateMessages = await PrivateMessageService.GetPrivateMessagesAsync(currentUsername, username);
+
+        await ChatService.MarkPrivateMessagesAsRead(username);
+        await LoadPrivateConversations();
+
+        StateHasChanged();
+    }
+
+    private void ClosePrivateChat()
+    {
+        showPrivateChat = false;
+        selectedPrivateUser = null;
+        privateMessages.Clear();
+        StateHasChanged();
+    }
+
+    private async Task SendPrivateMessage(string content)
+    {
+        if (string.IsNullOrEmpty(selectedPrivateUser) || !isConnected)
+            return;
+
+        var request = new SendPrivateMessageRequest
+        {
+            SenderUsername = currentUsername,
+            RecipientUsername = selectedPrivateUser,
+            Content = content
+        };
+
+        try
+        {
+            await ChatService.SendPrivateMessage(request);
+        }
+        catch { }
     }
 
     public async ValueTask DisposeAsync()
@@ -261,7 +370,11 @@ else
         ChatService.OnUserJoined -= OnUserJoined;
         ChatService.OnUserLeft -= OnUserLeft;
         ChatService.OnUserListUpdated -= OnUserListUpdated;
-        
+
+        PrivateMessageService.OnPrivateMessageReceived -= OnPrivateMessageReceived;
+        PrivateMessageService.OnPrivateMessageSent -= OnPrivateMessageSent;
+        PrivateMessageService.OnUnreadCountChanged -= OnUnreadCountChanged;
+
         await ChatService.DisposeAsync();
     }
 }

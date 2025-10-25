@@ -1,0 +1,105 @@
+﻿.private-conversations {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #3e3e3e;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+    .section-header h4 {
+        color: #8ab4f8;
+        margin: 0;
+        font-size: 14px;
+    }
+
+.unread-badge {
+    background: #f56565;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.conversation-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+    .conversation-list li {
+        padding: 10px;
+        margin: 5px 0;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background 0.2s;
+    }
+
+        .conversation-list li:hover {
+            background: #3e3e3e;
+        }
+
+        .conversation-list li.active {
+            background: #8ab4f8;
+            color: #000;
+        }
+
+.conversation-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.username {
+    font-weight: bold;
+}
+
+.unread-count {
+    background: #f56565;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 11px;
+}
+
+.last-message {
+    font-size: 13px;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.conversation-list li.active .last-message {
+    color: #333;
+}
+
+.message-time {
+    font-size: 11px;
+    color: #666;
+    margin-top: 3px;
+}
+
+.conversation-list li.active .message-time {
+    color: #333;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+    .empty-state p {
+        margin-bottom: 5px;
+    }
+
+    .empty-state small {
+        font-size: 12px;
+    }

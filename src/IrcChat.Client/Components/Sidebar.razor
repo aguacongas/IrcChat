@@ -52,6 +52,10 @@
         </ul>
     </div>
 
+    <PrivateConversations Conversations="PrivateConversations"
+                          SelectedUser="SelectedPrivateUser"
+                          OnConversationSelected="OnPrivateConversationSelected" />
+
     <div class="admin-link">
         <a href="/admin">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -85,10 +89,22 @@
     public List<User> Users { get; set; } = new();
 
     [Parameter]
+    public List<PrivateConversation> PrivateConversations { get; set; } = new();
+
+    [Parameter]
+    public string? SelectedPrivateUser { get; set; }
+
+    [Parameter]
     public EventCallback<string> OnChannelSelected { get; set; }
 
     [Parameter]
     public EventCallback<string> OnChannelCreated { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnUserClicked { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnPrivateConversationSelected { get; set; }
 
     [Parameter]
     public EventCallback OnLogoutClicked { get; set; }
@@ -96,18 +112,11 @@
     [Parameter]
     public EventCallback OnForgetUsernameClicked { get; set; }
 
-    private async Task CreateChannel()
+    private async Task HandleUserClicked(string username)
     {
-        if (!string.IsNullOrWhiteSpace(newChannel))
+        if (username != Username)
         {
-            await OnChannelCreated.InvokeAsync(newChannel.Trim().ToLower());
-            newChannel = string.Empty;
+            await OnUserClicked.InvokeAsync(username);
         }
-    }
-
-    private Task OnUserClickedUser(string username)
-    {
-        // comportement par défaut : rien, à personnaliser si nécessaire
-        return Task.CompletedTask;
     }
 }

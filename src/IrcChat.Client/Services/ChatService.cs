@@ -1,17 +1,17 @@
-﻿using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.Extensions.Options;
+﻿using IrcChat.Client.Models;
 using IrcChat.Shared.Models;
-using IrcChat.Client.Models;
-using System.Threading;
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Options;
 
 namespace IrcChat.Client.Services;
 
-public class ChatService(IOptions<ApiSettings> apiSettings, ILogger<ChatService> logger) : IAsyncDisposable
+public class ChatService(IOptions<ApiSettings> apiSettings, PrivateMessageService privateMessageService) : IAsyncDisposable
 {
     private HubConnection? _hubConnection;
     private readonly ApiSettings _apiSettings = apiSettings.Value;
     private Timer? _pingTimer;
 
+    // Events pour les canaux publics
     public event Action<Message>? OnMessageReceived;
     public event Action<string, string>? OnUserJoined;
     public event Action<string, string>? OnUserLeft;
@@ -34,6 +34,7 @@ public class ChatService(IOptions<ApiSettings> apiSettings, ILogger<ChatService>
             .WithAutomaticReconnect()
             .Build();
 
+        // Handlers pour les canaux publics
         _hubConnection.On<Message>("ReceiveMessage", message =>
         {
             OnMessageReceived?.Invoke(message);
@@ -54,6 +55,22 @@ public class ChatService(IOptions<ApiSettings> apiSettings, ILogger<ChatService>
             OnUserListUpdated?.Invoke(users);
         });
 
+        // Handlers pour les messages privés
+        _hubConnection.On<PrivateMessage>("ReceivePrivateMessage", message =>
+        {
+            privateMessageService.NotifyPrivateMessageReceived(message);
+        });
+
+        _hubConnection.On<PrivateMessage>("PrivateMessageSent", message =>
+        {
+            privateMessageService.NotifyPrivateMessageSent(message);
+        });
+
+        _hubConnection.On<string, List<Guid>>("PrivateMessagesRead", (username, messageIds) =>
+        {
+            privateMessageService.NotifyMessagesRead(username, messageIds);
+        });
+
         await _hubConnection.StartAsync();
 
         _pingTimer = new Timer(async _ =>
@@ -67,50 +84,41 @@ public class ChatService(IOptions<ApiSettings> apiSettings, ILogger<ChatService>
             }
             catch (Exception ex)
             {
-                // Log error (assuming a logger is available)
                 Console.Error.WriteLine($"Error sending ping: {ex.Message}");
             }
         }, null, TimeSpan.Zero, TimeSpan.FromSeconds(30));
     }
 
+    // Méthodes pour les canaux publics
     public async Task JoinChannel(string username, string channel)
     {
-        try
-        {
-            if (_hubConnection?.State != HubConnectionState.Connected)
-            {
-                await _hubConnection!.StartAsync();
-            }
-
-            await _hubConnection!.SendAsync("JoinChannel", username, channel);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Erreur lors de la connexion au canal {channel}", channel);
-            throw;
-        }
+        if (_hubConnection != null)
+            await _hubConnection.SendAsync("JoinChannel", username, channel);
     }
 
     public async Task LeaveChannel(string channel)
     {
-        try
-        {
-            if (_hubConnection?.State == HubConnectionState.Connected)
-            {
-                await _hubConnection.SendAsync("LeaveChannel", channel);
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Erreur lors de la déconnexion du canal {channel}", channel);
-            throw;
-        }
+        if (_hubConnection != null)
+            await _hubConnection.SendAsync("LeaveChannel", channel);
     }
 
     public async Task SendMessage(SendMessageRequest request)
     {
         if (_hubConnection != null)
             await _hubConnection.SendAsync("SendMessage", request);
+    }
+
+    // Méthodes pour les messages privés
+    public async Task SendPrivateMessage(SendPrivateMessageRequest request)
+    {
+        if (_hubConnection != null)
+            await _hubConnection.SendAsync("SendPrivateMessage", request);
+    }
+
+    public async Task MarkPrivateMessagesAsRead(string senderUsername)
+    {
+        if (_hubConnection != null)
+            await _hubConnection.SendAsync("MarkPrivateMessagesAsRead", senderUsername);
     }
 
     public async ValueTask DisposeAsync()
@@ -122,5 +130,7 @@ public class ChatService(IOptions<ApiSettings> apiSettings, ILogger<ChatService>
 
         if (_hubConnection != null)
             await _hubConnection.DisposeAsync();
+
+        GC.SuppressFinalize(this);
     }
 }
