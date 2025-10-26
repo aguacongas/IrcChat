@@ -1,11 +1,11 @@
 @using IrcChat.Shared.Models
 
 <div class="channel-input">
-    <input @bind="newChannel" 
-           placeholder="Nouveau canal..." 
-           maxlength="20" 
+    <input @bind="newChannel"
+           placeholder="Nouveau salon..."
+           maxlength="20"
            @onkeyup="HandleKeyPress" />
-    <button @onclick="CreateChannel" 
+    <button @onclick="CreateChannel"
             disabled="@string.IsNullOrWhiteSpace(newChannel)">
         +
     </button>

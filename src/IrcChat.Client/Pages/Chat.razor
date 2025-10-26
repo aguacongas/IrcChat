@@ -34,12 +34,10 @@ else
                  Users="@users"
                  PrivateConversations="@privateConversations"
                  OnChannelSelected="SwitchChannel"
-                 OnChannelCreated="CreateChannel"
                  OnUserClicked="OpenPrivateChat"
                  OnPrivateConversationSelected="OpenPrivateChat"
                  OnConversationDeleted="DeleteConversation"
-                 OnLogoutClicked="Logout"
-                 OnForgetUsernameClicked="ForgetUsername" />
+                 OnUserInfoClicked="GoToSettings" />
 
         <ChatArea Username="@currentUsername"
                   CurrentChannel="@currentChannel"
@@ -129,7 +127,7 @@ else
         }
     }
 
-    // Handlers pour canaux publics
+    // Handlers pour salons publics
     private void OnMessageReceived(Message message)
     {
         if (message.Channel == currentChannel)
@@ -219,6 +217,11 @@ else
     }
 
     // Actions
+    private void GoToSettings()
+    {
+        Navigation.NavigateTo("/settings");
+    }
+
     private async Task Logout()
     {
         if (!string.IsNullOrEmpty(currentChannel))
@@ -240,44 +243,12 @@ else
 
     private async Task ForgetUsername()
     {
-        if (!Auth.IsReserved) return;
-
-        // 1. Quitter le canal et déconnecter le Hub (avant d'oublier)
-        if (!string.IsNullOrEmpty(currentChannel))
-        {
-            await ChatService.LeaveChannel(currentChannel);
-        }
-
-        // 2. Appel de la nouvelle méthode de déconnexion complète
-        await Auth.ForgetUsernameAndLogoutAsync();
-
-        // 3. Nettoyage de l'état local et de la connexion HTTP
-        currentChannel = "";
-        channels.Clear();
-        messages.Clear();
-        users.Clear();
-        isConnected = false;
-        Http.DefaultRequestHeaders.Authorization = null;
-
-        // 4. Redirection vers la page de login
-        Navigation.NavigateTo("/login");
+        // Cette méthode n'est plus utilisée, la gestion se fait dans Settings.razor
     }
 
     private async Task CreateChannel(string channelName)
     {
-        var channel = new Channel
-        {
-            Name = channelName,
-            CreatedBy = currentUsername,
-        };
-
-        try
-        {
-            await Http.PostAsJsonAsync("/api/channels", channel);
-            await LoadChannels();
-            await SwitchChannel(channelName);
-        }
-        catch { }
+        // Cette méthode n'est plus utilisée, la création se fait dans Settings.razor
     }
 
     private async Task SwitchChannel(string channel)

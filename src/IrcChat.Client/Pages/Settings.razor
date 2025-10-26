@@ -1,0 +1,286 @@
+﻿@page "/settings"
+@using IrcChat.Shared.Models
+@using IrcChat.Client.Services
+@inject HttpClient Http
+@inject UnifiedAuthService Auth
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Paramètres - IRC Chat</PageTitle>
+
+@if (!isInitialized)
+{
+    <div class="loading-fullscreen">
+        <div class="spinner"></div>
+        <p>Chargement...</p>
+    </div>
+}
+else if (!Auth.HasUsername)
+{
+    <p>Redirection...</p>
+}
+else
+{
+    <div class="settings-container">
+        <div class="settings-header">
+            <button class="back-btn" @onclick="GoBack">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Retour
+            </button>
+            <h1>Paramètres</h1>
+        </div>
+
+        <div class="settings-content">
+            <!-- Section Profil -->
+            <div class="settings-section">
+                <h2>👤 Profil</h2>
+                <div class="profile-info">
+                    @if (!string.IsNullOrEmpty(Auth.AvatarUrl))
+                    {
+                        <img src="@Auth.AvatarUrl" alt="Avatar" class="profile-avatar" />
+                    }
+                    else
+                    {
+                        <span class="avatar-placeholder-large">👤</span>
+                    }
+                    <div class="profile-details">
+                        <h3>@Auth.Username</h3>
+                        @if (Auth.IsReserved)
+                        {
+                            <span class="badge verified">✓ Pseudo réservé</span>
+                            <p class="email">@Auth.Email</p>
+                            <p class="provider-info">Connecté via @Auth.ReservedProvider</p>
+                        }
+                        else
+                        {
+                            <span class="badge guest">Invité</span>
+                            <p class="guest-info">Votre pseudo n'est pas réservé</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section Gestion des salons -->
+            @if (Auth.IsReserved && Auth.IsAuthenticated)
+            {
+                <div class="settings-section">
+                    <h2>🏠 Gestion des salons</h2>
+                    <p class="section-description">Créez vos propres salons de discussion</p>
+
+                    <div class="channel-creator">
+                        <input @bind="newChannelName"
+                               placeholder="Nom du nouveau salon..."
+                               maxlength="20"
+                               @onkeyup="HandleChannelKeyPress" />
+                        <button @onclick="CreateChannel"
+                                disabled="@string.IsNullOrWhiteSpace(newChannelName)"
+                                class="btn-primary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Créer le salon
+                        </button>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(channelMessage))
+                    {
+                        <div class="@(channelError ? "error-message" : "success-message")">
+                            @channelMessage
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- Section Compte -->
+            <div class="settings-section danger-section">
+                <h2>⚠️ Gestion du compte</h2>
+
+                @if (Auth.IsReserved)
+                {
+                    <div class="danger-zone">
+                        <div class="danger-info">
+                            <h3>Oublier ce pseudo</h3>
+                            <p>Cette action supprimera définitivement la réservation de votre pseudo. Vous serez déconnecté et ne pourrez plus utiliser ce pseudo réservé.</p>
+                        </div>
+                        <button @onclick="ShowForgetConfirmation" class="btn-danger">
+                            Oublier mon pseudo
+                        </button>
+                    </div>
+
+                    <div class="logout-section">
+                        <button @onclick="Logout" class="btn-secondary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                <polyline points="16 17 21 12 16 7" />
+                                <line x1="21" y1="12" x2="9" y2="12" />
+                            </svg>
+                            Se déconnecter
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="info-box">
+                        <p>En tant qu'invité, vous pouvez réserver votre pseudo pour le protéger.</p>
+                        <button @onclick="GoToReserve" class="btn-secondary">
+                            Réserver mon pseudo
+                        </button>
+                    </div>
+
+                    <div class="logout-section">
+                        <button @onclick="Logout" class="btn-secondary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                <polyline points="16 17 21 12 16 7" />
+                                <line x1="21" y1="12" x2="9" y2="12" />
+                            </svg>
+                            Se déconnecter
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (showForgetModal)
+    {
+        <div class="modal-overlay" @onclick="HideForgetConfirmation">
+            <div class="modal-content" @onclick:stopPropagation="true">
+                <h2>⚠️ Confirmer la suppression</h2>
+                <p>Êtes-vous sûr de vouloir oublier le pseudo <strong>@Auth.Username</strong> ?</p>
+                <p class="warning-text">Cette action est irréversible. Vous perdrez définitivement la réservation de ce pseudo.</p>
+
+                <div class="modal-actions">
+                    <button @onclick="HideForgetConfirmation" class="btn-secondary">
+                        Annuler
+                    </button>
+                    <button @onclick="ConfirmForget" class="btn-danger">
+                        Oui, oublier ce pseudo
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private bool isInitialized = false;
+    private string newChannelName = string.Empty;
+    private string channelMessage = string.Empty;
+    private bool channelError = false;
+    private bool showForgetModal = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+        isInitialized = true;
+
+        if (!Auth.HasUsername)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/chat");
+    }
+
+    private void GoToReserve()
+    {
+        Navigation.NavigateTo($"/reserve?username={Uri.EscapeDataString(Auth.Username ?? "")}");
+    }
+
+    private async Task CreateChannel()
+    {
+        if (string.IsNullOrWhiteSpace(newChannelName)) return;
+
+        channelMessage = "";
+        channelError = false;
+
+        var channel = new Channel
+        {
+            Name = newChannelName.Trim().ToLower(),
+            CreatedBy = Auth.Username ?? ""
+        };
+
+        try
+        {
+            if (Auth.IsAuthenticated && !string.IsNullOrEmpty(Auth.Token))
+            {
+                Http.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Auth.Token);
+            }
+
+            var response = await Http.PostAsJsonAsync("/api/channels", channel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                channelMessage = $"✓ Le salon #{newChannelName} a été créé avec succès !";
+                channelError = false;
+                newChannelName = string.Empty;
+
+                // Rediriger vers le chat après 2 secondes
+                await Task.Delay(2000);
+                Navigation.NavigateTo("/chat");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                if (errorContent.Contains("channel_exists"))
+                {
+                    channelMessage = "✗ Ce salon existe déjà";
+                }
+                else
+                {
+                    channelMessage = "✗ Erreur lors de la création du salon";
+                }
+                channelError = true;
+            }
+        }
+        catch
+        {
+            channelMessage = "✗ Erreur de connexion";
+            channelError = true;
+        }
+    }
+
+    private async Task HandleChannelKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await CreateChannel();
+        }
+    }
+
+    private void ShowForgetConfirmation()
+    {
+        showForgetModal = true;
+    }
+
+    private void HideForgetConfirmation()
+    {
+        showForgetModal = false;
+    }
+
+    private async Task ConfirmForget()
+    {
+        showForgetModal = false;
+        await Auth.ForgetUsernameAndLogoutAsync();
+        Http.DefaultRequestHeaders.Authorization = null;
+        Navigation.NavigateTo("/login");
+    }
+
+    private async Task Logout()
+    {
+        // Simple déconnexion sans oublier le pseudo
+        await Auth.LogoutAsync();
+        Http.DefaultRequestHeaders.Authorization = null;
+        Navigation.NavigateTo("/login");
+    }
+}
