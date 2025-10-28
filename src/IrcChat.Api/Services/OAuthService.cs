@@ -41,8 +41,8 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
             },
             ExternalAuthProvider.Microsoft => new OAuthConfig
             {
-                AuthorizationEndpoint = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
-                TokenEndpoint = "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+                AuthorizationEndpoint = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize",
+                TokenEndpoint = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
                 UserInfoEndpoint = "https://graph.microsoft.com/v1.0/me",
                 ClientId = configuration["OAuth:Microsoft:ClientId"] ?? "",
                 ClientSecret = configuration["OAuth:Microsoft:ClientSecret"] ?? "",

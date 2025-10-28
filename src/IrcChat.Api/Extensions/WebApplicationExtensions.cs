@@ -2,8 +2,6 @@
 using IrcChat.Api.Hubs;
 using IrcChat.Api.Services;
 using IrcChat.Shared.Models;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics.CodeAnalysis;
@@ -25,6 +23,7 @@ public static class WebApplicationExtensions
         try
         {
             // Appliquer les migrations automatiquement
+            await db.Database.EnsureDeletedAsync();
             await db.Database.MigrateAsync();
             logger.LogInformation("✅ Base de données PostgreSQL migrée avec succès");
 
@@ -74,6 +73,7 @@ public static class WebApplicationExtensions
            .MapChannelEndpoints()
            .MapAdminEndpoints()
            .MapPrivateMessageEndpoints()
+           .MapAdminManagementEndpoints()
            .MapSignalRHub();
 
         return app;
@@ -143,6 +143,9 @@ public static class WebApplicationExtensions
             if (existingUser != null)
                 return Results.BadRequest(new { error = "already_reserved", message = "Vous avez déjà un pseudo réservé", username = existingUser.Username });
 
+            // Le premier utilisateur est automatiquement admin
+            var isFirstUser = !await context.ReservedUsernames.AnyAsync();
+
             // Créer la réservation
             var user = new ReservedUsername
             {
@@ -154,7 +157,8 @@ public static class WebApplicationExtensions
                 DisplayName = userInfo.Name,
                 AvatarUrl = userInfo.AvatarUrl,
                 CreatedAt = DateTime.UtcNow,
-                LastLoginAt = DateTime.UtcNow
+                LastLoginAt = DateTime.UtcNow,
+                IsAdmin = isFirstUser
             };
 
             context.ReservedUsernames.Add(user);
@@ -170,7 +174,8 @@ public static class WebApplicationExtensions
                 Email = user.Email,
                 AvatarUrl = user.AvatarUrl,
                 UserId = user.Id,
-                IsNewUser = true
+                IsNewUser = true,
+                IsAdmin = user.IsAdmin
             });
         });
 
@@ -219,7 +224,8 @@ public static class WebApplicationExtensions
                 Email = user.Email,
                 AvatarUrl = user.AvatarUrl,
                 UserId = user.Id,
-                IsNewUser = false
+                IsNewUser = false,
+                IsAdmin = user.IsAdmin
             });
         });
 

@@ -1,6 +1,7 @@
 ﻿@page "/settings"
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Services
+@using IrcChat.Client.Components
 @inject HttpClient Http
 @inject UnifiedAuthService Auth
 @inject NavigationManager Navigation
@@ -21,9 +22,9 @@ else if (!Auth.HasUsername)
 }
 else
 {
-    <div class="settings-container">
+    <div class="settings-page">
         <div class="settings-header">
-            <button class="back-btn" @onclick="GoBack">
+            <button class="back-button" @onclick="GoBack">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="19" y1="12" x2="5" y2="12"></line>
                     <polyline points="12 19 5 12 12 5"></polyline>
@@ -33,115 +34,147 @@ else
             <h1>Paramètres</h1>
         </div>
 
-        <div class="settings-content">
+        <div class="settings-container">
             <!-- Section Profil -->
-            <div class="settings-section">
-                <h2>👤 Profil</h2>
-                <div class="profile-info">
-                    @if (!string.IsNullOrEmpty(Auth.AvatarUrl))
-                    {
-                        <img src="@Auth.AvatarUrl" alt="Avatar" class="profile-avatar" />
-                    }
-                    else
-                    {
-                        <span class="avatar-placeholder-large">👤</span>
-                    }
-                    <div class="profile-details">
-                        <h3>@Auth.Username</h3>
-                        @if (Auth.IsReserved)
+            <div class="settings-card">
+                <div class="card-header">
+                    <h2>👤 Profil</h2>
+                </div>
+                <div class="card-content">
+                    <div class="profile-section">
+                        @if (!string.IsNullOrEmpty(Auth.AvatarUrl))
                         {
-                            <span class="badge verified">✓ Pseudo réservé</span>
-                            <p class="email">@Auth.Email</p>
-                            <p class="provider-info">Connecté via @Auth.ReservedProvider</p>
+                            <img src="@Auth.AvatarUrl" alt="Avatar" class="profile-avatar" />
                         }
                         else
                         {
-                            <span class="badge guest">Invité</span>
-                            <p class="guest-info">Votre pseudo n'est pas réservé</p>
+                            <div class="avatar-placeholder">👤</div>
                         }
+                        <div class="profile-info">
+                            <h3>@Auth.Username</h3>
+                            @if (Auth.IsReserved)
+                            {
+                                <div class="profile-badges">
+                                    <span class="badge badge-verified">✓ Pseudo réservé</span>
+                                    @if (Auth.IsAdmin)
+                                    {
+                                        <span class="badge badge-admin">⚡ Administrateur</span>
+                                    }
+                                </div>
+                                <p class="profile-email">@Auth.Email</p>
+                                <p class="profile-provider">Connecté via @Auth.ReservedProvider</p>
+                            }
+                            else
+                            {
+                                <span class="badge badge-guest">Invité</span>
+                                <p class="profile-hint">Votre pseudo n'est pas protégé</p>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Section Admin -->
+            @if (Auth.IsAdmin && Auth.UserId.HasValue)
+            {
+                <div class="settings-card card-admin">
+                    <div class="card-header">
+                        <h2>⚡ Administration</h2>
+                    </div>
+                    <div class="card-content">
+                        <p class="card-description">Gérez les utilisateurs et leurs permissions</p>
+                        <button class="btn btn-admin" @onclick="OpenAdminPanel">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+                            </svg>
+                            Ouvrir le panneau d'administration
+                        </button>
+                    </div>
+                </div>
+            }
+
             <!-- Section Gestion des salons -->
             @if (Auth.IsReserved && Auth.IsAuthenticated)
             {
-                <div class="settings-section">
-                    <h2>🏠 Gestion des salons</h2>
-                    <p class="section-description">Créez vos propres salons de discussion</p>
-
-                    <div class="channel-creator">
-                        <input @bind="newChannelName"
-                               placeholder="Nom du nouveau salon..."
-                               maxlength="20"
-                               @onkeyup="HandleChannelKeyPress" />
-                        <button @onclick="CreateChannel"
-                                disabled="@string.IsNullOrWhiteSpace(newChannelName)"
-                                class="btn-primary">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                            Créer le salon
-                        </button>
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h2>🏠 Gestion des salons</h2>
                     </div>
-
-                    @if (!string.IsNullOrEmpty(channelMessage))
-                    {
-                        <div class="@(channelError ? "error-message" : "success-message")">
-                            @channelMessage
+                    <div class="card-content">
+                        <p class="card-description">Créez vos propres salons de discussion</p>
+                        <div class="input-group">
+                            <input @bind="newChannelName"
+                                   placeholder="Nom du nouveau salon..."
+                                   maxlength="20"
+                                   @onkeyup="HandleChannelKeyPress"
+                                   class="input-text" />
+                            <button @onclick="CreateChannel"
+                                    disabled="@string.IsNullOrWhiteSpace(newChannelName)"
+                                    class="btn btn-primary">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Créer
+                            </button>
                         </div>
-                    }
+                        @if (!string.IsNullOrEmpty(channelMessage))
+                        {
+                            <div class="@(channelError ? "alert alert-error" : "alert alert-success")">
+                                @channelMessage
+                            </div>
+                        }
+                    </div>
                 </div>
             }
 
             <!-- Section Compte -->
-            <div class="settings-section danger-section">
-                <h2>⚠️ Gestion du compte</h2>
-
-                @if (Auth.IsReserved)
-                {
-                    <div class="danger-zone">
-                        <div class="danger-info">
+            <div class="settings-card card-danger">
+                <div class="card-header">
+                    <h2>⚠️ Gestion du compte</h2>
+                </div>
+                <div class="card-content">
+                    @if (Auth.IsReserved)
+                    {
+                        <div class="danger-zone">
                             <h3>Oublier ce pseudo</h3>
                             <p>Cette action supprimera définitivement la réservation de votre pseudo. Vous serez déconnecté et ne pourrez plus utiliser ce pseudo réservé.</p>
+                            <button @onclick="ShowForgetConfirmation" class="btn btn-danger">
+                                Oublier mon pseudo
+                            </button>
                         </div>
-                        <button @onclick="ShowForgetConfirmation" class="btn-danger">
-                            Oublier mon pseudo
-                        </button>
-                    </div>
-
-                    <div class="logout-section">
-                        <button @onclick="Logout" class="btn-secondary">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                                <polyline points="16 17 21 12 16 7" />
-                                <line x1="21" y1="12" x2="9" y2="12" />
-                            </svg>
-                            Se déconnecter
-                        </button>
-                    </div>
-                }
-                else
-                {
-                    <div class="info-box">
-                        <p>En tant qu'invité, vous pouvez réserver votre pseudo pour le protéger.</p>
-                        <button @onclick="GoToReserve" class="btn-secondary">
-                            Réserver mon pseudo
-                        </button>
-                    </div>
-
-                    <div class="logout-section">
-                        <button @onclick="Logout" class="btn-secondary">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                                <polyline points="16 17 21 12 16 7" />
-                                <line x1="21" y1="12" x2="9" y2="12" />
-                            </svg>
-                            Se déconnecter
-                        </button>
-                    </div>
-                }
+                        <div class="logout-zone">
+                            <button @onclick="Logout" class="btn btn-secondary">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                    <polyline points="16 17 21 12 16 7" />
+                                    <line x1="21" y1="12" x2="9" y2="12" />
+                                </svg>
+                                Se déconnecter
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="info-zone">
+                            <p>En tant qu'invité, vous pouvez réserver votre pseudo pour le protéger.</p>
+                            <button @onclick="GoToReserve" class="btn btn-primary">
+                                Réserver mon pseudo
+                            </button>
+                        </div>
+                        <div class="logout-zone">
+                            <button @onclick="Logout" class="btn btn-secondary">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                    <polyline points="16 17 21 12 16 7" />
+                                    <line x1="21" y1="12" x2="9" y2="12" />
+                                </svg>
+                                Se déconnecter
+                            </button>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     </div>
@@ -149,21 +182,26 @@ else
     @if (showForgetModal)
     {
         <div class="modal-overlay" @onclick="HideForgetConfirmation">
-            <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-box" @onclick:stopPropagation="true">
                 <h2>⚠️ Confirmer la suppression</h2>
                 <p>Êtes-vous sûr de vouloir oublier le pseudo <strong>@Auth.Username</strong> ?</p>
-                <p class="warning-text">Cette action est irréversible. Vous perdrez définitivement la réservation de ce pseudo.</p>
-
+                <p class="modal-warning">Cette action est irréversible. Vous perdrez définitivement la réservation de ce pseudo.</p>
                 <div class="modal-actions">
-                    <button @onclick="HideForgetConfirmation" class="btn-secondary">
+                    <button @onclick="HideForgetConfirmation" class="btn btn-secondary">
                         Annuler
                     </button>
-                    <button @onclick="ConfirmForget" class="btn-danger">
+                    <button @onclick="ConfirmForget" class="btn btn-danger">
                         Oui, oublier ce pseudo
                     </button>
                 </div>
             </div>
         </div>
+    }
+
+    @if (showAdminPanel && Auth.IsAdmin && Auth.UserId.HasValue)
+    {
+        <AdminPanel CurrentUserId="@Auth.UserId.Value"
+                    OnClose="CloseAdminPanel" />
     }
 }
 
@@ -173,6 +211,7 @@ else
     private string channelMessage = string.Empty;
     private bool channelError = false;
     private bool showForgetModal = false;
+    private bool showAdminPanel = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -194,6 +233,16 @@ else
     private void GoToReserve()
     {
         Navigation.NavigateTo($"/reserve?username={Uri.EscapeDataString(Auth.Username ?? "")}");
+    }
+
+    private void OpenAdminPanel()
+    {
+        showAdminPanel = true;
+    }
+
+    private void CloseAdminPanel()
+    {
+        showAdminPanel = false;
     }
 
     private async Task CreateChannel()
@@ -225,7 +274,6 @@ else
                 channelError = false;
                 newChannelName = string.Empty;
 
-                // Rediriger vers le chat après 2 secondes
                 await Task.Delay(2000);
                 Navigation.NavigateTo("/chat");
             }
@@ -278,7 +326,6 @@ else
 
     private async Task Logout()
     {
-        // Simple déconnexion sans oublier le pseudo
         await Auth.LogoutAsync();
         Http.DefaultRequestHeaders.Authorization = null;
         Navigation.NavigateTo("/login");

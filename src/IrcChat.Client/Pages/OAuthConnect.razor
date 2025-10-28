@@ -166,7 +166,14 @@
             var result = await response.Content.ReadFromJsonAsync<OAuthLoginResponse>();
             if (result != null)
             {
-                await Auth.SetAuthStateAsync(result.Token, result.Username, result.Email, result.AvatarUrl, result.UserId, provider);
+                await Auth.SetAuthStateAsync(
+                    result.Token,
+                    result.Username,
+                    result.Email,
+                    result.AvatarUrl,
+                    result.UserId,
+                    provider,
+                    result.IsAdmin); // Ajout du flag IsAdmin
 
                 Http.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.Token);
@@ -218,7 +225,14 @@
             var result = await response.Content.ReadFromJsonAsync<OAuthLoginResponse>();
             if (result != null)
             {
-                await Auth.SetAuthStateAsync(result.Token, result.Username, result.Email, result.AvatarUrl, result.UserId, provider);
+                await Auth.SetAuthStateAsync(
+                    result.Token,
+                    result.Username,
+                    result.Email,
+                    result.AvatarUrl,
+                    result.UserId,
+                    provider,
+                    result.IsAdmin); // Ajout du flag IsAdmin
 
                 Http.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.Token);

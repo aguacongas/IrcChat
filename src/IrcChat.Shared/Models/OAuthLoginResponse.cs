@@ -1,4 +1,5 @@
-﻿namespace IrcChat.Shared.Models;
+﻿// src/IrcChat.Shared/Models/OAuthLoginResponse.cs
+namespace IrcChat.Shared.Models;
 
 public class OAuthLoginResponse
 {
@@ -8,4 +9,5 @@ public class OAuthLoginResponse
     public string? AvatarUrl { get; set; }
     public Guid UserId { get; set; }
     public bool IsNewUser { get; set; }
+    public bool IsAdmin { get; set; }
 }

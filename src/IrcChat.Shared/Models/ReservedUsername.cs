@@ -1,4 +1,5 @@
-﻿namespace IrcChat.Shared.Models;
+﻿// src/IrcChat.Shared/Models/ReservedUsername.cs
+namespace IrcChat.Shared.Models;
 
 public class ReservedUsername
 {
@@ -11,4 +12,5 @@ public class ReservedUsername
     public string? AvatarUrl { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime LastLoginAt { get; set; }
+    public bool IsAdmin { get; set; } = false;
 }

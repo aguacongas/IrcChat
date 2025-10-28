@@ -1,10 +1,10 @@
-﻿using IrcChat.Shared.Models;
+﻿// src/IrcChat.Client/Services/UnifiedAuthService.cs
+using IrcChat.Shared.Models;
 using System.Text.Json;
 
 namespace IrcChat.Client.Services;
 
-public class UnifiedAuthService(LocalStorageService localStorage,
-    HttpClient httpClient)
+public class UnifiedAuthService(LocalStorageService localStorage, HttpClient httpClient)
 {
     private const string AUTH_KEY = "ircchat_unified_auth";
 
@@ -15,6 +15,7 @@ public class UnifiedAuthService(LocalStorageService localStorage,
     private string? _email;
     private string? _avatarUrl;
     private Guid? _userId;
+    private bool _isAdmin;
     private bool _isInitialized = false;
 
     public event Action? OnAuthStateChanged;
@@ -22,6 +23,7 @@ public class UnifiedAuthService(LocalStorageService localStorage,
     public bool HasUsername => !string.IsNullOrEmpty(_username);
     public bool IsReserved => _isReserved;
     public bool IsAuthenticated => !string.IsNullOrEmpty(_token);
+    public bool IsAdmin => _isAdmin;
     public string? Username => _username;
     public string? Token => _token;
     public ExternalAuthProvider? ReservedProvider => _reservedProvider;
@@ -29,7 +31,6 @@ public class UnifiedAuthService(LocalStorageService localStorage,
     public string? AvatarUrl => _avatarUrl;
     public Guid? UserId => _userId;
 
-    // NOUVEAU: Indique si on peut oublier le pseudo
     public bool CanForgetUsername => HasUsername && (!IsReserved || IsAuthenticated);
 
     public async Task InitializeAsync()
@@ -51,7 +52,7 @@ public class UnifiedAuthService(LocalStorageService localStorage,
         OnAuthStateChanged?.Invoke();
     }
 
-    public async Task SetAuthStateAsync(string token, string username, string? email, string? avatarUrl, Guid userId, ExternalAuthProvider provider)
+    public async Task SetAuthStateAsync(string token, string username, string? email, string? avatarUrl, Guid userId, ExternalAuthProvider provider, bool isAdmin = false)
     {
         _token = token;
         _username = username;
@@ -60,6 +61,7 @@ public class UnifiedAuthService(LocalStorageService localStorage,
         _userId = userId;
         _isReserved = true;
         _reservedProvider = provider;
+        _isAdmin = isAdmin;
 
         await SaveToLocalStorageAsync();
         OnAuthStateChanged?.Invoke();
@@ -71,14 +73,11 @@ public class UnifiedAuthService(LocalStorageService localStorage,
         {
             try
             {
-                // Appel API pour la déconnexion serveur (efface BDD et cookie d'auth)
-                // L'appel doit utiliser le Token JWT comme Bearer.
                 httpClient.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token);
 
                 await httpClient.PostAsync("api/oauth/forget-username", null);
 
-                // Retirer le header après l'appel
                 httpClient.DefaultRequestHeaders.Authorization = null;
             }
             catch (Exception ex)
@@ -87,10 +86,8 @@ public class UnifiedAuthService(LocalStorageService localStorage,
             }
         }
 
-        // Nettoyage local (efface tous les cookies et le stockage)
         await ClearLocalStorageAsync();
 
-        // Réinitialisation de l'état du service
         _username = null;
         _token = null;
         _isReserved = false;
@@ -98,6 +95,7 @@ public class UnifiedAuthService(LocalStorageService localStorage,
         _email = null;
         _avatarUrl = null;
         _userId = null;
+        _isAdmin = false;
 
         OnAuthStateChanged?.Invoke();
     }
@@ -108,8 +106,7 @@ public class UnifiedAuthService(LocalStorageService localStorage,
         _email = null;
         _avatarUrl = null;
         _userId = null;
-        // NE PAS changer isReserved et reservedProvider
-        // Le pseudo reste réservé mais on n'est plus authentifié
+        _isAdmin = false;
 
         await SaveToLocalStorageAsync();
         OnAuthStateChanged?.Invoke();
@@ -124,6 +121,7 @@ public class UnifiedAuthService(LocalStorageService localStorage,
         _email = null;
         _avatarUrl = null;
         _userId = null;
+        _isAdmin = false;
 
         await ClearLocalStorageAsync();
         OnAuthStateChanged?.Invoke();
@@ -139,7 +137,8 @@ public class UnifiedAuthService(LocalStorageService localStorage,
             ReservedProvider = _reservedProvider,
             Email = _email,
             AvatarUrl = _avatarUrl,
-            UserId = _userId
+            UserId = _userId,
+            IsAdmin = _isAdmin
         };
 
         var json = JsonSerializer.Serialize(authData);
@@ -163,6 +162,7 @@ public class UnifiedAuthService(LocalStorageService localStorage,
                     _email = authData.Email;
                     _avatarUrl = authData.AvatarUrl;
                     _userId = authData.UserId;
+                    _isAdmin = authData.IsAdmin;
                 }
             }
         }
@@ -183,5 +183,6 @@ public class UnifiedAuthService(LocalStorageService localStorage,
         public string? Email { get; set; }
         public string? AvatarUrl { get; set; }
         public Guid? UserId { get; set; }
+        public bool IsAdmin { get; set; }
     }
 }

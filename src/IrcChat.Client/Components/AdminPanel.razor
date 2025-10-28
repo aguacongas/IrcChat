@@ -1,0 +1,240 @@
+﻿@* src/IrcChat.Client/Components/AdminPanel.razor *@
+@using IrcChat.Shared.Models
+@inject HttpClient Http
+
+<div class="admin-panel-overlay" @onclick="OnClose">
+    <div class="admin-panel-container" @onclick:stopPropagation="true">
+        <div class="admin-panel-header">
+            <h2>⚡ Panneau d'Administration</h2>
+            <button class="close-btn" @onclick="OnClose">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
+        <div class="admin-panel-content">
+            @if (isLoading)
+            {
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Chargement...</p>
+                </div>
+            }
+            else
+            {
+                <div class="user-management-section">
+                    <h3>Gestion des utilisateurs</h3>
+
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-error">⚠️ @errorMessage</div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success">✓ @successMessage</div>
+                    }
+
+                    <div class="users-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Utilisateur</th>
+                                    <th>Email</th>
+                                    <th>Provider</th>
+                                    <th>Statut</th>
+                                    <th>Dernière connexion</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var user in users)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="user-cell">
+                                                @if (!string.IsNullOrEmpty(user.AvatarUrl))
+                                                {
+                                                    <img src="@user.AvatarUrl" alt="Avatar" class="user-avatar" />
+                                                }
+                                                <strong>@user.Username</strong>
+                                            </div>
+                                        </td>
+                                        <td>@user.Email</td>
+                                        <td>
+                                            <span class="provider-badge">@user.Provider</span>
+                                        </td>
+                                        <td>
+                                            @if (user.IsAdmin)
+                                            {
+                                                <span class="status-badge admin">⚡ Admin</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="status-badge user">👤 Utilisateur</span>
+                                            }
+                                        </td>
+                                        <td>@user.LastLoginAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>
+                                            @if (user.Id != CurrentUserId)
+                                            {
+                                                @if (user.IsAdmin)
+                                                {
+                                                    <button class="btn-action demote"
+                                                            @onclick="() => DemoteUser(user.Id, user.Username)"
+                                                            disabled="@isProcessing">
+                                                        Révoquer Admin
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn-action promote"
+                                                            @onclick="() => PromoteUser(user.Id, user.Username)"
+                                                            disabled="@isProcessing">
+                                                        Promouvoir Admin
+                                                    </button>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="self-indicator">(Vous)</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Guid CurrentUserId { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private List<UserInfo> users = new();
+    private bool isLoading = true;
+    private bool isProcessing = false;
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        isLoading = true;
+        errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var response = await Http.GetFromJsonAsync<List<UserInfo>>("/api/admin-management/users");
+            if (response != null)
+            {
+                users = response;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Erreur lors du chargement des utilisateurs: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PromoteUser(Guid userId, string username)
+    {
+        if (isProcessing) return;
+
+        isProcessing = true;
+        errorMessage = null;
+        successMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var response = await Http.PostAsync($"/api/admin-management/{userId}/promote", null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = $"{username} a été promu administrateur";
+                await LoadUsers();
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                errorMessage = $"Erreur: {error}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Erreur lors de la promotion: " + ex.Message;
+        }
+        finally
+        {
+            isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DemoteUser(Guid userId, string username)
+    {
+        if (isProcessing) return;
+
+        isProcessing = true;
+        errorMessage = null;
+        successMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var response = await Http.PostAsync($"/api/admin-management/{userId}/demote", null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = $"Le statut d'administrateur de {username} a été révoqué";
+                await LoadUsers();
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                errorMessage = $"Erreur: {error}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Erreur lors de la révocation: " + ex.Message;
+        }
+        finally
+        {
+            isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private class UserInfo
+    {
+        public Guid Id { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public ExternalAuthProvider Provider { get; set; }
+        public bool IsAdmin { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime LastLoginAt { get; set; }
+        public string? AvatarUrl { get; set; }
+    }
+}

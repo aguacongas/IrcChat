@@ -171,10 +171,11 @@ code {
     flex-direction: column;
 }
 
+/* User info avec settings icon */
 .user-info {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 12px;
     padding: 15px;
     background: #1e1e1e;
     border-radius: 8px;
@@ -190,6 +191,8 @@ code {
 .settings-icon {
     color: #8ab4f8;
     transition: transform 0.2s;
+    flex-shrink: 0;
+    margin-left: auto;
 }
 
 .user-info:hover .settings-icon {
@@ -199,6 +202,10 @@ code {
 .current-user {
     font-weight: bold;
     color: #8ab4f8;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .logout-btn {
@@ -620,12 +627,11 @@ code {
     }
 
 /* Badges */
-.badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: bold;
+.badges {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-top: 4px;
 }
 
     .badge.verified {
@@ -638,16 +644,25 @@ code {
         color: white;
     }
 
-/* Avatar dans le user-info */
+    /* Badge admin */
+    .badge.admin {
+        background: linear-gradient(135deg, #8ab4f8 0%, #48bb78 100%);
+        color: #000;
+        font-weight: bold;
+    }
+
+/* Avatar */
 .avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
     object-fit: cover;
+    flex-shrink: 0;
 }
 
 .avatar-placeholder {
     font-size: 24px;
+    flex-shrink: 0;
 }
 
 .user-details {
@@ -655,6 +670,7 @@ code {
     flex-direction: column;
     gap: 4px;
     flex: 1;
+    min-width: 0;
 }
 
     /* Ajustements pour le badge dans user-details */
@@ -763,9 +779,16 @@ code {
             cursor: not-allowed;
         }
 
-/* Hash pour les salons */
+/* Channel hash */
 .channel-hash {
     color: #8ab4f8;
     margin-right: 5px;
     font-weight: bold;
+}
+
+@media (max-width: 768px) {
+    .badges {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }

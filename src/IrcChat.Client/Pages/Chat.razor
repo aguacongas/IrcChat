@@ -29,6 +29,7 @@ else
         <Sidebar Username="@currentUsername"
                  AvatarUrl="@avatarUrl"
                  IsOAuthUser="@Auth.IsReserved"
+                 IsAdmin="@Auth.IsAdmin"
                  CurrentChannel="@currentChannel"
                  Channels="@channels"
                  Users="@users"
@@ -127,7 +128,7 @@ else
         }
     }
 
-    // Handlers pour salons publics
+    // Handlers pour canaux publics
     private void OnMessageReceived(Message message)
     {
         if (message.Channel == currentChannel)
@@ -220,35 +221,6 @@ else
     private void GoToSettings()
     {
         Navigation.NavigateTo("/settings");
-    }
-
-    private async Task Logout()
-    {
-        if (!string.IsNullOrEmpty(currentChannel))
-        {
-            await ChatService.LeaveChannel(currentChannel);
-        }
-
-        currentChannel = "";
-        channels.Clear();
-        messages.Clear();
-        users.Clear();
-        isConnected = false;
-
-        await Auth.ClearAllAsync();
-        Http.DefaultRequestHeaders.Authorization = null;
-
-        Navigation.NavigateTo("/login");
-    }
-
-    private async Task ForgetUsername()
-    {
-        // Cette méthode n'est plus utilisée, la gestion se fait dans Settings.razor
-    }
-
-    private async Task CreateChannel(string channelName)
-    {
-        // Cette méthode n'est plus utilisée, la création se fait dans Settings.razor
     }
 
     private async Task SwitchChannel(string channel)
@@ -368,13 +340,11 @@ else
 
         if (success)
         {
-            // Fermer la fenêtre de chat si c'est la conversation active
             if (selectedPrivateUser == otherUsername)
             {
                 ClosePrivateChat();
             }
 
-            // Recharger la liste des conversations
             await LoadPrivateConversations();
             StateHasChanged();
         }
