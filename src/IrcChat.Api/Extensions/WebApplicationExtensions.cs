@@ -23,7 +23,6 @@ public static class WebApplicationExtensions
         try
         {
             // Appliquer les migrations automatiquement
-            await db.Database.EnsureDeletedAsync();
             await db.Database.MigrateAsync();
             logger.LogInformation("✅ Base de données PostgreSQL migrée avec succès");
 
