@@ -70,6 +70,7 @@ public static class WebApplicationExtensions
            .MapAuthEndpoints()
            .MapMessageEndpoints()
            .MapChannelEndpoints()
+           .MapChannelMuteEndpoints()
            .MapAdminEndpoints()
            .MapPrivateMessageEndpoints()
            .MapAdminManagementEndpoints()

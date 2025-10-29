@@ -5,11 +5,12 @@ using Microsoft.EntityFrameworkCore;
 using IrcChat.Api.Services;
 using Microsoft.Extensions.Options;
 using IrcChat.Api.Extensions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace IrcChat.Api.Hubs;
 
 public class ChatHub(
-    ChatDbContext db, 
+    ChatDbContext db,
     IOptions<ConnectionManagerOptions> options) : Hub
 {
     private readonly string _instanceId = options.Value.GetInstanceId();
@@ -47,6 +48,16 @@ public class ChatHub(
         // Envoyer la liste mise à jour des utilisateurs
         var channelUsers = await GetChannelUsers(channel);
         await Clients.Group(channel).SendAsync("UpdateUserList", channelUsers);
+
+        // Envoyer le statut mute du canal
+        var channelInfo = await db.Channels
+            .FirstOrDefaultAsync(c => c.Name == channel);
+
+        if (channelInfo != null)
+        {
+            await Clients.Group(channel).SendAsync("ChannelMuteStatusChanged",
+                channel, channelInfo.IsMuted);
+        }
     }
 
     public async Task LeaveChannel(string channel)
@@ -68,8 +79,31 @@ public class ChatHub(
         }
     }
 
+    [SuppressMessage("Performance", "CA1862", Justification = "Not needed in SQL")]
     public async Task SendMessage(SendMessageRequest request)
     {
+        // Vérifier si le canal est muted
+        var channel = await db.Channels
+            .FirstOrDefaultAsync(c => c.Name.ToLower() == request.Channel.ToLower());
+
+        if (channel != null && channel.IsMuted)
+        {
+            // Vérifier si l'utilisateur est créateur ou admin
+            var user = await db.ReservedUsernames
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower());
+
+            bool isCreator = channel.CreatedBy.ToLower() == request.Username.ToLower();
+            bool isAdmin = user?.IsAdmin ?? false;
+
+            if (!isCreator && !isAdmin)
+            {
+                // Envoyer un message d'erreur uniquement à l'expéditeur
+                await Clients.Caller.SendAsync("MessageBlocked",
+                    "Ce salon est actuellement muet. Seul le créateur ou un administrateur peut envoyer des messages.");
+                return;
+            }
+        }
+
         // Mettre à jour la dernière activité
         var connectedUser = await db.ConnectedUsers
             .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId && u.Channel == request.Channel);
@@ -164,7 +198,7 @@ public class ChatHub(
     {
         var user = await db.ConnectedUsers
             .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
-            
+
         if (user != null)
         {
             user.LastPing = DateTime.UtcNow;

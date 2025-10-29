@@ -17,6 +17,10 @@ public class ChatService(IOptions<ApiSettings> apiSettings, PrivateMessageServic
     public event Action<string, string>? OnUserLeft;
     public event Action<List<User>>? OnUserListUpdated;
 
+    // Nouveaux events pour le mute
+    public event Action<string, bool>? OnChannelMuteStatusChanged;
+    public event Action<string>? OnMessageBlocked;
+
     public async Task InitializeAsync(string? token = null)
     {
         var hubUrl = !string.IsNullOrEmpty(_apiSettings.SignalRHubUrl)
@@ -53,6 +57,17 @@ public class ChatService(IOptions<ApiSettings> apiSettings, PrivateMessageServic
         _hubConnection.On<List<User>>("UpdateUserList", users =>
         {
             OnUserListUpdated?.Invoke(users);
+        });
+
+        // Nouveaux handlers pour le mute
+        _hubConnection.On<string, bool>("ChannelMuteStatusChanged", (channel, isMuted) =>
+        {
+            OnChannelMuteStatusChanged?.Invoke(channel, isMuted);
+        });
+
+        _hubConnection.On<string>("MessageBlocked", reason =>
+        {
+            OnMessageBlocked?.Invoke(reason);
         });
 
         // Handlers pour les messages privés

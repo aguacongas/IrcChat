@@ -45,8 +45,11 @@ else
                   IsConnected="@isConnected"
                   Messages="@messages"
                   Users="@users"
+                  IsMuted="@isCurrentChannelMuted"
+                  CanManage="@CanManageCurrentChannel()"
                   OnMessageSent="SendMessage"
-                  OnUserClicked="HandleUserClicked" />
+                  OnUserClicked="HandleUserClicked"
+                  OnMuteStatusChanged="HandleMuteStatusChanged" />
     </div>
 
     @if (showPrivateChat && !string.IsNullOrEmpty(selectedPrivateUser))
@@ -57,6 +60,13 @@ else
                            IsConnected="@isConnected"
                            OnSendMessage="SendPrivateMessage"
                            OnClose="ClosePrivateChat" />
+    }
+
+    @if (!string.IsNullOrEmpty(muteNotification))
+    {
+        <div class="mute-notification">
+            @muteNotification
+        </div>
     }
 }
 
@@ -69,6 +79,8 @@ else
     private List<User> users = new();
     private bool isConnected = false;
     private bool isInitialized = false;
+    private bool isCurrentChannelMuted = false;
+    private string muteNotification = "";
 
     // Messages privés
     private List<PrivateConversation> privateConversations = new();
@@ -120,6 +132,11 @@ else
         {
             await ChatService.InitializeAsync(Auth.Token);
             isConnected = true;
+
+            // Écouter les changements de statut mute
+            ChatService.OnChannelMuteStatusChanged += OnChannelMuteStatusChanged;
+            ChatService.OnMessageBlocked += OnMessageBlocked;
+
             StateHasChanged();
         }
         catch
@@ -158,6 +175,28 @@ else
     {
         users = updatedUsers;
         InvokeAsync(StateHasChanged);
+    }
+
+    // Nouveaux handlers pour le mute
+    private void OnChannelMuteStatusChanged(string channel, bool isMuted)
+    {
+        if (channel == currentChannel)
+        {
+            isCurrentChannelMuted = isMuted;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OnMessageBlocked(string reason)
+    {
+        muteNotification = reason;
+        InvokeAsync(async () =>
+        {
+            StateHasChanged();
+            await Task.Delay(4000);
+            muteNotification = "";
+            StateHasChanged();
+        });
     }
 
     // Handlers pour messages privés
@@ -233,6 +272,10 @@ else
         currentChannel = channel;
         await LoadMessages();
         await ChatService.JoinChannel(currentUsername, channel);
+
+        // Charger le statut mute
+        var channelInfo = channels.FirstOrDefault(c => c.Name == channel);
+        isCurrentChannelMuted = channelInfo?.IsMuted ?? false;
     }
 
     private async Task LoadChannels()
@@ -350,12 +393,37 @@ else
         }
     }
 
+    private async Task HandleMuteStatusChanged(bool isMuted)
+    {
+        isCurrentChannelMuted = isMuted;
+
+        // Recharger les informations du canal
+        await LoadChannels();
+
+        StateHasChanged();
+    }
+
+    private bool CanManageCurrentChannel()
+    {
+        if (string.IsNullOrEmpty(currentChannel)) return false;
+
+        var channel = channels.FirstOrDefault(c => c.Name == currentChannel);
+        if (channel == null) return false;
+
+        bool isCreator = channel.CreatedBy.Equals(currentUsername, StringComparison.OrdinalIgnoreCase);
+        bool isAdmin = Auth.IsAdmin;
+
+        return isCreator || isAdmin;
+    }
+
     public async ValueTask DisposeAsync()
     {
         ChatService.OnMessageReceived -= OnMessageReceived;
         ChatService.OnUserJoined -= OnUserJoined;
         ChatService.OnUserLeft -= OnUserLeft;
         ChatService.OnUserListUpdated -= OnUserListUpdated;
+        ChatService.OnChannelMuteStatusChanged -= OnChannelMuteStatusChanged;
+        ChatService.OnMessageBlocked -= OnMessageBlocked;
 
         PrivateMessageService.OnPrivateMessageReceived -= OnPrivateMessageReceived;
         PrivateMessageService.OnPrivateMessageSent -= OnPrivateMessageSent;
