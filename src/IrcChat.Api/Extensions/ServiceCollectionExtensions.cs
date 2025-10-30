@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -103,16 +103,10 @@ public static class ServiceCollectionExtensions
         var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
             ?? ["https://localhost:7001", "http://localhost:5001"];
 
-        services.AddCors(options =>
-        {
-            options.AddPolicy("AllowBlazor", policy =>
-            {
-                policy.WithOrigins(allowedOrigins)
+        services.AddCors(options => options.AddPolicy("AllowBlazor", policy => policy.WithOrigins(allowedOrigins)
                       .AllowAnyHeader()
                       .AllowAnyMethod()
-                      .AllowCredentials();
-            });
-        });
+                      .AllowCredentials()));
 
         return services;
     }

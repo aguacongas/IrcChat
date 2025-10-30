@@ -1,4 +1,5 @@
-﻿// src/IrcChat.Api/Services/AutoMuteService.cs
+// src/IrcChat.Api/Services/AutoMuteService.cs
+using System.Diagnostics.CodeAnalysis;
 using IrcChat.Api.Data;
 using IrcChat.Api.Hubs;
 using Microsoft.AspNetCore.SignalR;
@@ -38,6 +39,7 @@ public class AutoMuteService(
         }
     }
 
+    [SuppressMessage("Performance", "CA1862:Use the 'StringComparison' method overloads to perform case-insensitive string comparisons", Justification = "Can't be tranlater as SQL")]
     private async Task CheckAndApplyAutoMute()
     {
         await using var db = await dbContextFactory.CreateDbContextAsync();
@@ -55,7 +57,7 @@ public class AutoMuteService(
                 .OrderByDescending(u => u.LastPing)
                 .FirstOrDefaultAsync();
 
-            bool shouldMute = false;
+            var shouldMute = false;
 
             if (ownerConnection == null)
             {

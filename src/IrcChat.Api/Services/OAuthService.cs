@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -30,15 +30,6 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
                 ClientSecret = configuration["OAuth:Facebook:AppSecret"] ?? "",
                 Scope = "email public_profile"
             },
-            ExternalAuthProvider.Apple => new OAuthConfig
-            {
-                AuthorizationEndpoint = "https://appleid.apple.com/auth/authorize",
-                TokenEndpoint = "https://appleid.apple.com/auth/token",
-                UserInfoEndpoint = "https://api.twitter.com/2/users/me",
-                ClientId = configuration["OAuth:Twitter:ClientId"] ?? "",
-                ClientSecret = configuration["OAuth:Twitter:ClientSecret"] ?? "",
-                Scope = "name email"
-            },
             ExternalAuthProvider.Microsoft => new OAuthConfig
             {
                 AuthorizationEndpoint = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize",
@@ -66,23 +57,9 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
             { "code", code },
             { "redirect_uri", redirectUri },
             { "client_id", config.ClientId },
-            { "code_verifier", codeVerifier } // AJOUT du code_verifier
+            { "code_verifier", codeVerifier }, // AJOUT du code_verifier                                               
+            { "client_secret", config.ClientSecret } // Ajouter client_secret 
         };
-
-        // Ajouter client_secret sauf pour Twitter qui utilise Basic Auth
-        if (provider != ExternalAuthProvider.Apple)
-        {
-            parameters.Add("client_secret", config.ClientSecret);
-        }
-
-        // Twitter nécessite une authentification Basic
-        if (provider == ExternalAuthProvider.Apple)
-        {
-            var authValue = Convert.ToBase64String(
-                Encoding.UTF8.GetBytes($"{config.ClientId}:{config.ClientSecret}"));
-            httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Basic", authValue);
-        }
 
         try
         {
@@ -122,8 +99,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
 
     public async Task<ExternalUserInfo?> GetUserInfoAsync(
         ExternalAuthProvider provider,
-        string accessToken,
-        string? idToken)
+        string accessToken)
     {
         try
         {
@@ -131,7 +107,6 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
             {
                 ExternalAuthProvider.Google => await GetGoogleUserInfo(accessToken),
                 ExternalAuthProvider.Facebook => await GetFacebookUserInfo(accessToken),
-                ExternalAuthProvider.Apple => idToken != null ? await GetAppleUserInfo(idToken) : null,
                 ExternalAuthProvider.Microsoft => await GetMicrosoftUserInfo(accessToken),
                 _ => null
             };
@@ -150,7 +125,10 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
 
         var response = await httpClient.GetAsync("https://www.googleapis.com/oauth2/v2/userinfo");
 
-        if (!response.IsSuccessStatusCode) return null;
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
 
         var json = await response.Content.ReadAsStringAsync();
         var data = JsonSerializer.Deserialize<JsonElement>(json);
@@ -169,7 +147,10 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
         var response = await httpClient.GetAsync(
             $"https://graph.facebook.com/me?fields=id,name,email,picture&access_token={accessToken}");
 
-        if (!response.IsSuccessStatusCode) return null;
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
 
         var json = await response.Content.ReadAsStringAsync();
         var data = JsonSerializer.Deserialize<JsonElement>(json);
@@ -214,7 +195,10 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
 
         var response = await httpClient.GetAsync("https://graph.microsoft.com/v1.0/me");
 
-        if (!response.IsSuccessStatusCode) return null;
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
 
         var json = await response.Content.ReadAsStringAsync();
         var data = JsonSerializer.Deserialize<JsonElement>(json);

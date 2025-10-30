@@ -1,4 +1,4 @@
-﻿using IrcChat.Api.Data;
+using IrcChat.Api.Data;
 using IrcChat.Api.Hubs;
 using IrcChat.Api.Services;
 using IrcChat.Shared.Models;
@@ -118,7 +118,9 @@ public static class WebApplicationExtensions
                 .AnyAsync(r => r.Username.ToLower() == request.Username.ToLower());
 
             if (exists)
+            {
                 return Results.BadRequest(new { error = "username_taken", message = "Ce pseudo est déjà réservé" });
+            }
 
             // Échanger le code contre un token
             var tokenResponse = await oauthService.ExchangeCodeForTokenAsync(
@@ -128,20 +130,26 @@ public static class WebApplicationExtensions
                 request.CodeVerifier);
 
             if (tokenResponse == null)
+            {
                 return Results.Unauthorized();
+            }
 
             // Obtenir les infos utilisateur
-            var userInfo = await oauthService.GetUserInfoAsync(request.Provider, tokenResponse.AccessToken, tokenResponse.IdToken);
+            var userInfo = await oauthService.GetUserInfoAsync(request.Provider, tokenResponse.AccessToken);
 
             if (userInfo == null)
+            {
                 return Results.Unauthorized();
+            }
 
             // Vérifier si cet utilisateur OAuth n'a pas déjà un pseudo réservé
             var existingUser = await context.ReservedUsernames
                 .FirstOrDefaultAsync(r => r.Provider == request.Provider && r.ExternalUserId == userInfo.Id);
 
             if (existingUser != null)
+            {
                 return Results.BadRequest(new { error = "already_reserved", message = "Vous avez déjà un pseudo réservé", username = existingUser.Username });
+            }
 
             // Le premier utilisateur est automatiquement admin
             var isFirstUser = !await context.ReservedUsernames.AnyAsync();
@@ -194,20 +202,26 @@ public static class WebApplicationExtensions
                 request.CodeVerifier);
 
             if (tokenResponse == null)
+            {
                 return Results.Unauthorized();
+            }
 
             // Obtenir les infos utilisateur
-            var userInfo = await oauthService.GetUserInfoAsync(request.Provider, tokenResponse.AccessToken, tokenResponse.IdToken);
+            var userInfo = await oauthService.GetUserInfoAsync(request.Provider, tokenResponse.AccessToken);
 
             if (userInfo == null)
+            {
                 return Results.Unauthorized();
+            }
 
             // Chercher l'utilisateur
             var user = await context.ReservedUsernames
                 .FirstOrDefaultAsync(r => r.Provider == request.Provider && r.ExternalUserId == userInfo.Id);
 
             if (user == null)
+            {
                 return Results.NotFound(new { error = "not_found", message = "Aucun pseudo réservé trouvé" });
+            }
 
             // Mettre à jour
             user.LastLoginAt = DateTime.UtcNow;
@@ -375,7 +389,9 @@ public static class WebApplicationExtensions
     {
         var admin = await auth.ValidateAdmin(req.Username, req.Password);
         if (admin == null)
+        {
             return Results.Unauthorized();
+        }
 
         var token = auth.GenerateToken(admin);
         return Results.Ok(new LoginResponse { Token = token, Username = admin.Username });
@@ -492,7 +508,9 @@ public static class WebApplicationExtensions
     {
         var msg = await db.Messages.FindAsync(id);
         if (msg == null)
+        {
             return Results.NotFound();
+        }
 
         msg.IsDeleted = true;
         await db.SaveChangesAsync();

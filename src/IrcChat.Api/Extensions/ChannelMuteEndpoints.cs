@@ -1,4 +1,4 @@
-﻿using IrcChat.Api.Data;
+using IrcChat.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Claims;
@@ -24,24 +24,30 @@ public static class ChannelMuteEndpoints
                 .FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
 
             if (string.IsNullOrEmpty(username))
+            {
                 return Results.Unauthorized();
+            }
 
             // Trouver le canal
             var channel = await db.Channels
                 .FirstOrDefaultAsync(c => c.Name.ToLower() == channelName.ToLower());
 
             if (channel == null)
+            {
                 return Results.NotFound(new { error = "channel_not_found" });
+            }
 
             // Vérifier si l'utilisateur est le créateur ou admin
             var user = await db.ReservedUsernames
                 .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
 
-            bool isCreator = channel.CreatedBy.ToLower() == username.ToLower();
-            bool isAdmin = user?.IsAdmin ?? false;
+            var isCreator = channel.CreatedBy.ToLower() == username.ToLower();
+            var isAdmin = user?.IsAdmin ?? false;
 
             if (!isCreator && !isAdmin)
+            {
                 return Results.Forbid();
+            }
 
             // Toggle le statut mute
             channel.IsMuted = !channel.IsMuted;
