@@ -38,14 +38,16 @@ public static class ServiceCollectionExtensions
 
         // Configure ConnectionManager options
         services.Configure<ConnectionManagerOptions>(
-            configuration.GetSection(ConnectionManagerOptions.SectionName));
+                configuration.GetSection(ConnectionManagerOptions.SectionName))
+            .Configure<AutoMuteOptions>(
+                configuration.GetSection(AutoMuteOptions.SectionName));
             
         services.AddScoped<AuthService>()
             .AddScoped<OAuthService>()
             .AddSignalR();
 
-
-        services.AddHostedService<ConnectionManagerService>();
+        services.AddHostedService<ConnectionManagerService>()
+            .AddHostedService<AutoMuteService>();
 
         return services;
     }
