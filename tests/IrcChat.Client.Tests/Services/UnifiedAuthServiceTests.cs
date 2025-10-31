@@ -16,7 +16,7 @@ public class UnifiedAuthServiceTests : TestContext
 
     public UnifiedAuthServiceTests()
     {
-        _localStorageMock = new Mock<LocalStorageService>(MockBehavior.Strict, JSRuntime);
+        _localStorageMock = new Mock<LocalStorageService>(MockBehavior.Strict, JSInterop.JSRuntime);
         _httpClientMock = new Mock<HttpClient>(MockBehavior.Strict);
 
         Services.AddSingleton(_localStorageMock.Object);

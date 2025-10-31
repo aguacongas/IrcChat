@@ -4,6 +4,7 @@ using IrcChat.Api.Data;
 using IrcChat.Api.Services;
 using IrcChat.Shared.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -13,7 +14,7 @@ namespace IrcChat.Api.Tests.Services;
 
 public class ConnectionManagerServiceTests : IAsyncDisposable
 {
-    private readonly IDbContextFactory<ChatDbContext> _dbContextFactory;
+    private readonly PooledDbContextFactory<ChatDbContext> _dbContextFactory;
     private readonly Mock<ILogger<ConnectionManagerService>> _loggerMock;
     private readonly IOptions<ConnectionManagerOptions> _options;
 

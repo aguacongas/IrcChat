@@ -7,7 +7,7 @@ namespace IrcChat.E2E.Tests;
 
 public class ChatFlowTests(PlaywrightSetup setup) : IClassFixture<PlaywrightSetup>
 {
-    private const string BaseUrl = "https://localhost:7001";
+    private static readonly string _baseUrl = "https://localhost:7001";
 
     [Fact]
     public async Task SendMessage_ShouldAppearInChatWindow()
@@ -181,7 +181,7 @@ public class ChatFlowTests(PlaywrightSetup setup) : IClassFixture<PlaywrightSetu
 
     private static async Task LoginAsGuest(IPage page, string username)
     {
-        await page.GotoAsync(BaseUrl);
+        await page.GotoAsync(_baseUrl);
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
         await page.FillAsync("input[placeholder*='pseudo']", username);
         await page.WaitForTimeoutAsync(1000);

@@ -2,6 +2,7 @@
 using Bunit;
 using FluentAssertions;
 using IrcChat.Client.Components;
+using Microsoft.AspNetCore.Components;
 using Xunit;
 
 namespace IrcChat.Client.Tests.Components;

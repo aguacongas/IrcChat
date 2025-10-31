@@ -7,7 +7,7 @@ namespace IrcChat.E2E.Tests;
 
 public class LoginFlowTests(PlaywrightSetup setup) : IClassFixture<PlaywrightSetup>
 {
-    private const string BaseUrl = "https://localhost:7001";
+    private static readonly string _baseUrl = "https://localhost:7001";
 
     [Fact]
     public async Task GuestLogin_ShouldNavigateToChatPage()
@@ -18,7 +18,7 @@ public class LoginFlowTests(PlaywrightSetup setup) : IClassFixture<PlaywrightSet
         try
         {
             // Act
-            await page.GotoAsync(BaseUrl);
+            await page.GotoAsync(_baseUrl);
             await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
             // Entrer un nom d'utilisateur
@@ -54,7 +54,7 @@ public class LoginFlowTests(PlaywrightSetup setup) : IClassFixture<PlaywrightSet
         try
         {
             // Act
-            await page.GotoAsync(BaseUrl);
+            await page.GotoAsync(_baseUrl);
             await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
             // Entrer un pseudo qui pourrait être réservé
@@ -63,9 +63,9 @@ public class LoginFlowTests(PlaywrightSetup setup) : IClassFixture<PlaywrightSet
 
             // Assert
             var pageContent = await page.TextContentAsync("body");
-            
+
             // Si le pseudo est disponible
-            if (pageContent.Contains("Entrer en tant qu'invité"))
+            if (pageContent!.Contains("Entrer en tant qu'invité"))
             {
                 var reserveButton = page.Locator("button:has-text('Réserver')");
                 await reserveButton.WaitForAsync(new() { Timeout = 3000 });

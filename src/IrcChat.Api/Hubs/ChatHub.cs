@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using IrcChat.Shared.Models;
 using IrcChat.Api.Data;
 using Microsoft.EntityFrameworkCore;
@@ -92,8 +92,8 @@ public class ChatHub(
             var user = await db.ReservedUsernames
                 .FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower());
 
-            bool isCreator = channel.CreatedBy.ToLower() == request.Username.ToLower();
-            bool isAdmin = user?.IsAdmin ?? false;
+            var isCreator = channel.CreatedBy.ToLower() == request.Username.ToLower();
+            var isAdmin = user?.IsAdmin ?? false;
 
             if (!isCreator && !isAdmin)
             {
@@ -166,7 +166,10 @@ public class ChatHub(
         var currentUser = await db.ConnectedUsers
             .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
 
-        if (currentUser == null) return;
+        if (currentUser == null)
+        {
+            return;
+        }
 
         var unreadMessages = await db.PrivateMessages
             .Where(m => m.RecipientUsername == currentUser.Username

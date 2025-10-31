@@ -23,7 +23,11 @@ public static class WebApplicationExtensions
         try
         {
             // Appliquer les migrations automatiquement
-            await db.Database.MigrateAsync();
+            if (db.Database.IsRelational())
+            {
+                await db.Database.MigrateAsync();
+            }
+
             logger.LogInformation("✅ Base de données PostgreSQL migrée avec succès");
 
             // Créer un admin par défaut si aucun n'existe

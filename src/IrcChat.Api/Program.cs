@@ -18,4 +18,4 @@ await app.InitializeDatabaseAsync();
 app.ConfigurePipeline()
    .MapApiEndpoints();
 
-app.Run();
+await app.RunAsync();
