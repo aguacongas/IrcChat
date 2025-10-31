@@ -47,7 +47,7 @@ public class MessageInputTests : TestContext
         var button = cut.Find("button");
 
         // Act
-        await cut.InvokeAsync(() => input.Change("Test message"));
+        await cut.InvokeAsync(() => input.Input("Test message"));
         await cut.InvokeAsync(() => button.Click());
 
         // Assert

@@ -31,7 +31,7 @@ public class ConnectionManagerServiceTests : IAsyncDisposable
         {
             InstanceId = "test-instance",
             CleanupIntervalSeconds = 1,
-            UserTimeoutSeconds = 2
+            UserTimeoutSeconds = 30
         });
     }
 
