@@ -51,21 +51,31 @@ public static class PlaywrightHelpers
         IPage page,
         string channelName)
     {
+        // Vérifier qu'on est bien sur la page chat
+        await page.WaitForSelectorAsync(".chat-container", new() { Timeout = 10000 });
+
         // Aller dans la page des paramètres via .user-info
         await page.ClickAsync(".user-info");
+        await page.WaitForURLAsync("**/settings", new() { Timeout = 5000 });
         await page.WaitForSelectorAsync(".settings-container", new() { Timeout = 5000 });
 
+        // Remplir le nom du salon
         await page.FillAsync(".settings-container .input-group input", channelName);
-        await page.WaitForTimeoutAsync(1000);
-
-        await page.ClickAsync(".settings-container .input-group .btn-primary");
-        await page.WaitForTimeoutAsync(1000);
-
-        var content = await page.ContentAsync();
-
-        await page.WaitForSelectorAsync(".chat-container", new() { Timeout = 5000 });
-        await page.ClickAsync($"text=#{channelName}");
         await page.WaitForTimeoutAsync(500);
+
+        // Créer le salon
+        await page.ClickAsync(".settings-container .input-group .btn-primary");
+
+        // Attendre la redirection automatique vers /chat (voir Settings.razor ligne 237)
+        await page.WaitForURLAsync("**/chat", new() { Timeout = 5000 });
+        await page.WaitForSelectorAsync(".chat-container", new() { Timeout = 5000 });
+
+        // Attendre que le salon apparaisse dans la liste
+        await page.WaitForSelectorAsync($"text=#{channelName}", new() { Timeout = 5000 });
+
+        // Cliquer sur le salon pour le rejoindre
+        await page.ClickAsync($".channel-list >> text=#{channelName}");
+        await page.WaitForTimeoutAsync(1000);
 
         return channelName;
     }

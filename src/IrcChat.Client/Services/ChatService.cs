@@ -1,4 +1,4 @@
-﻿using IrcChat.Client.Models;
+using IrcChat.Client.Models;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Options;
@@ -144,7 +144,9 @@ public class ChatService(IOptions<ApiSettings> apiSettings, PrivateMessageServic
         }
 
         if (_hubConnection != null)
+        {
             await _hubConnection.DisposeAsync();
+        }
 
         GC.SuppressFinalize(this);
     }
