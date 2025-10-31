@@ -1,4 +1,4 @@
-﻿using IrcChat.Shared.Models;
+using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System.Net.Http.Json;
@@ -37,13 +37,17 @@ public class OAuthClientService(IJSRuntime jsRuntime, HttpClient httpClient)
     {
         var savedState = await jsRuntime.InvokeAsync<string>("sessionStorage.getItem", "oauth_state");
         if (state != savedState)
+        {
             throw new Exception("Invalid state parameter - possible CSRF attack");
+        }
 
         var providerStr = await jsRuntime.InvokeAsync<string>("sessionStorage.getItem", "oauth_provider");
         var codeVerifier = await jsRuntime.InvokeAsync<string>("sessionStorage.getItem", "oauth_code_verifier");
 
         if (!Enum.TryParse<ExternalAuthProvider>(providerStr, out var provider))
+        {
             throw new Exception("Invalid provider");
+        }
 
         var tokenRequest = new OAuthTokenRequest
         {

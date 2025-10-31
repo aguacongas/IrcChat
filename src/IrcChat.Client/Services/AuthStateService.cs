@@ -1,27 +1,24 @@
-﻿namespace IrcChat.Client.Services;
+namespace IrcChat.Client.Services;
 
 public class AuthStateService
 {
-    private string? _token;
-    private string? _username;
-
     public event Action? OnAuthStateChanged;
 
-    public bool IsAuthenticated => !string.IsNullOrEmpty(_token);
-    public string? Username => _username;
-    public string? Token => _token;
+    public bool IsAuthenticated => !string.IsNullOrEmpty(Token);
+    public string? Username { get; private set; }
+    public string? Token { get; private set; }
 
     public void SetAuthState(string token, string username)
     {
-        _token = token;
-        _username = username;
+        Token = token;
+        Username = username;
         OnAuthStateChanged?.Invoke();
     }
 
     public void ClearAuthState()
     {
-        _token = null;
-        _username = null;
+        Token = null;
+        Username = null;
         OnAuthStateChanged?.Invoke();
     }
 }

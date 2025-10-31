@@ -1,4 +1,4 @@
-﻿@page "/settings"
+@page "/settings"
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Services
 @using IrcChat.Client.Components
@@ -105,6 +105,7 @@ else
                         <p class="card-description">Créez vos propres salons de discussion</p>
                         <div class="input-group">
                             <input @bind="newChannelName"
+                                   @bind:event="oninput"
                                    placeholder="Nom du nouveau salon..."
                                    maxlength="20"
                                    @onkeyup="HandleChannelKeyPress"
