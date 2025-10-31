@@ -1,10 +1,10 @@
-﻿// src/IrcChat.Client/Services/PrivateMessageService.cs
+// src/IrcChat.Client/Services/PrivateMessageService.cs
 using IrcChat.Shared.Models;
 using System.Net.Http.Json;
 
 namespace IrcChat.Client.Services;
 
-public class PrivateMessageService(HttpClient httpClient)
+public class PrivateMessageService(HttpClient httpClient): IPrivateMessageService
 {
     public event Action<PrivateMessage>? OnPrivateMessageReceived;
     public event Action<PrivateMessage>? OnPrivateMessageSent;

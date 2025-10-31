@@ -1,11 +1,11 @@
-﻿@page "/admin"
+@page "/admin"
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Services
 @using IrcChat.Client.Components
 @using static IrcChat.Client.Components.AdminStatsGrid
 @using static IrcChat.Client.Components.AdminUsersTable
 @inject HttpClient Http
-@inject AuthStateService AuthState
+@inject IAuthStateService AuthState
 @inject NavigationManager Navigation
 
 <PageTitle>Administration</PageTitle>

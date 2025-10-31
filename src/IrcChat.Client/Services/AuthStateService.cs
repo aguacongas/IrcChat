@@ -1,6 +1,6 @@
 namespace IrcChat.Client.Services;
 
-public class AuthStateService
+public class AuthStateService: IAuthStateService
 {
     public event Action? OnAuthStateChanged;
 

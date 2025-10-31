@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace IrcChat.Client.Services;
 
-public class UnifiedAuthService(LocalStorageService localStorage, HttpClient httpClient)
+public class UnifiedAuthService(ILocalStorageService localStorage, HttpClient httpClient) : IUnifiedAuthService
 {
     private const string AUTH_KEY = "ircchat_unified_auth";
     private bool _isInitialized = false;

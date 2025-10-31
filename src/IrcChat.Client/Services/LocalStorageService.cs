@@ -2,7 +2,7 @@ using Microsoft.JSInterop;
 
 namespace IrcChat.Client.Services;
 
-public class LocalStorageService(IJSRuntime jsRuntime)
+public class LocalStorageService(IJSRuntime jsRuntime) : ILocalStorageService
 {
     public async Task SetItemAsync(string key, string value) => await jsRuntime.InvokeVoidAsync("localStorageHelper.setItem", key, value);
 

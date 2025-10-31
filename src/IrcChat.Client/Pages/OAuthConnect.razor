@@ -1,9 +1,9 @@
-﻿@page "/oauth-login"
+@page "/oauth-login"
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Services
 @inject HttpClient Http
-@inject UnifiedAuthService Auth
-@inject OAuthClientService OAuthClient
+@inject IUnifiedAuthService Auth
+@inject IOAuthClientService OAuthClient
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 

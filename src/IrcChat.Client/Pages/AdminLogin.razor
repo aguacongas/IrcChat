@@ -1,8 +1,8 @@
-﻿@page "/admin/login"
+@page "/admin/login"
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Services
 @inject HttpClient Http
-@inject AuthStateService AuthState
+@inject IAuthStateService AuthState
 @inject NavigationManager Navigation
 
 <PageTitle>Connexion Admin - IRC Chat</PageTitle>

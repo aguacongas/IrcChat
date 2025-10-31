@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 
 namespace IrcChat.Client.Services;
 
-public class ChatService(IOptions<ApiSettings> apiSettings, PrivateMessageService privateMessageService) : IAsyncDisposable
+public class ChatService(IOptions<ApiSettings> apiSettings, IPrivateMessageService privateMessageService) : IChatService
 {
     private HubConnection? _hubConnection;
     private readonly ApiSettings _apiSettings = apiSettings.Value;

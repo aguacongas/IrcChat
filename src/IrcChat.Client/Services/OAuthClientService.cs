@@ -1,13 +1,12 @@
-using IrcChat.Shared.Models;
-using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
+using IrcChat.Shared.Models;
+using Microsoft.JSInterop;
 
 namespace IrcChat.Client.Services;
 
-public class OAuthClientService(IJSRuntime jsRuntime, HttpClient httpClient)
+public class OAuthClientService(IJSRuntime jsRuntime, HttpClient httpClient): IOAuthClientService
 {
     public async Task<string> InitiateAuthorizationFlowAsync(ExternalAuthProvider provider, string redirectUri)
     {

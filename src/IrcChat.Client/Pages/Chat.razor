@@ -1,12 +1,12 @@
-﻿@* src/IrcChat.Client/Pages/Chat.razor *@
+@* src/IrcChat.Client/Pages/Chat.razor *@
 @page "/chat"
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Services
 @using IrcChat.Client.Components
 @inject HttpClient Http
-@inject ChatService ChatService
-@inject UnifiedAuthService Auth
-@inject PrivateMessageService PrivateMessageService
+@inject IChatService ChatService
+@inject IUnifiedAuthService Auth
+@inject IPrivateMessageService PrivateMessageService
 @inject NavigationManager Navigation
 @implements IAsyncDisposable
 
