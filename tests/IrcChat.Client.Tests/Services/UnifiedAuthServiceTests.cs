@@ -1,9 +1,10 @@
-// tests/IrcChat.Client.Tests/Services/UnifiedAuthServiceTests.cs
 using Bunit;
 using FluentAssertions;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.JSInterop;
+using Microsoft.JSInterop.Infrastructure;
 using Moq;
 using Xunit;
 
@@ -11,15 +12,17 @@ namespace IrcChat.Client.Tests.Services;
 
 public class UnifiedAuthServiceTests : TestContext
 {
-    private readonly Mock<LocalStorageService> _localStorageMock;
+    private readonly Mock<IJSRuntime> _jsRuntimeMock;
+    private readonly LocalStorageService _localStorageService;
     private readonly Mock<HttpClient> _httpClientMock;
 
     public UnifiedAuthServiceTests()
     {
-        _localStorageMock = new Mock<LocalStorageService>(MockBehavior.Strict, JSInterop.JSRuntime);
+        _jsRuntimeMock = new Mock<IJSRuntime>(MockBehavior.Strict);
+        _localStorageService = new LocalStorageService(_jsRuntimeMock.Object);
         _httpClientMock = new Mock<HttpClient>(MockBehavior.Strict);
 
-        Services.AddSingleton(_localStorageMock.Object);
+        Services.AddSingleton(_localStorageService);
         Services.AddSingleton(_httpClientMock.Object);
     }
 
@@ -39,11 +42,13 @@ public class UnifiedAuthServiceTests : TestContext
             IsAdmin = false
         });
 
-        _localStorageMock
-            .Setup(x => x.GetItemAsync("ircchat_unified_auth"))
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.Is<object[]>(o => o.Length == 1 && (string)o[0] == "ircchat_unified_auth")))
             .ReturnsAsync(authData);
 
-        var service = new UnifiedAuthService(_localStorageMock.Object, _httpClientMock.Object);
+        var service = new UnifiedAuthService(_localStorageService, _httpClientMock.Object);
 
         // Act
         await service.InitializeAsync();
@@ -60,15 +65,19 @@ public class UnifiedAuthServiceTests : TestContext
     public async Task SetUsernameAsync_ShouldSaveToLocalStorage()
     {
         // Arrange
-        _localStorageMock
-            .Setup(x => x.GetItemAsync(It.IsAny<string>()))
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.Is<object[]>(o => o.Length == 1 && (string)o[0] == "ircchat_unified_auth")))
             .ReturnsAsync((string?)null);
 
-        _localStorageMock
-            .Setup(x => x.SetItemAsync("ircchat_unified_auth", It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.Is<object[]>(o => o.Length == 2 && (string)o[0] == "ircchat_unified_auth" && o[1] is string)))
+            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
 
-        var service = new UnifiedAuthService(_localStorageMock.Object, _httpClientMock.Object);
+        var service = new UnifiedAuthService(_localStorageService, _httpClientMock.Object);
         await service.InitializeAsync();
 
         var onAuthStateChangedCalled = false;
@@ -82,8 +91,10 @@ public class UnifiedAuthServiceTests : TestContext
         service.IsReserved.Should().BeFalse();
         onAuthStateChangedCalled.Should().BeTrue();
 
-        _localStorageMock.Verify(
-            x => x.SetItemAsync("ircchat_unified_auth", It.IsAny<string>()),
+        _jsRuntimeMock.Verify(
+            x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.Is<object[]>(o => o.Length == 2 && (string)o[0] == "ircchat_unified_auth" && o[1] is string)),
             Times.Once);
     }
 
@@ -97,15 +108,19 @@ public class UnifiedAuthServiceTests : TestContext
             Token = "test-token"
         });
 
-        _localStorageMock
-            .Setup(x => x.GetItemAsync("ircchat_unified_auth"))
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.Is<object[]>(o => o.Length == 1 && (string)o[0] == "ircchat_unified_auth")))
             .ReturnsAsync(authData);
 
-        _localStorageMock
-            .Setup(x => x.RemoveItemAsync("ircchat_unified_auth"))
-            .Returns(Task.CompletedTask);
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.removeItem",
+                It.Is<object[]>(o => o.Length == 1 && (string)o[0] == "ircchat_unified_auth")))
+            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
 
-        var service = new UnifiedAuthService(_localStorageMock.Object, _httpClientMock.Object);
+        var service = new UnifiedAuthService(_localStorageService, _httpClientMock.Object);
         await service.InitializeAsync();
 
         // Act
@@ -116,8 +131,10 @@ public class UnifiedAuthServiceTests : TestContext
         service.Username.Should().BeNull();
         service.IsAuthenticated.Should().BeFalse();
 
-        _localStorageMock.Verify(
-            x => x.RemoveItemAsync("ircchat_unified_auth"),
+        _jsRuntimeMock.Verify(
+            x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.removeItem",
+                It.Is<object[]>(o => o.Length == 1 && (string)o[0] == "ircchat_unified_auth")),
             Times.Once);
     }
 }
