@@ -8,7 +8,7 @@ public static class HttpClientExtensions
 {
     public static void SetBearerToken(this HttpClient client, string token)
     {
-        client.DefaultRequestHeaders.Authorization = 
+        client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
     }
 
@@ -20,10 +20,7 @@ public static class HttpClientExtensions
     }
 
     public static async Task<HttpResponseMessage> PostJsonAsync<T>(
-        this HttpClient client, 
-        string url, 
-        T data)
-    {
-        return await client.PostAsJsonAsync(url, data);
-    }
+        this HttpClient client,
+        string url,
+        T data) => await client.PostAsJsonAsync(url, data);
 }

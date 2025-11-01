@@ -1,4 +1,6 @@
 // tests/IrcChat.Api.Tests/Services/OAuthServiceTests.cs
+using System.Net;
+using System.Text.Json;
 using FluentAssertions;
 using IrcChat.Api.Services;
 using IrcChat.Shared.Models;
@@ -6,8 +8,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
-using System.Net;
-using System.Text.Json;
 using Xunit;
 
 namespace IrcChat.Api.Tests.Services;

@@ -1,4 +1,4 @@
-﻿// src/IrcChat.Shared/Models/OAuthLoginResponse.cs
+// src/IrcChat.Shared/Models/OAuthLoginResponse.cs
 namespace IrcChat.Shared.Models;
 
 public class OAuthLoginResponse

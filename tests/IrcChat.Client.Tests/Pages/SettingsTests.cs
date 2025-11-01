@@ -24,7 +24,7 @@ public class SettingsTests : TestContext
     {
         _authServiceMock = new Mock<IUnifiedAuthService>();
         _mockHttp = new MockHttpMessageHandler();
-        
+
         var httpClient = _mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
 

@@ -19,8 +19,8 @@ public class BunitTestContext : TestContext
         LocalStorageMock = new Mock<LocalStorageService>(MockBehavior.Strict, JSInterop.JSRuntime);
         HttpClientMock = new Mock<HttpClient>(MockBehavior.Strict);
         AuthServiceMock = new Mock<UnifiedAuthService>(
-            MockBehavior.Strict, 
-            LocalStorageMock.Object, 
+            MockBehavior.Strict,
+            LocalStorageMock.Object,
             HttpClientMock.Object);
 
         // Configuration par défaut du LocalStorage
