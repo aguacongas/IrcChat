@@ -45,7 +45,7 @@ jobs:
           --logger "console;verbosity=detailed"
 
     - name: 📝 Comment PR with Test Results
-      uses: actions/github-script@v7
+      uses: actions/github-script@v8
       if: always()
       with:
         script: |
