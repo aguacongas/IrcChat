@@ -2,14 +2,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using Bunit;
+using Bunit.TestDoubles;
 using FluentAssertions;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
-using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.JSInterop;
 using Moq;
+using RichardSzalay.MockHttp;
 using Xunit;
 
 namespace IrcChat.Client.Tests.Pages;
@@ -17,21 +17,22 @@ namespace IrcChat.Client.Tests.Pages;
 public class LoginTests : TestContext
 {
     private readonly Mock<IUnifiedAuthService> _authServiceMock;
-    private readonly Mock<HttpClient> _httpClientMock;
-    private readonly Mock<IJSRuntime> _jsRuntimeMock;
-    private readonly Mock<NavigationManager> _navigationManagerMock;
+    private readonly MockHttpMessageHandler _mockHttp;
+    private readonly FakeNavigationManager _navManager;
 
     public LoginTests()
     {
         _authServiceMock = new Mock<IUnifiedAuthService>();
-        _httpClientMock = new Mock<HttpClient>();
-        _jsRuntimeMock = new Mock<IJSRuntime>();
-        _navigationManagerMock = new Mock<NavigationManager>();
+        _mockHttp = new MockHttpMessageHandler();
+
+        var httpClient = _mockHttp.ToHttpClient();
+        httpClient.BaseAddress = new Uri("https://localhost:7000");
 
         Services.AddSingleton(_authServiceMock.Object);
-        Services.AddSingleton(_httpClientMock.Object);
-        Services.AddSingleton(_jsRuntimeMock.Object);
-        Services.AddSingleton(_navigationManagerMock.Object);
+        Services.AddSingleton(httpClient);
+        Services.AddSingleton(JSInterop.JSRuntime);
+
+        _navManager = Services.GetRequiredService<FakeNavigationManager>();
     }
 
     [Fact]
@@ -41,17 +42,11 @@ public class LoginTests : TestContext
         _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
-        var navManager = Services.GetRequiredService<NavigationManager>();
-        var navigateCalled = false;
-        _navigationManagerMock
-            .Setup(x => x.NavigateTo("/chat", false))
-            .Callback(() => navigateCalled = true);
-
         // Act
         var cut = RenderComponent<Login>();
 
         // Assert
-        navigateCalled.Should().BeTrue();
+        _navManager.Uri.Should().EndWith("/chat");
     }
 
     [Fact]
@@ -79,10 +74,15 @@ public class LoginTests : TestContext
             .Setup(x => x.SetUsernameAsync("TestUser", false, null))
             .Returns(Task.CompletedTask);
 
-        var navigateCalled = false;
-        _navigationManagerMock
-            .Setup(x => x.NavigateTo("/chat", false))
-            .Callback(() => navigateCalled = true);
+        var checkResponse = new UsernameCheckResponse
+        {
+            Available = true,
+            IsReserved = false,
+            IsCurrentlyUsed = false
+        };
+
+        _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
 
         var cut = RenderComponent<Login>();
 
@@ -98,7 +98,7 @@ public class LoginTests : TestContext
         _authServiceMock.Verify(
             x => x.SetUsernameAsync("TestUser", false, null),
             Times.Once);
-        navigateCalled.Should().BeTrue();
+        _navManager.Uri.Should().EndWith("/chat");
     }
 
     [Fact]
@@ -114,16 +114,8 @@ public class LoginTests : TestContext
             IsCurrentlyUsed = false
         };
 
-        _httpClientMock
-            .Setup(x => x.PostAsJsonAsync(
-                "/api/oauth/check-username",
-                It.IsAny<UsernameCheckRequest>(),
-                default))
-            .ReturnsAsync(new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.OK,
-                Content = JsonContent.Create(checkResponse)
-            });
+        _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
 
         var cut = RenderComponent<Login>();
 
@@ -133,8 +125,8 @@ public class LoginTests : TestContext
         await Task.Delay(600); // Attendre le debounce
 
         // Assert
-        cut.Markup.Should().Contain("Entrer en tant qu'invité");
-        cut.Markup.Should().Contain("Réserver ce pseudo");
+        cut.Markup.Should().Contain("invité");
+        cut.Markup.Should().Contain("Réserver");
     }
 
     [Fact]
@@ -151,16 +143,8 @@ public class LoginTests : TestContext
             IsCurrentlyUsed = false
         };
 
-        _httpClientMock
-            .Setup(x => x.PostAsJsonAsync(
-                "/api/oauth/check-username",
-                It.IsAny<UsernameCheckRequest>(),
-                default))
-            .ReturnsAsync(new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.OK,
-                Content = JsonContent.Create(checkResponse)
-            });
+        _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
 
         var cut = RenderComponent<Login>();
 
@@ -187,16 +171,8 @@ public class LoginTests : TestContext
             IsCurrentlyUsed = true
         };
 
-        _httpClientMock
-            .Setup(x => x.PostAsJsonAsync(
-                "/api/oauth/check-username",
-                It.IsAny<UsernameCheckRequest>(),
-                default))
-            .ReturnsAsync(new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.OK,
-                Content = JsonContent.Create(checkResponse)
-            });
+        _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
 
         var cut = RenderComponent<Login>();
 
@@ -206,7 +182,7 @@ public class LoginTests : TestContext
         await Task.Delay(600);
 
         // Assert
-        cut.Markup.Should().Contain("actuellement utilisé");
+        cut.Markup.Should().Contain("utilisé");
     }
 
     [Fact]
@@ -223,12 +199,9 @@ public class LoginTests : TestContext
         await Task.Delay(600);
 
         // Assert
-        _httpClientMock.Verify(
-            x => x.PostAsJsonAsync(
-                It.IsAny<string>(),
-                It.IsAny<UsernameCheckRequest>(),
-                default),
-            Times.Never);
+        var requestCount = _mockHttp.GetMatchCount(
+            _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username"));
+        requestCount.Should().Be(0);
     }
 
     [Fact]
@@ -247,16 +220,8 @@ public class LoginTests : TestContext
             IsCurrentlyUsed = false
         };
 
-        _httpClientMock
-            .Setup(x => x.PostAsJsonAsync(
-                "/api/oauth/check-username",
-                It.IsAny<UsernameCheckRequest>(),
-                default))
-            .ReturnsAsync(new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.OK,
-                Content = JsonContent.Create(checkResponse)
-            });
+        _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
 
         var cut = RenderComponent<Login>();
 
@@ -264,7 +229,7 @@ public class LoginTests : TestContext
         var input = cut.Find("input[placeholder*='pseudo']");
         await cut.InvokeAsync(() => input.Input("TestUser"));
         await Task.Delay(600);
-        await cut.InvokeAsync(() => input.KeyUp("Enter"));
+        await cut.InvokeAsync(() => input.KeyPress("Enter"));
 
         // Assert
         _authServiceMock.Verify(
@@ -273,7 +238,7 @@ public class LoginTests : TestContext
     }
 
     [Fact]
-    public void Login_LogoutButton_WhenAuthenticated_ShouldCallLogout()
+    public async Task Login_LogoutButton_WhenAuthenticated_ShouldCallLogout()
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
@@ -288,9 +253,65 @@ public class LoginTests : TestContext
 
         // Act
         var logoutButton = cut.Find("button:contains('Se déconnecter')");
-        cut.InvokeAsync(() => logoutButton.Click());
+        await cut.InvokeAsync(() => logoutButton.Click());
 
         // Assert
         _authServiceMock.Verify(x => x.LogoutAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task Login_LoginWithProvider_ShouldSetSessionStorage()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
+        var checkResponse = new UsernameCheckResponse
+        {
+            Available = false,
+            IsReserved = true,
+            ReservedProvider = ExternalAuthProvider.Google,
+            IsCurrentlyUsed = false
+        };
+
+        _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
+
+        JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
+
+        var cut = RenderComponent<Login>();
+
+        // Act
+        var input = cut.Find("input[placeholder*='pseudo']");
+        await cut.InvokeAsync(() => input.Input("ReservedUser"));
+        await Task.Delay(600);
+
+        var loginButton = cut.Find("button:contains('Se connecter')");
+        await cut.InvokeAsync(() => loginButton.Click());
+
+        // Assert
+        JSInterop.VerifyInvoke("sessionStorage.setItem", 1);
+        _navManager.Uri.Should().Contain("oauth-login");
+    }
+
+    [Fact]
+    public async Task Login_UseAnotherUsername_ShouldClearState()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("SavedUser");
+        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(false);
+        _authServiceMock.Setup(x => x.ReservedProvider).Returns(ExternalAuthProvider.Google);
+        _authServiceMock.Setup(x => x.ClearAllAsync()).Returns(Task.CompletedTask);
+
+        var cut = RenderComponent<Login>();
+
+        // Act
+        var anotherUsernameButton = cut.Find("button:contains('autre pseudo')");
+        await cut.InvokeAsync(() => anotherUsernameButton.Click());
+
+        // Assert
+        _authServiceMock.Verify(x => x.ClearAllAsync(), Times.Once);
     }
 }

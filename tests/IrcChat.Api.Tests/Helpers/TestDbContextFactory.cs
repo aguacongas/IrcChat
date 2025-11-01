@@ -21,18 +21,7 @@ public static class TestDbContextFactory
     {
         var context = CreateInMemoryContext();
 
-        // Ajouter des données de test
-        var admin = new IrcChat.Shared.Models.Admin
-        {
-            Id = Guid.NewGuid(),
-            Username = "testadmin",
-            PasswordHash = Convert.ToBase64String(
-                System.Security.Cryptography.SHA256.HashData(
-                    System.Text.Encoding.UTF8.GetBytes("password123"))),
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var channel = new IrcChat.Shared.Models.Channel
+        var channel = new Shared.Models.Channel
         {
             Id = Guid.NewGuid(),
             Name = "general",
@@ -40,7 +29,6 @@ public static class TestDbContextFactory
             CreatedAt = DateTime.UtcNow
         };
 
-        context.Admins.Add(admin);
         context.Channels.Add(channel);
         await context.SaveChangesAsync();
 

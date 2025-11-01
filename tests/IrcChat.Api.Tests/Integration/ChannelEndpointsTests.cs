@@ -15,16 +15,10 @@ using Xunit;
 
 namespace IrcChat.Api.Tests.Integration;
 
-public class ChannelEndpointsTests : IClassFixture<ApiWebApplicationFactory>
+public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly HttpClient _client;
-    private readonly ApiWebApplicationFactory _factory;
-
-    public ChannelEndpointsTests(ApiWebApplicationFactory factory)
-    {
-        _factory = factory;
-        _client = factory.CreateClient();
-    }
+    private readonly HttpClient _client = factory.CreateClient();
+    private readonly ApiWebApplicationFactory _factory = factory;
 
     [Fact]
     public async Task GetChannels_ShouldReturnChannelList()
@@ -150,20 +144,7 @@ public class ChannelEndpointsTests : IClassFixture<ApiWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    private async Task<string> GetAuthTokenAsync()
-    {
-        var loginRequest = new LoginRequest
-        {
-            Username = "admin",
-            Password = "admin123"
-        };
-
-        var response = await _client.PostAsJsonAsync("/api/auth/login", loginRequest);
-        var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
-        return result!.Token;
-    }
-
-    private string GenerateOAuthToken(ReservedUsername user)
+    private static string GenerateOAuthToken(ReservedUsername user)
     {
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes("VotreCleSecrete123456789012345678901234567890"));

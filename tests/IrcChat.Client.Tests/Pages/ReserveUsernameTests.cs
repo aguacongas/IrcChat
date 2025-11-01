@@ -1,10 +1,11 @@
+// tests/IrcChat.Client.Tests/Pages/ReserveUsernameTests.cs
 using Bunit;
+using Bunit.TestDoubles;
 using FluentAssertions;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.JSInterop;
 using Moq;
 using Xunit;
 
@@ -13,18 +14,16 @@ namespace IrcChat.Client.Tests.Pages;
 public class ReserveUsernameTests : TestContext
 {
     private readonly Mock<IUnifiedAuthService> _authServiceMock;
-    private readonly Mock<NavigationManager> _navigationManagerMock;
-    private readonly Mock<IJSRuntime> _jsRuntimeMock;
+    private readonly FakeNavigationManager _navManager;
 
     public ReserveUsernameTests()
     {
         _authServiceMock = new Mock<IUnifiedAuthService>();
-        _navigationManagerMock = new Mock<NavigationManager>();
-        _jsRuntimeMock = new Mock<IJSRuntime>();
 
         Services.AddSingleton(_authServiceMock.Object);
-        Services.AddSingleton(_navigationManagerMock.Object);
-        Services.AddSingleton(_jsRuntimeMock.Object);
+        Services.AddSingleton(JSInterop.JSRuntime);
+
+        _navManager = Services.GetRequiredService<FakeNavigationManager>();
     }
 
     [Fact]
@@ -33,17 +32,11 @@ public class ReserveUsernameTests : TestContext
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
-        var navigateCalled = false;
-        _navigationManagerMock
-            .Setup(x => x.NavigateTo("/login", false))
-            .Callback(() => navigateCalled = true);
-
         // Act
-        var cut = RenderComponent<ReserveUsername>(parameters => parameters
-            .Add(p => p.UsernameParam, null));
+        var cut = RenderComponent<ReserveUsername>();
 
         // Assert
-        navigateCalled.Should().BeTrue();
+        _navManager.Uri.Should().EndWith("/login");
     }
 
     [Fact]
@@ -52,9 +45,10 @@ public class ReserveUsernameTests : TestContext
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+
         // Act
-        var cut = RenderComponent<ReserveUsername>(parameters => parameters
-            .Add(p => p.UsernameParam, "TestUser"));
+        var cut = RenderComponent<ReserveUsername>();
 
         // Assert
         cut.Markup.Should().Contain("TestUser");
@@ -67,9 +61,10 @@ public class ReserveUsernameTests : TestContext
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+
         // Act
-        var cut = RenderComponent<ReserveUsername>(parameters => parameters
-            .Add(p => p.UsernameParam, "TestUser"));
+        var cut = RenderComponent<ReserveUsername>();
 
         // Assert
         cut.Markup.Should().Contain("Google");
@@ -78,49 +73,72 @@ public class ReserveUsernameTests : TestContext
     }
 
     [Fact]
-    public async Task ReserveUsername_ClickProvider_ShouldSaveAndNavigate()
+    public async Task ReserveUsername_ClickGoogleProvider_ShouldSaveAndNavigate()
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
-        _jsRuntimeMock
-            .Setup(x => x.InvokeAsync<object>(
-                "sessionStorage.setItem",
-                It.Is<object[]>(o =>
-                    o.Length == 2 &&
-                    (string)o[0] == "temp_username_to_reserve" &&
-                    (string)o[1] == "TestUser")))
-            .ReturnsAsync(new object());
+        JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
-        var navigateCalled = false;
-        string? navigationUrl = null;
-        _navigationManagerMock
-            .Setup(x => x.NavigateTo(It.IsAny<string>(), false))
-            .Callback<string, bool>((url, _) =>
-            {
-                navigateCalled = true;
-                navigationUrl = url;
-            });
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
-        var cut = RenderComponent<ReserveUsername>(parameters => parameters
-            .Add(p => p.UsernameParam, "TestUser"));
+        var cut = RenderComponent<ReserveUsername>();
 
         // Act
         var googleButton = cut.Find("button.oauth-btn.google");
         await cut.InvokeAsync(() => googleButton.Click());
 
         // Assert
-        _jsRuntimeMock.Verify(
-            x => x.InvokeAsync<object>(
-                "sessionStorage.setItem",
-                It.Is<object[]>(o =>
-                    o.Length == 2 &&
-                    (string)o[0] == "temp_username_to_reserve")),
-            Times.Once);
-        navigateCalled.Should().BeTrue();
-        navigationUrl.Should().Contain("oauth-login");
-        navigationUrl.Should().Contain("provider=Google");
-        navigationUrl.Should().Contain("mode=reserve");
+        JSInterop.VerifyInvoke("sessionStorage.setItem", 1);
+        _navManager.Uri.Should().Contain("oauth-login");
+        _navManager.Uri.Should().Contain("provider=Google");
+        _navManager.Uri.Should().Contain("mode=reserve");
+    }
+
+    [Fact]
+    public async Task ReserveUsername_ClickMicrosoftProvider_ShouldSaveAndNavigate()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
+        JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
+
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+
+        var cut = RenderComponent<ReserveUsername>();
+
+        // Act
+        var microsoftButton = cut.Find("button.oauth-btn.microsoft");
+        await cut.InvokeAsync(() => microsoftButton.Click());
+
+        // Assert
+        JSInterop.VerifyInvoke("sessionStorage.setItem", 1);
+        _navManager.Uri.Should().Contain("oauth-login");
+        _navManager.Uri.Should().Contain("provider=Microsoft");
+        _navManager.Uri.Should().Contain("mode=reserve");
+    }
+
+    [Fact]
+    public async Task ReserveUsername_ClickFacebookProvider_ShouldSaveAndNavigate()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
+        JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
+
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+
+        var cut = RenderComponent<ReserveUsername>();
+
+        // Act
+        var facebookButton = cut.Find("button.oauth-btn.facebook");
+        await cut.InvokeAsync(() => facebookButton.Click());
+
+        // Assert
+        JSInterop.VerifyInvoke("sessionStorage.setItem", 1);
+        _navManager.Uri.Should().Contain("oauth-login");
+        _navManager.Uri.Should().Contain("provider=Facebook");
+        _navManager.Uri.Should().Contain("mode=reserve");
     }
 
     [Fact]
@@ -129,8 +147,9 @@ public class ReserveUsernameTests : TestContext
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
-        var cut = RenderComponent<ReserveUsername>(parameters => parameters
-            .Add(p => p.UsernameParam, "TestUser"));
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+
+        var cut = RenderComponent<ReserveUsername>();
 
         // Act
         var backLink = cut.Find("a[href='/login']");
@@ -138,5 +157,74 @@ public class ReserveUsernameTests : TestContext
         // Assert
         backLink.Should().NotBeNull();
         backLink.GetAttribute("href").Should().Be("/login");
+    }
+
+    [Fact]
+    public void ReserveUsername_ShouldShowDivider()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+
+        // Act
+        var cut = RenderComponent<ReserveUsername>();
+
+        // Assert
+        cut.Markup.Should().Contain("divider");
+        cut.Markup.Should().Contain("OU");
+    }
+
+    [Fact]
+    public void ReserveUsername_WithEmptyUsername_ShouldRedirectToLogin()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", ""));
+        // Act
+        var cut = RenderComponent<ReserveUsername>();
+
+        // Assert
+        _navManager.Uri.Should().EndWith("/login");
+    }
+
+    [Fact]
+    public async Task ReserveUsername_SessionStorage_ShouldStoreUsername()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
+        JSInterop.SetupVoid("sessionStorage.setItem", _ => true);
+
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "MyUsername"));
+        var cut = RenderComponent<ReserveUsername>();
+
+        // Act
+        var googleButton = cut.Find("button.oauth-btn.google");
+        await cut.InvokeAsync(() => googleButton.Click());
+
+        // Assert
+        JSInterop.Invocations.Should().Contain(inv =>
+            inv.Identifier == "sessionStorage.setItem" &&
+            inv.Arguments.Count >= 2 &&
+            inv.Arguments[0]!.ToString() == "temp_username_to_reserve" &&
+            inv.Arguments[1]!.ToString() == "MyUsername");
+    }
+
+
+    [Fact]
+    public void ReserveUsername_LoadingState_ShouldNotShowProviders()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync())
+            .Returns(async () => await Task.Delay(1000)); // Simulate slow loading
+
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+        // Act
+        var cut = RenderComponent<ReserveUsername>();
+
+        // Assert
+        cut.Markup.Should().Contain("Chargement");
     }
 }

@@ -1,3 +1,4 @@
+// tests/IrcChat.Client.Tests/Pages/OAuthConnectTests.cs
 using System.Net;
 using System.Net.Http.Json;
 using Bunit;
@@ -6,6 +7,7 @@ using FluentAssertions;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using RichardSzalay.MockHttp;
@@ -15,37 +17,39 @@ namespace IrcChat.Client.Tests.Pages;
 
 public class OAuthConnectTests : TestContext
 {
-    private readonly Mock<UnifiedAuthService> _authServiceMock;
-    private readonly Mock<OAuthClientService> _oauthClientServiceMock;
+    private readonly Mock<IUnifiedAuthService> _authServiceMock;
+    private readonly Mock<IOAuthClientService> _oauthClientServiceMock;
     private readonly MockHttpMessageHandler _mockHttp;
+    private readonly FakeNavigationManager _navManager;
 
     public OAuthConnectTests()
     {
-        // Mock HTTP
         _mockHttp = new MockHttpMessageHandler();
+
         var httpClient = _mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
 
-        // Mock des services
-        var localStorageMock = new Mock<LocalStorageService>(JSInterop.JSRuntime);
-        _authServiceMock = new Mock<UnifiedAuthService>(localStorageMock.Object, httpClient);
-        _oauthClientServiceMock = new Mock<OAuthClientService>(JSInterop.JSRuntime, httpClient);
+        _authServiceMock = new Mock<IUnifiedAuthService>();
+        _oauthClientServiceMock = new Mock<IOAuthClientService>();
 
-        // Configuration par défaut
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-
-        // Enregistrement des services
         Services.AddSingleton(_authServiceMock.Object);
         Services.AddSingleton(_oauthClientServiceMock.Object);
         Services.AddSingleton(httpClient);
+        Services.AddSingleton(JSInterop.JSRuntime);
+
+        _navManager = Services.GetRequiredService<FakeNavigationManager>();
     }
 
     [Fact]
     public void OAuthConnect_WithError_ShouldShowError()
     {
         // Arrange & Act
-        var cut = RenderComponent<OAuthConnect>(parameters => parameters
-            .Add(p => p.ErrorParam, "access_denied"));
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["error"] = "access_denied"
+        }));
+
+        var cut = RenderComponent<OAuthConnect>();
 
         // Assert
         cut.Markup.Should().Contain("Erreur OAuth");
@@ -56,23 +60,22 @@ public class OAuthConnectTests : TestContext
     public void OAuthConnect_WithoutParams_ShouldRedirectToLogin()
     {
         // Arrange
-        var navMan = Services.GetRequiredService<FakeNavigationManager>();
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
         // Act
         var cut = RenderComponent<OAuthConnect>();
 
         // Assert
-        navMan.Uri.Should().Contain("/login");
+        _navManager.Uri.Should().EndWith("/login");
     }
 
     [Fact]
     public async Task OAuthConnect_InitiateFlow_ShouldGenerateAuthUrl()
     {
         // Arrange
-        var navMan = Services.GetRequiredService<FakeNavigationManager>();
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
-        JSInterop.Setup<object>("sessionStorage.setItem", _ => true)
-            .SetResult(new object());
+        JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
         _oauthClientServiceMock
             .Setup(x => x.InitiateAuthorizationFlowAsync(
@@ -81,24 +84,34 @@ public class OAuthConnectTests : TestContext
             .ReturnsAsync("https://accounts.google.com/o/oauth2/auth?client_id=test");
 
         // Act
-        var cut = RenderComponent<OAuthConnect>(parameters => parameters
-            .Add(p => p.ProviderParam, "Google")
-            .Add(p => p.ModeParam, "reserve"));
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["provider"] = "Google",
+            ["mode"] = "reserve"
+        }));
+        var cut = RenderComponent<OAuthConnect>();
 
-        await Task.Delay(300); // Attendre l'initialisation
+        await Task.Delay(300);
 
         // Assert
-        navMan.Uri.Should().Contain("google.com");
+        _navManager.Uri.Should().Contain("google.com");
     }
 
     [Fact]
     public async Task OAuthConnect_HandleCallback_Reserve_ShouldCompleteReservation()
     {
         // Arrange
-        var navMan = Services.GetRequiredService<FakeNavigationManager>();
-        navMan.NavigateTo("https://localhost/oauth-login");
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.SetAuthStateAsync(
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<Guid>(),
+            It.IsAny<ExternalAuthProvider>(),
+            It.IsAny<bool>()))
+            .Returns(Task.CompletedTask);
 
-        // Configuration du JSInterop pour sessionStorage
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
             .SetResult("reserve");
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_username_to_reserve")
@@ -108,9 +121,8 @@ public class OAuthConnectTests : TestContext
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_code_verifier")
             .SetResult("test_verifier");
 
-        JSInterop.SetupVoid("sessionStorage.removeItem", _ => true);
+        JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
 
-        // Configuration de la réponse HTTP
         var reserveResponse = new OAuthLoginResponse
         {
             Token = "test-token",
@@ -125,14 +137,18 @@ public class OAuthConnectTests : TestContext
             .Respond(HttpStatusCode.OK, JsonContent.Create(reserveResponse));
 
         // Act
-        var cut = RenderComponent<OAuthConnect>(parameters => parameters
-            .Add(p => p.CodeParam, "auth_code_123")
-            .Add(p => p.StateParam, "random_state"));
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["code"] = "auth_code_123",
+            ["state"] = "random_state"
+        }));
 
-        await Task.Delay(500); // Attendre le traitement
+        var cut = RenderComponent<OAuthConnect>();
+
+        await Task.Delay(500);
 
         // Assert
-        navMan.Uri.Should().Contain("/chat");
+        _navManager.Uri.Should().EndWith("/chat");
         _authServiceMock.Verify(
             x => x.SetAuthStateAsync(
                 "test-token",
@@ -149,8 +165,16 @@ public class OAuthConnectTests : TestContext
     public async Task OAuthConnect_HandleCallback_Login_ShouldComplete()
     {
         // Arrange
-        var navMan = Services.GetRequiredService<FakeNavigationManager>();
-        navMan.NavigateTo("https://localhost/oauth-login");
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.SetAuthStateAsync(
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<Guid>(),
+            It.IsAny<ExternalAuthProvider>(),
+            It.IsAny<bool>()))
+            .Returns(Task.CompletedTask);
 
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
             .SetResult("login");
@@ -159,7 +183,7 @@ public class OAuthConnectTests : TestContext
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_code_verifier")
             .SetResult("test_verifier");
 
-        JSInterop.SetupVoid("sessionStorage.removeItem", _ => true);
+        JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
 
         var loginResponse = new OAuthLoginResponse
         {
@@ -175,14 +199,17 @@ public class OAuthConnectTests : TestContext
             .Respond(HttpStatusCode.OK, JsonContent.Create(loginResponse));
 
         // Act
-        var cut = RenderComponent<OAuthConnect>(parameters => parameters
-            .Add(p => p.CodeParam, "auth_code_456")
-            .Add(p => p.StateParam, "state_xyz"));
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["code"] = "auth_code_456",
+            ["state"] = "xyz123"
+        }));
+        var cut = RenderComponent<OAuthConnect>();
 
         await Task.Delay(500);
 
         // Assert
-        navMan.Uri.Should().Contain("/chat");
+        _navManager.Uri.Should().EndWith("/chat");
         _authServiceMock.Verify(
             x => x.SetAuthStateAsync(
                 "login-token",
@@ -198,19 +225,31 @@ public class OAuthConnectTests : TestContext
     [Fact]
     public void OAuthConnect_ShowsLoadingMessage()
     {
-        // Arrange & Act
-        var cut = RenderComponent<OAuthConnect>(parameters => parameters
-            .Add(p => p.ProviderParam, "Google")
-            .Add(p => p.ModeParam, "reserve"));
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _oauthClientServiceMock.Setup(x => x.InitiateAuthorizationFlowAsync(It.IsAny<ExternalAuthProvider>(), It.IsAny<string>()))
+            .ReturnsAsync("https://example.com/auth");
+        JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
+
+        // Act
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["provider"] = "Google",
+            ["mode"] = "reserve"
+        }));
+
+        var cut = RenderComponent<OAuthConnect>();
 
         // Assert
-        cut.Markup.Should().Contain("Connexion en cours");
+        cut.Markup.Should().Contain("Redirection vers Google...");
     }
 
     [Fact]
     public async Task OAuthConnect_ReserveFailure_ShouldShowError()
     {
         // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
             .SetResult("reserve");
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_username_to_reserve")
@@ -221,16 +260,78 @@ public class OAuthConnectTests : TestContext
             .SetResult("test_verifier");
 
         _mockHttp.When(HttpMethod.Post, "*/api/oauth/reserve-username")
-            .Respond(HttpStatusCode.BadRequest, "text/plain", "username_taken");
+            .Respond(HttpStatusCode.BadRequest,
+                new StringContent("{\"error\":\"username_taken\"}"));
 
         // Act
-        var cut = RenderComponent<OAuthConnect>(parameters => parameters
-            .Add(p => p.CodeParam, "auth_code_123")
-            .Add(p => p.StateParam, "random_state"));
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["code"] = "auth_code_123",
+            ["state"] = "random_state"
+        }));
+
+        var cut = RenderComponent<OAuthConnect>();
 
         await Task.Delay(500);
 
         // Assert
         cut.Markup.Should().Contain("Erreur");
+    }
+
+    [Fact]
+    public async Task OAuthConnect_LoginFailure_ShouldShowError()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
+            .SetResult("login");
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_provider")
+            .SetResult("Google");
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_code_verifier")
+            .SetResult("test_verifier");
+
+        _mockHttp.When(HttpMethod.Post, "*/api/oauth/login-reserved")
+            .Respond(HttpStatusCode.NotFound,
+                new StringContent("{\"error\":\"not_found\"}"));
+
+        // Act
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["code"] = "auth_code_456",
+            ["state"] = "state_xyz"
+        }));
+        var cut = RenderComponent<OAuthConnect>();
+
+        await Task.Delay(500);
+
+        // Assert
+        cut.Markup.Should().Contain("Erreur");
+    }
+
+    [Fact]
+    public async Task OAuthConnect_MissingSessionData_ShouldShowError()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
+            .SetResult("reserve");
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_username_to_reserve")
+            .SetResult((string)null!); // Pas de username stocké
+
+        // Act
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["code"] = "auth_code_123",
+            ["state"] = "random_state"
+        }));
+
+        var cut = RenderComponent<OAuthConnect>();
+
+        await Task.Delay(300);
+
+        // Assert
+        cut.Markup.Should().Contain("introuvable");
     }
 }
