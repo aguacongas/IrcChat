@@ -20,7 +20,7 @@ builder.Services.AddScoped(sp => new HttpClient
 });
 
 builder.Services.AddScoped<IChatService, ChatService>()
-    .AddScoped <IAuthStateService, AuthStateService>()
+    .AddScoped<IAuthStateService, AuthStateService>()
     .AddScoped<ILocalStorageService, LocalStorageService>()
     .AddScoped<IUnifiedAuthService, UnifiedAuthService>()
     .AddScoped<IOAuthClientService, OAuthClientService>()

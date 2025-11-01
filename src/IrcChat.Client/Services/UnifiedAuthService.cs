@@ -1,6 +1,6 @@
 // src/IrcChat.Client/Services/UnifiedAuthService.cs
-using IrcChat.Shared.Models;
 using System.Text.Json;
+using IrcChat.Shared.Models;
 
 namespace IrcChat.Client.Services;
 

@@ -1,7 +1,7 @@
-using IrcChat.Api.Data;
-using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Claims;
+using IrcChat.Api.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace IrcChat.Api.Extensions;
 

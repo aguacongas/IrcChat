@@ -1,4 +1,4 @@
-﻿namespace IrcChat.Shared.Models;
+namespace IrcChat.Shared.Models;
 
 public class OAuthConfig
 {
@@ -10,4 +10,3 @@ public class OAuthConfig
     public string RedirectUri { get; set; } = string.Empty;
     public string Scope { get; set; } = string.Empty;
 }
-
