@@ -24,14 +24,15 @@ public class SettingsTests : TestContext
     {
         _authServiceMock = new Mock<IUnifiedAuthService>();
         _mockHttp = new MockHttpMessageHandler();
-        _navManager = Services.GetRequiredService<FakeNavigationManager>();
-
+        
         var httpClient = _mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
 
         Services.AddSingleton(_authServiceMock.Object);
         Services.AddSingleton(httpClient);
         Services.AddSingleton(JSInterop.JSRuntime);
+
+        _navManager = Services.GetRequiredService<FakeNavigationManager>();
     }
 
     [Fact]
@@ -68,7 +69,7 @@ public class SettingsTests : TestContext
         cut.Markup.Should().Contain("TestUser");
         cut.Markup.Should().Contain("test@example.com");
         cut.Markup.Should().Contain("Google");
-        cut.Markup.Should().Contain("Réservé");
+        cut.Markup.Should().Contain("Pseudo réservé");
     }
 
     [Fact]
@@ -127,24 +128,22 @@ public class SettingsTests : TestContext
             CreatedAt = DateTime.UtcNow
         };
 
-        _mockHttp.When(HttpMethod.Post, "*/api/channels")
+        var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/channels")
             .Respond(HttpStatusCode.Created, JsonContent.Create(createdChannel));
 
         var cut = RenderComponent<Settings>();
 
         // Act
         var input = cut.Find(".input-group input");
-        await cut.InvokeAsync(() => input.Change("test-channel"));
+        await cut.InvokeAsync(() => input.Input("test-channel"));
 
         var createButton = cut.Find(".input-group .btn-primary");
         await cut.InvokeAsync(() => createButton.Click());
         await Task.Delay(100);
 
         // Assert
-        var requests = _mockHttp.GetMatchCount(
-            new MockHttpMessageHandler.RequestExpectation(
-                HttpMethod.Post, "*/api/channels"));
-        requests.Should().Be(1);
+        var count = _mockHttp.GetMatchCount(mockedRequest);
+        count.Should().Be(1);
     }
 
     [Fact]
@@ -166,7 +165,7 @@ public class SettingsTests : TestContext
 
         // Act
         var input = cut.Find(".input-group input");
-        await cut.InvokeAsync(() => input.Change("existing-channel"));
+        await cut.InvokeAsync(() => input.Input("existing-channel"));
 
         var createButton = cut.Find(".input-group .btn-primary");
         await cut.InvokeAsync(() => createButton.Click());
