@@ -1,0 +1,113 @@
+# Configuration Dependabot pour IrcChat
+version: 2
+
+updates:
+  # Mise à jour des packages NuGet pour l'API
+  - package-ecosystem: "nuget"
+    directory: "/src/IrcChat.Api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "nuget"
+      - "api"
+    commit-message:
+      prefix: "chore(api)"
+      include: "scope"
+
+  # Mise à jour des packages NuGet pour le Client
+  - package-ecosystem: "nuget"
+    directory: "/src/IrcChat.Client"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "nuget"
+      - "client"
+    commit-message:
+      prefix: "chore(client)"
+      include: "scope"
+
+  # Mise à jour des packages NuGet pour Shared
+  - package-ecosystem: "nuget"
+    directory: "/src/IrcChat.Shared"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "nuget"
+      - "shared"
+    commit-message:
+      prefix: "chore(shared)"
+      include: "scope"
+
+  # Mise à jour des packages de test API
+  - package-ecosystem: "nuget"
+    directory: "/tests/IrcChat.Api.Tests"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "nuget"
+      - "tests"
+    commit-message:
+      prefix: "chore(tests)"
+
+  # Mise à jour des packages de test Client
+  - package-ecosystem: "nuget"
+    directory: "/tests/IrcChat.Client.Tests"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "nuget"
+      - "tests"
+    commit-message:
+      prefix: "chore(tests)"
+
+  # Mise à jour des GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "votre-username"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(ci)"
+
+  # Mise à jour du Dockerfile
+  - package-ecosystem: "docker"
+    directory: "/src/IrcChat.Api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "11:00"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "votre-username"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore(docker)"

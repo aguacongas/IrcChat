@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  DOTNET_VERSION: '9.0.x'
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 🔧 Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: 📦 Restore dependencies
+      run: dotnet restore
+
+    - name: 🏗️ Build Release
+      run: dotnet build --configuration Release --no-restore
+
+    - name: 🧪 Run Tests
+      run: |
+        dotnet test tests/IrcChat.Api.Tests/IrcChat.Api.Tests.csproj \
+          --configuration Release \
+          --no-build
+        
+        dotnet test tests/IrcChat.Client.Tests/IrcChat.Client.Tests.csproj \
+          --configuration Release \
+          --no-build
+
+    - name: 📦 Publish API
+      run: |
+        dotnet publish src/IrcChat.Api/IrcChat.Api.csproj \
+          -c Release \
+          -o release/api \
+          /p:PublishSingleFile=true \
+          /p:PublishTrimmed=true \
+          /p:IncludeNativeLibrariesForSelfExtract=true
+
+    - name: 📦 Publish Client
+      run: |
+        dotnet publish src/IrcChat.Client/IrcChat.Client.csproj \
+          -c Release \
+          -o release/client \
+          /p:BlazorEnableCompression=true
+
+    - name: 📝 Generate Changelog
+      id: changelog
+      uses: metcalfc/changelog-generator@v4.3.1
+      with:
+        myToken: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 🎉 Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        body: ${{ steps.changelog.outputs.changelog }}
+        files: |
+          release/api/**
+          release/client/**
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
