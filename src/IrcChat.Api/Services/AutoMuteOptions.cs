@@ -1,4 +1,4 @@
-﻿// src/IrcChat.Api/Services/AutoMuteOptions.cs
+// src/IrcChat.Api/Services/AutoMuteOptions.cs
 namespace IrcChat.Api.Services;
 
 public class AutoMuteOptions

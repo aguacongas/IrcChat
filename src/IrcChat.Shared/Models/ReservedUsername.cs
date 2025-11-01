@@ -1,4 +1,4 @@
-﻿// src/IrcChat.Shared/Models/ReservedUsername.cs
+// src/IrcChat.Shared/Models/ReservedUsername.cs
 namespace IrcChat.Shared.Models;
 
 public class ReservedUsername

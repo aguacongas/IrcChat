@@ -1,4 +1,4 @@
-﻿namespace IrcChat.Client.Models;
+namespace IrcChat.Client.Models;
 
 public class ApiSettings
 {

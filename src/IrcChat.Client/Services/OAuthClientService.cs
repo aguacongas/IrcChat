@@ -6,7 +6,7 @@ using Microsoft.JSInterop;
 
 namespace IrcChat.Client.Services;
 
-public class OAuthClientService(IJSRuntime jsRuntime, HttpClient httpClient): IOAuthClientService
+public class OAuthClientService(IJSRuntime jsRuntime, HttpClient httpClient) : IOAuthClientService
 {
     public async Task<string> InitiateAuthorizationFlowAsync(ExternalAuthProvider provider, string redirectUri)
     {
