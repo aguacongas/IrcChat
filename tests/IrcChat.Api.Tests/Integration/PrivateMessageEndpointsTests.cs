@@ -1,13 +1,13 @@
 // tests/IrcChat.Api.Tests/Integration/PrivateMessageEndpointsTests.cs
-using FluentAssertions;
-using IrcChat.Shared.Models;
 using System.Net;
 using System.Net.Http.Json;
+using FluentAssertions;
+using IrcChat.Shared.Models;
 using Xunit;
 
 namespace IrcChat.Api.Tests.Integration;
 
-public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) 
+public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory)
     : IClassFixture<ApiWebApplicationFactory>
 {
     private readonly HttpClient _client = factory.CreateClient();

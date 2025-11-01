@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace IrcChat.Api.Services;
+
 public class ConnectionManagerService(
     IDbContextFactory<ChatDbContext> dbContextFactory,
     IOptions<ConnectionManagerOptions> options,

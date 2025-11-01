@@ -1,4 +1,5 @@
 namespace IrcChat.Api.Services;
+
 public class ConnectionManagerOptions
 {
     public const string SectionName = "ConnectionManager";
