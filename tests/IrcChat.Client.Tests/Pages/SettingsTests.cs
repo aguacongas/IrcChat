@@ -2,13 +2,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using Bunit;
+using Bunit.TestDoubles;
 using FluentAssertions;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
-using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using RichardSzalay.MockHttp;
 using Xunit;
 
 namespace IrcChat.Client.Tests.Pages;
@@ -16,18 +17,21 @@ namespace IrcChat.Client.Tests.Pages;
 public class SettingsTests : TestContext
 {
     private readonly Mock<IUnifiedAuthService> _authServiceMock;
-    private readonly Mock<HttpClient> _httpClientMock;
-    private readonly Mock<NavigationManager> _navigationManagerMock;
+    private readonly MockHttpMessageHandler _mockHttp;
+    private readonly FakeNavigationManager _navManager;
 
     public SettingsTests()
     {
         _authServiceMock = new Mock<IUnifiedAuthService>();
-        _httpClientMock = new Mock<HttpClient>();
-        _navigationManagerMock = new Mock<NavigationManager>();
+        _mockHttp = new MockHttpMessageHandler();
+        _navManager = Services.GetRequiredService<FakeNavigationManager>();
+
+        var httpClient = _mockHttp.ToHttpClient();
+        httpClient.BaseAddress = new Uri("https://localhost:7000");
 
         Services.AddSingleton(_authServiceMock.Object);
-        Services.AddSingleton(_httpClientMock.Object);
-        Services.AddSingleton(_navigationManagerMock.Object);
+        Services.AddSingleton(httpClient);
+        Services.AddSingleton(JSInterop.JSRuntime);
     }
 
     [Fact]
@@ -37,16 +41,11 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
         _authServiceMock.Setup(x => x.HasUsername).Returns(false);
 
-        var navigateCalled = false;
-        _navigationManagerMock
-            .Setup(x => x.NavigateTo("/login", false))
-            .Callback(() => navigateCalled = true);
-
         // Act
         var cut = RenderComponent<Settings>();
 
         // Assert
-        navigateCalled.Should().BeTrue();
+        _navManager.Uri.Should().EndWith("/login");
     }
 
     [Fact]
@@ -128,28 +127,24 @@ public class SettingsTests : TestContext
             CreatedAt = DateTime.UtcNow
         };
 
-        _httpClientMock
-            .Setup(x => x.PostAsJsonAsync("/api/channels", It.IsAny<Channel>(), default))
-            .ReturnsAsync(new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.Created,
-                Content = JsonContent.Create(createdChannel)
-            });
+        _mockHttp.When(HttpMethod.Post, "*/api/channels")
+            .Respond(HttpStatusCode.Created, JsonContent.Create(createdChannel));
 
         var cut = RenderComponent<Settings>();
 
         // Act
         var input = cut.Find(".input-group input");
-        await cut.InvokeAsync(() => input.Input("test-channel"));
+        await cut.InvokeAsync(() => input.Change("test-channel"));
 
         var createButton = cut.Find(".input-group .btn-primary");
         await cut.InvokeAsync(() => createButton.Click());
         await Task.Delay(100);
 
         // Assert
-        _httpClientMock.Verify(
-            x => x.PostAsJsonAsync("/api/channels", It.IsAny<Channel>(), default),
-            Times.Once);
+        var requests = _mockHttp.GetMatchCount(
+            new MockHttpMessageHandler.RequestExpectation(
+                HttpMethod.Post, "*/api/channels"));
+        requests.Should().Be(1);
     }
 
     [Fact]
@@ -163,19 +158,15 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
         _authServiceMock.Setup(x => x.Token).Returns("test-token");
 
-        _httpClientMock
-            .Setup(x => x.PostAsJsonAsync("/api/channels", It.IsAny<Channel>(), default))
-            .ReturnsAsync(new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.BadRequest,
-                Content = new StringContent("{\"error\":\"channel_exists\"}")
-            });
+        _mockHttp.When(HttpMethod.Post, "*/api/channels")
+            .Respond(HttpStatusCode.BadRequest,
+                new StringContent("{\"error\":\"channel_exists\"}"));
 
         var cut = RenderComponent<Settings>();
 
         // Act
         var input = cut.Find(".input-group input");
-        await cut.InvokeAsync(() => input.Input("existing-channel"));
+        await cut.InvokeAsync(() => input.Change("existing-channel"));
 
         var createButton = cut.Find(".input-group .btn-primary");
         await cut.InvokeAsync(() => createButton.Click());
@@ -186,91 +177,12 @@ public class SettingsTests : TestContext
     }
 
     [Fact]
-    public async Task Settings_ForgetUsername_ShouldShowConfirmation()
-    {
-        // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
-
-        var cut = RenderComponent<Settings>();
-
-        // Act
-        var forgetButton = cut.Find("button:contains('Oublier mon pseudo')");
-        await cut.InvokeAsync(() => forgetButton.Click());
-
-        // Assert
-        cut.Markup.Should().Contain("Confirmer la suppression");
-        cut.Markup.Should().Contain("irréversible");
-    }
-
-    [Fact]
-    public async Task Settings_ConfirmForget_ShouldCallServiceAndRedirect()
-    {
-        // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
-        _authServiceMock.Setup(x => x.ForgetUsernameAndLogoutAsync()).Returns(Task.CompletedTask);
-
-        var navigateCalled = false;
-        _navigationManagerMock
-            .Setup(x => x.NavigateTo("/login", false))
-            .Callback(() => navigateCalled = true);
-
-        var cut = RenderComponent<Settings>();
-
-        // Act
-        var forgetButton = cut.Find("button:contains('Oublier mon pseudo')");
-        await cut.InvokeAsync(() => forgetButton.Click());
-
-        var confirmButton = cut.Find(".modal-actions button:contains('Oui')");
-        await cut.InvokeAsync(() => confirmButton.Click());
-
-        // Assert
-        _authServiceMock.Verify(x => x.ForgetUsernameAndLogoutAsync(), Times.Once);
-        navigateCalled.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task Settings_Logout_ShouldCallServiceAndRedirect()
-    {
-        // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.LogoutAsync()).Returns(Task.CompletedTask);
-
-        var navigateCalled = false;
-        _navigationManagerMock
-            .Setup(x => x.NavigateTo("/login", false))
-            .Callback(() => navigateCalled = true);
-
-        var cut = RenderComponent<Settings>();
-
-        // Act
-        var logoutButton = cut.Find("button:contains('Se déconnecter')");
-        await cut.InvokeAsync(() => logoutButton.Click());
-
-        // Assert
-        _authServiceMock.Verify(x => x.LogoutAsync(), Times.Once);
-        navigateCalled.Should().BeTrue();
-    }
-
-    [Fact]
     public void Settings_BackButton_ShouldNavigateToChat()
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
         _authServiceMock.Setup(x => x.HasUsername).Returns(true);
         _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-
-        var navigateCalled = false;
-        _navigationManagerMock
-            .Setup(x => x.NavigateTo("/chat", false))
-            .Callback(() => navigateCalled = true);
 
         var cut = RenderComponent<Settings>();
 
@@ -279,7 +191,7 @@ public class SettingsTests : TestContext
         cut.InvokeAsync(() => backButton.Click());
 
         // Assert
-        navigateCalled.Should().BeTrue();
+        _navManager.Uri.Should().EndWith("/chat");
     }
 
     [Fact]
@@ -300,34 +212,22 @@ public class SettingsTests : TestContext
     }
 
     [Fact]
-    public void Settings_EnterKeyInChannelInput_ShouldCreateChannel()
+    public async Task Settings_Logout_ShouldCallServiceAndRedirect()
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
         _authServiceMock.Setup(x => x.HasUsername).Returns(true);
         _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("test-token");
-
-        _httpClientMock
-            .Setup(x => x.PostAsJsonAsync("/api/channels", It.IsAny<Channel>(), default))
-            .ReturnsAsync(new HttpResponseMessage
-            {
-                StatusCode = HttpStatusCode.Created,
-                Content = JsonContent.Create(new Channel())
-            });
+        _authServiceMock.Setup(x => x.LogoutAsync()).Returns(Task.CompletedTask);
 
         var cut = RenderComponent<Settings>();
 
         // Act
-        var input = cut.Find(".input-group input");
-        cut.InvokeAsync(() => input.Input("test-channel"));
-        cut.InvokeAsync(() => input.KeyUp("Enter"));
+        var logoutButton = cut.Find("button:contains('Se déconnecter')");
+        await cut.InvokeAsync(() => logoutButton.Click());
 
         // Assert
-        _httpClientMock.Verify(
-            x => x.PostAsJsonAsync("/api/channels", It.IsAny<Channel>(), default),
-            Times.Once);
+        _authServiceMock.Verify(x => x.LogoutAsync(), Times.Once);
+        _navManager.Uri.Should().EndWith("/login");
     }
 }

@@ -1,12 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using Bunit;
+using Bunit.TestDoubles;
 using FluentAssertions;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
-using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using RichardSzalay.MockHttp;
 using Xunit;
 using static IrcChat.Client.Components.AdminStatsGrid;
 using static IrcChat.Client.Components.AdminUsersTable;
@@ -16,18 +17,20 @@ namespace IrcChat.Client.Tests.Pages;
 public class AdminTests : TestContext
 {
     private readonly Mock<IAuthStateService> _authStateServiceMock;
-    private readonly Mock<HttpClient> _httpClientMock;
-    private readonly Mock<NavigationManager> _navigationManagerMock;
+    private readonly MockHttpMessageHandler _mockHttp;
+    private readonly FakeNavigationManager _navManager;
 
     public AdminTests()
     {
         _authStateServiceMock = new Mock<IAuthStateService>();
-        _httpClientMock = new Mock<HttpClient>();
-        _navigationManagerMock = new Mock<NavigationManager>();
+        _mockHttp = new MockHttpMessageHandler();
+        _navManager = Services.GetRequiredService<FakeNavigationManager>();
+
+        var httpClient = _mockHttp.ToHttpClient();
+        httpClient.BaseAddress = new Uri("https://localhost:7000");
 
         Services.AddSingleton(_authStateServiceMock.Object);
-        Services.AddSingleton(_httpClientMock.Object);
-        Services.AddSingleton(_navigationManagerMock.Object);
+        Services.AddSingleton(httpClient);
     }
 
     [Fact]
@@ -36,16 +39,11 @@ public class AdminTests : TestContext
         // Arrange
         _authStateServiceMock.Setup(x => x.IsAuthenticated).Returns(false);
 
-        var navigateCalled = false;
-        _navigationManagerMock
-            .Setup(x => x.NavigateTo("/admin/login", false))
-            .Callback(() => navigateCalled = true);
-
         // Act
         var cut = RenderComponent<Admin>();
 
         // Assert
-        navigateCalled.Should().BeTrue();
+        _navManager.Uri.Should().EndWith("/admin/login");
     }
 
     [Fact]
@@ -63,17 +61,15 @@ public class AdminTests : TestContext
             ActiveChannels = 3
         };
 
-        _httpClientMock
-            .Setup(x => x.GetFromJsonAsync<AdminStats>("/api/admin/stats", default))
-            .ReturnsAsync(stats);
+        _mockHttp.When(HttpMethod.Get, "*/api/admin/stats")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(stats));
 
-        _httpClientMock
-            .Setup(x => x.GetFromJsonAsync<List<UserStats>>("/api/admin/users", default))
-            .ReturnsAsync([]);
+        _mockHttp.When(HttpMethod.Get, "*/api/admin/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<UserStats>()));
 
         // Act
         var cut = RenderComponent<Admin>();
-        await Task.Delay(100);
+        await Task.Delay(200);
 
         // Assert
         cut.Markup.Should().Contain("100"); // TotalMessages
@@ -87,21 +83,14 @@ public class AdminTests : TestContext
         _authStateServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
         _authStateServiceMock.Setup(x => x.Username).Returns("admin");
 
-        _httpClientMock
-            .Setup(x => x.GetFromJsonAsync<AdminStats>("/api/admin/stats", default))
-            .ReturnsAsync(new AdminStats());
+        _mockHttp.When(HttpMethod.Get, "*/api/admin/stats")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new AdminStats()));
 
-        _httpClientMock
-            .Setup(x => x.GetFromJsonAsync<List<UserStats>>("/api/admin/users", default))
-            .ReturnsAsync([]);
-
-        var navigateCalled = false;
-        _navigationManagerMock
-            .Setup(x => x.NavigateTo("/admin/login", false))
-            .Callback(() => navigateCalled = true);
+        _mockHttp.When(HttpMethod.Get, "*/api/admin/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<UserStats>()));
 
         var cut = RenderComponent<Admin>();
-        await Task.Delay(100);
+        await Task.Delay(200);
 
         // Act
         var logoutButton = cut.Find("button:contains('Déconnexion')");
@@ -109,6 +98,6 @@ public class AdminTests : TestContext
 
         // Assert
         _authStateServiceMock.Verify(x => x.ClearAuthState(), Times.Once);
-        navigateCalled.Should().BeTrue();
+        _navManager.Uri.Should().EndWith("/admin/login");
     }
 }
