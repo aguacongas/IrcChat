@@ -1,7 +1,7 @@
-﻿// src/IrcChat.Api/Extensions/AdminManagementEndpoints.cs
+// src/IrcChat.Api/Extensions/AdminManagementEndpoints.cs
+using System.Security.Claims;
 using IrcChat.Api.Data;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace IrcChat.Api.Extensions;
 
@@ -18,11 +18,16 @@ public static class AdminManagementEndpoints
         {
             // Vérifier que l'utilisateur est admin
             var currentUserId = GetCurrentUserId(context);
-            if (currentUserId == null) return Results.Unauthorized();
+            if (currentUserId == null)
+            {
+                return Results.Unauthorized();
+            }
 
             var currentUser = await db.ReservedUsernames.FindAsync(currentUserId);
             if (currentUser == null || !currentUser.IsAdmin)
+            {
                 return Results.Forbid();
+            }
 
             var users = await db.ReservedUsernames
                 .OrderBy(u => u.Username)
@@ -52,19 +57,28 @@ public static class AdminManagementEndpoints
         {
             // Vérifier que l'utilisateur actuel est admin
             var currentUserId = GetCurrentUserId(context);
-            if (currentUserId == null) return Results.Unauthorized();
+            if (currentUserId == null)
+            {
+                return Results.Unauthorized();
+            }
 
             var currentUser = await db.ReservedUsernames.FindAsync(currentUserId);
             if (currentUser == null || !currentUser.IsAdmin)
+            {
                 return Results.Forbid();
+            }
 
             // Trouver l'utilisateur à promouvoir
             var targetUser = await db.ReservedUsernames.FindAsync(userId);
             if (targetUser == null)
+            {
                 return Results.NotFound(new { error = "user_not_found" });
+            }
 
             if (targetUser.IsAdmin)
+            {
                 return Results.BadRequest(new { error = "already_admin" });
+            }
 
             targetUser.IsAdmin = true;
             await db.SaveChangesAsync();
@@ -82,28 +96,41 @@ public static class AdminManagementEndpoints
         {
             // Vérifier que l'utilisateur actuel est admin
             var currentUserId = GetCurrentUserId(context);
-            if (currentUserId == null) return Results.Unauthorized();
+            if (currentUserId == null)
+            {
+                return Results.Unauthorized();
+            }
 
             var currentUser = await db.ReservedUsernames.FindAsync(currentUserId);
             if (currentUser == null || !currentUser.IsAdmin)
+            {
                 return Results.Forbid();
+            }
 
             // Empêcher un admin de se révoquer lui-même
             if (userId == currentUserId)
+            {
                 return Results.BadRequest(new { error = "cannot_demote_self" });
+            }
 
             // Trouver l'utilisateur à révoquer
             var targetUser = await db.ReservedUsernames.FindAsync(userId);
             if (targetUser == null)
+            {
                 return Results.NotFound(new { error = "user_not_found" });
+            }
 
             if (!targetUser.IsAdmin)
+            {
                 return Results.BadRequest(new { error = "not_admin" });
+            }
 
             // Vérifier qu'il reste au moins un admin
             var adminCount = await db.ReservedUsernames.CountAsync(u => u.IsAdmin);
             if (adminCount <= 1)
+            {
                 return Results.BadRequest(new { error = "last_admin", message = "Impossible de révoquer le dernier administrateur" });
+            }
 
             targetUser.IsAdmin = false;
             await db.SaveChangesAsync();
@@ -117,7 +144,10 @@ public static class AdminManagementEndpoints
         group.MapGet("/check-admin", async (ChatDbContext db, HttpContext context) =>
         {
             var currentUserId = GetCurrentUserId(context);
-            if (currentUserId == null) return Results.Ok(new { isAdmin = false });
+            if (currentUserId == null)
+            {
+                return Results.Ok(new { isAdmin = false });
+            }
 
             var currentUser = await db.ReservedUsernames.FindAsync(currentUserId);
             return Results.Ok(new { isAdmin = currentUser?.IsAdmin ?? false });

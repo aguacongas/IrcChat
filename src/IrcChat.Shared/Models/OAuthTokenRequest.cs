@@ -1,4 +1,4 @@
-﻿namespace IrcChat.Shared.Models;
+namespace IrcChat.Shared.Models;
 
 public class OAuthTokenRequest
 {

@@ -14,8 +14,8 @@ public static class ConnectionManagerOptionsExtensions
     /// <returns>L'ID de l'instance.</returns>
     public static string GetInstanceId(this ConnectionManagerOptions options)
     {
-        return options.InstanceId 
-            ?? Environment.GetEnvironmentVariable("HOSTNAME") 
+        return options.InstanceId
+            ?? Environment.GetEnvironmentVariable("HOSTNAME")
             ?? Environment.MachineName;
     }
 }

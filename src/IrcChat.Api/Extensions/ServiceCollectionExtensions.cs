@@ -1,11 +1,11 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using System.Text;
 using IrcChat.Api.Data;
 using IrcChat.Api.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 namespace IrcChat.Api.Extensions;
 
@@ -41,7 +41,7 @@ public static class ServiceCollectionExtensions
                 configuration.GetSection(ConnectionManagerOptions.SectionName))
             .Configure<AutoMuteOptions>(
                 configuration.GetSection(AutoMuteOptions.SectionName));
-            
+
         services.AddScoped<OAuthService>()
             .AddSignalR();
 
