@@ -191,6 +191,87 @@ public MyService(ILogger logger, IConfiguration config)
 }
 ```
 
+### Expression-bodied members
+✅ **Utiliser les expression-bodied members** pour les méthodes simples et lambdas :
+```csharp
+// ✅ BON - Expression body pour méthodes simples
+public string GetFullName() => $"{FirstName} {LastName}";
+
+public int Calculate(int x, int y) => x + y;
+
+public bool IsValid() => Age >= 18 && !string.IsNullOrEmpty(Name);
+
+// ✅ BON - Properties
+public string FullName => $"{FirstName} {LastName}";
+
+public bool IsAdult => Age >= 18;
+
+// ✅ BON - Accessors
+private string _name;
+public string Name
+{
+    get => _name;
+    set => _name = value?.Trim() ?? string.Empty;
+}
+
+// ✅ BON - Lambdas avec expression body
+var names = users.Select(u => u.Name);
+var adults = users.Where(u => u.Age >= 18);
+var sorted = users.OrderBy(u => u.LastName);
+
+// ✅ BON - Lambda action avec expression body
+users.ForEach(u => Console.WriteLine(u.Name));
+button.Click += (s, e) => Close();
+
+// ❌ ÉVITER - Bloc complet pour une expression simple
+public string GetFullName()
+{
+    return $"{FirstName} {LastName}";
+}
+
+public int Calculate(int x, int y)
+{
+    return x + y;
+}
+
+// ❌ ÉVITER - Lambdas avec blocs inutiles
+var names = users.Select(u => 
+{
+    return u.Name;
+});
+
+var adults = users.Where(u => 
+{
+    return u.Age >= 18;
+});
+
+// ⚠️ ACCEPTABLE - Méthodes complexes avec bloc
+public async Task<User> GetUserAsync(int id)
+{
+    var user = await _db.Users.FindAsync(id);
+    if (user == null)
+    {
+        throw new NotFoundException();
+    }
+    return user;
+}
+
+// ⚠️ ACCEPTABLE - Lambdas multi-instructions avec bloc
+var processed = users.Select(u => 
+{
+    var fullName = $"{u.FirstName} {u.LastName}";
+    var age = DateTime.Now.Year - u.BirthYear;
+    return new { fullName, age };
+});
+
+// ⚠️ ACCEPTABLE - Constructeurs (toujours avec bloc)
+public MyService(ILogger logger, IConfiguration config)
+{
+    _logger = logger;
+    _config = config;
+}
+```
+
 ## Architecture
 
 - **Clean separation** : API, Client, Shared projects
@@ -216,3 +297,48 @@ public MyService(ILogger logger, IConfiguration config)
 - JWT Authentication
 - OAuth 2.0 (Google, Facebook, Microsoft)
 
+## Tests obligatoires
+
+### Règle TDD (Test-Driven Development)
+
+**Pour chaque nouvelle fonctionnalité, créer les tests EN MÊME TEMPS que le code :**
+
+1. **Tests unitaires** pour la logique métier
+2. **Tests d'intégration** pour les endpoints API
+3. **Tests de composants** pour l'UI
+
+Voir `TEST_POLICY.md` pour les détails complets.
+
+### Exemples de tests à créer automatiquement
+
+#### Nouvel endpoint API
+```
+✅ Happy path
+✅ Validation des données
+✅ Gestion des erreurs
+✅ Authorization
+✅ Not Found / Bad Request
+```
+
+#### Nouveau service
+```
+✅ Toutes les méthodes publiques
+✅ Gestion des exceptions
+✅ Interactions avec dépendances
+✅ Edge cases
+```
+
+#### Nouveau composant Blazor
+```
+✅ Rendu initial
+✅ Interactions utilisateur
+✅ États différents
+✅ Props/Parameters
+```
+
+### Format de demande
+
+Quand tu demandes une fonctionnalité, précise simplement :
+```
+"Implémente [fonctionnalité]"
+```
