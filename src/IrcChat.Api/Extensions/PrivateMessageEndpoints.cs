@@ -1,4 +1,4 @@
-﻿using IrcChat.Api.Data;
+using IrcChat.Api.Data;
 using IrcChat.Shared.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -99,7 +99,9 @@ public static class PrivateMessageEndpoints
             .ToListAsync();
 
         if (messages.Count == 0)
+        {
             return Results.NotFound();
+        }
 
         // Marquer tous les messages comme supprimés
         foreach (var message in messages)

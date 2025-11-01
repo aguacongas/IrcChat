@@ -1,11 +1,11 @@
-using Microsoft.AspNetCore.SignalR;
-using IrcChat.Shared.Models;
-using IrcChat.Api.Data;
-using Microsoft.EntityFrameworkCore;
-using IrcChat.Api.Services;
-using Microsoft.Extensions.Options;
-using IrcChat.Api.Extensions;
 using System.Diagnostics.CodeAnalysis;
+using IrcChat.Api.Data;
+using IrcChat.Api.Extensions;
+using IrcChat.Api.Services;
+using IrcChat.Shared.Models;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace IrcChat.Api.Hubs;
 

@@ -14,7 +14,7 @@ public class MessageListTests : TestContext
     {
         // Arrange & Act
         var cut = RenderComponent<MessageList>(parameters => parameters
-            .Add(p => p.Messages, new List<Message>())
+            .Add(p => p.Messages, [])
             .Add(p => p.CurrentUsername, "testuser"));
 
         // Assert
