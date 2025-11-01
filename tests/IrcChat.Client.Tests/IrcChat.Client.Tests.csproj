@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.0-rc.2.24473.5" />
     <ProjectReference Include="..\..\src\IrcChat.Client\IrcChat.Client.csproj" />
     <ProjectReference Include="..\..\src\IrcChat.Shared\IrcChat.Shared.csproj" />
   </ItemGroup>
