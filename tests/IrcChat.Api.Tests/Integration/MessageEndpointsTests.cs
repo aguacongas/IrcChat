@@ -60,6 +60,6 @@ public class MessageEndpointsTests(ApiWebApplicationFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var messages = await response.Content.ReadFromJsonAsync<List<Message>>();
         messages.Should().NotBeNull();
-        messages.Should().HaveCountGreaterOrEqualTo(2);
+        messages.Should().HaveCountGreaterThanOrEqualTo(2);
     }
 }
