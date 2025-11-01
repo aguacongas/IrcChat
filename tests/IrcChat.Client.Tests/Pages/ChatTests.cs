@@ -319,6 +319,7 @@ public class ChatTests : TestContext
 
         var chanelItems = cut.FindAll($"ul.channel-list > li[blazor\\:onclick]");
         await cut.InvokeAsync(() => chanelItems[0].Click());
+        cut.Render();
 
         // Act
         chanelItems = cut.FindAll($"ul.channel-list > li[blazor\\:onclick]");
