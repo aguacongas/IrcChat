@@ -42,8 +42,7 @@ public static class ServiceCollectionExtensions
             .Configure<AutoMuteOptions>(
                 configuration.GetSection(AutoMuteOptions.SectionName));
             
-        services.AddScoped<AuthService>()
-            .AddScoped<OAuthService>()
+        services.AddScoped<OAuthService>()
             .AddSignalR();
 
         services.AddHostedService<ConnectionManagerService>()

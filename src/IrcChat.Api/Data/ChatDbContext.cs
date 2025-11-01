@@ -1,4 +1,4 @@
-﻿using IrcChat.Shared.Models;
+using IrcChat.Shared.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace IrcChat.Api.Data;
@@ -7,7 +7,6 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
 {
     public DbSet<Message> Messages { get; set; }
     public DbSet<Channel> Channels { get; set; }
-    public DbSet<Admin> Admins { get; set; }
     public DbSet<ConnectedUser> ConnectedUsers { get; set; }
     public DbSet<ReservedUsername> ReservedUsernames { get; set; }
     public DbSet<PrivateMessage> PrivateMessages { get; set; }
@@ -25,12 +24,6 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Name).IsUnique();
-        });
-
-        modelBuilder.Entity<Admin>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Username).IsUnique();
         });
 
         modelBuilder.Entity<ConnectedUser>(entity =>

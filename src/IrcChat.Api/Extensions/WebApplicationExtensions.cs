@@ -1,13 +1,13 @@
+using System.Diagnostics.CodeAnalysis;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using IrcChat.Api.Data;
 using IrcChat.Api.Hubs;
 using IrcChat.Api.Services;
 using IrcChat.Shared.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Diagnostics.CodeAnalysis;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace IrcChat.Api.Extensions;
 
@@ -17,7 +17,6 @@ public static class WebApplicationExtensions
     {
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
-        var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
         try
@@ -29,13 +28,6 @@ public static class WebApplicationExtensions
             }
 
             logger.LogInformation("✅ Base de données PostgreSQL migrée avec succès");
-
-            // Créer un admin par défaut si aucun n'existe
-            if (!await db.Admins.AnyAsync())
-            {
-                await authService.CreateAdmin("admin", "admin123");
-                logger.LogInformation("✅ Admin par défaut créé: admin / admin123");
-            }
         }
         catch (Exception ex)
         {
@@ -71,11 +63,9 @@ public static class WebApplicationExtensions
     public static WebApplication MapApiEndpoints(this WebApplication app)
     {
         app.MapOAuthEndpoints()
-           .MapAuthEndpoints()
            .MapMessageEndpoints()
            .MapChannelEndpoints()
            .MapChannelMuteEndpoints()
-           .MapAdminEndpoints()
            .MapPrivateMessageEndpoints()
            .MapAdminManagementEndpoints()
            .MapSignalRHub();
@@ -267,12 +257,12 @@ public static class WebApplicationExtensions
         });
 
         oauth.MapPost("/forget-username", async (
-        HttpContext context,
-        ChatDbContext db, // Injection directe du DbContext
-        ILogger<Program> logger) =>
+            HttpContext context,
+            ChatDbContext db,
+            ILogger<Program> logger) =>
         {
             var usernameClaim = context.User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.Name);
+                .FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Name);
 
             var username = usernameClaim?.Value;
 
@@ -281,7 +271,7 @@ public static class WebApplicationExtensions
                 return Results.Unauthorized();
             }
 
-            // 1. Déconnexion côté BDD (Supprimer l'utilisateur réservé)
+            // Supprimer l'utilisateur réservé
             var userToDelete = await db.ReservedUsernames
                 .FirstOrDefaultAsync(r => r.Username.ToLower() == username);
 
@@ -293,23 +283,10 @@ public static class WebApplicationExtensions
             db.ReservedUsernames.Remove(userToDelete);
             logger.LogInformation("Utilisateur réservé {Username} supprimé de la BDD.", username);
 
-            // Sauvegarder les suppressions
             await db.SaveChangesAsync();
 
             return Results.Ok();
         }).RequireAuthorization();
-
-        return app;
-    }
-
-    private static WebApplication MapAuthEndpoints(this WebApplication app)
-    {
-        var group = app.MapGroup("/api/auth")
-            .WithTags("Authentication");
-
-        group.MapPost("/login", LoginAsync)
-            .WithName("Login")
-            .WithOpenApi();
 
         return app;
     }
@@ -350,55 +327,10 @@ public static class WebApplicationExtensions
         return app;
     }
 
-    private static WebApplication MapAdminEndpoints(this WebApplication app)
-    {
-        var group = app.MapGroup("/api/admin")
-            .WithTags("Admin")
-            .RequireAuthorization();
-
-        group.MapDelete("/messages/{id}", DeleteMessageAsync)
-            .WithName("DeleteMessage")
-            .WithOpenApi();
-
-        group.MapGet("/stats", GetStatsAsync)
-            .WithName("GetStats")
-            .WithOpenApi();
-
-        group.MapGet("/users", GetUsersAsync)
-            .WithName("GetUsers")
-            .WithOpenApi();
-
-        group.MapGet("/connected-users", GetAllConnectedUsersAsync)
-            .WithName("GetAllConnectedUsers")
-            .WithOpenApi();
-
-        group.MapDelete("/connected-users/cleanup", CleanupInactiveUsersAsync)
-            .WithName("CleanupInactiveUsers")
-            .WithOpenApi();
-
-        return app;
-    }
-
     private static WebApplication MapSignalRHub(this WebApplication app)
     {
         app.MapHub<ChatHub>("/chathub");
         return app;
-    }
-
-    // ===== HANDLERS AUTHENTICATION =====
-
-    private static async Task<IResult> LoginAsync(
-        LoginRequest req,
-        AuthService auth)
-    {
-        var admin = await auth.ValidateAdmin(req.Username, req.Password);
-        if (admin == null)
-        {
-            return Results.Unauthorized();
-        }
-
-        var token = auth.GenerateToken(admin);
-        return Results.Ok(new LoginResponse { Token = token, Username = admin.Username });
     }
 
     // ===== HANDLERS MESSAGES =====
@@ -450,7 +382,6 @@ public static class WebApplicationExtensions
         Channel channel,
         ChatDbContext db)
     {
-        // Récupérer le nom d'utilisateur depuis le context de la requête
         var username = channel.CreatedBy;
         if (string.IsNullOrEmpty(username))
         {
@@ -475,7 +406,6 @@ public static class WebApplicationExtensions
             return Results.BadRequest(new { error = "channel_exists", message = "Ce canal existe déjà" });
         }
 
-        // Créer le canal
         channel.Id = Guid.NewGuid();
         channel.CreatedAt = DateTime.UtcNow;
         channel.Name = channel.Name.Trim();
@@ -504,90 +434,6 @@ public static class WebApplicationExtensions
         return Results.Ok(users);
     }
 
-    // ===== HANDLERS ADMIN =====
-
-    private static async Task<IResult> DeleteMessageAsync(
-        Guid id,
-        ChatDbContext db)
-    {
-        var msg = await db.Messages.FindAsync(id);
-        if (msg == null)
-        {
-            return Results.NotFound();
-        }
-
-        msg.IsDeleted = true;
-        await db.SaveChangesAsync();
-
-        return Results.Ok();
-    }
-
-    private static async Task<IResult> GetStatsAsync(ChatDbContext db)
-    {
-        var stats = new
-        {
-            TotalMessages = await db.Messages.CountAsync(),
-            TotalChannels = await db.Channels.CountAsync(),
-            MessagesToday = await db.Messages.CountAsync(m => m.Timestamp.Date == DateTime.UtcNow.Date),
-            ActiveChannels = await db.Messages
-                .Where(m => m.Timestamp > DateTime.UtcNow.AddHours(-24))
-                .Select(m => m.Channel)
-                .Distinct()
-                .CountAsync()
-        };
-
-        return Results.Ok(stats);
-    }
-
-    private static async Task<IResult> GetUsersAsync(ChatDbContext db)
-    {
-        var users = await db.Messages
-            .GroupBy(m => m.Username)
-            .Select(g => new { Username = g.Key, MessageCount = g.Count() })
-            .OrderByDescending(u => u.MessageCount)
-            .ToListAsync();
-
-        return Results.Ok(users);
-    }
-
-    private static async Task<IResult> GetAllConnectedUsersAsync(ChatDbContext db)
-    {
-        var users = await db.ConnectedUsers
-            .GroupBy(u => u.Channel)
-            .Select(g => new
-            {
-                Channel = g.Key,
-                Users = g.Select(u => new
-                {
-                    u.Username,
-                    u.ConnectedAt,
-                    u.LastActivity
-                }).ToList(),
-                Count = g.Count()
-            })
-            .ToListAsync();
-
-        return Results.Ok(users);
-    }
-
-    private static async Task<IResult> CleanupInactiveUsersAsync(ChatDbContext db)
-    {
-        var inactiveThreshold = DateTime.UtcNow.AddMinutes(-30);
-
-        var inactiveUsers = await db.ConnectedUsers
-            .Where(u => u.LastActivity < inactiveThreshold)
-            .ToListAsync();
-
-        if (inactiveUsers.Count != 0)
-        {
-            db.ConnectedUsers.RemoveRange(inactiveUsers);
-            await db.SaveChangesAsync();
-        }
-
-        return Results.Ok(new { Removed = inactiveUsers.Count });
-    }
-
-    
     private static string GenerateJwtToken(ReservedUsername user, IConfiguration configuration)
     {
         var key = new SymmetricSecurityKey(
