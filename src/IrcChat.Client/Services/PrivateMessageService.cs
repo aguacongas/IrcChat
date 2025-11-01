@@ -18,15 +18,9 @@ public class PrivateMessageService(HttpClient httpClient): IPrivateMessageServic
         OnUnreadCountChanged?.Invoke();
     }
 
-    public void NotifyPrivateMessageSent(PrivateMessage message)
-    {
-        OnPrivateMessageSent?.Invoke(message);
-    }
+    public void NotifyPrivateMessageSent(PrivateMessage message) => OnPrivateMessageSent?.Invoke(message);
 
-    public void NotifyMessagesRead(string username, List<Guid> messageIds)
-    {
-        OnMessagesRead?.Invoke(username, messageIds);
-    }
+    public void NotifyMessagesRead(string username, List<Guid> messageIds) => OnMessagesRead?.Invoke(username, messageIds);
 
     public async Task<List<PrivateConversation>> GetConversationsAsync(string username)
     {

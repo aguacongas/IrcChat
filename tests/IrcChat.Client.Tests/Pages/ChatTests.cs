@@ -78,7 +78,7 @@ public class ChatTests : TestContext
 
         _privateMessageServiceMock
             .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
-            .ReturnsAsync(new List<PrivateConversation>());
+            .ReturnsAsync([]);
 
         // Act
         var cut = RenderComponent<Chat>();
@@ -99,7 +99,7 @@ public class ChatTests : TestContext
 
         _httpClientMock
             .Setup(x => x.GetFromJsonAsync<List<Channel>>("/api/channels", default))
-            .ReturnsAsync(new List<Channel>());
+            .ReturnsAsync([]);
 
         _chatServiceMock.Setup(x => x.InitializeAsync(null)).Returns(Task.CompletedTask);
         _chatServiceMock
@@ -108,7 +108,7 @@ public class ChatTests : TestContext
 
         _privateMessageServiceMock
             .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
-            .ReturnsAsync(new List<PrivateConversation>());
+            .ReturnsAsync([]);
 
         var cut = RenderComponent<Chat>();
         await Task.Delay(100);
@@ -160,7 +160,7 @@ public class ChatTests : TestContext
 
         _privateMessageServiceMock
             .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
-            .ReturnsAsync(new List<PrivateConversation>());
+            .ReturnsAsync([]);
 
         var cut = RenderComponent<Chat>();
         await Task.Delay(100);
@@ -181,12 +181,12 @@ public class ChatTests : TestContext
 
         _httpClientMock
             .Setup(x => x.GetFromJsonAsync<List<Channel>>("/api/channels", default))
-            .ReturnsAsync(new List<Channel>());
+            .ReturnsAsync([]);
 
         _chatServiceMock.Setup(x => x.InitializeAsync(null)).Returns(Task.CompletedTask);
         _privateMessageServiceMock
             .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
-            .ReturnsAsync(new List<PrivateConversation>());
+            .ReturnsAsync([]);
 
         var cut = RenderComponent<Chat>();
         await Task.Delay(100);
@@ -219,7 +219,7 @@ public class ChatTests : TestContext
 
         _httpClientMock
             .Setup(x => x.GetFromJsonAsync<List<Channel>>("/api/channels", default))
-            .ReturnsAsync(new List<Channel>());
+            .ReturnsAsync([]);
 
         _chatServiceMock.Setup(x => x.InitializeAsync(null)).Returns(Task.CompletedTask);
 
@@ -240,7 +240,7 @@ public class ChatTests : TestContext
 
         _privateMessageServiceMock
             .Setup(x => x.GetPrivateMessagesAsync("TestUser", "User2"))
-            .ReturnsAsync(new List<PrivateMessage>());
+            .ReturnsAsync([]);
 
         var cut = RenderComponent<Chat>();
         await Task.Delay(100);
@@ -261,12 +261,12 @@ public class ChatTests : TestContext
 
         _httpClientMock
             .Setup(x => x.GetFromJsonAsync<List<Channel>>("/api/channels", default))
-            .ReturnsAsync(new List<Channel>());
+            .ReturnsAsync([]);
 
         _chatServiceMock.Setup(x => x.InitializeAsync(null)).Returns(Task.CompletedTask);
         _privateMessageServiceMock
             .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
-            .ReturnsAsync(new List<PrivateConversation>());
+            .ReturnsAsync([]);
 
         var cut = RenderComponent<Chat>();
         await Task.Delay(100);
@@ -294,14 +294,14 @@ public class ChatTests : TestContext
 
         _httpClientMock
             .Setup(x => x.GetFromJsonAsync<List<Channel>>("/api/channels", default))
-            .ReturnsAsync(new List<Channel>());
+            .ReturnsAsync([]);
 
         _chatServiceMock.Setup(x => x.InitializeAsync(null)).Returns(Task.CompletedTask);
         _chatServiceMock.Setup(x => x.DisposeAsync()).Returns(ValueTask.CompletedTask);
 
         _privateMessageServiceMock
             .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
-            .ReturnsAsync(new List<PrivateConversation>());
+            .ReturnsAsync([]);
 
         var cut = RenderComponent<Chat>();
         await Task.Delay(100);

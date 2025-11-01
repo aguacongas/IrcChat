@@ -69,7 +69,7 @@ public class AdminTests : TestContext
 
         _httpClientMock
             .Setup(x => x.GetFromJsonAsync<List<UserStats>>("/api/admin/users", default))
-            .ReturnsAsync(new List<UserStats>());
+            .ReturnsAsync([]);
 
         // Act
         var cut = RenderComponent<Admin>();
@@ -93,7 +93,7 @@ public class AdminTests : TestContext
 
         _httpClientMock
             .Setup(x => x.GetFromJsonAsync<List<UserStats>>("/api/admin/users", default))
-            .ReturnsAsync(new List<UserStats>());
+            .ReturnsAsync([]);
 
         var navigateCalled = false;
         _navigationManagerMock
