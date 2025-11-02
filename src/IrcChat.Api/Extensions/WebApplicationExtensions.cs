@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using IrcChat.Api.Data;
 using IrcChat.Api.Hubs;
 using Microsoft.EntityFrameworkCore;
@@ -6,6 +7,7 @@ namespace IrcChat.Api.Extensions;
 
 public static class WebApplicationExtensions
 {
+    [SuppressMessage("SonarAnalyzer", "S2139", Justification = "Already log and rethrow correctly")]
     public static async Task<WebApplication> InitializeDatabaseAsync(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
