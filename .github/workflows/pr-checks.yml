@@ -60,9 +60,9 @@ jobs:
           /o:"${{ vars.SONAR_ORGANIZATION }}" \
           /d:sonar.token="$SONAR_TOKEN" \
           /d:sonar.host.url="https://sonarcloud.io" \
-          /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
-          /d:sonar.cs.vstest.reportsPaths="**/*.trx" \
-          /d:sonar.coverage.exclusions="**/Migrations/**,**/Program.cs,**/*Tests/**,**/wwwroot/**" \
+          /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml" \
+          /d:sonar.cs.vstest.reportsPaths="**/TestResults/**/*.trx" \
+          /d:sonar.coverage.exclusions="**/Migrations/**,**/*Tests/**,**/wwwroot/**" \
           /d:sonar.exclusions="**/wwwroot/lib/**,**/obj/**,**/bin/**"
 
     - name: 🏗️ Build
@@ -79,6 +79,7 @@ jobs:
           --logger "trx;LogFileName=api-tests.trx" \
           --logger "console;verbosity=detailed" \
           --collect:"XPlat Code Coverage" \
+          --results-directory ./TestResults \
           -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
         
         dotnet test tests/IrcChat.Client.Tests/IrcChat.Client.Tests.csproj \
@@ -87,7 +88,15 @@ jobs:
           --logger "trx;LogFileName=client-tests.trx" \
           --logger "console;verbosity=detailed" \
           --collect:"XPlat Code Coverage" \
+          --results-directory ./TestResults \
           -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+    - name: 📊 List coverage files (debug)
+      run: |
+        echo "=== Searching for coverage files ==="
+        find . -name "coverage.opencover.xml" -o -name "*.trx"
+        echo "=== TestResults directory ==="
+        ls -R ./TestResults || echo "TestResults not found"
 
     - name: 🔍 End SonarCloud analysis
       env:
