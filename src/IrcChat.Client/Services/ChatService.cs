@@ -84,7 +84,7 @@ public class ChatService(IOptions<ApiSettings> apiSettings, IPrivateMessageServi
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Error sending ping: {ex.Message}");
+                await Console.Error.WriteLineAsync($"Error sending ping: {ex.Message}");
             }
         }, null, TimeSpan.Zero, TimeSpan.FromSeconds(30));
     }
