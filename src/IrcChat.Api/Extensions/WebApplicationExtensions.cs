@@ -1,18 +1,14 @@
 using System.Diagnostics.CodeAnalysis;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using IrcChat.Api.Data;
 using IrcChat.Api.Hubs;
-using IrcChat.Api.Services;
 using IrcChat.Shared.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 
 namespace IrcChat.Api.Extensions;
 
 public static class WebApplicationExtensions
 {
+    [SuppressMessage("SonarAnalyzer", "S2139", Justification = "Exception logguée et relancée correctement")]
     public static async Task<WebApplication> InitializeDatabaseAsync(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
@@ -215,32 +211,5 @@ public static class WebApplicationExtensions
             .ToListAsync();
 
         return Results.Ok(users);
-    }
-
-    private static string GenerateJwtToken(ReservedUsername user, IConfiguration configuration)
-    {
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(configuration["Jwt:Key"]!));
-
-        var credentials = new SigningCredentials(
-            key, SecurityAlgorithms.HmacSha256);
-
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim("provider", user.Provider.ToString())
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: configuration["Jwt:Issuer"],
-            audience: configuration["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddDays(30),
-            signingCredentials: credentials
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

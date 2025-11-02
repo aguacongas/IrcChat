@@ -246,7 +246,7 @@ public static class OAuthEndpoints
     private static string GenerateJwtToken(ReservedUsername user, IConfiguration configuration)
     {
         var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? "your-secret-key-minimum-32-characters-long-for-security"));
+            Encoding.UTF8.GetBytes(configuration["Jwt:Key"]!));
 
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
