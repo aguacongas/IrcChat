@@ -17,9 +17,14 @@ public class ChatService(IOptions<ApiSettings> apiSettings, IPrivateMessageServi
     public event Action<string, string>? OnUserLeft;
     public event Action<List<User>>? OnUserListUpdated;
 
-    // Nouveaux events pour le mute
+    // Events pour le mute
     public event Action<string, bool>? OnChannelMuteStatusChanged;
     public event Action<string>? OnMessageBlocked;
+
+    // Events pour la gestion des canaux
+    public event Action<string>? OnChannelDeleted;
+    public event Action<string>? OnChannelNotFound;
+    public event Action? OnChannelListUpdated;
 
     public async Task InitializeAsync(string? token = null)
     {
@@ -47,10 +52,17 @@ public class ChatService(IOptions<ApiSettings> apiSettings, IPrivateMessageServi
 
         _hubConnection.On<List<User>>("UpdateUserList", users => OnUserListUpdated?.Invoke(users));
 
-        // Nouveaux handlers pour le mute
+        // Handlers pour le mute
         _hubConnection.On<string, bool>("ChannelMuteStatusChanged", (channel, isMuted) => OnChannelMuteStatusChanged?.Invoke(channel, isMuted));
 
         _hubConnection.On<string>("MessageBlocked", reason => OnMessageBlocked?.Invoke(reason));
+
+        // Handlers pour la gestion des canaux
+        _hubConnection.On<string>("ChannelDeleted", channelName => OnChannelDeleted?.Invoke(channelName));
+
+        _hubConnection.On<string>("ChannelNotFound", channelName => OnChannelNotFound?.Invoke(channelName));
+
+        _hubConnection.On("ChannelListUpdated", () => OnChannelListUpdated?.Invoke());
 
         // Handlers pour les messages privés
         _hubConnection.On<PrivateMessage>("ReceivePrivateMessage", message => privateMessageService.NotifyPrivateMessageReceived(message));

@@ -10,6 +10,9 @@ public interface IChatService : IAsyncDisposable
     event Action<List<User>>? OnUserListUpdated;
     event Action<string, bool>? OnChannelMuteStatusChanged;
     event Action<string>? OnMessageBlocked;
+    event Action<string>? OnChannelDeleted;
+    event Action<string>? OnChannelNotFound;
+    event Action? OnChannelListUpdated;
 
     Task InitializeAsync(string? token = null);
     Task JoinChannel(string username, string channel);
