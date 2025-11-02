@@ -1,4 +1,4 @@
-<!-- tests/IrcChat.Api.Tests/IrcChat.Api.Tests.csproj -->
+﻿<!-- tests/IrcChat.Api.Tests/IrcChat.Api.Tests.csproj -->
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
@@ -25,4 +29,11 @@
     <ProjectReference Include="..\..\src\IrcChat.Api\IrcChat.Api.csproj" />
     <ProjectReference Include="..\..\src\IrcChat.Shared\IrcChat.Shared.csproj" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>opencover</CoverletOutputFormat>
+    <CoverletOutput>./TestResults/</CoverletOutput>
+    <ExcludeByFile>**/Migrations/*.cs</ExcludeByFile>
+  </PropertyGroup>
 </Project>
