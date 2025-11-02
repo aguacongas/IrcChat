@@ -243,6 +243,7 @@ public static class OAuthEndpoints
         return Results.Ok();
     }
 
+    [SuppressMessage("SonarAnalyzer", "S6781", Justification = "Use env var to configure it")]
     private static string GenerateJwtToken(ReservedUsername user, IConfiguration configuration)
     {
         var key = new SymmetricSecurityKey(

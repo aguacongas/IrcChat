@@ -8,7 +8,7 @@ namespace IrcChat.Api.Extensions;
 
 public static class WebApplicationExtensions
 {
-    [SuppressMessage("SonarAnalyzer", "S2139", Justification = "Exception logguée et relancée correctement")]
+    [SuppressMessage("SonarAnalyzer", "S2139", Justification = "Already log and rethrow correctly")]
     public static async Task<WebApplication> InitializeDatabaseAsync(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
