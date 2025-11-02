@@ -55,6 +55,7 @@ public static class WebApplicationExtensions
            .MapMessageEndpoints()
            .MapChannelEndpoints()
            .MapChannelMuteEndpoints()
+           .MapChannelDeleteEndpoints()
            .MapPrivateMessageEndpoints()
            .MapAdminManagementEndpoints()
            .MapSignalRHub();
