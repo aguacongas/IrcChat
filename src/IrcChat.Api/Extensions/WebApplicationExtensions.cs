@@ -69,7 +69,7 @@ public static class WebApplicationExtensions
 
         return app;
     }
-    
+
     private static WebApplication MapMessageEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/messages")

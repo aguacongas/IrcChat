@@ -88,7 +88,7 @@ public class ChannelDeleteButtonTests : TestContext
     public async Task ChannelDeleteButton_OnConfirm_ShouldCallApi()
     {
         // Arrange
-        var mockedRequest= _mockHttp.When(HttpMethod.Delete, "*/api/channels/general")
+        var mockedRequest = _mockHttp.When(HttpMethod.Delete, "*/api/channels/general")
             .Respond(HttpStatusCode.OK);
 
         var eventTriggered = false;
