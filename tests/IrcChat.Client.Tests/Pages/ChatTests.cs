@@ -162,6 +162,7 @@ public class ChatTests : TestContext
 
         // Act
         await cut.InvokeAsync(() => cut.Find($"ul.channel-list > li[blazor\\:onclick]").Click());
+        cut.Render();
 
         // Assert
         _chatServiceMock.Verify(
