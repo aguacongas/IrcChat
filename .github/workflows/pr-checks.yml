@@ -27,8 +27,43 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
+    - name: 🔧 Setup Java (required by SonarScanner)
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: 📦 Cache SonarCloud scanner
+      id: cache-sonar-scanner
+      uses: actions/cache@v4
+      with:
+        path: ./.sonar/scanner
+        key: ${{ runner.os }}-sonar-scanner
+        restore-keys: ${{ runner.os }}-sonar-scanner
+
+    - name: 🔧 Install SonarCloud scanner
+      if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p ./.sonar/scanner
+        dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner
+
     - name: 📦 Restore dependencies
       run: dotnet restore
+
+    - name: 🔍 Begin SonarCloud analysis
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: |
+        ./.sonar/scanner/dotnet-sonarscanner begin \
+          /k:"${{ vars.SONAR_PROJECT_KEY }}" \
+          /o:"${{ vars.SONAR_ORGANIZATION }}" \
+          /d:sonar.token="$SONAR_TOKEN" \
+          /d:sonar.host.url="https://sonarcloud.io" \
+          /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
+          /d:sonar.cs.vstest.reportsPaths="**/*.trx" \
+          /d:sonar.coverage.exclusions="**/Migrations/**,**/Program.cs,**/*Tests/**,**/wwwroot/**" \
+          /d:sonar.exclusions="**/wwwroot/lib/**,**/obj/**,**/bin/**"
 
     - name: 🏗️ Build
       run: dotnet build --configuration Release --no-restore
@@ -41,12 +76,32 @@ jobs:
         dotnet test tests/IrcChat.Api.Tests/IrcChat.Api.Tests.csproj \
           --configuration Release \
           --no-build \
-          --logger "console;verbosity=detailed"
+          --logger "trx;LogFileName=api-tests.trx" \
+          --logger "console;verbosity=detailed" \
+          --collect:"XPlat Code Coverage" \
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
         
         dotnet test tests/IrcChat.Client.Tests/IrcChat.Client.Tests.csproj \
           --configuration Release \
           --no-build \
-          --logger "console;verbosity=detailed"
+          --logger "trx;LogFileName=client-tests.trx" \
+          --logger "console;verbosity=detailed" \
+          --collect:"XPlat Code Coverage" \
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+    - name: 🔍 End SonarCloud analysis
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="$SONAR_TOKEN"
+
+    - name: 📊 SonarCloud Quality Gate check
+      uses: sonarsource/sonarqube-quality-gate-action@v1.2.0
+      timeout-minutes: 5
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      with:
+        scanMetadataReportFile: .sonarqube/out/.sonar/report-task.txt
 
     - name: 📝 Comment PR with Test Results
       uses: actions/github-script@v7
