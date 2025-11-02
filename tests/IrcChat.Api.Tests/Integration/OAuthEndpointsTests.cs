@@ -1,9 +1,14 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Claims;
+using System.Text;
 using FluentAssertions;
 using IrcChat.Api.Data;
 using IrcChat.Shared.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using Xunit;
 
 namespace IrcChat.Api.Tests.Integration;
@@ -74,6 +79,82 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     }
 
     [Fact]
+    public async Task CheckUsername_WithConnectedUser_ShouldReturnNotAvailable()
+    {
+        // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        var connectedUser = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            Username = "connected_user",
+            Channel = "general",
+            ConnectionId = "conn-123",
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            LastPing = DateTime.UtcNow,
+            ServerInstanceId = "test"
+        };
+
+        db.ConnectedUsers.Add(connectedUser);
+        await db.SaveChangesAsync();
+
+        var request = new UsernameCheckRequest
+        {
+            Username = "connected_user"
+        };
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/oauth/check-username", request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<UsernameCheckResponse>();
+        result.Should().NotBeNull();
+        result!.Available.Should().BeFalse();
+        result.IsCurrentlyUsed.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CheckUsername_CaseInsensitive_ShouldWork()
+    {
+        // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        var reservedUser = new ReservedUsername
+        {
+            Id = Guid.NewGuid(),
+            Username = "CaseSensitive",
+            Provider = ExternalAuthProvider.Google,
+            ExternalUserId = "google-case-123",
+            Email = "case@example.com",
+            CreatedAt = DateTime.UtcNow,
+            LastLoginAt = DateTime.UtcNow,
+            IsAdmin = false
+        };
+
+        db.ReservedUsernames.Add(reservedUser);
+        await db.SaveChangesAsync();
+
+        var request = new UsernameCheckRequest
+        {
+            Username = "casesensitive" // lowercase
+        };
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/oauth/check-username", request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<UsernameCheckResponse>();
+        result.Should().NotBeNull();
+        result!.Available.Should().BeFalse();
+        result.IsReserved.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task GetProviderConfig_ForGoogle_ShouldReturnConfig()
     {
         // Act
@@ -112,6 +193,105 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         var config = await response.Content.ReadFromJsonAsync<ProviderConfigResponse>();
         config.Should().NotBeNull();
         config!.Provider.Should().Be(ExternalAuthProvider.Facebook);
+    }
+
+    [Fact]
+    public async Task ForgetUsername_WithAuth_ShouldDeleteReservedUser()
+    {
+        // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        var userToForget = new ReservedUsername
+        {
+            Id = Guid.NewGuid(),
+            Username = "forget_me",
+            Provider = ExternalAuthProvider.Google,
+            ExternalUserId = "forget-123",
+            Email = "forget@example.com",
+            CreatedAt = DateTime.UtcNow,
+            LastLoginAt = DateTime.UtcNow,
+            IsAdmin = false
+        };
+
+        db.ReservedUsernames.Add(userToForget);
+        await db.SaveChangesAsync();
+
+        var token = GenerateToken(userToForget);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // Act
+        var response = await _client.PostAsync("/api/oauth/forget-username", null);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var verifyScope = _factory.Services.CreateScope();
+        using var verifyContext = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
+        var deletedUser = await verifyContext.ReservedUsernames.FindAsync(userToForget.Id);
+        deletedUser.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ForgetUsername_WithoutAuth_ShouldReturnUnauthorized()
+    {
+        // Act
+        var response = await _client.PostAsync("/api/oauth/forget-username", null);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task ForgetUsername_NonExistentUser_ShouldReturnNotFound()
+    {
+        // Arrange
+        var fakeUser = new ReservedUsername
+        {
+            Id = Guid.NewGuid(),
+            Username = "nonexistent",
+            Provider = ExternalAuthProvider.Google,
+            ExternalUserId = "fake-123",
+            Email = "fake@example.com",
+            CreatedAt = DateTime.UtcNow,
+            LastLoginAt = DateTime.UtcNow,
+            IsAdmin = false
+        };
+
+        var token = GenerateToken(fakeUser);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // Act
+        var response = await _client.PostAsync("/api/oauth/forget-username", null);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    private static string GenerateToken(ReservedUsername user)
+    {
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes("VotreCleSecrete123456789012345678901234567890"));
+
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim("provider", user.Provider.ToString())
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: "IrcChatApi",
+            audience: "IrcChatClient",
+            claims: claims,
+            expires: DateTime.UtcNow.AddHours(1),
+            signingCredentials: credentials
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
     private class ProviderConfigResponse

@@ -62,7 +62,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using var verifScope = _factory.Services.CreateScope();
-        await using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
+        using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var deletedChannel = await verifyContext.Channels
             .FirstOrDefaultAsync(c => c.Name == channel.Name);
         deletedChannel.Should().BeNull();
@@ -109,7 +109,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         using var verifScope = _factory.Services.CreateScope();
-        await using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
+        using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var deletedChannel = await verifyContext.Channels
             .FirstOrDefaultAsync(c => c.Name == channel.Name);
         deletedChannel.Should().BeNull();
@@ -157,7 +157,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
         using var verifScope = _factory.Services.CreateScope();
-        await using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
+        using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var stillExists = await verifyContext.Channels
             .AnyAsync(c => c.Name == channel.Name);
         stillExists.Should().BeTrue();
@@ -274,7 +274,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using var verifScope = _factory.Services.CreateScope();
-        await using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
+        using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var deletedMessage = await verifyContext.Messages
             .FirstOrDefaultAsync(m => m.Id == message.Id);
         deletedMessage.Should().NotBeNull();
@@ -336,7 +336,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using var verifScope = _factory.Services.CreateScope();
-        await using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
+        using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var remainingUsers = await verifyContext.ConnectedUsers
             .Where(u => u.Channel == channel.Name)
             .ToListAsync();

@@ -142,8 +142,9 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        using var verifScope = _factory.Services.CreateScope();
-        await using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        using var verifyScope = _factory.Services.CreateScope();
+        using var verifyContext = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var updatedUser = await verifyContext.ReservedUsernames.FindAsync(targetUser.Id);
         updatedUser.Should().NotBeNull();
         updatedUser!.IsAdmin.Should().BeTrue();
@@ -239,8 +240,9 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        using var verifScope = _factory.Services.CreateScope();
-        await using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        using var verifyScope = _factory.Services.CreateScope();
+        using var verifyContext = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var updatedUser = await verifyContext.ReservedUsernames.FindAsync(adminUser2.Id);
         updatedUser.Should().NotBeNull();
         updatedUser!.IsAdmin.Should().BeFalse();
