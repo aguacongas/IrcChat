@@ -1,13 +1,17 @@
 @* src/IrcChat.Client/Pages/Chat.razor *@
 @page "/chat"
+@using IrcChat.Client.Models
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Services
 @using IrcChat.Client.Components
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.Extensions.Options
 @inject HttpClient Http
 @inject IChatService ChatService
 @inject IUnifiedAuthService Auth
 @inject IPrivateMessageService PrivateMessageService
 @inject NavigationManager Navigation
+@inject IOptions<ApiSettings> ApiSettingsOptions
 @implements IAsyncDisposable
 
 <PageTitle>IRC Chat</PageTitle>
@@ -134,7 +138,18 @@ else
 
         try
         {
-            await ChatService.InitializeAsync(Auth.Token);
+            var apiSettings = ApiSettingsOptions.Value;
+            var hubUrl = !string.IsNullOrEmpty(apiSettings.SignalRHubUrl)
+              ? apiSettings.SignalRHubUrl
+              : $"{apiSettings.BaseUrl}/chathub";
+
+            var hubConnectionBuilder = new HubConnectionBuilder()
+                .WithUrl(hubUrl, options =>
+                {
+                    options.AccessTokenProvider = () => Task.FromResult(Auth.Token);                    
+                })
+                .WithAutomaticReconnect();
+            await ChatService.InitializeAsync(hubConnectionBuilder);
             isConnected = true;
 
             // Écouter les changements de statut mute

@@ -5,10 +5,9 @@ using Microsoft.Extensions.Options;
 
 namespace IrcChat.Client.Services;
 
-public class ChatService(IOptions<ApiSettings> apiSettings, IPrivateMessageService privateMessageService) : IChatService
+public class ChatService(IPrivateMessageService privateMessageService) : IChatService
 {
     private HubConnection? _hubConnection;
-    private readonly ApiSettings _apiSettings = apiSettings.Value;
     private Timer? _pingTimer;
 
     // Events pour les canaux publics
@@ -26,22 +25,9 @@ public class ChatService(IOptions<ApiSettings> apiSettings, IPrivateMessageServi
     public event Action<string>? OnChannelNotFound;
     public event Action? OnChannelListUpdated;
 
-    public async Task InitializeAsync(string? token = null)
+    public async Task InitializeAsync(IHubConnectionBuilder hubConnectionBuilder)
     {
-        var hubUrl = !string.IsNullOrEmpty(_apiSettings.SignalRHubUrl)
-            ? _apiSettings.SignalRHubUrl
-            : $"{_apiSettings.BaseUrl}/chathub";
-
-        _hubConnection = new HubConnectionBuilder()
-            .WithUrl(hubUrl, options =>
-            {
-                if (!string.IsNullOrEmpty(token))
-                {
-                    options.AccessTokenProvider = () => Task.FromResult<string?>(token);
-                }
-            })
-            .WithAutomaticReconnect()
-            .Build();
+        _hubConnection = hubConnectionBuilder.Build();
 
         // Handlers pour les canaux publics
         _hubConnection.On<Message>("ReceiveMessage", message => OnMessageReceived?.Invoke(message));

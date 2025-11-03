@@ -1,4 +1,5 @@
 using IrcChat.Shared.Models;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace IrcChat.Client.Services;
 
@@ -14,7 +15,7 @@ public interface IChatService : IAsyncDisposable
     event Action<string>? OnChannelNotFound;
     event Action? OnChannelListUpdated;
 
-    Task InitializeAsync(string? token = null);
+    Task InitializeAsync(IHubConnectionBuilder hubConnectionBuilder);
     Task JoinChannel(string username, string channel);
     Task LeaveChannel(string channel);
     Task SendMessage(SendMessageRequest request);
