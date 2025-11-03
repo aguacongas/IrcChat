@@ -172,7 +172,7 @@ public class ChatTests : TestContext
         await cut.InvokeAsync(() => cut.Find($"ul.channel-list > li[blazor\\:onclick]").Click());
         cut.Render();
         await Task.Delay(200);
-        
+
         // Assert
         _chatServiceMock.Verify(
             x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()),
@@ -443,7 +443,7 @@ public class ChatTests : TestContext
             x => x.OnPrivateMessageReceived += It.IsAny<Action<PrivateMessage>>());
     }
 
-    
+
     [Fact]
     public async Task Chat_ConversationDeleted_ShouldClosePrivateChatIfOpen()
     {
@@ -477,7 +477,7 @@ public class ChatTests : TestContext
             x => x.OnConversationDeleted += It.IsAny<Action<string>>());
     }
 
-    
+
 
     [Fact]
     public async Task Chat_CanManageCurrentChannel_AdminUser_ShouldReturnTrue()
