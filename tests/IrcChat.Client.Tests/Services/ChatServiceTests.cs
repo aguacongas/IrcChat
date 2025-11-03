@@ -842,7 +842,7 @@ public class ChatServiceTests : TestContext
             Times.Once);
     }
 
-    
+
     [Fact]
     public async Task DisposeAsync_AfterInitialize_ShouldDisposeConnectionAndTimer()
     {
