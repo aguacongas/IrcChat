@@ -75,6 +75,12 @@ public class ChatServiceTests : TestContext
             .Setup(x => x.Build())
             .Returns(hubConnectionMock.Object);
 
+        // Simuler l'état connecté
+        var internalStateField = typeof(HubConnection).GetField("_state", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var internalState = internalStateField!.GetValue(hubConnectionMock.Object);
+        var changeStateMethod = internalState!.GetType().GetMethod("ChangeState", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+        changeStateMethod!.Invoke(internalState, [HubConnectionState.Disconnected, HubConnectionState.Connected]);
+
         // Act & Assert
         var act = async () => await service.InitializeAsync(hubConnectionBuilderMock.Object);
         await act.Should().NotThrowAsync();
@@ -945,8 +951,16 @@ public class HubConnectionStub : HubConnection
             Mock.Of<IHubProtocol>(),
             Mock.Of<EndPoint>(),
             Mock.Of<IServiceProvider>(),
-            Mock.Of<ILoggerFactory>(),
+            GetLoggerFactory(),
             Mock.Of<IRetryPolicy>())
     {
+    }
+
+    private static ILoggerFactory GetLoggerFactory()
+    {
+        var loggerFactoryMock = new Mock<ILoggerFactory>();
+        loggerFactoryMock.Setup(x => x.CreateLogger(It.IsAny<string>()))
+            .Returns(Mock.Of<ILogger>());
+        return loggerFactoryMock.Object;
     }
 }
