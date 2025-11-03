@@ -425,7 +425,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var errorContent = await response.Content.ReadAsStringAsync();
         errorContent.Should().Contain("username_taken");
-    }    
+    }
 
     [Fact]
     public async Task GetProviderConfig_WithValidProvider_ShouldReturnConfig()
@@ -512,7 +512,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
-   
+
     private static string GenerateToken(ReservedUsername user)
     {
         var key = new SymmetricSecurityKey(

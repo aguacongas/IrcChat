@@ -63,7 +63,7 @@ public class ChatServiceTests : TestContext
     {
         // Arrange
         var service = new ChatService(_privateMessageServiceMock.Object);
-            
+
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
         var connectionFactoryMock = new Mock<IConnectionFactory>();
         var connectionContextMock = new Mock<ConnectionContext>();
@@ -102,7 +102,7 @@ public class ChatServiceTests : TestContext
         await outpoutMs.WriteAsync(handshakeResponse, 0, handshakeResponse.Length);
         await outpoutMs.FlushAsync();
         outpoutMs.Position = 0;
-        
+
         var hubConnection = new HubConnection(connectionFactoryMock.Object,
                 hubProtocolMock.Object,
                 enpointMock.Object,
@@ -119,7 +119,7 @@ public class ChatServiceTests : TestContext
         await act.Should().NotThrowAsync();
     }
 
-    
+
 
     [Fact]
     public async Task DisposeAsync_ShouldCleanupResources()
@@ -155,5 +155,5 @@ public class ChatServiceTests : TestContext
         _privateMessageServiceMock.Verify(
             x => x.NotifyPrivateMessageReceived(It.IsAny<PrivateMessage>()),
             Times.Never()); // Pas encore appelé car pas de vraie connexion SignalR
-    }    
+    }
 }
