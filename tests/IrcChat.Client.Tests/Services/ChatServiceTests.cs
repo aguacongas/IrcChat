@@ -14,6 +14,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using RichardSzalay.MockHttp;
 using Xunit;
+using Xunit.Sdk;
 
 namespace IrcChat.Client.Tests.Services;
 
@@ -598,7 +599,343 @@ public class ChatServiceTests : TestContext
         // Assert
         await act.Should().NotThrowAsync();
     }
+
+    [Fact]
+    public async Task JoinChannel_WhenConnectionNull_ShouldNotThrow()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object);
+
+        // Act
+        var act = async () => await service.JoinChannel("testUser", "testChannel");
+
+        // Assert
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task JoinChannel_WhenConnectionExists_ShouldCallSendAsync()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionMock.Setup(x => x.SendCoreAsync("JoinChannel", It.IsAny<object?[]>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Act
+        await service.JoinChannel("testUser", "testChannel");
+
+        // Assert
+        hubConnectionMock.Verify(
+            x => x.SendCoreAsync("JoinChannel", It.Is<object?[]>(args =>
+                args.Length == 2 &&
+                args[0]!.ToString() == "testUser" &&
+                args[1]!.ToString() == "testChannel"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task LeaveChannel_WhenConnectionNull_ShouldNotThrow()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object);
+
+        // Act
+        var act = async () => await service.LeaveChannel("testChannel");
+
+        // Assert
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task LeaveChannel_WhenConnectionExists_ShouldCallSendAsync()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionMock.Setup(x => x.SendCoreAsync("LeaveChannel", It.IsAny<object?[]>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Act
+        await service.LeaveChannel("testChannel");
+
+        // Assert
+        hubConnectionMock.Verify(
+            x => x.SendCoreAsync("LeaveChannel", It.Is<object?[]>(args =>
+                args.Length == 1 &&
+                args[0]!.ToString() == "testChannel"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendMessage_WhenConnectionNull_ShouldNotThrow()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object);
+        var request = new SendMessageRequest
+        {
+            Username = "testUser",
+            Channel = "testChannel",
+            Content = "Test message"
+        };
+
+        // Act
+        var act = async () => await service.SendMessage(request);
+
+        // Assert
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task SendMessage_WhenConnectionExists_ShouldCallSendAsync()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionMock.Setup(x => x.SendCoreAsync("SendMessage", It.IsAny<object?[]>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        var request = new SendMessageRequest
+        {
+            Username = "testUser",
+            Channel = "testChannel",
+            Content = "Test message"
+        };
+
+        // Act
+        await service.SendMessage(request);
+
+        // Assert
+        hubConnectionMock.Verify(
+            x => x.SendCoreAsync("SendMessage", It.Is<object?[]>(args =>
+                args.Length == 1 &&
+                args[0] is SendMessageRequest),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendPrivateMessage_WhenConnectionNull_ShouldNotThrow()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object);
+        var request = new SendPrivateMessageRequest
+        {
+            SenderUsername = "sender",
+            RecipientUsername = "recipient",
+            Content = "Private message"
+        };
+
+        // Act
+        var act = async () => await service.SendPrivateMessage(request);
+
+        // Assert
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task SendPrivateMessage_WhenConnectionExists_ShouldCallSendAsync()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionMock.Setup(x => x.SendCoreAsync("SendPrivateMessage", It.IsAny<object?[]>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        var request = new SendPrivateMessageRequest
+        {
+            SenderUsername = "sender",
+            RecipientUsername = "recipient",
+            Content = "Private message"
+        };
+
+        // Act
+        await service.SendPrivateMessage(request);
+
+        // Assert
+        hubConnectionMock.Verify(
+            x => x.SendCoreAsync("SendPrivateMessage", It.Is<object?[]>(args =>
+                args.Length == 1 &&
+                args[0] is SendPrivateMessageRequest),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task MarkPrivateMessagesAsRead_WhenConnectionNull_ShouldNotThrow()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object);
+
+        // Act
+        var act = async () => await service.MarkPrivateMessagesAsRead("sender");
+
+        // Assert
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task MarkPrivateMessagesAsRead_WhenConnectionExists_ShouldCallSendAsync()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionMock.Setup(x => x.SendCoreAsync("MarkPrivateMessagesAsRead", It.IsAny<object?[]>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Act
+        await service.MarkPrivateMessagesAsRead("sender");
+
+        // Assert
+        hubConnectionMock.Verify(
+            x => x.SendCoreAsync("MarkPrivateMessagesAsRead", It.Is<object[]>(args =>
+                args.Length == 1 &&
+                args[0].ToString() == "sender"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    
+    [Fact]
+    public async Task DisposeAsync_AfterInitialize_ShouldDisposeConnectionAndTimer()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionMock.Setup(x => x.DisposeAsync())
+            .Returns(ValueTask.CompletedTask);
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Act
+        await service.DisposeAsync();
+
+        // Assert
+        hubConnectionMock.Verify(x => x.DisposeAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_CalledMultipleTimes_ShouldNotThrow()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionMock.Setup(x => x.DisposeAsync())
+            .Returns(ValueTask.CompletedTask);
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Act
+        await service.DisposeAsync();
+        var act = async () => await service.DisposeAsync();
+
+        // Assert
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task MultipleEventSubscribers_ShouldAllBeNotified()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+
+        Func<object?[], object, Task>? onMessageBlocked = null;
+        object? onMessageBlockedState = null;
+
+        hubConnectionMock.Setup(x => x.On("MessageBlocked", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()))
+            .Callback<string, Type[], Func<object?[], object, Task>, object>((methodName, parameterTypes, handler, state) =>
+            {
+                onMessageBlocked = handler;
+                onMessageBlockedState = state;
+            })
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        var subscriber1Called = 0;
+        var subscriber2Called = 0;
+
+        service.OnMessageBlocked += _ => subscriber1Called++;
+        service.OnMessageBlocked += _ => subscriber2Called++;
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Act
+        await onMessageBlocked!(["test"], onMessageBlockedState!);
+
+        // Assert
+        subscriber1Called.Should().Be(1);
+        subscriber2Called.Should().Be(1);
+    }
 }
+
 
 public class HubConnectionStub : HubConnection
 {
