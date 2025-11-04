@@ -7,9 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IrcChat.Api.Extensions;
 
+[SuppressMessage("Performance", "CA1862", Justification = "Not needed in SQL")]
 public static class ChannelMuteEndpoints
 {
-    [SuppressMessage("Performance", "CA1862", Justification = "Not needed in SQL")]
     public static WebApplication MapChannelMuteEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/channels")
