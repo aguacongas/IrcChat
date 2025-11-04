@@ -448,7 +448,7 @@ public class ChatServiceTests : TestContext
         // Arrange
         string? notFoundChannel = null;
         service.OnChannelNotFound += (channel) => notFoundChannel = channel;
-        
+
         // Act
         await onChannelNotFound!(["missingChannel"], onChannelNotFoundState!);
 
