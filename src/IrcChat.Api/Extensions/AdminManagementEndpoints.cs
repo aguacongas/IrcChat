@@ -16,7 +16,7 @@ public static class AdminManagementEndpoints
             .RequireAuthorization();
 
         // Obtenir la liste de tous les utilisateurs réservés
-        group.MapGet("/users",  GetUsersAsync)
+        group.MapGet("/users", GetUsersAsync)
         .WithName("GetAllReservedUsers")
         .WithOpenApi();
 
