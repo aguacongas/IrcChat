@@ -1,6 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
 using IrcChat.Shared.Models;
 
@@ -43,7 +41,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
         };
     }
 
-    public async Task<OAuthTokenResponse?> ExchangeCodeForTokenAsync(
+    public virtual async Task<OAuthTokenResponse?> ExchangeCodeForTokenAsync(
         ExternalAuthProvider provider,
         string code,
         string redirectUri,
@@ -97,7 +95,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
         }
     }
 
-    public async Task<ExternalUserInfo?> GetUserInfoAsync(
+    public virtual async Task<ExternalUserInfo?> GetUserInfoAsync(
         ExternalAuthProvider provider,
         string accessToken)
     {
@@ -164,29 +162,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
                 ? pic.GetProperty("data").GetProperty("url").GetString()
                 : null
         };
-    }
-
-    private async Task<ExternalUserInfo?> GetAppleUserInfo(string idToken)
-    {
-        try
-        {
-            var handler = new JwtSecurityTokenHandler();
-            var jwt = handler.ReadJwtToken(idToken);
-
-            return new ExternalUserInfo
-            {
-                Id = jwt.Claims.FirstOrDefault(c => c.Type == "sub")?.Value ?? "",
-                Email = jwt.Claims.FirstOrDefault(c => c.Type == "email")?.Value ?? "",
-                Name = jwt.Claims.FirstOrDefault(c => c.Type == "name")?.Value,
-                AvatarUrl = null // Apple ne fournit pas d'avatar
-            };
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error parsing Apple ID token");
-            return null;
-        }
-    }
+    }    
 
     private async Task<ExternalUserInfo?> GetMicrosoftUserInfo(string accessToken)
     {
