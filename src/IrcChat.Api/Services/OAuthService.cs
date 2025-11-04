@@ -162,7 +162,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
                 ? pic.GetProperty("data").GetProperty("url").GetString()
                 : null
         };
-    }    
+    }
 
     private async Task<ExternalUserInfo?> GetMicrosoftUserInfo(string accessToken)
     {

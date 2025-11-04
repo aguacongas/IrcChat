@@ -65,7 +65,7 @@ public class ApiWebApplicationFactory : WebApplicationFactory<ChatHub>
             .UseEnvironment("Testing");
 }
 
-public class OAuthServiceStub: OAuthService
+public class OAuthServiceStub : OAuthService
 {
     public OAuthServiceStub() : base(null!, new ConfigurationManager().AddJsonFile("appsettings.json").Build(), null!)
     {
