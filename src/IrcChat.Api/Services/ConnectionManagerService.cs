@@ -51,7 +51,7 @@ public class ConnectionManagerService(
             db.ConnectedUsers.RemoveRange(staleConnections);
             await db.SaveChangesAsync(stoppingToken);
             logger.LogInformation(
-                "Nettoyage des connexions inactives: {count} utilisateurs supprimés",
+                "Nettoyage des connexions inactives: {Count} utilisateurs supprimés",
                 staleConnections.Count);
         }
     }
