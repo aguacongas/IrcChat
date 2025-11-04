@@ -518,6 +518,12 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     [Fact]
     public async Task ReserveUsername_WithValidData_ShouldCreateReservationAndReturnToken()
     {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
+        await db.SaveChangesAsync();
+
         // Arrange
         var request = new ReserveUsernameRequest
         {
@@ -540,9 +546,9 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         result.IsNewUser.Should().BeTrue();
 
         // Vérifier que l'utilisateur a été créé en base
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
-        var created = await db.ReservedUsernames
+        using var scopeVerifier = _factory.Services.CreateScope();
+        var dbVerifier = scopeVerifier.ServiceProvider.GetRequiredService<ChatDbContext>();
+        var created = await dbVerifier.ReservedUsernames
             .FirstOrDefaultAsync(r => r.Username == "new_user");
         created.Should().NotBeNull();
     }
@@ -582,6 +588,9 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
+        await db.SaveChangesAsync();
 
         // Créer un premier utilisateur
         var firstUser = new ReservedUsername
@@ -658,6 +667,12 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     [Fact]
     public async Task ReserveUsername_WithInvalidCode_ShouldReturnUnauthorized()
     {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
+        await db.SaveChangesAsync();
+
         // Arrange
         var request = new ReserveUsernameRequest
         {
@@ -681,6 +696,9 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
+        await db.SaveChangesAsync();
 
         var oldLoginTime = DateTime.UtcNow.AddDays(-7);
         var user = new ReservedUsername
@@ -770,6 +788,9 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
+        await db.SaveChangesAsync();
 
         var user = new ReservedUsername
         {
