@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IrcChat.Api.Extensions;
 
+[SuppressMessage("Performance", "CA1862", Justification = "Not translated in SQL requests")]
 public static class ChannelEndpoints
 {
-    [SuppressMessage("Performance", "CA1862", Justification = "Not translated in SQL requests")]
     public static WebApplication MapChannelEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/channels")
