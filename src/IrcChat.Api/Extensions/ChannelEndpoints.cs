@@ -63,6 +63,7 @@ public static class ChannelEndpoints
         channel.Id = Guid.NewGuid();
         channel.CreatedAt = DateTime.UtcNow;
         channel.Name = channel.Name.Trim();
+        channel.ActiveManager = username; // Le créateur est le manager initial
 
         db.Channels.Add(channel);
         await db.SaveChangesAsync();
