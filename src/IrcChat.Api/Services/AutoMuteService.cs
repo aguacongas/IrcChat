@@ -27,10 +27,14 @@ public class AutoMuteService(
         {
             try
             {
-                await CheckAndApplyAutoMute();
+                await CheckAndApplyAutoMute(stoppingToken);
                 await Task.Delay(
                     TimeSpan.FromSeconds(_options.CheckIntervalSeconds),
                     stoppingToken);
+            }
+            catch (TaskCanceledException)
+            {
+                // Service arrêté, on sort proprement
             }
             catch (Exception ex)
             {
@@ -40,14 +44,14 @@ public class AutoMuteService(
     }
 
     [SuppressMessage("Performance", "CA1862:Use the 'StringComparison' method overloads to perform case-insensitive string comparisons", Justification = "Can't be tranlater as SQL")]
-    private async Task CheckAndApplyAutoMute()
+    private async Task CheckAndApplyAutoMute(CancellationToken stoppingToken)
     {
-        await using var db = await dbContextFactory.CreateDbContextAsync();
+        await using var db = await dbContextFactory.CreateDbContextAsync(stoppingToken);
 
         // Récupérer tous les canaux non mutés
         var activeChannels = await db.Channels
             .Where(c => !c.IsMuted)
-            .ToListAsync();
+            .ToListAsync(stoppingToken);
 
         foreach (var channel in activeChannels)
         {
@@ -55,7 +59,7 @@ public class AutoMuteService(
             var ownerConnection = await db.ConnectedUsers
                 .Where(u => u.Username.ToLower() == channel.CreatedBy.ToLower())
                 .OrderByDescending(u => u.LastPing)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(stoppingToken);
 
             var shouldMute = false;
 
@@ -77,7 +81,7 @@ public class AutoMuteService(
             if (shouldMute)
             {
                 channel.IsMuted = true;
-                await db.SaveChangesAsync();
+                await db.SaveChangesAsync(stoppingToken);
 
                 logger.LogInformation(
                     "Canal #{Channel} muté automatiquement (propriétaire {Owner} inactif depuis {Minutes}min)",
@@ -85,7 +89,7 @@ public class AutoMuteService(
 
                 // Notifier tous les utilisateurs du canal
                 await hubContext.Clients.Group(channel.Name)
-                    .SendAsync("ChannelMuteStatusChanged", channel.Name, true);
+                    .SendAsync("ChannelMuteStatusChanged", channel.Name, true, stoppingToken);
             }
         }
     }
