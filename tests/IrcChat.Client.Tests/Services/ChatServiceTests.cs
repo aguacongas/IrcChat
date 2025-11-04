@@ -123,11 +123,6 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        Message? receivedMessage = null;
-        service.OnMessageReceived += (message) => receivedMessage = message;
-
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
-
         var testMessage = new Message
         {
             Id = Guid.NewGuid(),
@@ -136,6 +131,15 @@ public class ChatServiceTests : TestContext
             Content = "Test content",
             Timestamp = DateTime.UtcNow
         };
+
+        // Act Wtithout subscription
+        await onReceiveMessage!([testMessage], onReceiveMessageState!);
+
+        // Arrange
+        Message? receivedMessage = null;
+        service.OnMessageReceived += (message) => receivedMessage = message;
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
         // Act
         await onReceiveMessage!([testMessage], onReceiveMessageState!);
@@ -169,6 +173,10 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
+        // Act Without subscription
+        await onUserJoined!(["testUser", "testChannel"], onUserJoinedState!);
+
+        // Arrange
         string? joinedUser = null;
         string? joinedChannel = null;
         service.OnUserJoined += (username, channel) =>
@@ -210,6 +218,10 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
+        // Act Without subscription
+        await onUserLeft!(["testUser", "testChannel"], onUserLeftState!);
+
+        // Arrange
         string? leftUser = null;
         string? leftChannel = null;
         service.OnUserLeft += (username, channel) =>
@@ -252,16 +264,21 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        List<User>? updatedUsers = null;
-        service.OnUserListUpdated += (users) => updatedUsers = users;
-
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
-
         var testUsers = new List<User>
         {
             new() { Username = "user1" },
             new() { Username = "user2" }
         };
+
+
+        // Act without subscription
+        await onUpdateUserList!([testUsers], onUpdateUserListState!);
+
+        // Arrange
+        List<User>? updatedUsers = null;
+        service.OnUserListUpdated += (users) => updatedUsers = users;
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
         // Act
         await onUpdateUserList!([testUsers], onUpdateUserListState!);
@@ -297,6 +314,10 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
+        // Act without subscription
+        await onChannelMuteStatusChanged!(["testChannel", true], onChannelMuteStatusChangedState!);
+
+        // Arrange
         string? mutedChannel = null;
         bool? muteStatus = null;
         service.OnChannelMuteStatusChanged += (channel, isMuted) =>
@@ -340,6 +361,10 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
+        // Act without subscription
+        await onMessageBlocked!(["Channel is muted"], onMessageBlockedState!);
+
+        // Arrange
         string? blockedReason = null;
         service.OnMessageBlocked += (reason) => blockedReason = reason;
 
@@ -375,9 +400,12 @@ public class ChatServiceTests : TestContext
             })
             .Returns(Mock.Of<IDisposable>());
 
-
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
+        // Act without subscription
+        await onChannelDeleted!(["testChannel"], onChannelDeletedState!);
+
+        // Arrange
         string? deletedChannel = null;
         service.OnChannelDeleted += (channel) => deletedChannel = channel;
 
@@ -414,6 +442,10 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
+        // Act without subscription
+        await onChannelNotFound!(["missingChannel"], onChannelNotFoundState!);
+
+        // Arrange
         string? notFoundChannel = null;
         service.OnChannelNotFound += (channel) => notFoundChannel = channel;
 
@@ -451,6 +483,10 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
+        // Act without subscription
+        await onChannelListUpdated!([], onChannelListUpdatedState!);
+
+        // Arrange
         var channelListUpdated = false;
         service.OnChannelListUpdated += () => channelListUpdated = true;
 
