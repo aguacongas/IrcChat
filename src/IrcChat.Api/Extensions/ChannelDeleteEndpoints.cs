@@ -1,3 +1,4 @@
+// src/IrcChat.Api/Extensions/ChannelDeleteEndpoints.cs
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Claims;
 using IrcChat.Api.Data;
@@ -7,22 +8,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IrcChat.Api.Extensions;
 
-public static class ChannelMuteEndpoints
+public static class ChannelDeleteEndpoints
 {
     [SuppressMessage("Performance", "CA1862", Justification = "Not needed in SQL")]
-    public static WebApplication MapChannelMuteEndpoints(this WebApplication app)
+    public static WebApplication MapChannelDeleteEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/channels")
-            .WithTags("Channel Mute");
+            .WithTags("Channel Delete");
 
-        // Toggle mute status
-        group.MapPost("/{channelName}/toggle-mute", async (
+        group.MapDelete("/{channelName}", async (
             string channelName,
             ChatDbContext db,
             HttpContext context,
             IHubContext<ChatHub> hubContext) =>
         {
-            // Récupérer l'utilisateur actuel
             var username = context.User.Claims
                 .FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
 
@@ -31,7 +30,6 @@ public static class ChannelMuteEndpoints
                 return Results.Unauthorized();
             }
 
-            // Trouver le canal
             var channel = await db.Channels
                 .FirstOrDefaultAsync(c => c.Name.ToLower() == channelName.ToLower());
 
@@ -40,7 +38,6 @@ public static class ChannelMuteEndpoints
                 return Results.NotFound(new { error = "channel_not_found" });
             }
 
-            // Vérifier si l'utilisateur est le créateur ou admin
             var user = await db.ReservedUsernames
                 .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
 
@@ -52,31 +49,45 @@ public static class ChannelMuteEndpoints
                 return Results.Forbid();
             }
 
-            // Toggle le statut mute
-            channel.IsMuted = !channel.IsMuted;
+            // Supprimer tous les utilisateurs connectés au canal
+            var connectedUsers = await db.ConnectedUsers
+                .Where(u => u.Channel.ToLower() == channelName.ToLower())
+                .ToListAsync();
 
-            // Si un admin démute le salon, il devient le nouveau propriétaire
-            // (sauf s'il est déjà le propriétaire)
-            if (!channel.IsMuted && isAdmin && !isCreator)
+            db.ConnectedUsers.RemoveRange(connectedUsers);
+
+            // Marquer tous les messages comme supprimés (soft delete)
+            var messages = await db.Messages
+                .Where(m => m.Channel.ToLower() == channelName.ToLower())
+                .ToListAsync();
+
+            foreach (var message in messages)
             {
-                channel.CreatedBy = username;
+                message.IsDeleted = true;
             }
 
+            // Supprimer le canal
+            db.Channels.Remove(channel);
             await db.SaveChangesAsync();
 
-            // Notifier le changement de statut mute
+            // Notifier tous les clients que le canal a été supprimé
             await hubContext.Clients.Group(channelName)
-                .SendAsync("ChannelMuteStatusChanged", channelName, channel.IsMuted);
+                .SendAsync("ChannelDeleted", channelName, username);
+
+            // Notifier tous les clients pour actualiser la liste des canaux
+            await hubContext.Clients.All
+                .SendAsync("ChannelListUpdated");
 
             return Results.Ok(new
             {
                 channelName = channel.Name,
-                isMuted = channel.IsMuted,
-                changedBy = username
+                deletedBy = username,
+                messagesAffected = messages.Count,
+                usersDisconnected = connectedUsers.Count
             });
         })
         .RequireAuthorization()
-        .WithName("ToggleChannelMute")
+        .WithName("DeleteChannel")
         .WithOpenApi();
 
         return app;
