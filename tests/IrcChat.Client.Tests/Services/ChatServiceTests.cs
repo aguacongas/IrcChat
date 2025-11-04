@@ -112,7 +112,7 @@ public class ChatServiceTests : TestContext
             .Returns(Task.CompletedTask);
 
         Func<object?[], object, Task>? onReceiveMessage = null;
-        object onReceiveMessageState = null;
+        object? onReceiveMessageState = null;
         hubConnectionMock.Setup(x => x.On("ReceiveMessage", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()))
             .Callback<string, Type[], Func<object?[], object, Task>, object>((methodName, parameterTypes, handler, state) =>
             {

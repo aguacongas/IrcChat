@@ -1,11 +1,15 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using IrcChat.Shared.Models;
 
 namespace IrcChat.Api.Services;
 
+[SuppressMessage("Minor Code Smell", "S1075:URIs should not be hardcoded", Justification = "Static configuration")]
 public class OAuthService(HttpClient httpClient, IConfiguration configuration, ILogger<OAuthService> logger)
 {
+    private static readonly string _bearer = "Bearer";
+
     public OAuthConfig GetProviderConfig(ExternalAuthProvider provider)
     {
         return provider switch
@@ -72,7 +76,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
             }
 
             var json = await response.Content.ReadAsStringAsync();
-            var tokenData = JsonSerializer.Deserialize<JsonElement>(json);
+            var tokenData = JsonSerializer.Deserialize<JsonElement>(json);            
 
             return new OAuthTokenResponse
             {
@@ -80,7 +84,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
                 RefreshToken = tokenData.TryGetProperty("refresh_token", out var rt) ? rt.GetString() : null,
                 IdToken = tokenData.TryGetProperty("id_token", out var it) ? it.GetString() : null,
                 ExpiresIn = tokenData.TryGetProperty("expires_in", out var exp) ? exp.GetInt32() : 3600,
-                TokenType = tokenData.TryGetProperty("token_type", out var tt) ? tt.GetString() ?? "Bearer" : "Bearer"
+                TokenType = tokenData.TryGetProperty("token_type", out var tt) ? tt.GetString() ?? _bearer : _bearer
             };
         }
         catch (Exception ex)
@@ -163,11 +167,11 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
                 : null
         };
     }
-
+    
     private async Task<ExternalUserInfo?> GetMicrosoftUserInfo(string accessToken)
     {
         httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", accessToken);
+            new AuthenticationHeaderValue(_bearer, accessToken);
 
         var response = await httpClient.GetAsync("https://graph.microsoft.com/v1.0/me");
 
