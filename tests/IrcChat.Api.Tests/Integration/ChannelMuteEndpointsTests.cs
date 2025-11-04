@@ -6,8 +6,10 @@ using System.Security.Claims;
 using System.Text;
 using FluentAssertions;
 using IrcChat.Api.Data;
+using IrcChat.Api.Services;
 using IrcChat.Shared.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Xunit;
 
@@ -71,6 +73,9 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
     public async Task ToggleMute_AsAdmin_ShouldToggleMute()
     {
         // Arrange
+        var autoMuteService = _factory.Services.GetServices<IHostedService>().Single(s => s is AutoMuteService);
+        await autoMuteService.StopAsync(default);
+
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
