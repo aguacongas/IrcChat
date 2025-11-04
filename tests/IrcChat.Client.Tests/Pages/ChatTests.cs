@@ -293,7 +293,6 @@ public class ChatTests : TestContext
             x => x.OnChannelMuteStatusChanged += It.IsAny<Action<string, bool>>());
     }
 
-
     [Fact]
     public async Task Chat_UserJoined_ShouldUpdateState()
     {
@@ -443,7 +442,6 @@ public class ChatTests : TestContext
             x => x.OnPrivateMessageReceived += It.IsAny<Action<PrivateMessage>>());
     }
 
-
     [Fact]
     public async Task Chat_ConversationDeleted_ShouldClosePrivateChatIfOpen()
     {
@@ -476,8 +474,6 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.VerifyAdd(
             x => x.OnConversationDeleted += It.IsAny<Action<string>>());
     }
-
-
 
     [Fact]
     public async Task Chat_CanManageCurrentChannel_AdminUser_ShouldReturnTrue()
@@ -1098,5 +1094,355 @@ public class ChatTests : TestContext
         _chatServiceMock.Verify(
             x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()),
             Times.Once);
+    }
+
+    // ==================== TESTS POUR LA GESTION DES CANAUX ====================
+
+    [Fact]
+    public async Task OnChannelDeleted_ShouldRemoveChannelFromList()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
+            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
+            new() { Id = Guid.NewGuid(), Name = "tech", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Vérifier que les 3 canaux sont présents
+        cut.Markup.Should().Contain("general");
+        cut.Markup.Should().Contain("random");
+        cut.Markup.Should().Contain("tech");
+
+        // Act - Simuler la suppression du canal "random"
+        _chatServiceMock.Raise(
+            x => x.OnChannelDeleted += null,
+            "random");
+
+        await Task.Delay(100);
+        cut.Render();
+
+        // Assert - Le canal "random" ne devrait plus être présent
+        cut.Markup.Should().Contain("general");
+        cut.Markup.Should().NotContain("random");
+        cut.Markup.Should().Contain("tech");
+    }
+
+    [Fact]
+    public async Task OnChannelDeleted_WhenCurrentChannelDeleted_ShouldClearCurrentChannel()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
+            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        var messages = new List<Message>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Username = "User1",
+                Content = "Test message",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Rejoindre le canal "general"
+        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
+        await Task.Delay(100);
+        cut.Render();
+
+        // Vérifier que le message est affiché
+        cut.Markup.Should().Contain("Test message");
+
+        // Act - Simuler la suppression du canal actuel
+        _chatServiceMock.Raise(
+            x => x.OnChannelDeleted += null,
+            "general");
+
+        await Task.Delay(100);
+        cut.Render();
+
+        // Assert - Le message ne devrait plus être affiché
+        cut.Markup.Should().NotContain("Test message");
+    }
+
+    [Fact]
+    public async Task OnChannelDeleted_WhenDifferentChannelDeleted_ShouldNotAffectCurrentChannel()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
+            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        var messages = new List<Message>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Username = "User1",
+                Content = "General message",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Rejoindre le canal "general"
+        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
+        await Task.Delay(100);
+        cut.Render();
+
+        // Vérifier que le message est affiché
+        cut.Markup.Should().Contain("General message");
+
+        // Act - Simuler la suppression d'un autre canal
+        _chatServiceMock.Raise(
+            x => x.OnChannelDeleted += null,
+            "random");
+
+        await Task.Delay(100);
+        cut.Render();
+
+        // Assert - Le message devrait toujours être affiché
+        cut.Markup.Should().Contain("General message");
+        cut.Markup.Should().Contain("general");
+        cut.Markup.Should().NotContain("random");
+    }
+
+    [Fact]
+    public async Task OnChannelNotFound_ShouldDisplayNotification()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act - Simuler un canal introuvable
+        _chatServiceMock.Raise(
+            x => x.OnChannelNotFound += null,
+            "deleted-channel");
+
+        await Task.Delay(100);
+        cut.Render();
+
+        // Assert - La notification devrait être affichée
+        cut.Markup.Should().Contain("mute-notification");
+        cut.Markup.Should().Contain("Le canal #deleted-channel n'existe plus");
+    }
+
+    [Fact]
+    public async Task OnChannelNotFound_ShouldClearNotificationAfterDelay()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act - Simuler un canal introuvable
+        _chatServiceMock.Raise(
+            x => x.OnChannelNotFound += null,
+            "deleted-channel");
+
+        await Task.Delay(100);
+        cut.Render();
+
+        // Vérifier que la notification est affichée
+        cut.Markup.Should().Contain("Le canal #deleted-channel n'existe plus");
+
+        // Attendre que la notification disparaisse (4 secondes + marge)
+        await Task.Delay(4500);
+        cut.Render();
+
+        // Assert - La notification devrait avoir disparu
+        cut.Markup.Should().NotContain("Le canal #deleted-channel n'existe plus");
+    }
+
+    [Fact]
+    public async Task OnChannelListUpdated_ShouldReloadChannels()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+
+        var initialChannels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        var updatedChannels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
+            new() { Id = Guid.NewGuid(), Name = "new-channel", CreatedBy = "admin", CreatedAt = DateTime.UtcNow }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(initialChannels));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Vérifier que seul "general" est présent
+        cut.Markup.Should().Contain("general");
+        cut.Markup.Should().NotContain("new-channel");
+
+        // Mettre à jour le mock pour retourner les nouveaux canaux
+        _mockHttp.Clear();
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(updatedChannels));
+
+        // Act - Simuler la mise à jour de la liste des canaux
+        _chatServiceMock.Raise(x => x.OnChannelListUpdated += null);
+
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert - Le nouveau canal devrait être visible
+        cut.Markup.Should().Contain("general");
+        cut.Markup.Should().Contain("new-channel");
+    }
+
+    [Fact]
+    public async Task HandleChannelDeleted_ShouldCallOnChannelDeleted()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "test-channel", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Vérifier que le canal est présent
+        cut.Markup.Should().Contain("test-channel");
+
+        // Act - Simuler HandleChannelDeleted via l'événement OnChannelDeleted
+        _chatServiceMock.Raise(
+            x => x.OnChannelDeleted += null,
+            "test-channel");
+
+        await Task.Delay(100);
+        cut.Render();
+
+        // Assert - Le canal ne devrait plus être présent
+        cut.Markup.Should().NotContain("test-channel");
+        _chatServiceMock.VerifyAdd(
+            x => x.OnChannelDeleted += It.IsAny<Action<string>>());
     }
 }
