@@ -76,7 +76,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
             }
 
             var json = await response.Content.ReadAsStringAsync();
-            var tokenData = JsonSerializer.Deserialize<JsonElement>(json);            
+            var tokenData = JsonSerializer.Deserialize<JsonElement>(json);
 
             return new OAuthTokenResponse
             {
@@ -167,7 +167,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
                 : null
         };
     }
-    
+
     private async Task<ExternalUserInfo?> GetMicrosoftUserInfo(string accessToken)
     {
         httpClient.DefaultRequestHeaders.Authorization =
