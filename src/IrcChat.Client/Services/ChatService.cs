@@ -1,7 +1,5 @@
-using IrcChat.Client.Models;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.Extensions.Options;
 
 namespace IrcChat.Client.Services;
 
