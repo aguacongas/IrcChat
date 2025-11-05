@@ -108,35 +108,45 @@ jobs:
             "categories": [
               {
                 "title": "### ✨ Features",
-                "labels": ["enhancement", "feature"]
+                "labels": ["enhancement", "feature"],
+                "exclude_labels": ["changelog:exclude"]
               },
               {
                 "title": "### 🐛 Bug Fixes",
-                "labels": ["bug", "fix"]
+                "labels": ["bug", "fix"],
+                "exclude_labels": ["changelog:exclude"]
               },
               {
                 "title": "### 📝 Documentation",
-                "labels": ["documentation", "docs"]
+                "labels": ["documentation", "docs"],
+                "exclude_labels": ["changelog:exclude"]
               },
               {
                 "title": "### 🧪 Tests",
-                "labels": ["test", "tests"]
+                "labels": ["test", "tests"],
+                "exclude_labels": ["changelog:exclude"]
               },
               {
                 "title": "### 🔧 Maintenance",
-                "labels": ["chore", "dependencies"]
+                "labels": ["chore", "dependencies"],
+                "exclude_labels": ["changelog:exclude"]
               },
               {
                 "title": "### 🚀 Performance",
-                "labels": ["performance", "perf"]
+                "labels": ["performance", "perf"],
+                "exclude_labels": ["changelog:exclude"]
               },
               {
                 "title": "### 🔒 Security",
-                "labels": ["security"]
+                "labels": ["security"],
+                "exclude_labels": ["changelog:exclude"]
+              },
+              {
+                "title": "## 📦 Uncategorized",
+                "labels": [],
+                "exclude_labels": ["changelog:exclude"]
               }
-            ],
-            "template_uncategorized": "",
-            "exclude_labelless": true
+            ]
           }
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
