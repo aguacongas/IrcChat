@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: 📥 Checkout code
+    - name: 🔥 Checkout code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
@@ -27,7 +27,7 @@ jobs:
     - name: 📦 Restore dependencies
       run: dotnet restore
 
-    - name: 🏗️ Build Release
+    - name: 🗃️ Build Release
       run: dotnet build --configuration Release --no-restore
 
     - name: 🧪 Run Tests
@@ -85,9 +85,9 @@ jobs:
         if [ -z "$CHANGELOG_CONTENT" ]; then
           CHANGELOG_CONTENT="🤖 **Release générée automatiquement par Claude (Anthropic)**
         
-Cette release contient toutes les fonctionnalités et corrections listées ci-dessous.
-
-Pour plus de détails sur le projet, consultez la [documentation](https://github.com/${{ github.repository }})."
+        Cette release contient toutes les fonctionnalités et corrections listées ci-dessous.
+        
+        Pour plus de détails sur le projet, consultez la [documentation](https://github.com/${{ github.repository }})."
         fi
         
         # Échapper les caractères spéciaux pour GitHub
@@ -136,7 +136,7 @@ Pour plus de détails sur le projet, consultez la [documentation](https://github
         fi
         
         if [ -n "$DOCS" ]; then
-          CHANGELOG="$CHANGELOG\n### 📝 Documentation\n$DOCS\n"
+          CHANGELOG="$CHANGELOG\n### 📚 Documentation\n$DOCS\n"
         fi
         
         if [ -n "$TESTS" ]; then
@@ -177,64 +177,8 @@ Pour plus de détails sur le projet, consultez la [documentation](https://github
         
         # Échapper pour GitHub
         CHANGELOG="${CHANGELOG//'%'/'%25'}"
-        CHANGELOG="${CHANGELOG//
-
-    - name: 🎉 Create GitHub Release
-      uses: softprops/action-gh-release@v2
-      with:
-        name: Release ${{ steps.version.outputs.tag }}
-        body: |
-          ${{ steps.changelog.outputs.content }}
-          
-          ---
-          
-          ${{ steps.detailed_changelog.outputs.changelog }}
-        files: |
-          release/ircchat-api-${{ steps.version.outputs.version }}.zip
-          release/ircchat-client-${{ steps.version.outputs.version }}.zip
-        draft: false
-        prerelease: ${{ contains(steps.version.outputs.tag, '-alpha') || contains(steps.version.outputs.tag, '-beta') || contains(steps.version.outputs.tag, '-rc') }}
-        generate_release_notes: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: 📢 Release Summary
-      if: success()
-      run: |
-        echo "✅ Release ${{ steps.version.outputs.tag }} created successfully!"
-        echo "📦 API: ircchat-api-${{ steps.version.outputs.version }}.zip"
-        echo "📦 Client: ircchat-client-${{ steps.version.outputs.version }}.zip"
-        echo "🔗 https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}"
-\n'/'%0A'}"
-        CHANGELOG="${CHANGELOG//
-
-    - name: 🎉 Create GitHub Release
-      uses: softprops/action-gh-release@v2
-      with:
-        name: Release ${{ steps.version.outputs.tag }}
-        body: |
-          ${{ steps.changelog.outputs.content }}
-          
-          ---
-          
-          ${{ steps.detailed_changelog.outputs.changelog }}
-        files: |
-          release/ircchat-api-${{ steps.version.outputs.version }}.zip
-          release/ircchat-client-${{ steps.version.outputs.version }}.zip
-        draft: false
-        prerelease: ${{ contains(steps.version.outputs.tag, '-alpha') || contains(steps.version.outputs.tag, '-beta') || contains(steps.version.outputs.tag, '-rc') }}
-        generate_release_notes: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: 📢 Release Summary
-      if: success()
-      run: |
-        echo "✅ Release ${{ steps.version.outputs.tag }} created successfully!"
-        echo "📦 API: ircchat-api-${{ steps.version.outputs.version }}.zip"
-        echo "📦 Client: ircchat-client-${{ steps.version.outputs.version }}.zip"
-        echo "🔗 https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}"
-\r'/'%0D'}"
+        CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
+        CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
         
         echo "changelog<<EOF" >> $GITHUB_OUTPUT
         echo "$CHANGELOG" >> $GITHUB_OUTPUT
