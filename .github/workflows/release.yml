@@ -135,10 +135,7 @@ jobs:
                 "labels": ["security"]
               }
             ],
-            "uncategorized": {
-              "title": "",
-              "labels": []
-            }
+            "template_uncategorized": ""
           }
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
