@@ -100,11 +100,12 @@ jobs:
 
     - name: 📊 Generate detailed changelog from PRs
       id: detailed_changelog
-      uses: mikepenz/release-changelog-builder-action@v6
+      uses: mikepenz/release-changelog-builder-action@v6.0.1
       with:
+        excludeLabels: "changelog:exclude"
         configuration: |
           {
-            "template": "## 📋 Changes\n\n#{{CHANGELOG}}\n\n---\n\n### 📦 Downloads\n\n- `ircchat-api-${{ steps.version.outputs.version }}.zip` - Backend API\n- `ircchat-client-${{ steps.version.outputs.version }}.zip` - Frontend Blazor\n\n### 📚 Links\n\n- [Full Documentation](https://github.com/${{ github.repository }})\n- [Installation Guide](https://github.com/${{ github.repository }}/blob/main/README.md)\n- [SonarCloud](https://sonarcloud.io/project/overview?id=${{ vars.SONAR_PROJECT_KEY }})\n\n**Full Changelog**: https://github.com/${{ github.repository }}/compare/#{{FROM_TAG}}...${{ steps.version.outputs.tag }}",
+            "template": "#{{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n#{{UNCATEGORIZED}}\n</details>",
             "categories": [
               {
                 "title": "### ✨ Features",
@@ -135,9 +136,7 @@ jobs:
                 "labels": ["security"]
               }
             ],
-            "ignore_labels": [
-              "changelog:exclude"
-            ]
+            "ignore_labels": ["changelog:exclude"]
           }
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
