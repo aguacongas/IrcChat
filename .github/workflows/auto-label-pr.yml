@@ -118,21 +118,18 @@ jobs:
             });
             
             // Ajouter un commentaire explicatif
-            const labelsList = labelsArray.map(l => `\`${l}\``).join(', ');
-            const body = `🤖 **Labels ajoutés automatiquement** : ${labelsList}
-
-Basé sur l'analyse des messages de commits.
-
-💡 **Vous pouvez modifier ces labels** avant de merger la PR pour ajuster le changelog de la prochaine release.
-
-📋 Labels disponibles pour le changelog :
-- \`feature\`, \`enhancement\` → ✨ Features
-- \`bug\`, \`fix\` → 🐛 Bug Fixes  
-- \`documentation\`, \`docs\` → 📝 Documentation
-- \`test\`, \`tests\` → 🧪 Tests
-- \`chore\`, \`dependencies\` → 🔧 Maintenance
-- \`performance\`, \`perf\` → 🚀 Performance
-- \`security\` → 🔒 Security`;
+            const labelsList = labelsArray.map(l => '`' + l + '`').join(', ');
+            const body = '🤖 **Labels ajoutés automatiquement** : ' + labelsList + '\n\n' +
+              'Basé sur l\'analyse des messages de commits.\n\n' +
+              '💡 **Vous pouvez modifier ces labels** avant de merger la PR pour ajuster le changelog de la prochaine release.\n\n' +
+              '📋 Labels disponibles pour le changelog :\n' +
+              '- `feature`, `enhancement` → ✨ Features\n' +
+              '- `bug`, `fix` → 🐛 Bug Fixes\n' +
+              '- `documentation`, `docs` → 📝 Documentation\n' +
+              '- `test`, `tests` → 🧪 Tests\n' +
+              '- `chore`, `dependencies` → 🔧 Maintenance\n' +
+              '- `performance`, `perf` → 🚀 Performance\n' +
+              '- `security` → 🔒 Security';
 
             await github.rest.issues.createComment({
               owner,
@@ -142,25 +139,22 @@ Basé sur l'analyse des messages de commits.
             });
           } else {
             // Aucun label détecté, ajouter un commentaire d'avertissement
-            const warningBody = `⚠️ **Aucun label automatique détecté**
-
-Les commits de cette PR ne suivent pas le format [Conventional Commits](https://www.conventionalcommits.org/).
-
-**Exemples de formats reconnus :**
-\`\`\`
-feat: add user ban system
-fix: correct message display
-docs: update README
-test: add integration tests
-chore: update dependencies
-\`\`\`
-
-💡 **Ajoutez manuellement un label** pour que cette PR apparaisse dans le changelog :
-- \`feature\` → ✨ Features
-- \`bug\` → 🐛 Bug Fixes
-- \`documentation\` → 📝 Documentation
-- \`test\` → 🧪 Tests
-- \`chore\` → 🔧 Maintenance`;
+            const warningBody = '⚠️ **Aucun label automatique détecté**\n\n' +
+              'Les commits de cette PR ne suivent pas le format [Conventional Commits](https://www.conventionalcommits.org/).\n\n' +
+              '**Exemples de formats reconnus :**\n' +
+              '```\n' +
+              'feat: add user ban system\n' +
+              'fix: correct message display\n' +
+              'docs: update README\n' +
+              'test: add integration tests\n' +
+              'chore: update dependencies\n' +
+              '```\n\n' +
+              '💡 **Ajoutez manuellement un label** pour que cette PR apparaisse dans le changelog :\n' +
+              '- `feature` → ✨ Features\n' +
+              '- `bug` → 🐛 Bug Fixes\n' +
+              '- `documentation` → 📝 Documentation\n' +
+              '- `test` → 🧪 Tests\n' +
+              '- `chore` → 🔧 Maintenance';
 
             await github.rest.issues.createComment({
               owner,
