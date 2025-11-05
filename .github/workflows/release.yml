@@ -71,32 +71,7 @@ jobs:
         zip -r ../ircchat-api-${{ steps.version.outputs.version }}.zip .
         cd ../client
         zip -r ../ircchat-client-${{ steps.version.outputs.version }}.zip .
-        cd ..
-
-    - name: 📝 Extract changelog for this version (optional)
-      id: changelog
-      run: |
-        VERSION="${{ steps.version.outputs.tag }}"
-        
-        # Essayer d'extraire la section du CHANGELOG si le fichier existe
-        if [ -f "CHANGELOG.md" ]; then
-          CHANGELOG_CONTENT=$(awk "/## \[$VERSION\]/,/## \[/" CHANGELOG.md | sed '$d' | tail -n +2)
-        fi
-        
-        # Si aucun changelog n'est trouvé ou le fichier n'existe pas, utiliser un message par défaut
-        if [ -z "$CHANGELOG_CONTENT" ]; then
-          CHANGELOG_CONTENT="🤖 **Release générée automatiquement par Claude (Anthropic)**
-        
-        Cette release contient toutes les fonctionnalités et corrections listées ci-dessous.
-        
-        Pour plus de détails sur le projet, consultez la [documentation](https://github.com/${{ github.repository }})."
-        fi
-        
-        {
-          echo "content<<EOF"
-          echo "$CHANGELOG_CONTENT"
-          echo "EOF"
-        } >> $GITHUB_OUTPUT
+        cd ..    
 
     - name: 📊 Generate detailed changelog from PRs
       id: detailed_changelog
