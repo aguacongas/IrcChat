@@ -102,9 +102,10 @@ jobs:
       id: detailed_changelog
       uses: mikepenz/release-changelog-builder-action@v6
       with:
-        configuration: |
+        outputFile: CHANGELOG.md
+        configurationJson: |
           {
-            "template": "#{{CHANGELOG}}\n\n<details>\n<summary>Uncategorized</summary>\n\n#{{UNCATEGORIZED}}\n</details>",
+            "template": "## 📋 Changes\n\n#{{CHANGELOG}}\n\n---\n\n### 📦 Downloads\n\n- `ircchat-api-${{ steps.version.outputs.version }}.zip` - Backend API\n- `ircchat-client-${{ steps.version.outputs.version }}.zip` - Frontend Blazor\n\n### 📚 Links\n\n- [Full Documentation](https://github.com/${{ github.repository }})\n- [Installation Guide](https://github.com/${{ github.repository }}/blob/main/README.md)\n- [SonarCloud](https://sonarcloud.io/project/overview?id=${{ vars.SONAR_PROJECT_KEY }})\n\n**Full Changelog**: https://github.com/${{ github.repository }}/compare/#{{FROM_TAG}}...${{ steps.version.outputs.tag }}",
             "categories": [
               {
                 "title": "### ✨ Features",
@@ -139,65 +140,6 @@ jobs:
           }
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: 🧹 Filter excluded PRs from changelog
-      id: filtered_changelog
-      run: |
-        # Récupérer tous les numéros de PR avec le label "changelog:exclude"
-        echo "Fetching PRs with 'changelog:exclude' label..."
-        EXCLUDED_PRS=$(gh pr list \
-          --repo ${{ github.repository }} \
-          --state all \
-          --label "changelog:exclude" \
-          --json number \
-          --jq '.[].number' | tr '\n' '|' | sed 's/|$//')
-        
-        echo "Excluded PRs: $EXCLUDED_PRS"
-        
-        CHANGELOG="${{ steps.detailed_changelog.outputs.changelog }}"
-        
-        if [ -n "$EXCLUDED_PRS" ]; then
-          # Filtrer les lignes contenant les numéros de PR exclus (avec ou sans underscores)
-          FILTERED=$(echo "$CHANGELOG" | grep -v -E "PR: (__)?#($EXCLUDED_PRS)(__)?")
-          
-          # Nettoyer les sections vides
-          FILTERED=$(echo "$FILTERED" | awk '
-            BEGIN { in_section = 0; section_content = ""; section_header = "" }
-            /^##/ { 
-              if (in_section && section_content != "") {
-                print section_header
-                print section_content
-              }
-              section_header = $0
-              section_content = ""
-              in_section = 1
-              next
-            }
-            in_section { 
-              if ($0 !~ /^[[:space:]]*$/) {
-                section_content = section_content $0 "\n"
-              }
-            }
-            !in_section { print }
-            END {
-              if (in_section && section_content != "") {
-                print section_header
-                print section_content
-              }
-            }
-          ')
-        else
-          FILTERED="$CHANGELOG"
-          echo "No PRs to exclude"
-        fi
-        
-        {
-          echo "content<<EOF"
-          echo "$FILTERED"
-          echo "EOF"
-        } >> $GITHUB_OUTPUT
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: 🎉 Create GitHub Release
       uses: softprops/action-gh-release@v2
