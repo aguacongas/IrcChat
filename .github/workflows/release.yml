@@ -56,20 +56,213 @@ jobs:
           -o release/client \
           /p:BlazorEnableCompression=true
 
-    - name: 📝 Generate Changelog
+    - name: 📋 Extract version from tag
+      id: version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: 📦 Create release archives
+      run: |
+        cd release/api
+        zip -r ../ircchat-api-${{ steps.version.outputs.version }}.zip .
+        cd ../client
+        zip -r ../ircchat-client-${{ steps.version.outputs.version }}.zip .
+        cd ..
+
+    - name: 📝 Extract changelog for this version (optional)
       id: changelog
-      uses: metcalfc/changelog-generator@v4.3.1
-      with:
-        myToken: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION="${{ steps.version.outputs.tag }}"
+        
+        # Essayer d'extraire la section du CHANGELOG si le fichier existe
+        if [ -f "CHANGELOG.md" ]; then
+          CHANGELOG_CONTENT=$(awk "/## \[$VERSION\]/,/## \[/" CHANGELOG.md | sed '$d' | tail -n +2)
+        fi
+        
+        # Si aucun changelog n'est trouvé ou le fichier n'existe pas, utiliser un message par défaut
+        if [ -z "$CHANGELOG_CONTENT" ]; then
+          CHANGELOG_CONTENT="🤖 **Release générée automatiquement par Claude (Anthropic)**
+        
+Cette release contient toutes les fonctionnalités et corrections listées ci-dessous.
+
+Pour plus de détails sur le projet, consultez la [documentation](https://github.com/${{ github.repository }})."
+        fi
+        
+        # Échapper les caractères spéciaux pour GitHub
+        CHANGELOG_CONTENT="${CHANGELOG_CONTENT//'%'/'%25'}"
+        CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\n'/'%0A'}"
+        CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\r'/'%0D'}"
+        
+        echo "content<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: 📊 Generate detailed changelog from commits
+      id: detailed_changelog
+      run: |
+        # Obtenir le tag précédent
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 ${{ steps.version.outputs.tag }}^ 2>/dev/null || echo "")
+        
+        if [ -z "$PREVIOUS_TAG" ]; then
+          # Première release, prendre tous les commits
+          COMMITS=$(git log --pretty=format:"%s (%h)" ${{ steps.version.outputs.tag }})
+        else
+          # Commits entre les deux tags
+          COMMITS=$(git log --pretty=format:"%s (%h)" ${PREVIOUS_TAG}..${{ steps.version.outputs.tag }})
+        fi
+        
+        # Catégoriser les commits selon les conventional commits
+        FEATURES=$(echo "$COMMITS" | grep "^feat" | sed 's/^/- /' || echo "")
+        FIXES=$(echo "$COMMITS" | grep "^fix" | sed 's/^/- /' || echo "")
+        DOCS=$(echo "$COMMITS" | grep "^docs" | sed 's/^/- /' || echo "")
+        TESTS=$(echo "$COMMITS" | grep "^test" | sed 's/^/- /' || echo "")
+        CHORE=$(echo "$COMMITS" | grep "^chore" | sed 's/^/- /' || echo "")
+        PERF=$(echo "$COMMITS" | grep "^perf" | sed 's/^/- /' || echo "")
+        REFACTOR=$(echo "$COMMITS" | grep "^refactor" | sed 's/^/- /' || echo "")
+        STYLE=$(echo "$COMMITS" | grep "^style" | sed 's/^/- /' || echo "")
+        
+        # Construire le changelog
+        CHANGELOG="## 📋 Changes since ${PREVIOUS_TAG:-initial commit}"
+        CHANGELOG="$CHANGELOG\n"
+        
+        if [ -n "$FEATURES" ]; then
+          CHANGELOG="$CHANGELOG\n### ✨ Features\n$FEATURES\n"
+        fi
+        
+        if [ -n "$FIXES" ]; then
+          CHANGELOG="$CHANGELOG\n### 🐛 Bug Fixes\n$FIXES\n"
+        fi
+        
+        if [ -n "$DOCS" ]; then
+          CHANGELOG="$CHANGELOG\n### 📝 Documentation\n$DOCS\n"
+        fi
+        
+        if [ -n "$TESTS" ]; then
+          CHANGELOG="$CHANGELOG\n### 🧪 Tests\n$TESTS\n"
+        fi
+        
+        if [ -n "$PERF" ]; then
+          CHANGELOG="$CHANGELOG\n### 🚀 Performance\n$PERF\n"
+        fi
+        
+        if [ -n "$REFACTOR" ]; then
+          CHANGELOG="$CHANGELOG\n### ♻️ Refactoring\n$REFACTOR\n"
+        fi
+        
+        if [ -n "$STYLE" ]; then
+          CHANGELOG="$CHANGELOG\n### 🎨 Style\n$STYLE\n"
+        fi
+        
+        if [ -n "$CHORE" ]; then
+          CHANGELOG="$CHANGELOG\n### 🔧 Maintenance\n$CHORE\n"
+        fi
+        
+        # Ajouter les liens et downloads
+        CHANGELOG="$CHANGELOG\n---\n\n### 📦 Downloads\n\n"
+        CHANGELOG="$CHANGELOG- \`ircchat-api-${{ steps.version.outputs.version }}.zip\` - Backend API\n"
+        CHANGELOG="$CHANGELOG- \`ircchat-client-${{ steps.version.outputs.version }}.zip\` - Frontend Blazor\n\n"
+        CHANGELOG="$CHANGELOG### 📚 Links\n\n"
+        CHANGELOG="$CHANGELOG- [Full Documentation](https://github.com/${{ github.repository }})\n"
+        CHANGELOG="$CHANGELOG- [Installation Guide](https://github.com/${{ github.repository }}/blob/main/README.md)\n"
+        
+        if [ -n "${{ vars.SONAR_PROJECT_KEY }}" ]; then
+          CHANGELOG="$CHANGELOG- [SonarCloud](https://sonarcloud.io/project/overview?id=${{ vars.SONAR_PROJECT_KEY }})\n"
+        fi
+        
+        if [ -n "$PREVIOUS_TAG" ]; then
+          CHANGELOG="$CHANGELOG\n**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${{ steps.version.outputs.tag }}"
+        fi
+        
+        # Échapper pour GitHub
+        CHANGELOG="${CHANGELOG//'%'/'%25'}"
+        CHANGELOG="${CHANGELOG//
 
     - name: 🎉 Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        body: ${{ steps.changelog.outputs.changelog }}
+        name: Release ${{ steps.version.outputs.tag }}
+        body: |
+          ${{ steps.changelog.outputs.content }}
+          
+          ---
+          
+          ${{ steps.detailed_changelog.outputs.changelog }}
         files: |
-          release/api/**
-          release/client/**
+          release/ircchat-api-${{ steps.version.outputs.version }}.zip
+          release/ircchat-client-${{ steps.version.outputs.version }}.zip
         draft: false
-        prerelease: false
+        prerelease: ${{ contains(steps.version.outputs.tag, '-alpha') || contains(steps.version.outputs.tag, '-beta') || contains(steps.version.outputs.tag, '-rc') }}
+        generate_release_notes: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 📢 Release Summary
+      if: success()
+      run: |
+        echo "✅ Release ${{ steps.version.outputs.tag }} created successfully!"
+        echo "📦 API: ircchat-api-${{ steps.version.outputs.version }}.zip"
+        echo "📦 Client: ircchat-client-${{ steps.version.outputs.version }}.zip"
+        echo "🔗 https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}"
+\n'/'%0A'}"
+        CHANGELOG="${CHANGELOG//
+
+    - name: 🎉 Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: Release ${{ steps.version.outputs.tag }}
+        body: |
+          ${{ steps.changelog.outputs.content }}
+          
+          ---
+          
+          ${{ steps.detailed_changelog.outputs.changelog }}
+        files: |
+          release/ircchat-api-${{ steps.version.outputs.version }}.zip
+          release/ircchat-client-${{ steps.version.outputs.version }}.zip
+        draft: false
+        prerelease: ${{ contains(steps.version.outputs.tag, '-alpha') || contains(steps.version.outputs.tag, '-beta') || contains(steps.version.outputs.tag, '-rc') }}
+        generate_release_notes: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 📢 Release Summary
+      if: success()
+      run: |
+        echo "✅ Release ${{ steps.version.outputs.tag }} created successfully!"
+        echo "📦 API: ircchat-api-${{ steps.version.outputs.version }}.zip"
+        echo "📦 Client: ircchat-client-${{ steps.version.outputs.version }}.zip"
+        echo "🔗 https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}"
+\r'/'%0D'}"
+        
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: 🎉 Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: Release ${{ steps.version.outputs.tag }}
+        body: |
+          ${{ steps.changelog.outputs.content }}
+          
+          ---
+          
+          ${{ steps.detailed_changelog.outputs.changelog }}
+        files: |
+          release/ircchat-api-${{ steps.version.outputs.version }}.zip
+          release/ircchat-client-${{ steps.version.outputs.version }}.zip
+        draft: false
+        prerelease: ${{ contains(steps.version.outputs.tag, '-alpha') || contains(steps.version.outputs.tag, '-beta') || contains(steps.version.outputs.tag, '-rc') }}
+        generate_release_notes: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 📢 Release Summary
+      if: success()
+      run: |
+        echo "✅ Release ${{ steps.version.outputs.tag }} created successfully!"
+        echo "📦 API: ircchat-api-${{ steps.version.outputs.version }}.zip"
+        echo "📦 Client: ircchat-client-${{ steps.version.outputs.version }}.zip"
+        echo "🔗 https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}"
