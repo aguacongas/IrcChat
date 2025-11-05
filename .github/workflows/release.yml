@@ -12,6 +12,8 @@ jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
     - name: 🔥 Checkout code
@@ -90,99 +92,52 @@ jobs:
         Pour plus de détails sur le projet, consultez la [documentation](https://github.com/${{ github.repository }})."
         fi
         
-        # Échapper les caractères spéciaux pour GitHub
-        CHANGELOG_CONTENT="${CHANGELOG_CONTENT//'%'/'%25'}"
-        CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\n'/'%0A'}"
-        CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\r'/'%0D'}"
-        
-        echo "content<<EOF" >> $GITHUB_OUTPUT
-        echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+        {
+          echo "content<<EOF"
+          echo "$CHANGELOG_CONTENT"
+          echo "EOF"
+        } >> $GITHUB_OUTPUT
 
-    - name: 📊 Generate detailed changelog from commits
+    - name: 📊 Generate detailed changelog from PRs
       id: detailed_changelog
-      run: |
-        # Obtenir le tag précédent
-        PREVIOUS_TAG=$(git describe --tags --abbrev=0 ${{ steps.version.outputs.tag }}^ 2>/dev/null || echo "")
-        
-        if [ -z "$PREVIOUS_TAG" ]; then
-          # Première release, prendre tous les commits
-          COMMITS=$(git log --pretty=format:"%s (%h)" ${{ steps.version.outputs.tag }})
-        else
-          # Commits entre les deux tags
-          COMMITS=$(git log --pretty=format:"%s (%h)" ${PREVIOUS_TAG}..${{ steps.version.outputs.tag }})
-        fi
-        
-        # Catégoriser les commits selon les conventional commits
-        FEATURES=$(echo "$COMMITS" | grep "^feat" | sed 's/^/- /' || echo "")
-        FIXES=$(echo "$COMMITS" | grep "^fix" | sed 's/^/- /' || echo "")
-        DOCS=$(echo "$COMMITS" | grep "^docs" | sed 's/^/- /' || echo "")
-        TESTS=$(echo "$COMMITS" | grep "^test" | sed 's/^/- /' || echo "")
-        CHORE=$(echo "$COMMITS" | grep "^chore" | sed 's/^/- /' || echo "")
-        PERF=$(echo "$COMMITS" | grep "^perf" | sed 's/^/- /' || echo "")
-        REFACTOR=$(echo "$COMMITS" | grep "^refactor" | sed 's/^/- /' || echo "")
-        STYLE=$(echo "$COMMITS" | grep "^style" | sed 's/^/- /' || echo "")
-        
-        # Construire le changelog
-        CHANGELOG="## 📋 Changes since ${PREVIOUS_TAG:-initial commit}"
-        CHANGELOG="$CHANGELOG\n"
-        
-        if [ -n "$FEATURES" ]; then
-          CHANGELOG="$CHANGELOG\n### ✨ Features\n$FEATURES\n"
-        fi
-        
-        if [ -n "$FIXES" ]; then
-          CHANGELOG="$CHANGELOG\n### 🐛 Bug Fixes\n$FIXES\n"
-        fi
-        
-        if [ -n "$DOCS" ]; then
-          CHANGELOG="$CHANGELOG\n### 📚 Documentation\n$DOCS\n"
-        fi
-        
-        if [ -n "$TESTS" ]; then
-          CHANGELOG="$CHANGELOG\n### 🧪 Tests\n$TESTS\n"
-        fi
-        
-        if [ -n "$PERF" ]; then
-          CHANGELOG="$CHANGELOG\n### 🚀 Performance\n$PERF\n"
-        fi
-        
-        if [ -n "$REFACTOR" ]; then
-          CHANGELOG="$CHANGELOG\n### ♻️ Refactoring\n$REFACTOR\n"
-        fi
-        
-        if [ -n "$STYLE" ]; then
-          CHANGELOG="$CHANGELOG\n### 🎨 Style\n$STYLE\n"
-        fi
-        
-        if [ -n "$CHORE" ]; then
-          CHANGELOG="$CHANGELOG\n### 🔧 Maintenance\n$CHORE\n"
-        fi
-        
-        # Ajouter les liens et downloads
-        CHANGELOG="$CHANGELOG\n---\n\n### 📦 Downloads\n\n"
-        CHANGELOG="$CHANGELOG- \`ircchat-api-${{ steps.version.outputs.version }}.zip\` - Backend API\n"
-        CHANGELOG="$CHANGELOG- \`ircchat-client-${{ steps.version.outputs.version }}.zip\` - Frontend Blazor\n\n"
-        CHANGELOG="$CHANGELOG### 📚 Links\n\n"
-        CHANGELOG="$CHANGELOG- [Full Documentation](https://github.com/${{ github.repository }})\n"
-        CHANGELOG="$CHANGELOG- [Installation Guide](https://github.com/${{ github.repository }}/blob/main/README.md)\n"
-        
-        if [ -n "${{ vars.SONAR_PROJECT_KEY }}" ]; then
-          CHANGELOG="$CHANGELOG- [SonarCloud](https://sonarcloud.io/project/overview?id=${{ vars.SONAR_PROJECT_KEY }})\n"
-        fi
-        
-        if [ -n "$PREVIOUS_TAG" ]; then
-          CHANGELOG="$CHANGELOG\n**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${{ steps.version.outputs.tag }}"
-        fi
-        
-        # Échapper pour GitHub
-        CHANGELOG="${CHANGELOG//'%'/'%25'}"
-        CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
-        CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
-        
-        echo "changelog<<EOF" >> $GITHUB_OUTPUT
-        echo "$CHANGELOG" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+      uses: mikepenz/release-changelog-builder-action@v4
+      with:
+        configuration: |
+          {
+            "template": "## 📋 Changes\n\n#{{CHANGELOG}}\n\n---\n\n### 📦 Downloads\n\n- `ircchat-api-${{ steps.version.outputs.version }}.zip` - Backend API\n- `ircchat-client-${{ steps.version.outputs.version }}.zip` - Frontend Blazor\n\n### 📚 Links\n\n- [Full Documentation](https://github.com/${{ github.repository }})\n- [Installation Guide](https://github.com/${{ github.repository }}/blob/main/README.md)\n- [SonarCloud](https://sonarcloud.io/project/overview?id=${{ vars.SONAR_PROJECT_KEY }})\n\n**Full Changelog**: https://github.com/${{ github.repository }}/compare/${{PREVIOUS_TAG}}...${{ steps.version.outputs.tag }}",
+            "categories": [
+              {
+                "title": "### ✨ Features",
+                "labels": ["enhancement", "feature"]
+              },
+              {
+                "title": "### 🐛 Bug Fixes",
+                "labels": ["bug", "fix"]
+              },
+              {
+                "title": "### 📝 Documentation",
+                "labels": ["documentation", "docs"]
+              },
+              {
+                "title": "### 🧪 Tests",
+                "labels": ["test", "tests"]
+              },
+              {
+                "title": "### 🔧 Maintenance",
+                "labels": ["chore", "dependencies"]
+              },
+              {
+                "title": "### 🚀 Performance",
+                "labels": ["performance", "perf"]
+              },
+              {
+                "title": "### 🔒 Security",
+                "labels": ["security"]
+              }
+            ]
+          }
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: 🎉 Create GitHub Release
       uses: softprops/action-gh-release@v2
