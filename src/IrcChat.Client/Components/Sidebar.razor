@@ -37,7 +37,7 @@
     <div class="channels-section">
         <h3>Salons</h3>
         <ul class="channel-list">
-            @foreach (var name in Channels.Select(ch => ch.Name)))
+            @foreach (var name in Channels.Select(ch => ch.Name))
             {
                 <li class="@(name == CurrentChannel ? "active" : "")"
                     @onclick="() => OnChannelSelected.InvokeAsync(name)">
