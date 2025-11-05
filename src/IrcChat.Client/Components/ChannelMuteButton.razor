@@ -1,4 +1,4 @@
-﻿@* src/IrcChat.Client/Components/ChannelMuteButton.razor *@
+@* src/IrcChat.Client/Components/ChannelMuteButton.razor *@
 @inject HttpClient Http
 
 <div class="channel-mute-control">
@@ -107,10 +107,10 @@
         }
     }
 
-    private class MuteToggleResponse
+    private sealed class MuteToggleResponse
     {
-        public string ChannelName { get; set; } = string.Empty;
-        public bool IsMuted { get; set; }
-        public string ChangedBy { get; set; } = string.Empty;
+        public string ChannelName { get; init; } = string.Empty;
+        public bool IsMuted { get; init; }
+        public string ChangedBy { get; init; } = string.Empty;
     }
 }

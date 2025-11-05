@@ -73,9 +73,9 @@ public class UnifiedAuthService(ILocalStorageService localStorage, HttpClient ht
 
                 httpClient.DefaultRequestHeaders.Authorization = null;
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"Erreur lors de l'appel API de déconnexion : {ex.Message}");
+                // Ignore les erreurs de déconnexion côté serveur - l'utilisateur sera déconnecté localement de toute façon
             }
         }
 
@@ -164,7 +164,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage, HttpClient ht
 
     private async Task ClearLocalStorageAsync() => await localStorage.RemoveItemAsync(AUTH_KEY);
 
-    private class UnifiedAuthData
+    private sealed class UnifiedAuthData
     {
         public string? Username { get; set; }
         public string? Token { get; set; }

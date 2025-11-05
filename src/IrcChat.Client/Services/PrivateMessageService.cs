@@ -86,7 +86,7 @@ public class PrivateMessageService(HttpClient httpClient) : IPrivateMessageServi
         }
     }
 
-    private class UnreadCountResponse
+    private sealed class UnreadCountResponse
     {
         public int UnreadCount { get; set; }
     }
