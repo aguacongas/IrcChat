@@ -157,13 +157,13 @@ jobs:
         CHANGELOG="${{ steps.detailed_changelog.outputs.changelog }}"
         
         if [ -n "$EXCLUDED_PRS" ]; then
-          # Filtrer les lignes contenant les numéros de PR exclus
-          FILTERED=$(echo "$CHANGELOG" | grep -v -E "PR: __#($EXCLUDED_PRS)__" || echo "$CHANGELOG")
+          # Filtrer les lignes contenant les numéros de PR exclus (avec ou sans underscores)
+          FILTERED=$(echo "$CHANGELOG" | grep -v -E "PR: (__)?#($EXCLUDED_PRS)(__)?")
           
           # Nettoyer les sections vides
           FILTERED=$(echo "$FILTERED" | awk '
             BEGIN { in_section = 0; section_content = ""; section_header = "" }
-            /^###/ { 
+            /^##/ { 
               if (in_section && section_content != "") {
                 print section_header
                 print section_content
@@ -174,7 +174,7 @@ jobs:
               next
             }
             in_section { 
-              if ($0 != "") {
+              if ($0 !~ /^[[:space:]]*$/) {
                 section_content = section_content $0 "\n"
               }
             }
