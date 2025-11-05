@@ -149,7 +149,7 @@ jobs:
           
           ---
           
-          ${{ steps.filtered_changelog.outputs.content }}
+          ${{ steps.detailed_changelog.outputs.changelog }}
         files: |
           release/ircchat-api-${{ steps.version.outputs.version }}.zip
           release/ircchat-client-${{ steps.version.outputs.version }}.zip
