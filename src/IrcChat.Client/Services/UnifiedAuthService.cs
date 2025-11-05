@@ -4,7 +4,7 @@ using IrcChat.Shared.Models;
 
 namespace IrcChat.Client.Services;
 
-public class UnifiedAuthService(ILocalStorageService localStorage, HttpClient httpClient) : IUnifiedAuthService
+public class UnifiedAuthService(ILocalStorageService localStorage, HttpClient httpClient, ILogger<UnifiedAuthService> logger) : IUnifiedAuthService
 {
     private const string AUTH_KEY = "ircchat_unified_auth";
     private bool _isInitialized = false;
@@ -159,7 +159,10 @@ public class UnifiedAuthService(ILocalStorageService localStorage, HttpClient ht
                 }
             }
         }
-        catch { }
+        catch(Exception ex)
+        {
+            logger.LogError(ex, "Erreur lors de la lecture des données d'authentification.");
+        }
     }
 
     private async Task ClearLocalStorageAsync() => await localStorage.RemoveItemAsync(AUTH_KEY);
