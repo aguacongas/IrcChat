@@ -119,12 +119,8 @@ jobs:
             
             // Ajouter un commentaire explicatif
             const labelsList = labelsArray.map(l => `\`${l}\``).join(', ');
-            await github.rest.issues.createComment({
-              owner,
-              repo,
-              issue_number: prNumber,
-              body: `🤖 **Labels ajoutés automatiquement** : ${labelsList}
-              
+            const body = `🤖 **Labels ajoutés automatiquement** : ${labelsList}
+
 Basé sur l'analyse des messages de commits.
 
 💡 **Vous pouvez modifier ces labels** avant de merger la PR pour ajuster le changelog de la prochaine release.
@@ -136,15 +132,17 @@ Basé sur l'analyse des messages de commits.
 - \`test\`, \`tests\` → 🧪 Tests
 - \`chore\`, \`dependencies\` → 🔧 Maintenance
 - \`performance\`, \`perf\` → 🚀 Performance
-- \`security\` → 🔒 Security`
-            });
-          } else {
-            // Aucun label détecté, ajouter un commentaire d'avertissement
+- \`security\` → 🔒 Security`;
+
             await github.rest.issues.createComment({
               owner,
               repo,
               issue_number: prNumber,
-              body: `⚠️ **Aucun label automatique détecté**
+              body: body
+            });
+          } else {
+            // Aucun label détecté, ajouter un commentaire d'avertissement
+            const warningBody = `⚠️ **Aucun label automatique détecté**
 
 Les commits de cette PR ne suivent pas le format [Conventional Commits](https://www.conventionalcommits.org/).
 
@@ -162,7 +160,13 @@ chore: update dependencies
 - \`bug\` → 🐛 Bug Fixes
 - \`documentation\` → 📝 Documentation
 - \`test\` → 🧪 Tests
-- \`chore\` → 🔧 Maintenance`
+- \`chore\` → 🔧 Maintenance`;
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: prNumber,
+              body: warningBody
             });
           }
 
