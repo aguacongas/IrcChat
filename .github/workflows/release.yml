@@ -102,6 +102,7 @@ jobs:
       id: detailed_changelog
       uses: mikepenz/release-changelog-builder-action@v6
       with:
+        outputFile: CHANGELOG.md
         configurationJson: |
           {
             "template": "## 📋 Changes\n\n#{{CHANGELOG}}\n\n---\n\n### 📦 Downloads\n\n- `ircchat-api-${{ steps.version.outputs.version }}.zip` - Backend API\n- `ircchat-client-${{ steps.version.outputs.version }}.zip` - Frontend Blazor\n\n### 📚 Links\n\n- [Full Documentation](https://github.com/${{ github.repository }})\n- [Installation Guide](https://github.com/${{ github.repository }}/blob/main/README.md)\n- [SonarCloud](https://sonarcloud.io/project/overview?id=${{ vars.SONAR_PROJECT_KEY }})\n\n**Full Changelog**: https://github.com/${{ github.repository }}/compare/#{{FROM_TAG}}...${{ steps.version.outputs.tag }}",
