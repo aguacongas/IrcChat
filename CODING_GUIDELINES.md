@@ -2,6 +2,47 @@
 
 ## Conventions C# à respecter
 
+### Usings et namespaces
+✅ **Toujours utiliser les directives using** pour éviter les noms de types à rallonge :
+```csharp
+// ✅ BON - Using au début du fichier
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
+
+namespace MyApp.Services;
+
+public class MyService
+{
+    [SuppressMessage("Rule", "RuleId", Justification = "Raison")]
+    public void DoWork()
+    {
+        var options = new JsonSerializerOptions();
+    }
+}
+
+// ❌ ÉVITER - Noms complets
+namespace MyApp.Services;
+
+public class MyService
+{
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Rule", "RuleId", Justification = "Raison")]
+    public void DoWork()
+    {
+        var options = new System.Text.Json.JsonSerializerOptions();
+    }
+}
+
+// ⚠️ EXCEPTION - Quand cela nuit à la lisibilité (conflit de noms)
+using SystemTask = System.Threading.Tasks.Task;
+
+public class MyTask
+{
+    // Ici on utilise le alias car "Task" pourrait être ambigu
+    public SystemTask DoWorkAsync() => SystemTask.CompletedTask;
+}
+```
+
 ### Accolades obligatoires
 ✅ **Toujours utiliser des accolades** même pour les blocs d'une seule ligne :
 ```csharp
