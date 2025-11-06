@@ -201,6 +201,99 @@ public MyHubTests()
 }
 ```
 
+## 🌐 Mock de HttpClient avec MockHttpMessageHandler - Le guide complet
+
+### ⚠️ Erreur critique : Ne PAS recréer la requête
+
+**Le problème :** `GetMatchCount()` nécessite la **même instance** de `MockedRequest` que celle retournée par `When()`.
+
+### ❌ MAUVAIS - Recrée la requête
+
+```csharp
+// Setup
+_mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+    .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
+
+// Verify - ❌ ERREUR: Crée une NOUVELLE requête, count sera toujours 0
+_mockHttp.GetMatchCount(_mockHttp.When(HttpMethod.Get, "*/api/messages/general"))
+    .Should().BeGreaterThanOrEqualTo(1);
+```
+
+### ✅ BON - Réutilise la même instance
+
+```csharp
+// Setup - 💾 SAUVEGARDER l'instance
+var request = _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+    .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
+
+// Verify - ✅ Utilise la MÊME instance
+_mockHttp.GetMatchCount(request)
+    .Should().BeGreaterThanOrEqualTo(1);
+```
+
+### 📋 Pattern complet pour tests frontend
+
+```csharp
+[Fact]
+public async Task Component_ShouldCallApi_WhenLoaded()
+{
+    // Arrange
+    var messages = new List<MessageDto> { /* ... */ };
+    
+    // 💾 IMPORTANT: Sauvegarder l'instance retournée par When()
+    var getMessagesRequest = _mockHttp
+        .When(HttpMethod.Get, "*/api/messages/general")
+        .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
+
+    // Act
+    var cut = RenderComponent<ChatComponent>(parameters => parameters
+        .Add(p => p.ChannelId, "general"));
+    
+    cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+
+    // Assert - ✅ Vérifier avec la même instance
+    _mockHttp.GetMatchCount(getMessagesRequest)
+        .Should().Be(1, "l'API devrait être appelée une fois au chargement");
+}
+```
+
+### 🎯 Multiples endpoints
+
+```csharp
+[Fact]
+public async Task Component_ShouldCallMultipleEndpoints()
+{
+    // Setup - 💾 Sauvegarder TOUTES les instances
+    var getUserRequest = _mockHttp
+        .When(HttpMethod.Get, "*/api/users/me")
+        .Respond(HttpStatusCode.OK, JsonContent.Create(user));
+    
+    var getChannelsRequest = _mockHttp
+        .When(HttpMethod.Get, "*/api/channels")
+        .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+    
+    var postMessageRequest = _mockHttp
+        .When(HttpMethod.Post, "*/api/messages")
+        .Respond(HttpStatusCode.Created);
+
+    // Act
+    var cut = RenderComponent<MyComponent>();
+    await cut.InvokeAsync(() => cut.Find("button.send").Click());
+
+    // Assert - ✅ Vérifier chaque requête individuellement
+    _mockHttp.GetMatchCount(getUserRequest).Should().Be(1);
+    _mockHttp.GetMatchCount(getChannelsRequest).Should().Be(1);
+    _mockHttp.GetMatchCount(postMessageRequest).Should().Be(1);
+}
+```
+
+### 💡 Aide-mémoire
+
+- `When()` retourne un `MockedRequest` → **TOUJOURS le sauvegarder dans une variable**
+- `GetMatchCount()` a besoin de la **même instance** de `MockedRequest`
+- **JAMAIS** appeler `When()` deux fois avec les mêmes paramètres
+- Une requête = une variable = un `When()` = un `GetMatchCount()`
+
 ---
 
 ## 🎓 Mock de IJSRuntime - Le guide complet
