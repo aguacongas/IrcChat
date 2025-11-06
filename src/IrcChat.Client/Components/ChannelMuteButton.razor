@@ -67,7 +67,10 @@
 
     private async Task ToggleMute()
     {
-        if (isProcessing || string.IsNullOrEmpty(ChannelName)) return;
+        if (isProcessing || string.IsNullOrEmpty(ChannelName))
+        {
+          return;
+        }
 
         isProcessing = true;
         errorMessage = string.Empty;

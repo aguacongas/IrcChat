@@ -11,7 +11,7 @@ public class OAuthClientService(IJSRuntime jsRuntime, HttpClient httpClient) : I
     public async Task<string> InitiateAuthorizationFlowAsync(ExternalAuthProvider provider, string redirectUri)
     {
         var response = await httpClient.GetFromJsonAsync<OAuthProviderConfig>(
-            $"/api/oauth/config/{provider}") ?? throw new InvalidOperationException("Failed to get OAuth configuration");
+            $"/api/oauth/config/{provider}");
         var state = GenerateRandomString(32);
         var codeVerifier = GenerateRandomString(128);
         var codeChallenge = GenerateCodeChallenge(codeVerifier);
