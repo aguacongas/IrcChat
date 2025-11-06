@@ -1747,8 +1747,8 @@ public class ChatTests : TestContext
 
         var messages = new List<Message>();
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(initialChannels));
+        var mockedRequest = _mockHttp.When(HttpMethod.Get, "*/api/channels");
+        mockedRequest.Respond(HttpStatusCode.OK, JsonContent.Create(initialChannels));
 
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
@@ -1775,7 +1775,6 @@ public class ChatTests : TestContext
 
         // Préparer le mock pour le rechargement
         _mockHttp.Clear();
-        var mockedRequest = _mockHttp.When(HttpMethod.Get, "*/api/channels");
         mockedRequest.Respond(HttpStatusCode.OK, JsonContent.Create(updatedChannels));
 
         // Act - Simuler le changement de statut via le composant
