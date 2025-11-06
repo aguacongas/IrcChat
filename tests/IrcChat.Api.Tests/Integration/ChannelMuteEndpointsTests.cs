@@ -84,6 +84,9 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
+        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
+        await db.SaveChangesAsync();
+
         var creator = new ReservedUsername
         {
             Id = Guid.NewGuid(),

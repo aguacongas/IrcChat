@@ -1,10 +1,17 @@
 # Bonnes pratiques de test - IrcChat
 
-## ⚠️ Règles critiques
+## ⚠️ Règle critique : Cache Entity Framework Core
 
-### 1. Toujours créer un nouveau scope pour les vérifications
+### Le problème du cache de premier niveau
 
-**❌ MAUVAIS** - Utilise le même contexte (cache EF Core)
+Entity Framework Core maintient un **cache de premier niveau** (Identity Map) :
+- Les entités chargées sont trackées dans le contexte
+- `FindAsync()` retourne d'abord depuis le cache
+- Les changements en BDD ne sont pas visibles dans le même contexte
+
+### Solution : Toujours créer un nouveau scope pour les vérifications
+
+**❌ MAUVAIS** - Réutilise le même contexte
 ```csharp
 [Fact]
 public async Task Test_BadExample()
@@ -15,13 +22,13 @@ public async Task Test_BadExample()
     // Arrange & Act
     await _client.PostAsync("/api/endpoint", data);
 
-    // Assert - ❌ PROBLÈME: Utilise le même contexte
+    // Assert - ❌ PROBLÈME: Cache EF Core
     var result = await db.SomeTable.FindAsync(id);
     result.Should().BeNull(); // Peut échouer à cause du cache
 }
 ```
 
-**✅ BON** - Crée un nouveau scope et contexte
+**✅ BON** - Nouveau scope et contexte
 ```csharp
 [Fact]
 public async Task Test_GoodExample()
@@ -40,14 +47,7 @@ public async Task Test_GoodExample()
 }
 ```
 
-### Pourquoi ?
-
-Entity Framework Core maintient un **cache de premier niveau** (Identity Map) :
-- Les entités chargées sont trackées dans le contexte
-- `FindAsync()` retourne d'abord depuis le cache
-- Les changements en BDD ne sont pas visibles dans le même contexte
-
-**Solution** : Créer un nouveau scope + nouveau contexte pour les assertions.
+---
 
 ## 📋 Pattern de test complet
 
@@ -91,10 +91,11 @@ public async Task MethodName_Scenario_ExpectedBehavior()
 }
 ```
 
+---
+
 ## 🎯 Checklist de test
 
 ### Tests d'endpoints API
-
 - [ ] **Happy path** - Fonctionnement normal
 - [ ] **Validation** - Données invalides → BadRequest
 - [ ] **Authentication** - Sans token → Unauthorized
@@ -104,22 +105,22 @@ public async Task MethodName_Scenario_ExpectedBehavior()
 - [ ] **Edge cases** - Valeurs limites, cas spéciaux
 
 ### Tests de services
-
 - [ ] **Logique métier** - Tous les chemins d'exécution
 - [ ] **Exceptions** - Gestion des erreurs
 - [ ] **Dépendances** - Mocks et interactions
 - [ ] **États** - Changements d'état corrects
 
 ### Tests SignalR Hub
-
 - [ ] **Connexion/Déconnexion** - OnConnected, OnDisconnected
 - [ ] **Envoi de messages** - Broadcast, groupes
 - [ ] **Gestion des groupes** - Join, Leave
 - [ ] **Clients** - Caller, All, Group, Client
 
+---
+
 ## 🔧 Patterns utiles
 
-### 1. Génération de token JWT pour tests
+### 1. Génération de token JWT
 
 ```csharp
 private static string GenerateToken(ReservedUsername user)
@@ -200,21 +201,190 @@ public MyHubTests()
 }
 ```
 
+## 🌐 Mock de HttpClient avec MockHttpMessageHandler - Le guide complet
+
+### ⚠️ Erreur critique : Ne PAS recréer la requête
+
+**Le problème :** `GetMatchCount()` nécessite la **même instance** de `MockedRequest` que celle retournée par `When()`.
+
+### ❌ MAUVAIS - Recrée la requête
+
+```csharp
+// Setup
+_mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+    .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
+
+// Verify - ❌ ERREUR: Crée une NOUVELLE requête, count sera toujours 0
+_mockHttp.GetMatchCount(_mockHttp.When(HttpMethod.Get, "*/api/messages/general"))
+    .Should().BeGreaterThanOrEqualTo(1);
+```
+
+### ✅ BON - Réutilise la même instance
+
+```csharp
+// Setup - 💾 SAUVEGARDER l'instance
+var request = _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+    .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
+
+// Verify - ✅ Utilise la MÊME instance
+_mockHttp.GetMatchCount(request)
+    .Should().BeGreaterThanOrEqualTo(1);
+```
+
+### 📋 Pattern complet pour tests frontend
+
+```csharp
+[Fact]
+public async Task Component_ShouldCallApi_WhenLoaded()
+{
+    // Arrange
+    var messages = new List<MessageDto> { /* ... */ };
+    
+    // 💾 IMPORTANT: Sauvegarder l'instance retournée par When()
+    var getMessagesRequest = _mockHttp
+        .When(HttpMethod.Get, "*/api/messages/general")
+        .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
+
+    // Act
+    var cut = RenderComponent<ChatComponent>(parameters => parameters
+        .Add(p => p.ChannelId, "general"));
+    
+    cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+
+    // Assert - ✅ Vérifier avec la même instance
+    _mockHttp.GetMatchCount(getMessagesRequest)
+        .Should().Be(1, "l'API devrait être appelée une fois au chargement");
+}
+```
+
+### 🎯 Multiples endpoints
+
+```csharp
+[Fact]
+public async Task Component_ShouldCallMultipleEndpoints()
+{
+    // Setup - 💾 Sauvegarder TOUTES les instances
+    var getUserRequest = _mockHttp
+        .When(HttpMethod.Get, "*/api/users/me")
+        .Respond(HttpStatusCode.OK, JsonContent.Create(user));
+    
+    var getChannelsRequest = _mockHttp
+        .When(HttpMethod.Get, "*/api/channels")
+        .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+    
+    var postMessageRequest = _mockHttp
+        .When(HttpMethod.Post, "*/api/messages")
+        .Respond(HttpStatusCode.Created);
+
+    // Act
+    var cut = RenderComponent<MyComponent>();
+    await cut.InvokeAsync(() => cut.Find("button.send").Click());
+
+    // Assert - ✅ Vérifier chaque requête individuellement
+    _mockHttp.GetMatchCount(getUserRequest).Should().Be(1);
+    _mockHttp.GetMatchCount(getChannelsRequest).Should().Be(1);
+    _mockHttp.GetMatchCount(postMessageRequest).Should().Be(1);
+}
+```
+
+### 💡 Aide-mémoire
+
+- `When()` retourne un `MockedRequest` → **TOUJOURS le sauvegarder dans une variable**
+- `GetMatchCount()` a besoin de la **même instance** de `MockedRequest`
+- **JAMAIS** appeler `When()` deux fois avec les mêmes paramètres
+- Une requête = une variable = un `When()` = un `GetMatchCount()`
+
+---
+
+## 🎓 Mock de IJSRuntime - Le guide complet
+
+### Pourquoi c'est piégeux ?
+
+`InvokeVoidAsync` est une **méthode d'extension**, elle ne peut **jamais** être mockée avec Moq. Il faut mocker la méthode sous-jacente : `InvokeAsync<IJSVoidResult>`.
+
+### ✅ Méthodes qui retournent une valeur
+
+```csharp
+_jsRuntimeMock
+    .Setup(x => x.InvokeAsync<string?>(
+        "localStorageHelper.getItem",
+        It.Is<object[]>(o => o.Length == 1 && (string)o[0] == "my-key")))
+    .ReturnsAsync("my-value");
+```
+
+### ✅ Opérations void (setItem, removeItem, clear)
+
+```csharp
+_jsRuntimeMock
+    .Setup(x => x.InvokeAsync<IJSVoidResult>(
+        "localStorageHelper.setItem",
+        It.IsAny<object[]>()))
+    .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+
+_jsRuntimeMock
+    .Setup(x => x.InvokeAsync<IJSVoidResult>(
+        "localStorageHelper.removeItem",
+        It.IsAny<object[]>()))
+    .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+```
+
+### ✅ Vérifier les appels
+
+```csharp
+_jsRuntimeMock.Verify(
+    x => x.InvokeAsync<IJSVoidResult>(
+        "localStorageHelper.setItem",
+        It.Is<object[]>(o => 
+            o.Length == 2 && 
+            (string)o[0] == "my-key" && 
+            (string)o[1] == "my-value")),
+    Times.Once);
+```
+
+### ❌ Erreurs à éviter
+
+```csharp
+// ❌ Impossible: InvokeVoidAsync est une extension
+_jsRuntimeMock
+    .Setup(x => x.InvokeVoidAsync("method", args))
+    .Returns(ValueTask.CompletedTask);
+
+// ❌ InvalidCastException: Mauvais type
+_jsRuntimeMock
+    .Setup(x => x.InvokeAsync<IJSVoidResult>("method", args))
+    .ReturnsAsync(new object());
+
+// ❌ InvalidCastException: Mauvais type générique
+_jsRuntimeMock
+    .Setup(x => x.InvokeAsync<IJSVoidResult>("method", args))
+    .Returns(ValueTask.FromResult<object>(null!));
+```
+
+### 💡 Aide-mémoire
+
+- `InvokeAsync<T>` retourne `ValueTask<T>`
+- Pour void → `T` = `IJSVoidResult`
+- Donc → `Returns(ValueTask.FromResult<IJSVoidResult>(null!))`
+- **JAMAIS** mocker `InvokeVoidAsync` (c'est une extension)
+- **TOUJOURS** mocker `InvokeAsync<IJSVoidResult>` à la place
+
+---
+
 ## 🚫 Pièges à éviter
 
-### ❌ Ne pas oublier SaveChangesAsync
+### ❌ Oublier SaveChangesAsync
 
 ```csharp
 // ❌ MAUVAIS
 db.Entities.Add(entity);
-// Oubli de SaveChangesAsync - l'entité n'est pas en BDD!
+// L'entité n'est pas en BDD!
 
 // ✅ BON
 db.Entities.Add(entity);
 await db.SaveChangesAsync();
 ```
 
-### ❌ Ne pas réutiliser le même HttpClient avec auth
+### ❌ Réutiliser le même HttpClient avec auth
 
 ```csharp
 // ❌ MAUVAIS - Le token reste pour tous les tests
@@ -225,16 +395,65 @@ var client = _factory.CreateClient();
 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 ```
 
-### ❌ Ne pas ignorer les codes de statut
+### ❌ Ignorer les codes de statut
 
 ```csharp
 // ❌ MAUVAIS
-var result = await response.Content.ReadFromJsonAsync<Result>();
+var result = await response.Content.ReadFromJsonAsync<Response>();
 
 // ✅ BON
 response.StatusCode.Should().Be(HttpStatusCode.OK);
-var result = await response.Content.ReadFromJsonAsync<Result>();
+var result = await response.Content.ReadFromJsonAsync<Response>();
 ```
+
+### ❌ Ne pas forcer un re-render avant d'interagir avec les éléments (bUnit)
+
+```csharp
+// ❌ MAUVAIS - Peut causer UnknownEventHandlerIdException
+var cut = RenderComponent<AdminPanel>(parameters => parameters
+    .Add(p => p.CurrentUserId, currentUserId));
+cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+
+// Act
+var promoteButton = cut.Find(".btn-action.promote");
+await cut.InvokeAsync(() => promoteButton.Click());
+
+// ✅ BON - Forcer un re-render après WaitForState
+var cut = RenderComponent<AdminPanel>(parameters => parameters
+    .Add(p => p.CurrentUserId, currentUserId));
+cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+cut.Render(); // 👈 Force un re-render pour synchroniser le DOM
+
+// Act
+var promoteButton = cut.Find(".btn-action.promote");
+await cut.InvokeAsync(() => promoteButton.Click());
+```
+
+**Pourquoi ?**
+- `WaitForState()` attend un changement de DOM mais ne garantit pas que les event handlers sont à jour
+- Entre `WaitForState()` et `Find()`, le composant peut avoir changé d'état
+- `cut.Render()` force une synchronisation complète du render tree
+- Cela garantit que les IDs des event handlers sont corrects
+
+**Erreur typique :**
+```
+Bunit.Rendering.UnknownEventHandlerIdException: 
+There is no event handler with ID '1' associated with the 'onclick' 
+event in the current render tree.
+```
+
+**Alternatives :**
+```csharp
+// Alternative 1: Re-trouver l'élément après chaque render
+cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+await cut.InvokeAsync(() => cut.Find(".btn-action.promote").Click());
+
+// Alternative 2: Wrapper Find + Click dans InvokeAsync (recommandé)
+cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+await cut.InvokeAsync(() => cut.Find(".btn-action.promote").Click());
+```
+
+---
 
 ## 📊 Structure des tests
 
@@ -242,16 +461,27 @@ var result = await response.Content.ReadFromJsonAsync<Result>();
 tests/
 ├── IrcChat.Api.Tests/
 │   ├── Integration/           # Tests d'intégration (endpoints)
-│   │   ├── *EndpointsTests.cs
+│   │   └── *EndpointsTests.cs
 │   ├── Services/              # Tests unitaires (services)
-│   │   ├── *ServiceTests.cs
+│   │   └── *ServiceTests.cs
 │   ├── Hubs/                  # Tests SignalR
-│   │   ├── *HubTests.cs
+│   │   └── *HubTests.cs
 │   └── Helpers/               # Utilitaires de test
 │       ├── TestDataBuilder.cs
 │       ├── HttpClientExtensions.cs
 │       └── TestDbContextFactory.cs
+├── IrcChat.Client.Tests/
+│   ├── Components/            # Tests des composants Blazor
+│   │   └── *Tests.cs
+│   ├── Pages/                 # Tests des pages
+│   │   └── *Tests.cs
+│   ├── Services/              # Tests des services client
+│   │   └── *ServiceTests.cs
+│   └── Helpers/               # Utilitaires de test
+│       └── BunitTestContext.cs
 ```
+
+---
 
 ## 🎯 Objectifs de couverture
 
@@ -259,7 +489,10 @@ tests/
 - **Services** : ≥ 80%
 - **Hubs SignalR** : ≥ 75%
 - **Extensions** : ≥ 70%
+- **Composants Blazor** : ≥ 70%
 - **Global** : ≥ 80%
+
+---
 
 ## 🔍 Vérifier la couverture localement
 
@@ -275,6 +508,8 @@ reportgenerator -reports:"**/coverage.opencover.xml" -targetdir:"CoverageReport"
 Start-Process "CoverageReport/index.html"
 ```
 
+---
+
 ## 📚 Ressources
 
 - [xUnit Documentation](https://xunit.net/)
@@ -282,11 +517,21 @@ Start-Process "CoverageReport/index.html"
 - [Moq Quickstart](https://github.com/moq/moq4/wiki/Quickstart)
 - [EF Core Testing](https://learn.microsoft.com/en-us/ef/core/testing/)
 - [SignalR Testing](https://learn.microsoft.com/en-us/aspnet/core/signalr/testing)
+- [bUnit Documentation](https://bunit.dev/)
+- [JSInterop Testing](https://bunit.dev/docs/test-doubles/emulating-ijsruntime)
 
-## ✅ Exemple complet
+---
 
-Voir les tests existants :
+## ✅ Exemples complets
+
+### Backend (API)
 - `ChannelDeleteEndpointsTests.cs` - Pattern complet avec vérification BDD
 - `AdminManagementEndpointsTests.cs` - Tests avec autorisation
 - `ChatHubTests.cs` - Tests SignalR avec mocks
 - `OAuthEndpointsTests.cs` - Tests d'authentification
+
+### Frontend (Client)
+- `ChannelMuteButtonTests.cs` - Tests de composant avec HTTP mock
+- `ChatTests.cs` - Tests de page complexe avec SignalR
+- `UnifiedAuthServiceTests.cs` - Tests avec JSRuntime mock
+- `OAuthClientServiceTests.cs` - Tests OAuth avec PKCE

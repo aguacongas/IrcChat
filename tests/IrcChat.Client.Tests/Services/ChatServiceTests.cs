@@ -10,11 +10,11 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using RichardSzalay.MockHttp;
 using Xunit;
-using Xunit.Sdk;
 
 namespace IrcChat.Client.Tests.Services;
 
@@ -48,7 +48,7 @@ public class ChatServiceTests : TestContext
     public void ChatService_ShouldInitialize()
     {
         // Act
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
 
         // Assert
         service.Should().NotBeNull();
@@ -58,7 +58,7 @@ public class ChatServiceTests : TestContext
     public async Task InitializeAsync_ShouldConnectSuccessfully()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
 
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
         var hubConnectionMock = new Mock<HubConnectionStub>();
@@ -74,12 +74,7 @@ public class ChatServiceTests : TestContext
         hubConnectionBuilderMock
             .Setup(x => x.Build())
             .Returns(hubConnectionMock.Object);
-
-        // Simuler l'état connecté
-        var internalStateField = typeof(HubConnection).GetField("_state", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var internalState = internalStateField!.GetValue(hubConnectionMock.Object);
-        var changeStateMethod = internalState!.GetType().GetMethod("ChangeState", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-        changeStateMethod!.Invoke(internalState, [HubConnectionState.Disconnected, HubConnectionState.Connected]);
+        SetConnectedState(hubConnectionMock);
 
         // Act & Assert
         var act = async () => await service.InitializeAsync(hubConnectionBuilderMock.Object);
@@ -100,11 +95,12 @@ public class ChatServiceTests : TestContext
         hubConnectionMock.Verify(x => x.On("PrivateMessagesRead", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()), Times.Once);
     }
 
+
     [Fact]
     public async Task OnMessageReceived_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -153,7 +149,7 @@ public class ChatServiceTests : TestContext
     public async Task OnUserJoined_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -199,7 +195,7 @@ public class ChatServiceTests : TestContext
     public async Task OnUserLeft_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -244,7 +240,7 @@ public class ChatServiceTests : TestContext
     public async Task OnUserListUpdated_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -292,7 +288,7 @@ public class ChatServiceTests : TestContext
     public async Task OnChannelMuteStatusChanged_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -338,7 +334,7 @@ public class ChatServiceTests : TestContext
     public async Task OnMessageBlocked_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -379,7 +375,7 @@ public class ChatServiceTests : TestContext
     public async Task OnChannelDeleted_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -420,7 +416,7 @@ public class ChatServiceTests : TestContext
     public async Task OnChannelNotFound_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -460,7 +456,7 @@ public class ChatServiceTests : TestContext
     public async Task OnChannelListUpdated_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -501,7 +497,7 @@ public class ChatServiceTests : TestContext
     public async Task ReceivePrivateMessage_ShouldNotifyPrivateMessageService()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -546,7 +542,7 @@ public class ChatServiceTests : TestContext
     public async Task PrivateMessagesRead_ShouldNotifyPrivateMessageService()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -585,7 +581,7 @@ public class ChatServiceTests : TestContext
     public async Task PrivateMessageSent_ShouldNotifyPrivateMessageService()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -631,7 +627,7 @@ public class ChatServiceTests : TestContext
     public async Task DisposeAsync_ShouldCleanupResources()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
 
         // Act
         var act = async () => await service.DisposeAsync();
@@ -644,7 +640,7 @@ public class ChatServiceTests : TestContext
     public async Task JoinChannel_WhenConnectionNull_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
 
         // Act
         var act = async () => await service.JoinChannel("testUser", "testChannel");
@@ -657,7 +653,7 @@ public class ChatServiceTests : TestContext
     public async Task JoinChannel_WhenConnectionExists_ShouldCallSendAsync()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -688,7 +684,7 @@ public class ChatServiceTests : TestContext
     public async Task LeaveChannel_WhenConnectionNull_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
 
         // Act
         var act = async () => await service.LeaveChannel("testChannel");
@@ -701,7 +697,7 @@ public class ChatServiceTests : TestContext
     public async Task LeaveChannel_WhenConnectionExists_ShouldCallSendAsync()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -731,7 +727,7 @@ public class ChatServiceTests : TestContext
     public async Task SendMessage_WhenConnectionNull_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var request = new SendMessageRequest
         {
             Username = "testUser",
@@ -750,7 +746,7 @@ public class ChatServiceTests : TestContext
     public async Task SendMessage_WhenConnectionExists_ShouldCallSendAsync()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -787,7 +783,7 @@ public class ChatServiceTests : TestContext
     public async Task SendPrivateMessage_WhenConnectionNull_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var request = new SendPrivateMessageRequest
         {
             SenderUsername = "sender",
@@ -806,7 +802,7 @@ public class ChatServiceTests : TestContext
     public async Task SendPrivateMessage_WhenConnectionExists_ShouldCallSendAsync()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -843,7 +839,7 @@ public class ChatServiceTests : TestContext
     public async Task MarkPrivateMessagesAsRead_WhenConnectionNull_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
 
         // Act
         var act = async () => await service.MarkPrivateMessagesAsRead("sender");
@@ -856,7 +852,7 @@ public class ChatServiceTests : TestContext
     public async Task MarkPrivateMessagesAsRead_WhenConnectionExists_ShouldCallSendAsync()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -887,7 +883,7 @@ public class ChatServiceTests : TestContext
     public async Task DisposeAsync_AfterInitialize_ShouldDisposeConnectionAndTimer()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -912,7 +908,7 @@ public class ChatServiceTests : TestContext
     public async Task DisposeAsync_CalledMultipleTimes_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -938,7 +934,7 @@ public class ChatServiceTests : TestContext
     public async Task MultipleEventSubscribers_ShouldAllBeNotified()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -974,6 +970,52 @@ public class ChatServiceTests : TestContext
         subscriber1Called.Should().Be(1);
         subscriber2Called.Should().Be(1);
     }
+
+    [Fact]
+    public async Task Ping_WhenSendAsyncThrows_ShouldLogError()
+    {
+        // Arrange
+        var loggerMock = new Mock<ILogger<ChatService>>();
+        var service = new ChatService(_privateMessageServiceMock.Object, loggerMock.Object);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        SetConnectedState(hubConnectionMock);
+
+        var pingException = new InvalidOperationException("Ping failed");
+        hubConnectionMock.Setup(x => x.SendCoreAsync("Ping", It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(pingException);
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Wait for ping timer to execute
+        await Task.Delay(200);
+
+        // Assert - Should log the error
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("SignalR")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.AtLeastOnce);
+    }
+
+    private static void SetConnectedState(Mock<HubConnectionStub> hubConnectionMock)
+    {
+        // Simuler l'état connecté
+        var internalStateField = typeof(HubConnection).GetField("_state", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var internalState = internalStateField!.GetValue(hubConnectionMock.Object);
+        var changeStateMethod = internalState!.GetType().GetMethod("ChangeState", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+        changeStateMethod!.Invoke(internalState, [HubConnectionState.Disconnected, HubConnectionState.Connected]);
+    }
+
 }
 
 
