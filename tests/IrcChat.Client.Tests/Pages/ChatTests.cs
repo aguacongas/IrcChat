@@ -1747,8 +1747,8 @@ public class ChatTests : TestContext
 
         var messages = new List<Message>();
 
-        var mockedRequest = _mockHttp.When(HttpMethod.Get, "*/api/channels");
-        mockedRequest.Respond(HttpStatusCode.OK, JsonContent.Create(initialChannels));
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(initialChannels));
 
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
@@ -1775,14 +1775,18 @@ public class ChatTests : TestContext
 
         // Préparer le mock pour le rechargement
         _mockHttp.Clear();
+        var muteToggleResponse = new { ChannelName = "general", IsMuted = true, ChangedBy = "admin" };
+        _mockHttp.When(HttpMethod.Post, "*/api/channels/general/toggle-mute")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(muteToggleResponse));
+        var mockedRequest = _mockHttp.When(HttpMethod.Get, "*/api/channels");
         mockedRequest.Respond(HttpStatusCode.OK, JsonContent.Create(updatedChannels));
 
         // Act - Simuler le changement de statut via le composant
         // Trouver le ChannelMuteButton et son callback
-        _chatServiceMock.Raise(
-            x => x.OnChannelMuteStatusChanged += null,
-            "general",
-            true);
+
+        var button = await cut.InvokeAsync(() => cut.Find(".mute-btn"));
+        // Act - Double click rapide
+        await cut.InvokeAsync(() => button.Click());
 
         await Task.Delay(200);
 
