@@ -159,7 +159,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage, HttpClient ht
                 }
             }
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             logger.LogError(ex, "Erreur lors de la lecture des données d'authentification.");
         }
