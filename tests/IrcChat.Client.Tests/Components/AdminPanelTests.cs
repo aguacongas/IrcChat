@@ -223,6 +223,7 @@ public class AdminPanelTests : TestContext
             .Add(p => p.CurrentUserId, currentUserId));
 
         cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+        cut.Render();
 
         _mockHttp.Clear();
         _mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/demote")
@@ -271,6 +272,7 @@ public class AdminPanelTests : TestContext
             .Add(p => p.CurrentUserId, currentUserId));
 
         cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+        cut.Render();
 
         // Act
         var promoteButton = cut.Find(".btn-action.promote");
