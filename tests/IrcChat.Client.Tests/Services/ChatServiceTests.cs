@@ -95,7 +95,7 @@ public class ChatServiceTests : TestContext
         hubConnectionMock.Verify(x => x.On("PrivateMessagesRead", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()), Times.Once);
     }
 
-    
+
     [Fact]
     public async Task OnMessageReceived_ShouldTriggerEvent()
     {

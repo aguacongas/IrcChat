@@ -16,7 +16,7 @@ public class ChannelUsersListTests : TestContext
         var cut = RenderComponent<ChannelUsersList>(parameters => parameters
             .Add(p => p.CurrentChannel, (string?)null)
             .Add(p => p.Username, "testuser")
-            .Add(p => p.Users, new List<User>()));
+            .Add(p => p.Users, []));
 
         // Assert
         cut.Markup.Should().BeEmpty();
@@ -29,7 +29,7 @@ public class ChannelUsersListTests : TestContext
         var cut = RenderComponent<ChannelUsersList>(parameters => parameters
             .Add(p => p.CurrentChannel, "")
             .Add(p => p.Username, "testuser")
-            .Add(p => p.Users, new List<User>()));
+            .Add(p => p.Users, []));
 
         // Assert
         cut.Markup.Should().BeEmpty();
@@ -42,7 +42,7 @@ public class ChannelUsersListTests : TestContext
         var cut = RenderComponent<ChannelUsersList>(parameters => parameters
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.Username, "testuser")
-            .Add(p => p.Users, new List<User>()));
+            .Add(p => p.Users, []));
 
         // Assert
         cut.Markup.Should().Contain("Utilisateurs");
