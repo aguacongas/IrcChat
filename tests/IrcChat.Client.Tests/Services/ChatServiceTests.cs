@@ -15,7 +15,6 @@ using Microsoft.Extensions.Options;
 using Moq;
 using RichardSzalay.MockHttp;
 using Xunit;
-using Xunit.Sdk;
 
 namespace IrcChat.Client.Tests.Services;
 
@@ -75,12 +74,7 @@ public class ChatServiceTests : TestContext
         hubConnectionBuilderMock
             .Setup(x => x.Build())
             .Returns(hubConnectionMock.Object);
-
-        // Simuler l'état connecté
-        var internalStateField = typeof(HubConnection).GetField("_state", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var internalState = internalStateField!.GetValue(hubConnectionMock.Object);
-        var changeStateMethod = internalState!.GetType().GetMethod("ChangeState", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-        changeStateMethod!.Invoke(internalState, [HubConnectionState.Disconnected, HubConnectionState.Connected]);
+        SetConnectedState(hubConnectionMock);
 
         // Act & Assert
         var act = async () => await service.InitializeAsync(hubConnectionBuilderMock.Object);
@@ -101,6 +95,7 @@ public class ChatServiceTests : TestContext
         hubConnectionMock.Verify(x => x.On("PrivateMessagesRead", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()), Times.Once);
     }
 
+    
     [Fact]
     public async Task OnMessageReceived_ShouldTriggerEvent()
     {
@@ -975,6 +970,52 @@ public class ChatServiceTests : TestContext
         subscriber1Called.Should().Be(1);
         subscriber2Called.Should().Be(1);
     }
+
+    [Fact]
+    public async Task Ping_WhenSendAsyncThrows_ShouldLogError()
+    {
+        // Arrange
+        var loggerMock = new Mock<ILogger<ChatService>>();
+        var service = new ChatService(_privateMessageServiceMock.Object, loggerMock.Object);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        SetConnectedState(hubConnectionMock);
+
+        var pingException = new InvalidOperationException("Ping failed");
+        hubConnectionMock.Setup(x => x.SendCoreAsync("Ping", It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(pingException);
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Wait for ping timer to execute
+        await Task.Delay(200);
+
+        // Assert - Should log the error
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("SignalR")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.AtLeastOnce);
+    }
+
+    private static void SetConnectedState(Mock<HubConnectionStub> hubConnectionMock)
+    {
+        // Simuler l'état connecté
+        var internalStateField = typeof(HubConnection).GetField("_state", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var internalState = internalStateField!.GetValue(hubConnectionMock.Object);
+        var changeStateMethod = internalState!.GetType().GetMethod("ChangeState", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+        changeStateMethod!.Invoke(internalState, [HubConnectionState.Disconnected, HubConnectionState.Connected]);
+    }
+
 }
 
 

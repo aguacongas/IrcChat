@@ -212,8 +212,8 @@ public class ChannelMuteButtonTests : TestContext
     public async Task ToggleMute_ShouldNotTriggerWhenAlreadyProcessing()
     {
         // Arrange
-        var request = _mockHttp.When(HttpMethod.Post, "*/api/channels/general/toggle-mute");
-        request.Respond(async () =>
+        var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/channels/general/toggle-mute");
+        mockedRequest.Respond(async () =>
             {
                 await Task.Delay(500);
                 return new HttpResponseMessage(HttpStatusCode.OK)
@@ -236,7 +236,7 @@ public class ChannelMuteButtonTests : TestContext
         cut.Render();
 
         // Assert - Devrait être appelé une seule fois
-        var requestCount = _mockHttp.GetMatchCount(request);
+        var requestCount = _mockHttp.GetMatchCount(mockedRequest);
         requestCount.Should().Be(1);
     }
 }

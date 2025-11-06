@@ -149,8 +149,8 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
 
-        var request = _mockHttp.When(HttpMethod.Post, "*/api/oauth/forget-username");
-        request.Respond(HttpStatusCode.OK);
+        var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/oauth/forget-username");
+        mockedRequest.Respond(HttpStatusCode.OK);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -183,7 +183,7 @@ public class UnifiedAuthServiceCompleteTests
         service.HasUsername.Should().BeFalse();
         eventTriggered.Should().BeTrue();
 
-        _mockHttp.GetMatchCount(request)
+        _mockHttp.GetMatchCount(mockedRequest)
             .Should().Be(1);
     }
 
@@ -461,5 +461,491 @@ public class UnifiedAuthServiceCompleteTests
 
         // Assert
         getItemCalls.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_WithValidSavedData_ShouldRestoreAllProperties()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var authData = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            Username = "testuser",
+            Token = "test-token",
+            IsReserved = true,
+            ReservedProvider = ExternalAuthProvider.Google,
+            Email = "test@example.com",
+            AvatarUrl = "https://example.com/avatar.jpg",
+            UserId = userId,
+            IsAdmin = true
+        });
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.Is<object[]>(o => o.Length == 1 && (string)o[0] == "ircchat_unified_auth")))
+            .ReturnsAsync(authData);
+
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
+
+        // Act
+        await service.InitializeAsync();
+
+        // Assert
+        service.Username.Should().Be("testuser");
+        service.Token.Should().Be("test-token");
+        service.IsReserved.Should().BeTrue();
+        service.ReservedProvider.Should().Be(ExternalAuthProvider.Google);
+        service.Email.Should().Be("test@example.com");
+        service.AvatarUrl.Should().Be("https://example.com/avatar.jpg");
+        service.UserId.Should().Be(userId);
+        service.IsAdmin.Should().BeTrue();
+        service.IsAuthenticated.Should().BeTrue();
+        service.HasUsername.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task InitializeAsync_WithPartialData_ShouldHandleGracefully()
+    {
+        // Arrange
+        var authData = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            Username = "testuser",
+            Token = (string?)null,
+            IsReserved = false,
+            ReservedProvider = (ExternalAuthProvider?)null,
+            Email = (string?)null,
+            AvatarUrl = (string?)null,
+            UserId = (Guid?)null,
+            IsAdmin = false
+        });
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.Is<object[]>(o => o.Length == 1 && (string)o[0] == "ircchat_unified_auth")))
+            .ReturnsAsync(authData);
+
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
+
+        // Act
+        await service.InitializeAsync();
+
+        // Assert
+        service.Username.Should().Be("testuser");
+        service.Token.Should().BeNull();
+        service.IsReserved.Should().BeFalse();
+        service.ReservedProvider.Should().BeNull();
+        service.Email.Should().BeNull();
+        service.AvatarUrl.Should().BeNull();
+        service.UserId.Should().BeNull();
+        service.IsAdmin.Should().BeFalse();
+        service.IsAuthenticated.Should().BeFalse();
+        service.HasUsername.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SetUsernameAsync_AsGuest_ShouldSaveCorrectly()
+    {
+        // Arrange
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        var savedData = "";
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .Callback<string, object[]>((method, args) =>
+            {
+                if (args.Length == 2 && args[0]?.ToString() == "ircchat_unified_auth")
+                {
+                    savedData = args[1]?.ToString() ?? "";
+                }
+            })
+            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
+        await service.InitializeAsync();
+
+        // Act
+        await service.SetUsernameAsync("guestuser", isReserved: false);
+
+        // Assert
+        savedData.Should().Contain("guestuser");
+        savedData.Should().Contain("\"IsReserved\":false");
+        service.Username.Should().Be("guestuser");
+        service.IsReserved.Should().BeFalse();
+        service.ReservedProvider.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SetAuthStateAsync_WithAllParameters_ShouldSaveCorrectly()
+    {
+        // Arrange
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        var savedData = "";
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .Callback<string, object[]>((method, args) =>
+            {
+                if (args.Length == 2 && args[0]?.ToString() == "ircchat_unified_auth")
+                {
+                    savedData = args[1]?.ToString() ?? "";
+                }
+            })
+            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
+        await service.InitializeAsync();
+
+        var userId = Guid.NewGuid();
+
+        // Act
+        await service.SetAuthStateAsync(
+            "auth-token",
+            "authuser",
+            "auth@example.com",
+            "https://example.com/pic.jpg",
+            userId,
+            ExternalAuthProvider.Microsoft,
+            isAdmin: true);
+
+        // Assert
+        savedData.Should().Contain("auth-token");
+        savedData.Should().Contain("authuser");
+        savedData.Should().Contain("auth@example.com");
+        savedData.Should().Contain("https://example.com/pic.jpg");
+        savedData.Should().Contain(userId.ToString());
+        savedData.Should().Contain(((int)ExternalAuthProvider.Microsoft).ToString());
+        savedData.Should().Contain("\"IsAdmin\":true");
+    }
+
+    [Fact]
+    public async Task ClearAllAsync_ShouldResetAllProperties()
+    {
+        // Arrange
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.removeItem",
+                It.IsAny<object[]>()))
+            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
+        await service.InitializeAsync();
+
+        // Set some data first
+        await service.SetAuthStateAsync(
+            "token",
+            "user",
+            "email@test.com",
+            "avatar.jpg",
+            Guid.NewGuid(),
+            ExternalAuthProvider.Facebook,
+            isAdmin: true);
+
+        var eventTriggered = false;
+        service.OnAuthStateChanged += () => eventTriggered = true;
+
+        // Act
+        await service.ClearAllAsync();
+
+        // Assert
+        service.Username.Should().BeNull();
+        service.Token.Should().BeNull();
+        service.IsReserved.Should().BeFalse();
+        service.ReservedProvider.Should().BeNull();
+        service.Email.Should().BeNull();
+        service.AvatarUrl.Should().BeNull();
+        service.UserId.Should().BeNull();
+        service.IsAdmin.Should().BeFalse();
+        service.IsAuthenticated.Should().BeFalse();
+        service.HasUsername.Should().BeFalse();
+        eventTriggered.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task OnAuthStateChanged_ShouldTriggerOnAllStateChanges()
+    {
+        // Arrange
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.removeItem",
+                It.IsAny<object[]>()))
+            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
+        await service.InitializeAsync();
+
+        var eventCount = 0;
+        service.OnAuthStateChanged += () => eventCount++;
+
+        // Act
+        await service.SetUsernameAsync("user1", false);
+        await service.SetAuthStateAsync("token", "user2", "email", null, Guid.NewGuid(), ExternalAuthProvider.Google, false);
+        await service.LogoutAsync();
+        await service.ClearAllAsync();
+
+        // Assert
+        eventCount.Should().Be(4);
+    }
+
+    [Fact]
+    public async Task SetAuthStateAsync_WithDifferentProviders_ShouldSaveCorrectProvider()
+    {
+        // Arrange
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
+        await service.InitializeAsync();
+
+        // Test Google
+        await service.SetAuthStateAsync("token1", "user1", "email1", null, Guid.NewGuid(), ExternalAuthProvider.Google, false);
+        service.ReservedProvider.Should().Be(ExternalAuthProvider.Google);
+
+        // Test Microsoft
+        await service.SetAuthStateAsync("token2", "user2", "email2", null, Guid.NewGuid(), ExternalAuthProvider.Microsoft, false);
+        service.ReservedProvider.Should().Be(ExternalAuthProvider.Microsoft);
+
+        // Test Facebook
+        await service.SetAuthStateAsync("token3", "user3", "email3", null, Guid.NewGuid(), ExternalAuthProvider.Facebook, false);
+        service.ReservedProvider.Should().Be(ExternalAuthProvider.Facebook);
+    }
+
+    [Fact]
+    public async Task LogoutAsync_MultipleSubscribers_ShouldNotifyAll()
+    {
+        // Arrange
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
+        await service.InitializeAsync();
+
+        await service.SetAuthStateAsync("token", "user", "email", null, Guid.NewGuid(), ExternalAuthProvider.Google, false);
+
+        var subscriber1Called = 0;
+        var subscriber2Called = 0;
+        var subscriber3Called = 0;
+
+        service.OnAuthStateChanged += () => subscriber1Called++;
+        service.OnAuthStateChanged += () => subscriber2Called++;
+        service.OnAuthStateChanged += () => subscriber3Called++;
+
+        // Act
+        await service.LogoutAsync();
+
+        // Assert
+        subscriber1Called.Should().Be(1);
+        subscriber2Called.Should().Be(1);
+        subscriber3Called.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task HasUsername_AfterSettingUsername_ShouldReturnTrue()
+    {
+        // Arrange
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
+        await service.InitializeAsync();
+
+        // Act
+        await service.SetUsernameAsync("testuser", false);
+
+        // Assert
+        service.HasUsername.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task IsAuthenticated_WithToken_ShouldReturnTrue()
+    {
+        // Arrange
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
+        await service.InitializeAsync();
+
+        // Act
+        await service.SetAuthStateAsync("token", "user", "email", null, Guid.NewGuid(), ExternalAuthProvider.Google, false);
+
+        // Assert
+        service.IsAuthenticated.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task IsAuthenticated_WithoutToken_ShouldReturnFalse()
+    {
+        // Arrange
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
+        await service.InitializeAsync();
+
+        // Act & Assert
+        service.IsAuthenticated.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CanForgetUsername_WithNoUsername_ShouldReturnFalse()
+    {
+        // Arrange
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
+        await service.InitializeAsync();
+
+        // Act & Assert
+        service.CanForgetUsername.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SetAuthStateAsync_WithNullAvatarUrl_ShouldHandleGracefully()
+    {
+        // Arrange
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
+        await service.InitializeAsync();
+
+        // Act
+        await service.SetAuthStateAsync("token", "user", "email", null, Guid.NewGuid(), ExternalAuthProvider.Google, false);
+
+        // Assert
+        service.AvatarUrl.Should().BeNull();
+        service.IsAuthenticated.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task LogoutAsync_ShouldPreserveUsernameAndReservedStatus()
+    {
+        // Arrange
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
+        await service.InitializeAsync();
+
+        await service.SetAuthStateAsync(
+            "token",
+            "reserveduser",
+            "email@test.com",
+            "avatar.jpg",
+            Guid.NewGuid(),
+            ExternalAuthProvider.Microsoft,
+            isAdmin: true);
+
+        // Act
+        await service.LogoutAsync();
+
+        // Assert
+        service.Username.Should().Be("reserveduser");
+        service.IsReserved.Should().BeTrue();
+        service.ReservedProvider.Should().Be(ExternalAuthProvider.Microsoft);
+        service.Token.Should().BeNull();
+        service.Email.Should().BeNull();
+        service.AvatarUrl.Should().BeNull();
+        service.UserId.Should().BeNull();
+        service.IsAdmin.Should().BeFalse();
     }
 }
