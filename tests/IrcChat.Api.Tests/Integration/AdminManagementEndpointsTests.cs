@@ -105,7 +105,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
-        
+
         var adminUser = new ReservedUsername
         {
             Id = Guid.NewGuid(),
