@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
@@ -25,6 +26,9 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
+        await db.SaveChangesAsync();
 
         var adminUser = new ReservedUsername
         {
@@ -72,6 +76,9 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
+        await db.SaveChangesAsync();
 
         var regularUser = new ReservedUsername
         {
@@ -159,6 +166,9 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
+        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
+        await db.SaveChangesAsync();
+
         var adminUser = new ReservedUsername
         {
             Id = Guid.NewGuid(),
@@ -204,6 +214,9 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
+        await db.SaveChangesAsync();
 
         var adminUser1 = new ReservedUsername
         {
@@ -257,6 +270,9 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
+        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
+        await db.SaveChangesAsync();
+
         var adminUser = new ReservedUsername
         {
             Id = Guid.NewGuid(),
@@ -290,6 +306,9 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
+        await db.SaveChangesAsync();
 
         var adminUser = new ReservedUsername
         {
@@ -326,6 +345,9 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
+        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
+        await db.SaveChangesAsync();
+
         var regularUser = new ReservedUsername
         {
             Id = Guid.NewGuid(),
@@ -354,6 +376,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         result!.IsAdmin.Should().BeFalse();
     }
 
+    [SuppressMessage("Blocker Vulnerability", "S6781:JWT secret keys should not be disclosed", Justification = "This is a test")]
     private static string GenerateToken(ReservedUsername user)
     {
         var key = new SymmetricSecurityKey(
@@ -380,20 +403,23 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    private class UserResponse
+    [SuppressMessage("Major Code Smell", "S1144:Unused private types or members should be removed", Justification = "Deserialized fron json")]
+
+    private sealed class UserResponse
     {
-        public Guid Id { get; set; }
-        public string Username { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public ExternalAuthProvider Provider { get; set; }
-        public bool IsAdmin { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime LastLoginAt { get; set; }
-        public string? AvatarUrl { get; set; }
+        public Guid Id { get; init; }
+        public string Username { get; init; } = string.Empty;
+        public string Email { get; init; } = string.Empty;
+        public ExternalAuthProvider Provider { get; init; }
+        public bool IsAdmin { get; init; }
+        public DateTime CreatedAt { get; init; }
+        public DateTime LastLoginAt { get; init; }
+        public string? AvatarUrl { get; init; }
     }
 
-    private class AdminStatusResponse
+    [SuppressMessage("Major Code Smell", "S1144:Unused private types or members should be removed", Justification = "Deserialized fron json")]
+    private sealed class AdminStatusResponse
     {
-        public bool IsAdmin { get; set; }
+        public bool IsAdmin { get; init; }
     }
 }
