@@ -1,4 +1,6 @@
-﻿@using IrcChat.Shared.Models
+@using IrcChat.Shared.Models
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
 
 <div class="private-chat-window">
     <div class="chat-header">
@@ -57,7 +59,10 @@
 
 @code {
     private ElementReference messagesContainer;
+    private IJSObjectReference? scrollModule;
     private string messageInput = string.Empty;
+    private int previousMessageCount = 0;
+    private bool isUserScrolling = false;
 
     [Parameter]
     public string CurrentUsername { get; set; } = string.Empty;
@@ -77,12 +82,63 @@
     [Parameter]
     public EventCallback OnClose { get; set; }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                scrollModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", "./js/scroll-helper.js");
+
+                // Attacher le listener de scroll pour détecter le scroll manuel
+                await scrollModule.InvokeVoidAsync("attachScrollListener",
+                    messagesContainer,
+                    DotNetObjectReference.Create(this));
+            }
+            catch
+            {
+                // Gérer l'erreur silencieusement
+            }
+        }
+
+        // Auto-scroll si de nouveaux messages arrivent et que l'utilisateur ne scrolle pas
+        if (Messages.Count > previousMessageCount)
+        {
+            previousMessageCount = Messages.Count;
+
+            if (!isUserScrolling)
+            {
+                await ScrollToBottom();
+            }
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        if (scrollModule != null)
+        {
+            try
+            {
+                await scrollModule.InvokeVoidAsync("scrollToBottom", messagesContainer);
+            }
+            catch
+            {
+                // Ignorer les erreurs de scroll
+            }
+        }
+    }
+
     private async Task SendMessage()
     {
         if (!string.IsNullOrWhiteSpace(messageInput))
         {
             await OnSendMessage.InvokeAsync(messageInput.Trim());
             messageInput = string.Empty;
+
+            // Force le scroll après l'envoi
+            isUserScrolling = false;
+            await ScrollToBottom();
         }
     }
 
@@ -92,5 +148,28 @@
         {
             await SendMessage();
         }
+    }
+
+    [JSInvokable]
+    public void OnUserScroll(bool isAtBottom)
+    {
+        isUserScrolling = !isAtBottom;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (scrollModule != null)
+        {
+            try
+            {
+                await scrollModule.DisposeAsync();
+            }
+            catch
+            {
+                // Ignorer les erreurs de dispose
+            }
+        }
+
+        GC.SuppressFinalize(this);
     }
 }
