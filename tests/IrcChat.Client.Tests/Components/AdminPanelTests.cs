@@ -148,7 +148,7 @@ public class AdminPanelTests : TestContext
             }
         };
 
-        var getUsersRequest = _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
+        _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(HttpStatusCode.OK, JsonContent.Create(initialUsers));
 
         _mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/promote")
@@ -158,6 +158,7 @@ public class AdminPanelTests : TestContext
             .Add(p => p.CurrentUserId, currentUserId));
 
         cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+        cut.Render();
 
         // Reconfigurer pour retourner les users mis à jour
         _mockHttp.Clear();
@@ -167,7 +168,7 @@ public class AdminPanelTests : TestContext
             .Respond(HttpStatusCode.OK, JsonContent.Create(updatedUsers));
 
         // Act
-        var promoteButton = cut.Find(".btn-action.promote");
+        var promoteButton = await cut.InvokeAsync(() => cut.Find(".btn-action.promote"));
         await cut.InvokeAsync(() => promoteButton.Click());
         await Task.Delay(300);
 

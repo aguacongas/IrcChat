@@ -2,7 +2,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using Bunit;
-using FluentAssertions;
 using IrcChat.Client.Components;
 using Microsoft.Extensions.DependencyInjection;
 using RichardSzalay.MockHttp;
@@ -32,7 +31,7 @@ public class ChannelMuteButtonTests : TestContext
             .Add(p => p.CanManage, false));
 
         // Assert
-        cut.FindAll(".mute-btn").Should().BeEmpty();
+        Assert.Empty(cut.FindAll(".mute-btn"));
     }
 
     [Fact]
@@ -46,8 +45,8 @@ public class ChannelMuteButtonTests : TestContext
 
         // Assert
         var button = cut.Find(".mute-btn");
-        button.Should().NotBeNull();
-        button.TextContent.Should().Contain("Muter le salon");
+        Assert.NotNull(button);
+        Assert.Contains("Muter le salon", button.TextContent);
     }
 
     [Fact]
@@ -61,8 +60,8 @@ public class ChannelMuteButtonTests : TestContext
 
         // Assert
         var button = cut.Find(".mute-btn");
-        button.TextContent.Should().Contain("Salon muet");
-        button.ClassList.Should().Contain("muted");
+        Assert.Contains("Salon muet", button.TextContent);
+        Assert.Contains("muted", button.ClassList);
     }
 
     [Fact]
@@ -75,10 +74,10 @@ public class ChannelMuteButtonTests : TestContext
             .Add(p => p.CanManage, false));
 
         // Assert
-        cut.FindAll(".mute-btn").Should().BeEmpty();
+        Assert.Empty(cut.FindAll(".mute-btn"));
         var indicator = cut.Find(".muted-indicator");
-        indicator.Should().NotBeNull();
-        indicator.TextContent.Should().Contain("Salon muet");
+        Assert.NotNull(indicator);
+        Assert.Contains("Salon muet", indicator.TextContent);
     }
 
     [Fact]
@@ -109,8 +108,8 @@ public class ChannelMuteButtonTests : TestContext
         await Task.Delay(200);
 
         // Assert
-        statusChanged.Should().BeTrue();
-        newStatus.Should().BeTrue();
+        Assert.True(statusChanged);
+        Assert.True(newStatus);
     }
 
     [Fact]
@@ -132,7 +131,7 @@ public class ChannelMuteButtonTests : TestContext
         cut.Render();
 
         // Assert
-        cut.Markup.Should().Contain("Erreur");
+        Assert.Contains("Erreur", cut.Markup);
     }
 
     [Fact]
@@ -156,7 +155,7 @@ public class ChannelMuteButtonTests : TestContext
         await cut.InvokeAsync(() => button.Click());
 
         // Assert
-        button.HasAttribute("disabled").Should().BeTrue();
+        Assert.True(button.HasAttribute("disabled"));
     }
 
     [Fact]
@@ -177,7 +176,7 @@ public class ChannelMuteButtonTests : TestContext
         await Task.Delay(200);
 
         // Assert
-        _mockHttp.GetMatchCount(mockedRequest).Should().Be(0);
+        Assert.Equal(0, _mockHttp.GetMatchCount(mockedRequest));
     }
 
     [Fact]
@@ -198,14 +197,14 @@ public class ChannelMuteButtonTests : TestContext
         await Task.Delay(200);
         cut.Render();
 
-        cut.Markup.Should().Contain("Erreur");
+        Assert.Contains("Erreur", cut.Markup);
 
         // Attendre que le message disparaisse
         await Task.Delay(3200);
         cut.Render();
 
         // Assert
-        cut.Markup.Should().NotContain("Erreur");
+        Assert.DoesNotContain("Erreur", cut.Markup);
     }
 
     [Fact]
@@ -214,13 +213,13 @@ public class ChannelMuteButtonTests : TestContext
         // Arrange
         var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/channels/general/toggle-mute");
         mockedRequest.Respond(async () =>
+        {
+            await Task.Delay(500);
+            return new HttpResponseMessage(HttpStatusCode.OK)
             {
-                await Task.Delay(500);
-                return new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = JsonContent.Create(new { ChannelName = "general", IsMuted = true, ChangedBy = "admin" })
-                };
-            });
+                Content = JsonContent.Create(new { ChannelName = "general", IsMuted = true, ChangedBy = "admin" })
+            };
+        });
 
         var cut = RenderComponent<ChannelMuteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
@@ -237,6 +236,6 @@ public class ChannelMuteButtonTests : TestContext
 
         // Assert - Devrait être appelé une seule fois
         var requestCount = _mockHttp.GetMatchCount(mockedRequest);
-        requestCount.Should().Be(1);
+        Assert.Equal(1, requestCount);
     }
 }
