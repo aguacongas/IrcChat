@@ -386,7 +386,7 @@ public class PrivateChatWindowTests : TestContext
     }
 
     [Fact]
-    public async Task PrivateChatWindow_WhenModuleLoadFails_ShouldHandleGracefully()
+    public void PrivateChatWindow_WhenModuleLoadFails_ShouldHandleGracefully()
     {
         // Arrange
         _jsRuntimeMock

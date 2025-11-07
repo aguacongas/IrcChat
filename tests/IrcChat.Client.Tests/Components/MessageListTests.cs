@@ -189,7 +189,7 @@ public class MessageListTests : TestContext
     }
 
     [Fact]
-    public async Task MessageList_WhenModuleLoadFails_ShouldHandleGracefully()
+    public void MessageList_WhenModuleLoadFails_ShouldHandleGracefully()
     {
         // Arrange
         _jsRuntimeMock
@@ -338,7 +338,7 @@ public class MessageListTests : TestContext
     }
 
     [Fact]
-    public async Task MessageList_WhenScrollFails_ShouldHandleGracefully()
+    public void MessageList_WhenScrollFails_ShouldHandleGracefully()
     {
         // Arrange
         var mockModule = new Mock<IJSObjectReference>();

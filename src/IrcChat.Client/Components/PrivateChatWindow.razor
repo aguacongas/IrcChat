@@ -63,7 +63,6 @@
     private string messageInput = string.Empty;
     private int previousMessageCount = 0;
     private bool isUserScrolling = false;
-    private bool isFirstRender = true;
 
     [Parameter]
     public string CurrentUsername { get; set; } = string.Empty;
@@ -87,7 +86,6 @@
     {
         if (firstRender)
         {
-            isFirstRender = false;
             try
             {
                 scrollModule = await JSRuntime.InvokeAsync<IJSObjectReference>(

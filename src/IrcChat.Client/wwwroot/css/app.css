@@ -698,29 +698,6 @@ code {
         margin-top: 4px;
     }
 
-
-/* Scrollbar personnalisée */
-.messages-container::-webkit-scrollbar,
-.messages::-webkit-scrollbar {
-    width: 8px;
-}
-
-.messages-container::-webkit-scrollbar-track,
-.messages::-webkit-scrollbar-track {
-    background: #1e1e1e;
-}
-
-.messages-container::-webkit-scrollbar-thumb,
-.messages::-webkit-scrollbar-thumb {
-    background: #3e3e3e;
-    border-radius: 4px;
-}
-
-    .messages-container::-webkit-scrollbar-thumb:hover,
-    .messages::-webkit-scrollbar-thumb:hover {
-        background: #4e4e4e;
-    }
-
 /* Animation pour les notifications */
 @keyframes pulse {
     0%, 100% {
