@@ -20,7 +20,7 @@ public class OAuthClientService(IJSRuntime jsRuntime, HttpClient httpClient) : I
         await jsRuntime.InvokeVoidAsync("sessionStorage.setItem", "oauth_code_verifier", codeVerifier);
         await jsRuntime.InvokeVoidAsync("sessionStorage.setItem", "oauth_provider", provider.ToString());
 
-        var authUrl = $"{response.AuthorizationEndpoint}" +
+        var authUrl = $"{response!.AuthorizationEndpoint}" +
             $"?client_id={Uri.EscapeDataString(response.ClientId)}" +
             $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
             $"&response_type=code" +

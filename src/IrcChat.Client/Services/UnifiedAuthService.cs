@@ -73,9 +73,10 @@ public class UnifiedAuthService(ILocalStorageService localStorage, HttpClient ht
 
                 httpClient.DefaultRequestHeaders.Authorization = null;
             }
-            catch
+            catch (Exception ex)
             {
                 // Ignore les erreurs de déconnexion côté serveur - l'utilisateur sera déconnecté localement de toute façon
+                logger.LogWarning(ex, "Erreur lors de la déconnexion côté serveur, ignorée");
             }
         }
 

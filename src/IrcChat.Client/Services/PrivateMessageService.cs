@@ -5,7 +5,7 @@ using IrcChat.Shared.Models;
 
 namespace IrcChat.Client.Services;
 
-public class PrivateMessageService(HttpClient httpClient) : IPrivateMessageService
+public class PrivateMessageService(HttpClient httpClient, ILogger<PrivateMessageService> logger) : IPrivateMessageService
 {
     public event Action<PrivateMessage>? OnPrivateMessageReceived;
     public event Action<PrivateMessage>? OnPrivateMessageSent;
@@ -31,8 +31,9 @@ public class PrivateMessageService(HttpClient httpClient) : IPrivateMessageServi
                 $"/api/private-messages/conversations/{username}");
             return result ?? [];
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Erreur lors de la récupération des conversations pour {Username}", username);
             return [];
         }
     }
@@ -45,8 +46,10 @@ public class PrivateMessageService(HttpClient httpClient) : IPrivateMessageServi
                 $"/api/private-messages/{username}/with/{otherUsername}");
             return result ?? [];
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Erreur lors de la récupération des messages entre {Username} et {OtherUsername}",
+                username, otherUsername);
             return [];
         }
     }
@@ -59,8 +62,9 @@ public class PrivateMessageService(HttpClient httpClient) : IPrivateMessageServi
                 $"/api/private-messages/{username}/unread-count");
             return result?.UnreadCount ?? 0;
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogWarning(ex, "Erreur lors de la récupération du nombre de messages non lus pour {Username}", username);
             return 0;
         }
     }
@@ -81,8 +85,10 @@ public class PrivateMessageService(HttpClient httpClient) : IPrivateMessageServi
 
             return false;
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Erreur lors de la suppression de la conversation entre {Username} et {OtherUsername}",
+                username, otherUsername);
             return false;
         }
     }

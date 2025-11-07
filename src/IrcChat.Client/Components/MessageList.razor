@@ -1,5 +1,6 @@
 @using IrcChat.Shared.Models
 @inject IJSRuntime JSRuntime
+@inject ILogger<MessageList> Logger
 @implements IAsyncDisposable
 
 <div class="messages" @ref="messagesContainer">
@@ -33,9 +34,10 @@
                 scrollModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
                     "import", "./js/scroll-helper.js");
             }
-            catch
+            catch (Exception ex)
             {
                 // Gérer l'erreur silencieusement si le module ne peut pas être chargé
+                Logger.LogWarning(ex, "Erreur lors du chargement du module de scroll.");
             }
         }
 
@@ -70,9 +72,10 @@
             {
                 await scrollModule.DisposeAsync();
             }
-            catch
+            catch (Exception ex)
             {
                 // Ignorer les erreurs de dispose
+                Logger.LogWarning(ex, "Erreur lors de la libération du module de scroll.");
             }
         }
 

@@ -6,6 +6,7 @@
 @inject IUnifiedAuthService Auth
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject Logger<Settings> Logger
 
 <PageTitle>Paramètres - IRC Chat</PageTitle>
 
@@ -290,8 +291,9 @@ else
             }
             channelError = true;
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.LogError(ex, "Erreur lors de la création du salon");
             channelMessage = "✗ Erreur de connexion";
             channelError = true;
         }
