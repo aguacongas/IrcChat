@@ -1,4 +1,6 @@
-﻿@using IrcChat.Shared.Models
+@using IrcChat.Shared.Models
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
 
 <div class="messages" @ref="messagesContainer">
     @foreach (var msg in Messages)
@@ -13,10 +15,69 @@
 
 @code {
     private ElementReference messagesContainer;
+    private IJSObjectReference? scrollModule;
+    private int previousMessageCount = 0;
+    private bool isFirstRender = true;
 
     [Parameter]
     public List<Message> Messages { get; set; } = new();
 
     [Parameter]
     public string CurrentUsername { get; set; } = string.Empty;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isFirstRender = false;
+            try
+            {
+                scrollModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", "./js/scroll-helper.js");
+            }
+            catch
+            {
+                // Gérer l'erreur silencieusement si le module ne peut pas être chargé
+            }
+        }
+
+        // Scroll automatique si de nouveaux messages arrivent
+        if (Messages.Count > previousMessageCount)
+        {
+            previousMessageCount = Messages.Count;
+            await ScrollToBottom();
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        if (scrollModule != null)
+        {
+            try
+            {
+                await scrollModule.InvokeVoidAsync("scrollToBottom", messagesContainer);
+            }
+            catch
+            {
+                // Ignorer les erreurs de scroll
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (scrollModule != null)
+        {
+            try
+            {
+                await scrollModule.DisposeAsync();
+            }
+            catch
+            {
+                // Ignorer les erreurs de dispose
+            }
+        }
+
+        GC.SuppressFinalize(this);
+    }
 }

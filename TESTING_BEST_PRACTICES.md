@@ -453,6 +453,85 @@ cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(
 await cut.InvokeAsync(() => cut.Find(".btn-action.promote").Click());
 ```
 
+### ❌ Utiliser cut.Dispose() pour tester IAsyncDisposable
+
+```csharp
+// ❌ MAUVAIS - cut.Dispose() n'appelle PAS DisposeAsync()
+[Fact]
+public async Task Component_WhenDisposed_ShouldDisposeResources()
+{
+    var cut = RenderComponent<MyComponent>();
+    
+    // Act
+    cut.Dispose(); // ⚠️ N'appelle pas IAsyncDisposable.DisposeAsync()
+    
+    // Assert
+    mockResource.Verify(x => x.DisposeAsync(), Times.Once); // ❌ Échouera
+}
+
+// ✅ BON - Utiliser cut.Instance.DisposeAsync()
+[Fact]
+public async Task Component_WhenDisposed_ShouldDisposeResources()
+{
+    var mockModule = new Mock<IJSObjectReference>();
+    _jsRuntimeMock
+        .Setup(x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()))
+        .ReturnsAsync(mockModule.Object);
+    
+    mockModule
+        .Setup(x => x.DisposeAsync())
+        .Returns(ValueTask.CompletedTask);
+    
+    var cut = RenderComponent<MyComponent>();
+    await Task.Delay(100); // Attendre le chargement initial
+    
+    // Act - ✅ Appelle bien IAsyncDisposable.DisposeAsync()
+    await cut.Instance.DisposeAsync();
+    await Task.Delay(100);
+    
+    // Assert
+    mockModule.Verify(x => x.DisposeAsync(), Times.Once); // ✅ Passe
+}
+```
+
+**Pourquoi ?**
+- `cut.Dispose()` appelle `IDisposable.Dispose()`, pas `IAsyncDisposable.DisposeAsync()`
+- Pour tester la méthode `DisposeAsync()` d'un composant, il faut l'appeler explicitement via `cut.Instance.DisposeAsync()`
+- C'est particulièrement important pour les composants qui utilisent des modules JS ou d'autres ressources asynchrones
+
+**Pattern complet pour IAsyncDisposable :**
+```csharp
+[Fact]
+public async Task MessageList_WhenDisposed_ShouldDisposeModule()
+{
+    // Arrange
+    var mockModule = new Mock<IJSObjectReference>();
+    
+    _jsRuntimeMock
+        .Setup(x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()))
+        .ReturnsAsync(mockModule.Object);
+    
+    mockModule
+        .Setup(x => x.DisposeAsync())
+        .Returns(ValueTask.CompletedTask);
+    
+    var messages = new List<Message>();
+    
+    var cut = RenderComponent<MessageList>(parameters => parameters
+        .Add(p => p.Messages, messages)
+        .Add(p => p.CurrentUsername, "user1"));
+    
+    await Task.Delay(100); // Attendre que le module soit chargé
+    
+    // Act - ✅ Appelle IAsyncDisposable.DisposeAsync()
+    await cut.Instance.DisposeAsync();
+    await Task.Delay(100);
+    
+    // Assert
+    mockModule.Verify(x => x.DisposeAsync(), Times.Once);
+}
+```
+
 ---
 
 ## 📊 Structure des tests
