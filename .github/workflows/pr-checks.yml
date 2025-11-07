@@ -68,7 +68,7 @@ jobs:
           /d:sonar.coverage.exclusions="**/Migrations/**,**/*Tests/**,**/wwwroot/**" \
           /d:sonar.exclusions="**/Migrations/**,**/wwwroot/lib/**,**/obj/**,**/bin/**" \
           /d:sonar.issue.ignore.multicriteria.e1.ruleKey=csharpsquid:S1192 \
-          /d:sonar.issue.ignore.multicriteria.e1.resourceKey=src/**/Migrations/**/*.cs"
+          /d:sonar.issue.ignore.multicriteria.e1.resourceKey="src/**/Migrations/**/*.cs"
 
     - name: 🏗️ Build
       run: dotnet build --configuration Release --no-restore
