@@ -396,10 +396,10 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    private class MuteResponse
+    private sealed class MuteResponse
     {
-        public string ChannelName { get; set; } = string.Empty;
-        public bool IsMuted { get; set; }
-        public string ChangedBy { get; set; } = string.Empty;
+        public string ChannelName { get; init; } = string.Empty;
+        public bool IsMuted { get; init; } = false;
+        public string ChangedBy { get; init; } = string.Empty;
     }
 }

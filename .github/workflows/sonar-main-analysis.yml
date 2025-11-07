@@ -42,8 +42,8 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ./.sonar/scanner
-        key: ${{ runner.os }}-sonar-scanner
-        restore-keys: ${{ runner.os }}-sonar-scanner
+        key: ${{ runner.os }}-sonar-scanner-${{ hashFiles('.github/workflows/sonar-main-analysis.yml') }}
+        restore-keys: ${{ runner.os }}-sonar-scanner-${{ hashFiles('.github/workflows/sonar-main-analysis.yml') }}
 
     - name: 🔧 Install SonarCloud scanner
       if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'

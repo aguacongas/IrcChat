@@ -45,7 +45,7 @@ public class OAuthClientServiceTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "sessionStorage.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new OAuthClientService(_jsRuntimeMock.Object, _httpClient);
 
@@ -132,7 +132,7 @@ public class OAuthClientServiceTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "sessionStorage.removeItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var loginResponse = new OAuthLoginResponse
         {
@@ -274,7 +274,7 @@ public class OAuthClientServiceTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "sessionStorage.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new OAuthClientService(_jsRuntimeMock.Object, _httpClient);
 
@@ -314,7 +314,7 @@ public class OAuthClientServiceTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "sessionStorage.removeItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var loginResponse = new OAuthLoginResponse
         {
