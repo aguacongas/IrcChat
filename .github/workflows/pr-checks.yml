@@ -33,13 +33,28 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
+    - name: 📦 Restore dependencies
+      run: dotnet restore
+
+    - name: 🏗️ Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: 🔍 Check Code Style
+      run: dotnet format --verify-no-changes --verbosity diagnostic
+
+    - name: 📦 Cache SonarCloud scanner
+      id: cache-sonar-scanner
+      uses: actions/cache@v4
+      with:
+        path: ./.sonar/scanner
+        key: ${{ runner.os }}-sonar-scanner-${{ hashFiles('.github/workflows/pr-checks.yml') }}
+        restore-keys: ${{ runner.os }}-sonar-scanner-${{ hashFiles('.github/workflows/pr-checks.yml') }}
+
     - name: 🔧 Install SonarCloud scanner
+      if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
       run: |
         mkdir -p ./.sonar/scanner
         dotnet tool update dotnet-sonarscanner --tool-path ./.sonar/scanner
-
-    - name: 📦 Restore dependencies
-      run: dotnet restore
 
     - name: 🔍 Begin SonarCloud analysis
       env:
@@ -55,12 +70,6 @@ jobs:
           /d:sonar.cs.vstest.reportsPaths="**/TestResults/**/*.trx" \
           /d:sonar.coverage.exclusions="**/Migrations/**,**/*Tests/**,**/wwwroot/**" \
           /d:sonar.exclusions="**/Migrations/**,**/wwwroot/lib/**,**/obj/**,**/bin/**"
-
-    - name: 🏗️ Build
-      run: dotnet build --configuration Release --no-restore
-
-    - name: 🔍 Check Code Style
-      run: dotnet format --verify-no-changes --verbosity diagnostic
 
     - name: 🧪 Run Unit Tests
       run: |
