@@ -4,6 +4,9 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using RichardSzalay.MockHttp;
 using Xunit;
 
@@ -25,7 +28,7 @@ public class PrivateMessageServiceTests
     public void NotifyPrivateMessageReceived_ShouldTriggerEvents()
     {
         // Arrange
-        var service = new PrivateMessageService(_httpClient);
+        var service = new PrivateMessageService(_httpClient, NullLogger<PrivateMessageService>.Instance);
         PrivateMessage? receivedMessage = null;
         var unreadCountChanged = false;
 
@@ -54,7 +57,7 @@ public class PrivateMessageServiceTests
     public void NotifyPrivateMessageSent_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new PrivateMessageService(_httpClient);
+        var service = new PrivateMessageService(_httpClient, NullLogger<PrivateMessageService>.Instance);
         PrivateMessage? sentMessage = null;
 
         service.OnPrivateMessageSent += (msg) => sentMessage = msg;
@@ -80,7 +83,7 @@ public class PrivateMessageServiceTests
     public void NotifyMessagesRead_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new PrivateMessageService(_httpClient);
+        var service = new PrivateMessageService(_httpClient, NullLogger<PrivateMessageService>.Instance);
         string? readUsername = null;
         List<Guid>? readMessageIds = null;
 
@@ -125,7 +128,7 @@ public class PrivateMessageServiceTests
         _mockHttp.When(HttpMethod.Get, "*/api/private-messages/conversations/testUser")
             .Respond(HttpStatusCode.OK, JsonContent.Create(conversations));
 
-        var service = new PrivateMessageService(_httpClient);
+        var service = new PrivateMessageService(_httpClient, NullLogger<PrivateMessageService>.Instance);
 
         // Act
         var result = await service.GetConversationsAsync("testUser");
@@ -142,7 +145,7 @@ public class PrivateMessageServiceTests
         _mockHttp.When(HttpMethod.Get, "*/api/private-messages/conversations/testUser")
             .Respond(HttpStatusCode.InternalServerError);
 
-        var service = new PrivateMessageService(_httpClient);
+        var service = new PrivateMessageService(_httpClient, NullLogger<PrivateMessageService>.Instance);
 
         // Act
         var result = await service.GetConversationsAsync("testUser");
@@ -180,7 +183,7 @@ public class PrivateMessageServiceTests
         _mockHttp.When(HttpMethod.Get, "*/api/private-messages/user1/with/user2")
             .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
 
-        var service = new PrivateMessageService(_httpClient);
+        var service = new PrivateMessageService(_httpClient, NullLogger<PrivateMessageService>.Instance);
 
         // Act
         var result = await service.GetPrivateMessagesAsync("user1", "user2");
@@ -197,7 +200,7 @@ public class PrivateMessageServiceTests
         _mockHttp.When(HttpMethod.Get, "*/api/private-messages/user1/with/user2")
             .Respond(HttpStatusCode.NotFound);
 
-        var service = new PrivateMessageService(_httpClient);
+        var service = new PrivateMessageService(_httpClient, NullLogger<PrivateMessageService>.Instance);
 
         // Act
         var result = await service.GetPrivateMessagesAsync("user1", "user2");
@@ -215,7 +218,7 @@ public class PrivateMessageServiceTests
         _mockHttp.When(HttpMethod.Get, "*/api/private-messages/testUser/unread-count")
             .Respond(HttpStatusCode.OK, JsonContent.Create(unreadResponse));
 
-        var service = new PrivateMessageService(_httpClient);
+        var service = new PrivateMessageService(_httpClient, NullLogger<PrivateMessageService>.Instance);
 
         // Act
         var result = await service.GetUnreadCountAsync("testUser");
@@ -231,7 +234,7 @@ public class PrivateMessageServiceTests
         _mockHttp.When(HttpMethod.Get, "*/api/private-messages/testUser/unread-count")
             .Respond(HttpStatusCode.InternalServerError);
 
-        var service = new PrivateMessageService(_httpClient);
+        var service = new PrivateMessageService(_httpClient, NullLogger<PrivateMessageService>.Instance);
 
         // Act
         var result = await service.GetUnreadCountAsync("testUser");
@@ -247,7 +250,7 @@ public class PrivateMessageServiceTests
         _mockHttp.When(HttpMethod.Delete, "*/api/private-messages/user1/conversation/user2")
             .Respond(HttpStatusCode.OK);
 
-        var service = new PrivateMessageService(_httpClient);
+        var service = new PrivateMessageService(_httpClient, NullLogger<PrivateMessageService>.Instance);
         string? deletedUsername = null;
         var unreadCountChanged = false;
 
@@ -270,7 +273,7 @@ public class PrivateMessageServiceTests
         _mockHttp.When(HttpMethod.Delete, "*/api/private-messages/user1/conversation/user2")
             .Respond(HttpStatusCode.NotFound);
 
-        var service = new PrivateMessageService(_httpClient);
+        var service = new PrivateMessageService(_httpClient, NullLogger<PrivateMessageService>.Instance);
 
         // Act
         var result = await service.DeleteConversationAsync("user1", "user2");
@@ -286,7 +289,7 @@ public class PrivateMessageServiceTests
         _mockHttp.When(HttpMethod.Delete, "*/api/private-messages/user1/conversation/user2")
             .Throw(new HttpRequestException("Network error"));
 
-        var service = new PrivateMessageService(_httpClient);
+        var service = new PrivateMessageService(_httpClient, NullLogger<PrivateMessageService>.Instance);
 
         // Act
         var result = await service.DeleteConversationAsync("user1", "user2");
@@ -299,7 +302,7 @@ public class PrivateMessageServiceTests
     public void MultipleEventSubscribers_ShouldAllBeNotified()
     {
         // Arrange
-        var service = new PrivateMessageService(_httpClient);
+        var service = new PrivateMessageService(_httpClient, NullLogger<PrivateMessageService>.Instance);
         var subscriber1Called = 0;
         var subscriber2Called = 0;
 
@@ -321,5 +324,109 @@ public class PrivateMessageServiceTests
         // Assert
         subscriber1Called.Should().Be(1);
         subscriber2Called.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetConversationsAsync_OnException_ShouldLogError()
+    {
+        // Arrange
+        var loggerMock = new Mock<ILogger<PrivateMessageService>>();
+
+        _mockHttp.When(HttpMethod.Get, "*/api/private-messages/conversations/testUser")
+            .Throw(new HttpRequestException("Network error"));
+
+        var service = new PrivateMessageService(_httpClient, loggerMock.Object);
+
+        // Act
+        var result = await service.GetConversationsAsync("testUser");
+
+        // Assert
+        result.Should().BeEmpty();
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("récupération des conversations")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPrivateMessagesAsync_OnException_ShouldLogError()
+    {
+        // Arrange
+        var loggerMock = new Mock<ILogger<PrivateMessageService>>();
+
+        _mockHttp.When(HttpMethod.Get, "*/api/private-messages/user1/with/user2")
+            .Throw(new HttpRequestException("Connection timeout"));
+
+        var service = new PrivateMessageService(_httpClient, loggerMock.Object);
+
+        // Act
+        var result = await service.GetPrivateMessagesAsync("user1", "user2");
+
+        // Assert
+        result.Should().BeEmpty();
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("récupération des messages entre")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task GetUnreadCountAsync_OnException_ShouldLogWarningAndReturnZero()
+    {
+        // Arrange
+        var loggerMock = new Mock<ILogger<PrivateMessageService>>();
+
+        _mockHttp.When(HttpMethod.Get, "*/api/private-messages/testUser/unread-count")
+            .Throw(new TaskCanceledException("Request timeout"));
+
+        var service = new PrivateMessageService(_httpClient, loggerMock.Object);
+
+        // Act
+        var result = await service.GetUnreadCountAsync("testUser");
+
+        // Assert
+        result.Should().Be(0);
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("récupération du nombre de messages non lus")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteConversationAsync_OnException_ShouldLogErrorAndReturnFalse()
+    {
+        // Arrange
+        var loggerMock = new Mock<ILogger<PrivateMessageService>>();
+
+        _mockHttp.When(HttpMethod.Delete, "*/api/private-messages/user1/conversation/user2")
+            .Throw(new InvalidOperationException("Unexpected error"));
+
+        var service = new PrivateMessageService(_httpClient, loggerMock.Object);
+
+        // Act
+        var result = await service.DeleteConversationAsync("user1", "user2");
+
+        // Assert
+        result.Should().BeFalse();
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("suppression de la conversation entre")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 }

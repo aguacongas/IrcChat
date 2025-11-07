@@ -4,6 +4,7 @@ using FluentAssertions;
 using IrcChat.Client.Components;
 using IrcChat.Shared.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using Microsoft.JSInterop.Infrastructure;
 using Moq;
@@ -445,6 +446,93 @@ public class MessageListTests : TestContext
             x => x.InvokeAsync<IJSVoidResult>(
                 "scrollToBottom",
                 It.IsAny<object[]>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task MessageList_WhenDisposeThrows_ShouldHandleGracefully()
+    {
+        // Arrange
+        var loggerMock = new Mock<ILogger<MessageList>>();
+        Services.AddSingleton(loggerMock.Object);
+
+        var mockModule = new Mock<IJSObjectReference>();
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSObjectReference>(
+                "import",
+                It.IsAny<object[]>()))
+            .ReturnsAsync(mockModule.Object);
+
+        var disposeException = new JSException("Dispose failed");
+        mockModule
+            .Setup(x => x.DisposeAsync())
+            .ThrowsAsync(disposeException);
+
+        var messages = new List<Message>();
+
+        var cut = RenderComponent<MessageList>(parameters => parameters
+            .Add(p => p.Messages, messages)
+            .Add(p => p.CurrentUsername, "user1"));
+
+        await Task.Delay(100);
+
+        // Act
+        await cut.Instance.DisposeAsync();
+        await Task.Delay(100);
+
+        // Assert
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("libération du module de scroll")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task MessageList_WhenModuleLoadThrows_ShouldLogWarning()
+    {
+        // Arrange
+        var loggerMock = new Mock<ILogger<MessageList>>();
+        Services.AddSingleton(loggerMock.Object);
+
+        var loadException = new JSException("Module not found");
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSObjectReference>(
+                "import",
+                It.IsAny<object[]>()))
+            .ThrowsAsync(loadException);
+
+        var messages = new List<Message>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Username = "user1",
+                Content = "Hello",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            }
+        };
+
+        // Act
+        RenderComponent<MessageList>(parameters => parameters
+            .Add(p => p.Messages, messages)
+            .Add(p => p.CurrentUsername, "user1"));
+
+        await Task.Delay(100);
+
+        // Assert
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("chargement du module de scroll")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 }

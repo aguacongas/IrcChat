@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.JSInterop;
 using Microsoft.JSInterop.Infrastructure;
@@ -947,5 +948,90 @@ public class UnifiedAuthServiceCompleteTests
         service.AvatarUrl.Should().BeNull();
         service.UserId.Should().BeNull();
         service.IsAdmin.Should().BeFalse();
+    }
+
+    // tests/IrcChat.Client.Tests/Services/UnifiedAuthServiceTests.cs
+
+    [Fact]
+    public async Task RestoreFromLocalStorageAsync_WhenExceptionThrown_ShouldLogError()
+    {
+        // Arrange
+        var loggerMock = new Mock<ILogger<UnifiedAuthService>>();
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ThrowsAsync(new JSException("Storage access denied"));
+
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, loggerMock.Object);
+
+        // Act
+        await service.InitializeAsync();
+
+        // Assert
+        service.HasUsername.Should().BeFalse();
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("lecture des données d'authentification")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ForgetUsernameAndLogoutAsync_WhenApiThrowsNonHttpException_ShouldLogWarning()
+    {
+        // Arrange
+        var loggerMock = new Mock<ILogger<UnifiedAuthService>>();
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((IJSVoidResult)null!);
+
+        _jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.removeItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((IJSVoidResult)null!);
+
+        _mockHttp.When(HttpMethod.Post, "*/api/oauth/forget-username")
+            .Throw(new InvalidOperationException("Unexpected error"));
+
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, loggerMock.Object);
+        await service.InitializeAsync();
+
+        await service.SetAuthStateAsync(
+            "test-token",
+            "testuser",
+            "test@example.com",
+            null,
+            Guid.NewGuid(),
+            ExternalAuthProvider.Google,
+            isAdmin: false);
+
+        // Act
+        await service.ForgetUsernameAndLogoutAsync();
+
+        // Assert
+        service.Username.Should().BeNull();
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("déconnexion côté serveur")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 }

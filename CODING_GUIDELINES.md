@@ -142,6 +142,133 @@ logger.LogInformation($"Utilisateur {username} a rejoint le salon {channel}");
 - ✅ Meilleure performance avec le logging structuré
 - ✅ Contexte de l'application automatiquement inclus
 
+### Gestion des erreurs
+
+⚠️ **CRITIQUE : Ne JAMAIS ignorer les exceptions silencieusement**
+
+```csharp
+// ❌ ÉVITER - Catch vide (erreur silencieuse)
+try
+{
+    await DoSomethingAsync();
+}
+catch
+{
+    // Rien - L'erreur est ignorée !
+}
+
+// ❌ ÉVITER - Catch avec commentaire vague
+try
+{
+    await DoSomethingAsync();
+}
+catch
+{
+    // Ignorer les erreurs
+}
+
+// ❌ ÉVITER - Catch qui log seulement en Debug
+try
+{
+    await DoSomethingAsync();
+}
+catch (Exception ex)
+{
+    #if DEBUG
+    logger.LogError(ex, "Erreur");
+    #endif
+}
+
+// ✅ BON - Toujours logger les erreurs
+try
+{
+    await DoSomethingAsync();
+}
+catch (Exception ex)
+{
+    logger.LogError(ex, "Erreur lors de l'exécution de DoSomething");
+    // Décider si on rethrow ou pas selon le contexte
+}
+
+// ✅ BON - Logger avec contexte
+try
+{
+    await ProcessUserAsync(userId);
+}
+catch (Exception ex)
+{
+    logger.LogError(ex, "Erreur lors du traitement de l'utilisateur {UserId}", userId);
+    throw; // Rethrow si nécessaire
+}
+
+// ✅ BON - Différencier les types d'exceptions
+try
+{
+    await SaveDataAsync();
+}
+catch (DbUpdateException ex)
+{
+    logger.LogError(ex, "Erreur de base de données lors de la sauvegarde");
+    throw new DataAccessException("Impossible de sauvegarder", ex);
+}
+catch (Exception ex)
+{
+    logger.LogError(ex, "Erreur inattendue lors de la sauvegarde");
+    throw;
+}
+
+// ✅ ACCEPTABLE - Si vraiment besoin d'ignorer (avec justification)
+try
+{
+    await module.DisposeAsync();
+}
+catch (Exception ex)
+{
+    // Justification: Le dispose ne doit jamais bloquer l'application
+    // mais on log quand même l'erreur pour investigation
+    logger.LogWarning(ex, "Erreur lors du dispose du module, ignorée");
+}
+
+// ✅ BON - Pour JavaScript Interop (cas particulier)
+try
+{
+    await jsRuntime.InvokeVoidAsync("someFunction");
+}
+catch (JSException ex)
+{
+    logger.LogWarning(ex, "Erreur JS lors de l'appel à someFunction");
+    // On peut choisir de ne pas rethrow pour JS errors
+}
+catch (Exception ex)
+{
+    logger.LogError(ex, "Erreur inattendue lors de l'interop JS");
+    throw;
+}
+```
+
+**Règles de gestion des erreurs :**
+
+1. **Toujours logger** : Chaque catch doit avoir au minimum un log
+2. **Contexte complet** : Logger avec les paramètres pertinents
+3. **Niveau approprié** : 
+   - `LogError` pour les vraies erreurs
+   - `LogWarning` pour les erreurs qu'on peut ignorer
+   - `LogDebug` pour les informations de débogage
+4. **Rethrow si nécessaire** : Si l'erreur doit être gérée plus haut
+5. **Justification** : Si vraiment besoin d'ignorer, ajouter un commentaire expliquant pourquoi
+
+**Cas où on peut ignorer (avec log Warning) :**
+- Dispose/Cleanup operations
+- JavaScript Interop optionnel
+- Opérations de cache (fallback possible)
+- Optimisations non-critiques
+
+**Cas où on ne doit JAMAIS ignorer :**
+- Opérations de données (CRUD)
+- Authentification/Autorisation
+- Logique métier
+- Initialisation critique
+
 ### Constructeurs primaires (C# 12+)
 ✅ **Toujours utiliser les constructeurs primaires** pour les classes avec injection de dépendances :
 ```csharp

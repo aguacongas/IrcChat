@@ -6,7 +6,7 @@ namespace IrcChat.Client.Services;
 
 public class UnifiedAuthService(ILocalStorageService localStorage, HttpClient httpClient, ILogger<UnifiedAuthService> logger) : IUnifiedAuthService
 {
-    private const string AUTH_KEY = "ircchat_unified_auth";
+    private static readonly string _authKey = "ircchat_unified_auth";
     private bool _isInitialized = false;
 
     public event Action? OnAuthStateChanged;
@@ -73,9 +73,10 @@ public class UnifiedAuthService(ILocalStorageService localStorage, HttpClient ht
 
                 httpClient.DefaultRequestHeaders.Authorization = null;
             }
-            catch
+            catch (Exception ex)
             {
                 // Ignore les erreurs de déconnexion côté serveur - l'utilisateur sera déconnecté localement de toute façon
+                logger.LogWarning(ex, "Erreur lors de la déconnexion côté serveur, ignorée");
             }
         }
 
@@ -135,14 +136,14 @@ public class UnifiedAuthService(ILocalStorageService localStorage, HttpClient ht
         };
 
         var json = JsonSerializer.Serialize(authData);
-        await localStorage.SetItemAsync(AUTH_KEY, json);
+        await localStorage.SetItemAsync(_authKey, json);
     }
 
     private async Task RestoreFromLocalStorageAsync()
     {
         try
         {
-            var json = await localStorage.GetItemAsync(AUTH_KEY);
+            var json = await localStorage.GetItemAsync(_authKey);
             if (!string.IsNullOrEmpty(json))
             {
                 var authData = JsonSerializer.Deserialize<UnifiedAuthData>(json);
@@ -165,7 +166,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage, HttpClient ht
         }
     }
 
-    private async Task ClearLocalStorageAsync() => await localStorage.RemoveItemAsync(AUTH_KEY);
+    private async Task ClearLocalStorageAsync() => await localStorage.RemoveItemAsync(_authKey);
 
     private sealed class UnifiedAuthData
     {
