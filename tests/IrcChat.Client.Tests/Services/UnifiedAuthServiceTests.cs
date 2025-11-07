@@ -43,7 +43,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -90,7 +90,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -141,13 +141,13 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.removeItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/oauth/forget-username");
         mockedRequest.Respond(HttpStatusCode.OK);
@@ -201,13 +201,13 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.removeItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -236,13 +236,13 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.removeItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         _mockHttp.When(HttpMethod.Post, "*/api/oauth/forget-username")
             .Respond(HttpStatusCode.InternalServerError);
@@ -282,7 +282,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -335,7 +335,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -387,7 +387,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -417,7 +417,7 @@ public class UnifiedAuthServiceCompleteTests
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
             .Callback(() => setItemCalls++)
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -566,7 +566,7 @@ public class UnifiedAuthServiceCompleteTests
                     savedData = args[1]?.ToString() ?? "";
                 }
             })
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -604,7 +604,7 @@ public class UnifiedAuthServiceCompleteTests
                     savedData = args[1]?.ToString() ?? "";
                 }
             })
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -645,13 +645,13 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.removeItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -700,13 +700,13 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.removeItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -738,7 +738,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -770,7 +770,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -808,7 +808,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -834,7 +834,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -894,7 +894,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
@@ -921,7 +921,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
                 It.IsAny<object[]>()))
-            .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+            .ReturnsAsync((IJSVoidResult)null!);
 
         var service = new UnifiedAuthService(_localStorageService, _httpClient, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();

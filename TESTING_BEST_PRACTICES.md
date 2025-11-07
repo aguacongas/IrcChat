@@ -319,13 +319,13 @@ _jsRuntimeMock
     .Setup(x => x.InvokeAsync<IJSVoidResult>(
         "localStorageHelper.setItem",
         It.IsAny<object[]>()))
-    .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+    .ReturnsAsync((IJSVoidResult)null!);
 
 _jsRuntimeMock
     .Setup(x => x.InvokeAsync<IJSVoidResult>(
         "localStorageHelper.removeItem",
         It.IsAny<object[]>()))
-    .Returns(ValueTask.FromResult<IJSVoidResult>(null!));
+    .ReturnsAsync((IJSVoidResult)null!);
 ```
 
 ### ✅ Vérifier les appels
