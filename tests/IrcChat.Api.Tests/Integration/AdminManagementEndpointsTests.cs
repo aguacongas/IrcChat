@@ -27,9 +27,6 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
-        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
-        await db.SaveChangesAsync();
-
         var adminUser = new ReservedUsername
         {
             Id = Guid.NewGuid(),
@@ -77,9 +74,6 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
-        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
-        await db.SaveChangesAsync();
-
         var regularUser = new ReservedUsername
         {
             Id = Guid.NewGuid(),
@@ -111,9 +105,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
-        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
-        await db.SaveChangesAsync();
-
+        
         var adminUser = new ReservedUsername
         {
             Id = Guid.NewGuid(),
@@ -166,9 +158,6 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
-        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
-        await db.SaveChangesAsync();
-
         var adminUser = new ReservedUsername
         {
             Id = Guid.NewGuid(),
@@ -214,9 +203,6 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
-
-        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
-        await db.SaveChangesAsync();
 
         var adminUser1 = new ReservedUsername
         {
@@ -270,9 +256,6 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
-        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
-        await db.SaveChangesAsync();
-
         var adminUser = new ReservedUsername
         {
             Id = Guid.NewGuid(),
@@ -306,9 +289,6 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
-
-        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
-        await db.SaveChangesAsync();
 
         var adminUser = new ReservedUsername
         {
@@ -344,9 +324,6 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
-
-        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
-        await db.SaveChangesAsync();
 
         var regularUser = new ReservedUsername
         {
