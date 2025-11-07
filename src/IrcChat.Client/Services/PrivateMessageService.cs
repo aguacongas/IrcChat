@@ -94,7 +94,6 @@ public class PrivateMessageService(HttpClient httpClient, ILogger<PrivateMessage
     }
 
     // Suppression des warnings SonarQube pour les propriétés utilisées par la désérialisation JSON
-    [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Utilisé par la désérialisation JSON")]
     [SuppressMessage("Minor Code Smell", "S1144:Unused private types or members should be removed", Justification = "Utilisé par la désérialisation JSON")]
     [SuppressMessage("Minor Code Smell", "S3459:Unassigned members should be removed", Justification = "Propriété assignée par la désérialisation JSON")]
     private sealed class UnreadCountResponse
