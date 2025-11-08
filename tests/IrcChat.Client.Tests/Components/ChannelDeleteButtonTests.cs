@@ -95,7 +95,7 @@ public class ChannelDeleteButtonTests : TestContext
         var cut = RenderComponent<ChannelDeleteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.CanManage, true)
-            .Add(p => p.OnChannelDeleted, (string channel) => eventTriggered = true));
+            .Add(p => p.OnChannelDeleted, channel => eventTriggered = true));
 
         var deleteButton = cut.Find(".delete-btn");
         await cut.InvokeAsync(() => deleteButton.Click());

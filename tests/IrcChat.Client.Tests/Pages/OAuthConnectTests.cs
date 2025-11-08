@@ -63,7 +63,7 @@ public class OAuthConnectTests : TestContext
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
         // Act
-        var cut = RenderComponent<OAuthConnect>();
+        RenderComponent<OAuthConnect>();
 
         // Assert
         _navManager.Uri.Should().EndWith("/login");
@@ -89,7 +89,7 @@ public class OAuthConnectTests : TestContext
             ["provider"] = "Google",
             ["mode"] = "reserve"
         }));
-        var cut = RenderComponent<OAuthConnect>();
+        RenderComponent<OAuthConnect>();
 
         await Task.Delay(300);
 
@@ -143,7 +143,7 @@ public class OAuthConnectTests : TestContext
             ["state"] = "random_state"
         }));
 
-        var cut = RenderComponent<OAuthConnect>();
+        RenderComponent<OAuthConnect>();
 
         await Task.Delay(500);
 
@@ -204,7 +204,7 @@ public class OAuthConnectTests : TestContext
             ["code"] = "auth_code_456",
             ["state"] = "xyz123"
         }));
-        var cut = RenderComponent<OAuthConnect>();
+        RenderComponent<OAuthConnect>();
 
         await Task.Delay(500);
 

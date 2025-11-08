@@ -43,7 +43,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.HasUsername).Returns(false);
 
         // Act
-        var cut = RenderComponent<Settings>();
+        RenderComponent<Settings>();
 
         // Assert
         _navManager.Uri.Should().EndWith("/login");

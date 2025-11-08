@@ -45,9 +45,9 @@ public class ChannelModificationHandler(ChatDbContext db, ILogger<ChannelModific
         }
 
         // Vérifier si l'utilisateur est le créateur
-        var isCreator = channel?.CreatedBy.Equals(username, StringComparison.OrdinalIgnoreCase);
+        var isCreator = channel.CreatedBy.Equals(username, StringComparison.OrdinalIgnoreCase);
 
-        if (isCreator == true)
+        if (isCreator)
         {
             logger.LogInformation("Utilisateur {Username} autorisé en tant que créateur du canal {ChannelName}",
                 username, channel!.Name);

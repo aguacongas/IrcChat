@@ -1,14 +1,14 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Claims;
 using IrcChat.Api.Authorization;
 using IrcChat.Api.Data;
-using IrcChat.Api.Extensions;
 using IrcChat.Api.Hubs;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace IrcChat.Api.Endpoints;
 
+[SuppressMessage("Performance", "CA1862", Justification = "Not needed in SQL")]
 public static class ChannelMuteEndpoints
 {
     public static WebApplication MapChannelMuteEndpoints(this WebApplication app)
