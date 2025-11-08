@@ -18,7 +18,7 @@ public static class ChannelDeleteEndpoints
             .WithTags("Channel Delete");
 
         group.MapDelete("/{channelName}", DeleteChannelAsync)
-            .RequireAuthorization()
+            .RequireAuthorization(AuthorizationPolicies.CanModifyChannel)
             .WithName("DeleteChannel")
             .WithOpenApi();
 
@@ -29,17 +29,8 @@ public static class ChannelDeleteEndpoints
         string channelName,
         ChatDbContext db,
         HttpContext context,
-        IAuthorizationService authorizationService,
         IHubContext<ChatHub> hubContext)
     {
-        // Vérifier l'autorisation via la policy
-        var canModify = await authorizationService.CanModifyChannelAsync(context.User, channelName);
-
-        if (!canModify)
-        {
-            return Results.Forbid();
-        }
-
         // Récupérer le canal (on sait qu'il existe car la policy l'a vérifié)
         var channel = await db.Channels
             .FirstOrDefaultAsync(c => c.Name.ToLower() == channelName.ToLower());

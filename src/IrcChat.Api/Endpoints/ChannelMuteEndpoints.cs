@@ -16,7 +16,7 @@ public static class ChannelMuteEndpoints
             .WithTags("Channel Mute");
 
         group.MapPost("/{channelName}/toggle-mute", ToggleMuteAsync)
-            .RequireAuthorization()
+            .RequireAuthorization(AuthorizationPolicies.CanModifyChannel)
             .WithName("ToggleChannelMute")
             .WithOpenApi();
 
@@ -27,17 +27,8 @@ public static class ChannelMuteEndpoints
         string channelName,
         ChatDbContext db,
         HttpContext context,
-        IAuthorizationService authorizationService,
         IHubContext<ChatHub> hubContext)
     {
-        // Vérifier l'autorisation via la policy
-        var canModify = await authorizationService.CanModifyChannelAsync(context.User, channelName);
-
-        if (!canModify)
-        {
-            return Results.Forbid();
-        }
-
         // Récupérer le canal (on sait qu'il existe car la policy l'a vérifié)
         var channel = await db.Channels
             .FirstOrDefaultAsync(c => c.Name.ToLower() == channelName.ToLower());

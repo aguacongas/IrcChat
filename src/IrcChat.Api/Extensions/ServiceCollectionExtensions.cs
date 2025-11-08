@@ -1,7 +1,9 @@
 using System.Text;
+using IrcChat.Api.Authorization;
 using IrcChat.Api.Data;
 using IrcChat.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.IdentityModel.Tokens;
@@ -90,10 +92,22 @@ public static class ServiceCollectionExtensions
                 };
             });
 
-        services.AddAuthorization()
-            .AddCustomAuthorization();
-
-        return services;
+        return services.AddAuthorization(configure =>
+            configure.AddPolicy(AuthorizationPolicies.CanModifyChannel, builder =>
+                builder.RequireAssertion(async context =>
+                {
+                    var httpContext = context.Resource as HttpContext;
+                    if (httpContext?.Request.RouteValues.TryGetValue("channelName", out var channelNameObj) == true &&
+                        channelNameObj is string channelName)
+                    {
+                        var requirement = new ChannelModificationRequirement(channelName);
+                        var authorizationService = httpContext.RequestServices.GetRequiredService<IAuthorizationService>();
+                        var result = await authorizationService.AuthorizeAsync(context.User, httpContext, requirement);
+                        return result.Succeeded;
+                    }
+                    return false;
+             })))
+            .AddScoped<IAuthorizationHandler, ChannelModificationHandler>();
     }
 
     public static IServiceCollection AddCorsConfiguration(
