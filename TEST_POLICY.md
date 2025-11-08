@@ -21,6 +21,8 @@ Integration/
   - *EndpointsTests.cs      # Tests d'intégration des endpoints
 Services/
   - *ServiceTests.cs        # Tests unitaires des services
+Hubs/
+  - *HubTests.cs            # Tests SignalR
 Helpers/
   - TestDataBuilder.cs      # Builders pour données de test
   - TestDbContextFactory.cs # Factory pour DbContext en mémoire

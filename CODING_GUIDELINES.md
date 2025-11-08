@@ -469,7 +469,8 @@ var processed = users.Select(u =>
 ## Architecture
 
 - **Clean separation** : API, Client, Shared projects
-- **Extension methods** pour organiser la configuration
+- **Endpoints** : Minimal API endpoints dans le dossier `Endpoints/`
+- **Extension methods** pour organiser la configuration dans le dossier `Extensions/`
 - **Background services** pour les tâches périodiques
 - **SignalR** pour la communication temps réel
 - **EF Core** avec PostgreSQL
@@ -480,6 +481,7 @@ var processed = users.Select(u =>
 - Dependency Injection
 - Options pattern pour la configuration
 - Background services pour les tâches planifiées
+- Minimal API endpoints pour les routes HTTP
 
 ## Technologies
 

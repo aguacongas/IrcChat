@@ -1,4 +1,3 @@
-// src/IrcChat.Api/Extensions/ChannelDeleteEndpoints.cs
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Claims;
 using IrcChat.Api.Data;
@@ -6,23 +5,24 @@ using IrcChat.Api.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
-namespace IrcChat.Api.Extensions;
+namespace IrcChat.Api.Endpoints;
 
 [SuppressMessage("Performance", "CA1862", Justification = "Not needed in SQL")]
-public static class ChannelDeleteEndpoints
+public static class ChannelMuteEndpoints
 {
-
-    public static WebApplication MapChannelDeleteEndpoints(this WebApplication app)
+    public static WebApplication MapChannelMuteEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/channels")
-            .WithTags("Channel Delete");
+            .WithTags("Channel Mute");
 
-        group.MapDelete("/{channelName}", async (
+        // Toggle mute status
+        group.MapPost("/{channelName}/toggle-mute", async (
             string channelName,
             ChatDbContext db,
             HttpContext context,
             IHubContext<ChatHub> hubContext) =>
         {
+            // Récupérer l'utilisateur actuel
             var username = context.User.Claims
                 .FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
 
@@ -31,6 +31,7 @@ public static class ChannelDeleteEndpoints
                 return Results.Unauthorized();
             }
 
+            // Trouver le canal
             var channel = await db.Channels
                 .FirstOrDefaultAsync(c => c.Name.ToLower() == channelName.ToLower());
 
@@ -39,6 +40,7 @@ public static class ChannelDeleteEndpoints
                 return Results.NotFound(new { error = "channel_not_found" });
             }
 
+            // Vérifier si l'utilisateur est le créateur ou admin
             var user = await db.ReservedUsernames
                 .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
 
@@ -50,45 +52,31 @@ public static class ChannelDeleteEndpoints
                 return Results.Forbid();
             }
 
-            // Supprimer tous les utilisateurs connectés au canal
-            var connectedUsers = await db.ConnectedUsers
-                .Where(u => u.Channel.ToLower() == channelName.ToLower())
-                .ToListAsync();
+            // Toggle le statut mute
+            channel.IsMuted = !channel.IsMuted;
 
-            db.ConnectedUsers.RemoveRange(connectedUsers);
-
-            // Marquer tous les messages comme supprimés (soft delete)
-            var messages = await db.Messages
-                .Where(m => m.Channel.ToLower() == channelName.ToLower())
-                .ToListAsync();
-
-            foreach (var message in messages)
+            // Si un admin démute le salon, il devient le manager actif
+            // Si le créateur démute son salon, il redevient le manager actif
+            if (!channel.IsMuted)
             {
-                message.IsDeleted = true;
+                channel.ActiveManager = username;
             }
 
-            // Supprimer le canal
-            db.Channels.Remove(channel);
             await db.SaveChangesAsync();
 
-            // Notifier tous les clients que le canal a été supprimé
+            // Notifier le changement de statut mute
             await hubContext.Clients.Group(channelName)
-                .SendAsync("ChannelDeleted", channelName, username);
-
-            // Notifier tous les clients pour actualiser la liste des canaux
-            await hubContext.Clients.All
-                .SendAsync("ChannelListUpdated");
+                .SendAsync("ChannelMuteStatusChanged", channelName, channel.IsMuted);
 
             return Results.Ok(new
             {
                 channelName = channel.Name,
-                deletedBy = username,
-                messagesAffected = messages.Count,
-                usersDisconnected = connectedUsers.Count
+                isMuted = channel.IsMuted,
+                changedBy = username
             });
         })
         .RequireAuthorization()
-        .WithName("DeleteChannel")
+        .WithName("ToggleChannelMute")
         .WithOpenApi();
 
         return app;
