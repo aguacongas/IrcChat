@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Claims;
+using IrcChat.Api.Authorization;
 using IrcChat.Api.Data;
 using IrcChat.Api.Extensions;
 using IrcChat.Api.Hubs;
