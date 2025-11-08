@@ -1,6 +1,5 @@
-// tests/IrcChat.Client.Tests/Components/PrivateChatWindowScrollTests.cs
+// tests/IrcChat.Client.Tests/Components/PrivateChatWindowTest.cs
 using Bunit;
-using FluentAssertions;
 using IrcChat.Client.Components;
 using IrcChat.Shared.Models;
 using Microsoft.Extensions.DependencyInjection;
@@ -395,15 +394,14 @@ public class PrivateChatWindowTests : TestContext
                 It.IsAny<object[]>()))
             .ThrowsAsync(new JSException("Module not found"));
 
-        // Act
-        var act = () => RenderComponent<PrivateChatWindow>(parameters => parameters
+        // Act & Assert - Ne devrait pas lancer d'exception
+        var cut = RenderComponent<PrivateChatWindow>(parameters => parameters
             .Add(p => p.CurrentUsername, "user1")
             .Add(p => p.OtherUsername, "user2")
             .Add(p => p.Messages, [])
             .Add(p => p.IsConnected, true));
 
-        // Assert - Ne devrait pas lancer d'exception
-        act.Should().NotThrow();
+        Assert.NotNull(cut);
     }
 
     [Fact]
@@ -475,7 +473,7 @@ public class PrivateChatWindowTests : TestContext
         await cut.InvokeAsync(() => closeButton.Click());
 
         // Assert
-        closeCalled.Should().BeTrue();
+        Assert.True(closeCalled);
     }
 
     [Fact]
@@ -516,6 +514,6 @@ public class PrivateChatWindowTests : TestContext
         await cut.InvokeAsync(() => input.KeyUp("Enter"));
 
         // Assert
-        sentMessage.Should().Be("Test message");
+        Assert.Equal("Test message", sentMessage);
     }
 }

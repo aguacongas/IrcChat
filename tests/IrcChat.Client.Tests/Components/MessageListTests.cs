@@ -1,6 +1,5 @@
 // tests/IrcChat.Client.Tests/Components/MessageListTests.cs
 using Bunit;
-using FluentAssertions;
 using IrcChat.Client.Components;
 using IrcChat.Shared.Models;
 using Microsoft.Extensions.DependencyInjection;
@@ -64,8 +63,8 @@ public class MessageListTests : TestContext
             .Add(p => p.CurrentUsername, "user1"));
 
         // Assert
-        cut.FindAll(".message").Should().HaveCount(2);
-        cut.Find(".message.own .content").TextContent.Should().Be("Hello!");
+        Assert.Equal(2, cut.FindAll(".message").Count);
+        Assert.Equal("Hello!", cut.Find(".message.own .content").TextContent);
     }
 
     [Fact]
@@ -90,7 +89,7 @@ public class MessageListTests : TestContext
             .Add(p => p.CurrentUsername, "currentuser"));
 
         // Assert
-        cut.Find(".message").ClassList.Should().Contain("own");
+        Assert.Contains("own", cut.Find(".message").ClassList);
     }
 
     [Fact]
@@ -164,7 +163,7 @@ public class MessageListTests : TestContext
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "user1"));
 
-        await Task.Delay(100); // Attendre le premier render
+        await Task.Delay(100);
 
         // Act - Ajouter un nouveau message
         messages.Add(new Message
@@ -211,13 +210,12 @@ public class MessageListTests : TestContext
             }
         };
 
-        // Act
-        var act = () => RenderComponent<MessageList>(parameters => parameters
+        // Act & Assert - Ne devrait pas lancer d'exception
+        var cut = RenderComponent<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "user1"));
 
-        // Assert - Ne devrait pas lancer d'exception
-        act.Should().NotThrow();
+        Assert.NotNull(cut);
     }
 
     [Fact]
@@ -368,13 +366,12 @@ public class MessageListTests : TestContext
             }
         };
 
-        // Act
-        var act = () => RenderComponent<MessageList>(parameters => parameters
+        // Act & Assert - Ne devrait pas lancer d'exception
+        var cut = RenderComponent<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "user1"));
 
-        // Assert - Ne devrait pas lancer d'exception
-        act.Should().NotThrow();
+        Assert.NotNull(cut);
     }
 
     [Fact]

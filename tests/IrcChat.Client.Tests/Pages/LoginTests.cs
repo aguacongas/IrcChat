@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Http.Json;
 using Bunit;
 using Bunit.TestDoubles;
-using FluentAssertions;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
@@ -46,7 +45,7 @@ public class LoginTests : TestContext
         var cut = RenderComponent<Login>();
 
         // Assert
-        _navManager.Uri.Should().EndWith("/chat");
+        Assert.EndsWith("/chat", _navManager.Uri);
     }
 
     [Fact]
@@ -62,7 +61,7 @@ public class LoginTests : TestContext
 
         // Assert
         var input = cut.Find("input[placeholder*='pseudo']");
-        input.GetAttribute("value").Should().Be("SavedUser");
+        Assert.Equal("SavedUser", input.GetAttribute("value"));
     }
 
     [Fact]
@@ -98,7 +97,7 @@ public class LoginTests : TestContext
         _authServiceMock.Verify(
             x => x.SetUsernameAsync("TestUser", false, null),
             Times.Once);
-        _navManager.Uri.Should().EndWith("/chat");
+        Assert.EndsWith("/chat", _navManager.Uri);
     }
 
     [Fact]
@@ -125,8 +124,8 @@ public class LoginTests : TestContext
         await Task.Delay(600); // Attendre le debounce
 
         // Assert
-        cut.Markup.Should().Contain("invité");
-        cut.Markup.Should().Contain("Réserver");
+        Assert.Contains("invité", cut.Markup);
+        Assert.Contains("Réserver", cut.Markup);
     }
 
     [Fact]
@@ -154,8 +153,8 @@ public class LoginTests : TestContext
         await Task.Delay(600);
 
         // Assert
-        cut.Markup.Should().Contain("réservé");
-        cut.Markup.Should().Contain("Se connecter");
+        Assert.Contains("réservé", cut.Markup);
+        Assert.Contains("Se connecter", cut.Markup);
     }
 
     [Fact]
@@ -183,7 +182,7 @@ public class LoginTests : TestContext
         cut.Render();
 
         // Assert
-        cut.Markup.Should().Contain("utilisé");
+        Assert.Contains("utilisé", cut.Markup);
     }
 
     [Fact]
@@ -202,7 +201,7 @@ public class LoginTests : TestContext
         // Assert
         var requestCount = _mockHttp.GetMatchCount(
             _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username"));
-        requestCount.Should().Be(0);
+        Assert.Equal(0, requestCount);
     }
 
     [Fact]
@@ -291,7 +290,7 @@ public class LoginTests : TestContext
 
         // Assert
         JSInterop.VerifyInvoke("sessionStorage.setItem", 1);
-        _navManager.Uri.Should().Contain("oauth-login");
+        Assert.Contains("oauth-login", _navManager.Uri);
     }
 
     [Fact]
