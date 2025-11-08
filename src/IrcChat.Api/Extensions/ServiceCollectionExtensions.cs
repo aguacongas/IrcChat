@@ -106,7 +106,7 @@ public static class ServiceCollectionExtensions
                         return result.Succeeded;
                     }
                     return false;
-             })))
+                })))
             .AddScoped<IAuthorizationHandler, ChannelModificationHandler>();
     }
 
