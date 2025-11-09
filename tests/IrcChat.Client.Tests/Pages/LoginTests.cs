@@ -43,7 +43,7 @@ public class LoginTests : TestContext
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
         // Act
-        var cut = RenderComponent<Login>();
+        RenderComponent<Login>();
 
         // Assert
         _navManager.Uri.Should().EndWith("/chat");

@@ -469,7 +469,9 @@ var processed = users.Select(u =>
 ## Architecture
 
 - **Clean separation** : API, Client, Shared projects
-- **Extension methods** pour organiser la configuration
+- **Authorization Policies** : Gestion des autorisations avec le système ASP.NET Core
+- **Endpoints** : Minimal API endpoints dans le dossier `Endpoints/`
+- **Extension methods** pour organiser la configuration dans le dossier `Extensions/`
 - **Background services** pour les tâches périodiques
 - **SignalR** pour la communication temps réel
 - **EF Core** avec PostgreSQL
@@ -480,6 +482,22 @@ var processed = users.Select(u =>
 - Dependency Injection
 - Options pattern pour la configuration
 - Background services pour les tâches planifiées
+- Minimal API endpoints pour les routes HTTP
+- Authorization Policy pattern pour les autorisations
+
+## Organisation des dossiers
+
+```
+src/IrcChat.Api/
+├── Authorization/     # Authorization Policies (Requirement + Handler)
+├── Data/              # DbContext et entités
+├── Endpoints/         # Minimal API endpoints (routes HTTP)
+├── Extensions/        # Extension methods (DI, configuration)
+├── Hubs/              # SignalR hubs
+├── Migrations/        # Migrations EF Core
+├── Models/            # Modèles de domaine
+└── Services/          # Services métier
+```
 
 ## Technologies
 
