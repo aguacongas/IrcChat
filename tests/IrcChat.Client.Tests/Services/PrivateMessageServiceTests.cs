@@ -1,7 +1,6 @@
 // tests/IrcChat.Client.Tests/Services/PrivateMessageServiceTests.cs
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
 using Microsoft.Extensions.Logging;
@@ -48,9 +47,11 @@ public class PrivateMessageServiceTests
         service.NotifyPrivateMessageReceived(testMessage);
 
         // Assert
-        receivedMessage.Should().NotBeNull();
-        receivedMessage.Should().BeEquivalentTo(testMessage);
-        unreadCountChanged.Should().BeTrue();
+        Assert.NotNull(receivedMessage);
+        Assert.Equal(testMessage.Id, receivedMessage.Id);
+        Assert.Equal(testMessage.SenderUsername, receivedMessage.SenderUsername);
+        Assert.Equal(testMessage.Content, receivedMessage.Content);
+        Assert.True(unreadCountChanged);
     }
 
     [Fact]
@@ -75,8 +76,10 @@ public class PrivateMessageServiceTests
         service.NotifyPrivateMessageSent(testMessage);
 
         // Assert
-        sentMessage.Should().NotBeNull();
-        sentMessage.Should().BeEquivalentTo(testMessage);
+        Assert.NotNull(sentMessage);
+        Assert.Equal(testMessage.Id, sentMessage.Id);
+        Assert.Equal(testMessage.SenderUsername, sentMessage.SenderUsername);
+        Assert.Equal(testMessage.Content, sentMessage.Content);
     }
 
     [Fact]
@@ -99,8 +102,11 @@ public class PrivateMessageServiceTests
         service.NotifyMessagesRead("testUser", messageIds);
 
         // Assert
-        readUsername.Should().Be("testUser");
-        readMessageIds.Should().BeEquivalentTo(messageIds);
+        Assert.Equal("testUser", readUsername);
+        Assert.NotNull(readMessageIds);
+        Assert.Equal(2, readMessageIds.Count);
+        Assert.Equal(messageIds[0], readMessageIds[0]);
+        Assert.Equal(messageIds[1], readMessageIds[1]);
     }
 
     [Fact]
@@ -134,8 +140,13 @@ public class PrivateMessageServiceTests
         var result = await service.GetConversationsAsync("testUser");
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().BeEquivalentTo(conversations);
+        Assert.Equal(2, result.Count);
+        Assert.Equal("user1", result[0].OtherUsername);
+        Assert.Equal("Hello", result[0].LastMessage);
+        Assert.Equal(2, result[0].UnreadCount);
+        Assert.Equal("user2", result[1].OtherUsername);
+        Assert.Equal("Hi", result[1].LastMessage);
+        Assert.Equal(0, result[1].UnreadCount);
     }
 
     [Fact]
@@ -151,7 +162,7 @@ public class PrivateMessageServiceTests
         var result = await service.GetConversationsAsync("testUser");
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -189,8 +200,13 @@ public class PrivateMessageServiceTests
         var result = await service.GetPrivateMessagesAsync("user1", "user2");
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().BeEquivalentTo(messages);
+        Assert.Equal(2, result.Count);
+        Assert.Equal("user1", result[0].SenderUsername);
+        Assert.Equal("Message 1", result[0].Content);
+        Assert.True(result[0].IsRead);
+        Assert.Equal("user2", result[1].SenderUsername);
+        Assert.Equal("Message 2", result[1].Content);
+        Assert.False(result[1].IsRead);
     }
 
     [Fact]
@@ -206,7 +222,7 @@ public class PrivateMessageServiceTests
         var result = await service.GetPrivateMessagesAsync("user1", "user2");
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -224,7 +240,7 @@ public class PrivateMessageServiceTests
         var result = await service.GetUnreadCountAsync("testUser");
 
         // Assert
-        result.Should().Be(5);
+        Assert.Equal(5, result);
     }
 
     [Fact]
@@ -240,7 +256,7 @@ public class PrivateMessageServiceTests
         var result = await service.GetUnreadCountAsync("testUser");
 
         // Assert
-        result.Should().Be(0);
+        Assert.Equal(0, result);
     }
 
     [Fact]
@@ -261,9 +277,9 @@ public class PrivateMessageServiceTests
         var result = await service.DeleteConversationAsync("user1", "user2");
 
         // Assert
-        result.Should().BeTrue();
-        deletedUsername.Should().Be("user2");
-        unreadCountChanged.Should().BeTrue();
+        Assert.True(result);
+        Assert.Equal("user2", deletedUsername);
+        Assert.True(unreadCountChanged);
     }
 
     [Fact]
@@ -279,7 +295,7 @@ public class PrivateMessageServiceTests
         var result = await service.DeleteConversationAsync("user1", "user2");
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -295,7 +311,7 @@ public class PrivateMessageServiceTests
         var result = await service.DeleteConversationAsync("user1", "user2");
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -322,8 +338,8 @@ public class PrivateMessageServiceTests
         service.NotifyPrivateMessageReceived(testMessage);
 
         // Assert
-        subscriber1Called.Should().Be(1);
-        subscriber2Called.Should().Be(1);
+        Assert.Equal(1, subscriber1Called);
+        Assert.Equal(1, subscriber2Called);
     }
 
     [Fact]
@@ -341,7 +357,7 @@ public class PrivateMessageServiceTests
         var result = await service.GetConversationsAsync("testUser");
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
         loggerMock.Verify(
             x => x.Log(
                 LogLevel.Error,
@@ -367,7 +383,7 @@ public class PrivateMessageServiceTests
         var result = await service.GetPrivateMessagesAsync("user1", "user2");
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
         loggerMock.Verify(
             x => x.Log(
                 LogLevel.Error,
@@ -393,7 +409,7 @@ public class PrivateMessageServiceTests
         var result = await service.GetUnreadCountAsync("testUser");
 
         // Assert
-        result.Should().Be(0);
+        Assert.Equal(0, result);
         loggerMock.Verify(
             x => x.Log(
                 LogLevel.Warning,
@@ -419,7 +435,7 @@ public class PrivateMessageServiceTests
         var result = await service.DeleteConversationAsync("user1", "user2");
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
         loggerMock.Verify(
             x => x.Log(
                 LogLevel.Error,

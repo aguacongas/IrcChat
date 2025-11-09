@@ -6,7 +6,6 @@ using System.Net.Http.Json;
 using System.Runtime.Serialization;
 using Bunit;
 using Bunit.TestDoubles;
-using FluentAssertions;
 using IrcChat.Client.Models;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
@@ -57,10 +56,10 @@ public class ChatTests : TestContext
         _authServiceMock.Setup(x => x.HasUsername).Returns(false);
 
         // Act
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
 
         // Assert
-        _navManager.Uri.Should().EndWith("/login");
+        Assert.EndsWith("/login", _navManager.Uri);
     }
 
     [Fact]
@@ -93,8 +92,8 @@ public class ChatTests : TestContext
         await Task.Delay(200);
 
         // Assert
-        cut.Markup.Should().Contain("general");
-        cut.Markup.Should().Contain("random");
+        Assert.Contains("general", cut.Markup);
+        Assert.Contains("random", cut.Markup);
     }
 
     [Fact]
@@ -122,7 +121,7 @@ public class ChatTests : TestContext
         await Task.Delay(200);
 
         // Assert - Vérifier que le composant est rendu
-        cut.Find(".chat-container").Should().NotBeNull();
+        Assert.NotNull(cut.Find(".chat-container"));
     }
 
     [Fact]
@@ -199,7 +198,7 @@ public class ChatTests : TestContext
             .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         var newMessage = new Message
@@ -252,7 +251,7 @@ public class ChatTests : TestContext
             .Setup(x => x.GetPrivateMessagesAsync("TestUser", "User2"))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         // Assert - Vérifier que les conversations sont chargées
@@ -280,7 +279,7 @@ public class ChatTests : TestContext
             .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         // Act - Simuler un changement de statut mute
@@ -315,7 +314,7 @@ public class ChatTests : TestContext
             .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         // Act - Simuler l'arrivée d'un utilisateur
@@ -350,7 +349,7 @@ public class ChatTests : TestContext
             .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         // Act
@@ -385,7 +384,7 @@ public class ChatTests : TestContext
             .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         var updatedUsers = new List<User>
@@ -425,7 +424,7 @@ public class ChatTests : TestContext
             .Setup(x => x.GetConversationsAsync("TestUser"))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         var privateMessage = new PrivateMessage
@@ -468,7 +467,7 @@ public class ChatTests : TestContext
             .Setup(x => x.GetConversationsAsync("TestUser"))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         // Act
@@ -658,7 +657,7 @@ public class ChatTests : TestContext
         await cut.InvokeAsync(() => cut.Find(".user-info").Click());
 
         // Assert
-        _navManager.Uri.Should().EndWith("/settings");
+        Assert.EndsWith("/settings", _navManager.Uri);
     }
 
     [Fact]
@@ -692,8 +691,8 @@ public class ChatTests : TestContext
         cut.Render();
 
         // Assert
-        cut.Markup.Should().Contain("mute-notification");
-        cut.Markup.Should().Contain("Ce salon est muet");
+        Assert.Contains("mute-notification", cut.Markup);
+        Assert.Contains("Ce salon est muet", cut.Markup);
     }
 
     [Fact]
@@ -745,7 +744,7 @@ public class ChatTests : TestContext
         await Task.Delay(100);
 
         // Assert
-        cut.Markup.Should().NotContain("private-chat-window");
+        Assert.DoesNotContain("private-chat-window", cut.Markup);
     }
 
     [Fact]
@@ -767,7 +766,7 @@ public class ChatTests : TestContext
             .Setup(x => x.GetConversationsAsync("TestUser"))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         var sentMessage = new PrivateMessage
@@ -812,7 +811,7 @@ public class ChatTests : TestContext
             .Setup(x => x.GetConversationsAsync("TestUser"))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         // Act
@@ -870,7 +869,7 @@ public class ChatTests : TestContext
         cut.Render();
 
         // Assert - Le bouton mute devrait être visible
-        cut.Markup.Should().Contain("channel-mute-control");
+        Assert.Contains("channel-mute-control", cut.Markup);
     }
 
     [Fact]
@@ -917,7 +916,7 @@ public class ChatTests : TestContext
         cut.Render();
 
         // Assert - Le bouton mute devrait être visible (admin peut gérer n'importe quel canal)
-        cut.Markup.Should().Contain("channel-mute-control");
+        Assert.Contains("channel-mute-control", cut.Markup);
     }
 
     [Fact]
@@ -939,7 +938,7 @@ public class ChatTests : TestContext
             .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         // Act
@@ -981,7 +980,7 @@ public class ChatTests : TestContext
             .Setup(x => x.GetPrivateMessagesAsync("TestUser", "User2"))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         var receivedMessage = new PrivateMessage
@@ -1030,7 +1029,7 @@ public class ChatTests : TestContext
         await Task.Delay(200);
 
         // Assert - Le composant devrait se rendre sans plantage
-        cut.Find(".chat-container").Should().NotBeNull();
+        Assert.NotNull(cut.Find(".chat-container"));
     }
 
     [Fact]
@@ -1108,9 +1107,9 @@ public class ChatTests : TestContext
         await Task.Delay(200);
 
         // Vérifier que les 3 canaux sont présents
-        cut.Markup.Should().Contain("general");
-        cut.Markup.Should().Contain("random");
-        cut.Markup.Should().Contain("tech");
+        Assert.Contains("general", cut.Markup);
+        Assert.Contains("random", cut.Markup);
+        Assert.Contains("tech", cut.Markup);
 
         // Act - Simuler la suppression du canal "random"
         _chatServiceMock.Raise(
@@ -1121,9 +1120,9 @@ public class ChatTests : TestContext
         cut.Render();
 
         // Assert - Le canal "random" ne devrait plus être présent
-        cut.Markup.Should().Contain("general");
-        cut.Markup.Should().NotContain("random");
-        cut.Markup.Should().Contain("tech");
+        Assert.Contains("general", cut.Markup);
+        Assert.DoesNotContain("random", cut.Markup);
+        Assert.Contains("tech", cut.Markup);
     }
 
     [Fact]
@@ -1178,7 +1177,7 @@ public class ChatTests : TestContext
         cut.Render();
 
         // Vérifier que le message est affiché
-        cut.Markup.Should().Contain("Test message");
+        Assert.Contains("Test message", cut.Markup);
 
         // Act - Simuler la suppression du canal actuel
         _chatServiceMock.Raise(
@@ -1189,7 +1188,7 @@ public class ChatTests : TestContext
         cut.Render();
 
         // Assert - Le message ne devrait plus être affiché
-        cut.Markup.Should().NotContain("Test message");
+        Assert.DoesNotContain("Test message", cut.Markup);
     }
 
     [Fact]
@@ -1244,7 +1243,7 @@ public class ChatTests : TestContext
         cut.Render();
 
         // Vérifier que le message est affiché
-        cut.Markup.Should().Contain("General message");
+        Assert.Contains("General message", cut.Markup);
 
         // Act - Simuler la suppression d'un autre canal
         _chatServiceMock.Raise(
@@ -1255,9 +1254,9 @@ public class ChatTests : TestContext
         cut.Render();
 
         // Assert - Le message devrait toujours être affiché
-        cut.Markup.Should().Contain("General message");
-        cut.Markup.Should().Contain("general");
-        cut.Markup.Should().NotContain("random");
+        Assert.Contains("General message", cut.Markup);
+        Assert.Contains("general", cut.Markup);
+        Assert.DoesNotContain("random", cut.Markup);
     }
 
     [Fact]
@@ -1291,8 +1290,8 @@ public class ChatTests : TestContext
         cut.Render();
 
         // Assert - La notification devrait être affichée
-        cut.Markup.Should().Contain("mute-notification");
-        cut.Markup.Should().Contain("Le canal #deleted-channel n'existe plus");
+        Assert.Contains("mute-notification", cut.Markup);
+        Assert.Contains("Le canal #deleted-channel n'existe plus", cut.Markup);
     }
 
     [Fact]
@@ -1326,14 +1325,14 @@ public class ChatTests : TestContext
         cut.Render();
 
         // Vérifier que la notification est affichée
-        cut.Markup.Should().Contain("Le canal #deleted-channel n'existe plus");
+        Assert.Contains("Le canal #deleted-channel n'existe plus", cut.Markup);
 
         // Attendre que la notification disparaisse (4 secondes + marge)
         await Task.Delay(4500);
         cut.Render();
 
         // Assert - La notification devrait avoir disparu
-        cut.Markup.Should().NotContain("Le canal #deleted-channel n'existe plus");
+        Assert.DoesNotContain("Le canal #deleted-channel n'existe plus", cut.Markup);
     }
 
     [Fact]
@@ -1370,8 +1369,8 @@ public class ChatTests : TestContext
         await Task.Delay(200);
 
         // Vérifier que seul "general" est présent
-        cut.Markup.Should().Contain("general");
-        cut.Markup.Should().NotContain("new-channel");
+        Assert.Contains("general", cut.Markup);
+        Assert.DoesNotContain("new-channel", cut.Markup);
 
         // Mettre à jour le mock pour retourner les nouveaux canaux
         _mockHttp.Clear();
@@ -1385,8 +1384,8 @@ public class ChatTests : TestContext
         cut.Render();
 
         // Assert - Le nouveau canal devrait être visible
-        cut.Markup.Should().Contain("general");
-        cut.Markup.Should().Contain("new-channel");
+        Assert.Contains("general", cut.Markup);
+        Assert.Contains("new-channel", cut.Markup);
     }
 
     [Fact]
@@ -1417,7 +1416,7 @@ public class ChatTests : TestContext
         await Task.Delay(200);
 
         // Vérifier que le canal est présent
-        cut.Markup.Should().Contain("test-channel");
+        Assert.Contains("test-channel", cut.Markup);
 
         // Act - Simuler HandleChannelDeleted via l'événement OnChannelDeleted
         _chatServiceMock.Raise(
@@ -1428,7 +1427,7 @@ public class ChatTests : TestContext
         cut.Render();
 
         // Assert - Le canal ne devrait plus être présent
-        cut.Markup.Should().NotContain("test-channel");
+        Assert.DoesNotContain("test-channel", cut.Markup);
         _chatServiceMock.VerifyAdd(
             x => x.OnChannelDeleted += It.IsAny<Action<string>>());
     }
@@ -1518,7 +1517,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync("TestUser", "OtherUser"))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         // Act - Simuler un clic sur un utilisateur via l'événement ChatArea
@@ -1791,8 +1790,8 @@ public class ChatTests : TestContext
         await Task.Delay(200);
 
         // Assert - Vérifier que les canaux ont été rechargés
-        _mockHttp.GetMatchCount(mockedRequest)
-            .Should().BeGreaterThanOrEqualTo(1);
+        var matchCount = _mockHttp.GetMatchCount(mockedRequest);
+        Assert.True(matchCount >= 1, "Le rechargement des canaux n'a pas été effectué après le changement de statut de mute.");
     }
 
     [Fact]
@@ -1825,7 +1824,7 @@ public class ChatTests : TestContext
         {
             // Le bouton devrait être désactivé quand déconnecté
             var button = cut.Find(".input-area button");
-            button.HasAttribute("disabled").Should().BeTrue();
+            Assert.True(button.HasAttribute("disabled"));
         }
 
         // Assert
@@ -1854,7 +1853,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         // Assert - Le service ne devrait jamais être appelé quand déconnecté

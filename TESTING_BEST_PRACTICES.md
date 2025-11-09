@@ -24,7 +24,7 @@ public async Task Test_BadExample()
 
     // Assert - ❌ PROBLÈME: Cache EF Core
     var result = await db.SomeTable.FindAsync(id);
-    result.Should().BeNull(); // Peut échouer à cause du cache
+    Assert.Null(result); // Peut échouer à cause du cache
 }
 ```
 
@@ -43,7 +43,7 @@ public async Task Test_GoodExample()
     using var verifyScope = _factory.Services.CreateScope();
     using var verifyContext = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
     var result = await verifyContext.SomeTable.FindAsync(id);
-    result.Should().BeNull(); // Fiable
+    Assert.Null(result); // Fiable
 }
 ```
 
@@ -74,20 +74,20 @@ public async Task MethodName_Scenario_ExpectedBehavior()
 
     // ===== ASSERT =====
     // 1. Vérifier le status HTTP
-    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
     // 2. Vérifier la réponse
     var result = await response.Content.ReadFromJsonAsync<ResponseType>();
-    result.Should().NotBeNull();
-    result!.Property.Should().Be(expectedValue);
+    Assert.NotNull(result);
+    Assert.Equal(expectedValue, result.Property);
 
     // 3. Vérifier les changements en BDD (NOUVEAU SCOPE!)
     using var verifyScope = _factory.Services.CreateScope();
     using var verifyContext = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
     
     var savedEntity = await verifyContext.Entities.FindAsync(testData.Id);
-    savedEntity.Should().NotBeNull();
-    savedEntity!.Property.Should().Be(expectedValue);
+    Assert.NotNull(savedEntity);
+    Assert.Equal(expectedValue, savedEntity.Property);
 }
 ```
 
@@ -201,6 +201,97 @@ public MyHubTests()
 }
 ```
 
+---
+
+## 📊 Assertions xUnit - Guide complet
+
+### Assertions de base
+
+```csharp
+// Égalité
+Assert.Equal(expected, actual);
+Assert.NotEqual(expected, actual);
+
+// Nullité
+Assert.Null(value);
+Assert.NotNull(value);
+
+// Booléens
+Assert.True(condition);
+Assert.False(condition);
+
+// Collections
+Assert.Empty(collection);
+Assert.NotEmpty(collection);
+Assert.Single(collection); // Exactement 1 élément
+Assert.Contains(expectedItem, collection);
+Assert.DoesNotContain(unexpectedItem, collection);
+
+// Strings
+Assert.Contains("substring", fullString);
+Assert.DoesNotContain("substring", fullString);
+Assert.StartsWith("prefix", fullString);
+Assert.EndsWith("suffix", fullString);
+Assert.Equal("expected", actual, ignoreCase: true);
+
+// Nombres
+Assert.InRange(actual, low, high);
+Assert.NotInRange(actual, low, high);
+
+// Types
+Assert.IsType<ExpectedType>(obj);
+Assert.IsNotType<UnexpectedType>(obj);
+Assert.IsAssignableFrom<BaseType>(obj);
+
+// Exceptions
+var ex = Assert.Throws<ExceptionType>(() => MethodThatThrows());
+Assert.Equal("expected message", ex.Message);
+
+var ex = await Assert.ThrowsAsync<ExceptionType>(() => AsyncMethodThatThrows());
+```
+
+### Assertions avancées
+
+```csharp
+// Collections avec prédicats
+Assert.All(collection, item => Assert.True(item.IsValid));
+Assert.Contains(collection, item => item.Id == expectedId);
+
+// Multiples conditions
+Assert.Multiple(
+    () => Assert.Equal(expected1, actual1),
+    () => Assert.Equal(expected2, actual2),
+    () => Assert.True(condition)
+);
+
+// Plages de tolérance (nombres flottants)
+Assert.Equal(expected, actual, precision: 2); // 2 décimales
+
+// Vérifier qu'une action ne throw pas
+var exception = Record.Exception(() => MethodThatShouldNotThrow());
+Assert.Null(exception);
+```
+
+### Comparaison avec FluentAssertions
+
+```csharp
+// ❌ FluentAssertions (ancien)
+result.Should().NotBeNull();
+result.Should().Be(expectedValue);
+response.StatusCode.Should().Be(HttpStatusCode.OK);
+list.Should().HaveCount(3);
+str.Should().Contain("substring");
+
+// ✅ xUnit (nouveau)
+Assert.NotNull(result);
+Assert.Equal(expectedValue, result);
+Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+Assert.Equal(3, list.Count);
+Assert.Contains("substring", str);
+```
+
+---
+
 ## 🌐 Mock de HttpClient avec MockHttpMessageHandler - Le guide complet
 
 ### ⚠️ Erreur critique : Ne PAS recréer la requête
@@ -215,8 +306,8 @@ _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
     .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
 
 // Verify - ❌ ERREUR: Crée une NOUVELLE requête, count sera toujours 0
-_mockHttp.GetMatchCount(_mockHttp.When(HttpMethod.Get, "*/api/messages/general"))
-    .Should().BeGreaterThanOrEqualTo(1);
+var count = _mockHttp.GetMatchCount(_mockHttp.When(HttpMethod.Get, "*/api/messages/general"));
+Assert.True(count >= 1);
 ```
 
 ### ✅ BON - Réutilise la même instance
@@ -227,8 +318,8 @@ var request = _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
     .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
 
 // Verify - ✅ Utilise la MÊME instance
-_mockHttp.GetMatchCount(request)
-    .Should().BeGreaterThanOrEqualTo(1);
+var count = _mockHttp.GetMatchCount(request);
+Assert.True(count >= 1);
 ```
 
 ### 📋 Pattern complet pour tests frontend
@@ -252,8 +343,8 @@ public async Task Component_ShouldCallApi_WhenLoaded()
     cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
 
     // Assert - ✅ Vérifier avec la même instance
-    _mockHttp.GetMatchCount(getMessagesRequest)
-        .Should().Be(1, "l'API devrait être appelée une fois au chargement");
+    var count = _mockHttp.GetMatchCount(getMessagesRequest);
+    Assert.Equal(1, count);
 }
 ```
 
@@ -281,9 +372,9 @@ public async Task Component_ShouldCallMultipleEndpoints()
     await cut.InvokeAsync(() => cut.Find("button.send").Click());
 
     // Assert - ✅ Vérifier chaque requête individuellement
-    _mockHttp.GetMatchCount(getUserRequest).Should().Be(1);
-    _mockHttp.GetMatchCount(getChannelsRequest).Should().Be(1);
-    _mockHttp.GetMatchCount(postMessageRequest).Should().Be(1);
+    Assert.Equal(1, _mockHttp.GetMatchCount(getUserRequest));
+    Assert.Equal(1, _mockHttp.GetMatchCount(getChannelsRequest));
+    Assert.Equal(1, _mockHttp.GetMatchCount(postMessageRequest));
 }
 ```
 
@@ -364,7 +455,7 @@ _jsRuntimeMock
 
 - `InvokeAsync<T>` retourne `ValueTask<T>`
 - Pour void → `T` = `IJSVoidResult`
-- Donc → `Returns(ValueTask.FromResult<IJSVoidResult>(null!))`
+- Donc → `ReturnsAsync((IJSVoidResult)null!)`
 - **JAMAIS** mocker `InvokeVoidAsync` (c'est une extension)
 - **TOUJOURS** mocker `InvokeAsync<IJSVoidResult>` à la place
 
@@ -402,7 +493,7 @@ client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bear
 var result = await response.Content.ReadFromJsonAsync<Response>();
 
 // ✅ BON
-response.StatusCode.Should().Be(HttpStatusCode.OK);
+Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 var result = await response.Content.ReadFromJsonAsync<Response>();
 ```
 
@@ -539,7 +630,7 @@ public async Task MessageList_WhenDisposed_ShouldDisposeModule()
 ```
 tests/
 ├── IrcChat.Api.Tests/
-│   ├── Authorization/         # 🆕 Tests des Authorization Handlers
+│   ├── Authorization/         # Tests des Authorization Handlers
 │   │   └── *HandlerTests.cs
 │   ├── Integration/           # Tests d'intégration (endpoints)
 │   │   └── *EndpointsTests.cs
@@ -561,35 +652,6 @@ tests/
 │   └── Helpers/               # Utilitaires de test
 │       └── BunitTestContext.cs
 ```
-
----
-
-## 📚 Ressources
-
-- [xUnit Documentation](https://xunit.net/)
-- [Moq Quickstart](https://github.com/moq/moq4/wiki/Quickstart)
-- [EF Core Testing](https://learn.microsoft.com/en-us/ef/core/testing/)
-- [SignalR Testing](https://learn.microsoft.com/en-us/aspnet/core/signalr/testing)
-- [Authorization Testing](https://learn.microsoft.com/en-us/aspnet/core/security/authorization/resourcebased)
-- [bUnit Documentation](https://bunit.dev/)
-- [JSInterop Testing](https://bunit.dev/docs/test-doubles/emulating-ijsruntime)
-
----
-
-## ✅ Exemples complets
-
-### Backend (API)
-- `ChannelModificationHandlerTests.cs` - Tests d'Authorization Handler
-- `ChannelDeleteEndpointsTests.cs` - Pattern complet avec vérification BDD
-- `AdminManagementEndpointsTests.cs` - Tests avec autorisation
-- `ChatHubTests.cs` - Tests SignalR avec mocks
-- `OAuthEndpointsTests.cs` - Tests d'authentification
-
-### Frontend (Client)
-- `ChannelMuteButtonTests.cs` - Tests de composant avec HTTP mock
-- `ChatTests.cs` - Tests de page complexe avec SignalR
-- `UnifiedAuthServiceTests.cs` - Tests avec JSRuntime mock
-- `OAuthClientServiceTests.cs` - Tests OAuth avec PKCE
 
 ---
 
@@ -623,10 +685,11 @@ Start-Process "CoverageReport/index.html"
 ## 📚 Ressources
 
 - [xUnit Documentation](https://xunit.net/)
-- [FluentAssertions](https://fluentassertions.com/)
+- [xUnit Assertions](https://xunit.net/docs/assert)
 - [Moq Quickstart](https://github.com/moq/moq4/wiki/Quickstart)
 - [EF Core Testing](https://learn.microsoft.com/en-us/ef/core/testing/)
 - [SignalR Testing](https://learn.microsoft.com/en-us/aspnet/core/signalr/testing)
+- [Authorization Testing](https://learn.microsoft.com/en-us/aspnet/core/security/authorization/resourcebased)
 - [bUnit Documentation](https://bunit.dev/)
 - [JSInterop Testing](https://bunit.dev/docs/test-doubles/emulating-ijsruntime)
 
@@ -635,6 +698,7 @@ Start-Process "CoverageReport/index.html"
 ## ✅ Exemples complets
 
 ### Backend (API)
+- `ChannelModificationHandlerTests.cs` - Tests d'Authorization Handler
 - `ChannelDeleteEndpointsTests.cs` - Pattern complet avec vérification BDD
 - `AdminManagementEndpointsTests.cs` - Tests avec autorisation
 - `ChatHubTests.cs` - Tests SignalR avec mocks

@@ -1,7 +1,6 @@
 // tests/IrcChat.Client.Tests/Services/OAuthClientServiceTests.cs
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
 using Microsoft.JSInterop;
@@ -55,14 +54,14 @@ public class OAuthClientServiceTests
             "https://localhost:7001/oauth-login");
 
         // Assert
-        authUrl.Should().StartWith("https://accounts.google.com/o/oauth2/auth");
-        authUrl.Should().Contain("client_id=test-client-id");
-        authUrl.Should().Contain("redirect_uri=https%3A%2F%2Flocalhost%3A7001%2Foauth-login");
-        authUrl.Should().Contain("response_type=code");
-        authUrl.Should().Contain("scope=openid%20profile%20email");
-        authUrl.Should().Contain("state=");
-        authUrl.Should().Contain("code_challenge=");
-        authUrl.Should().Contain("code_challenge_method=S256");
+        Assert.StartsWith("https://accounts.google.com/o/oauth2/auth", authUrl);
+        Assert.Contains("client_id=test-client-id", authUrl);
+        Assert.Contains("redirect_uri=https%3A%2F%2Flocalhost%3A7001%2Foauth-login", authUrl);
+        Assert.Contains("response_type=code", authUrl);
+        Assert.Contains("scope=openid%20profile%20email", authUrl);
+        Assert.Contains("state=", authUrl);
+        Assert.Contains("code_challenge=", authUrl);
+        Assert.Contains("code_challenge_method=S256", authUrl);
 
         _jsRuntimeMock.Verify(
             x => x.InvokeAsync<object>(
@@ -156,10 +155,10 @@ public class OAuthClientServiceTests
             "https://localhost:7001/oauth-login");
 
         // Assert
-        result.Should().NotBeNull();
-        result!.Token.Should().Be("test-token");
-        result.Username.Should().Be("TestUser");
-        result.Email.Should().Be("test@example.com");
+        Assert.NotNull(result);
+        Assert.Equal("test-token", result!.Token);
+        Assert.Equal("TestUser", result.Username);
+        Assert.Equal("test@example.com", result.Email);
 
         _jsRuntimeMock.Verify(
             x => x.InvokeAsync<object>(
@@ -284,8 +283,8 @@ public class OAuthClientServiceTests
             "https://localhost:7001/oauth-login");
 
         // Assert
-        authUrl.Should().StartWith("https://login.microsoftonline.com/common/oauth2/v2.0/authorize");
-        authUrl.Should().Contain("client_id=microsoft-client-id");
+        Assert.StartsWith("https://login.microsoftonline.com/common/oauth2/v2.0/authorize", authUrl);
+        Assert.Contains("client_id=microsoft-client-id", authUrl);
     }
 
     [Fact]
@@ -338,6 +337,6 @@ public class OAuthClientServiceTests
             "https://localhost:7001/oauth-login");
 
         // Assert
-        _mockHttp.GetMatchCount(mockedRequest).Should().Be(1);
+        Assert.Equal(1, _mockHttp.GetMatchCount(mockedRequest));
     }
 }

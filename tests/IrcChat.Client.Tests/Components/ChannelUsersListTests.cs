@@ -1,6 +1,5 @@
 // tests/IrcChat.Client.Tests/Components/ChannelUsersListTests.cs
 using Bunit;
-using FluentAssertions;
 using IrcChat.Client.Components;
 using IrcChat.Shared.Models;
 using Xunit;
@@ -19,7 +18,7 @@ public class ChannelUsersListTests : TestContext
             .Add(p => p.Users, []));
 
         // Assert
-        cut.Markup.Should().BeEmpty();
+        Assert.Empty(cut.Markup);
     }
 
     [Fact]
@@ -32,7 +31,7 @@ public class ChannelUsersListTests : TestContext
             .Add(p => p.Users, []));
 
         // Assert
-        cut.Markup.Should().BeEmpty();
+        Assert.Empty(cut.Markup);
     }
 
     [Fact]
@@ -45,8 +44,8 @@ public class ChannelUsersListTests : TestContext
             .Add(p => p.Users, []));
 
         // Assert
-        cut.Markup.Should().Contain("Utilisateurs");
-        cut.Markup.Should().Contain("(0)");
+        Assert.Contains("Utilisateurs", cut.Markup);
+        Assert.Contains("(0)", cut.Markup);
     }
 
     [Fact]
@@ -67,7 +66,7 @@ public class ChannelUsersListTests : TestContext
             .Add(p => p.Users, users));
 
         // Assert
-        cut.Markup.Should().Contain("(3)");
+        Assert.Contains("(3)", cut.Markup);
     }
 
     [Fact]
@@ -88,9 +87,9 @@ public class ChannelUsersListTests : TestContext
             .Add(p => p.Users, users));
 
         // Assert
-        cut.Markup.Should().Contain("alice");
-        cut.Markup.Should().Contain("bob");
-        cut.Markup.Should().Contain("charlie");
+        Assert.Contains("alice", cut.Markup);
+        Assert.Contains("bob", cut.Markup);
+        Assert.Contains("charlie", cut.Markup);
     }
 
     [Fact]
@@ -112,11 +111,11 @@ public class ChannelUsersListTests : TestContext
 
         // Assert
         var userItems = cut.FindAll(".user-list li");
-        userItems.Should().HaveCount(3);
+        Assert.Equal(3, userItems.Count);
 
         var currentUserItem = userItems.FirstOrDefault(li => li.TextContent.Contains("testuser"));
-        currentUserItem.Should().NotBeNull();
-        currentUserItem!.ClassList.Should().Contain("current");
+        Assert.NotNull(currentUserItem);
+        Assert.Contains("current", currentUserItem.ClassList);
     }
 
     [Fact]
@@ -134,7 +133,7 @@ public class ChannelUsersListTests : TestContext
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.Username, "testuser")
             .Add(p => p.Users, users)
-            .Add(p => p.OnUserClicked, (string username) => clickedUsername = username));
+            .Add(p => p.OnUserClicked, username => clickedUsername = username));
 
         // Act
         var userItems = cut.FindAll(".user-list li");
@@ -142,7 +141,7 @@ public class ChannelUsersListTests : TestContext
         await cut.InvokeAsync(() => aliceItem.Click());
 
         // Assert
-        clickedUsername.Should().Be("alice");
+        Assert.Equal("alice", clickedUsername);
     }
 
     [Fact]
@@ -159,14 +158,14 @@ public class ChannelUsersListTests : TestContext
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.Username, "testuser")
             .Add(p => p.Users, users)
-            .Add(p => p.OnUserClicked, (string username) => clickedUsername = username));
+            .Add(p => p.OnUserClicked, username => clickedUsername = username));
 
         // Act
         var userItem = cut.Find(".user-list li");
         await cut.InvokeAsync(() => userItem.Click());
 
         // Assert
-        clickedUsername.Should().Be("testuser");
+        Assert.Equal("testuser", clickedUsername);
     }
 
     [Fact]
@@ -179,7 +178,7 @@ public class ChannelUsersListTests : TestContext
             .Add(p => p.Users, (List<User>?)null));
 
         // Assert
-        cut.Markup.Should().Contain("(0)");
+        Assert.Contains("(0)", cut.Markup);
     }
 
     [Fact]
@@ -200,7 +199,7 @@ public class ChannelUsersListTests : TestContext
 
         // Assert
         var statusDots = cut.FindAll(".status-dot.online");
-        statusDots.Should().HaveCount(2);
+        Assert.Equal(2, statusDots.Count);
     }
 
     [Fact]
@@ -222,9 +221,9 @@ public class ChannelUsersListTests : TestContext
 
         // Assert
         var userItems = cut.FindAll(".user-list li");
-        userItems[0].TextContent.Should().Contain("zebra");
-        userItems[1].TextContent.Should().Contain("alpha");
-        userItems[2].TextContent.Should().Contain("beta");
+        Assert.Contains("zebra", userItems[0].TextContent);
+        Assert.Contains("alpha", userItems[1].TextContent);
+        Assert.Contains("beta", userItems[2].TextContent);
     }
 
     [Fact]
@@ -241,7 +240,7 @@ public class ChannelUsersListTests : TestContext
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.Username, "testuser")
             .Add(p => p.Users, users)
-            .Add(p => p.OnUserClicked, (string _) => clickCount++));
+            .Add(p => p.OnUserClicked, _ => clickCount++));
 
         // Act
         var userItem = cut.Find(".user-list li");
@@ -250,7 +249,7 @@ public class ChannelUsersListTests : TestContext
         await cut.InvokeAsync(() => userItem.Click());
 
         // Assert
-        clickCount.Should().Be(3);
+        Assert.Equal(3, clickCount);
     }
 
     [Fact]
@@ -269,7 +268,7 @@ public class ChannelUsersListTests : TestContext
             .Add(p => p.Users, users));
 
         // Assert
-        cut.Markup.Should().Contain("verylongusernamethatexceedstwentycharacters");
+        Assert.Contains("verylongusernamethatexceedstwentycharacters", cut.Markup);
     }
 
     [Fact]
@@ -290,8 +289,8 @@ public class ChannelUsersListTests : TestContext
             .Add(p => p.Users, users));
 
         // Assert
-        cut.Markup.Should().Contain("user_123");
-        cut.Markup.Should().Contain("test-user");
-        cut.Markup.Should().Contain("user.name");
+        Assert.Contains("user_123", cut.Markup);
+        Assert.Contains("test-user", cut.Markup);
+        Assert.Contains("user.name", cut.Markup);
     }
 }

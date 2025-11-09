@@ -2,7 +2,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using Bunit;
-using FluentAssertions;
 using IrcChat.Client.Components;
 using IrcChat.Shared.Models;
 using Microsoft.Extensions.DependencyInjection;
@@ -62,9 +61,9 @@ public class AdminPanelTests : TestContext
 
         // Assert
         cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
-        cut.Markup.Should().Contain("user1");
-        cut.Markup.Should().Contain("admin1");
-        cut.Markup.Should().Contain("user1@test.com");
+        Assert.Contains("user1", cut.Markup);
+        Assert.Contains("admin1", cut.Markup);
+        Assert.Contains("user1@test.com", cut.Markup);
     }
 
     [Fact]
@@ -86,7 +85,7 @@ public class AdminPanelTests : TestContext
             .Add(p => p.CurrentUserId, Guid.NewGuid()));
 
         // Assert
-        cut.Markup.Should().Contain("Chargement");
+        Assert.Contains("Chargement", cut.Markup);
     }
 
     [Fact]
@@ -108,7 +107,7 @@ public class AdminPanelTests : TestContext
         await cut.InvokeAsync(() => closeButton.Click());
 
         // Assert
-        closeTriggered.Should().BeTrue();
+        Assert.True(closeTriggered);
     }
 
     [Fact]
@@ -172,8 +171,8 @@ public class AdminPanelTests : TestContext
         await Task.Delay(300);
 
         // Assert
-        cut.Markup.Should().Contain("promu administrateur");
-        cut.Markup.Should().Contain("⚡ Admin");
+        Assert.Contains("promu administrateur", cut.Markup);
+        Assert.Contains("⚡ Admin", cut.Markup);
     }
 
     [Fact]
@@ -237,7 +236,7 @@ public class AdminPanelTests : TestContext
         await Task.Delay(300);
 
         // Assert
-        cut.Markup.Should().Contain("révoqué");
+        Assert.Contains("révoqué", cut.Markup);
     }
 
     [Fact]
@@ -280,7 +279,7 @@ public class AdminPanelTests : TestContext
         await Task.Delay(300);
 
         // Assert
-        cut.Markup.Should().Contain("Erreur");
+        Assert.Contains("Erreur", cut.Markup);
     }
 
     [Fact]
@@ -314,8 +313,8 @@ public class AdminPanelTests : TestContext
         cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
 
         // Assert
-        cut.Markup.Should().Contain("(Vous)");
-        cut.FindAll(".btn-action").Should().BeEmpty();
+        Assert.Contains("(Vous)", cut.Markup);
+        Assert.Empty(cut.FindAll(".btn-action"));
     }
 
     [Fact]
@@ -332,7 +331,7 @@ public class AdminPanelTests : TestContext
         cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
 
         // Assert
-        cut.Markup.Should().Contain("Erreur");
+        Assert.Contains("Erreur", cut.Markup);
     }
 
     [Fact]
@@ -364,8 +363,8 @@ public class AdminPanelTests : TestContext
         cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
 
         // Assert
-        cut.Markup.Should().Contain("Google");
-        cut.Find(".provider-badge").Should().NotBeNull();
+        Assert.Contains("Google", cut.Markup);
+        Assert.NotNull(cut.Find(".provider-badge"));
     }
 
     [Fact]
@@ -398,8 +397,8 @@ public class AdminPanelTests : TestContext
 
         // Assert
         var avatar = cut.Find(".user-avatar");
-        avatar.Should().NotBeNull();
-        avatar.GetAttribute("src").Should().Be("https://example.com/avatar.jpg");
+        Assert.NotNull(avatar);
+        Assert.Equal("https://example.com/avatar.jpg", avatar.GetAttribute("src"));
     }
 
     [Fact]
@@ -439,12 +438,13 @@ public class AdminPanelTests : TestContext
 
         cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
         cut.Render();
+
         // Act
         var promoteButton = cut.Find(".btn-action.promote");
         await cut.InvokeAsync(() => promoteButton.Click());
 
         // Assert
-        promoteButton.HasAttribute("disabled").Should().BeTrue();
+        Assert.True(promoteButton.HasAttribute("disabled"));
     }
 
     [Fact]
@@ -466,6 +466,6 @@ public class AdminPanelTests : TestContext
         await cut.InvokeAsync(() => overlay.Click());
 
         // Assert
-        closeTriggered.Should().BeTrue();
+        Assert.True(closeTriggered);
     }
 }

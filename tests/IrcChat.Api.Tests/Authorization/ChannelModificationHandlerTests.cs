@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using FluentAssertions;
 using IrcChat.Api.Authorization;
 using IrcChat.Api.Data;
 using IrcChat.Shared.Models;
