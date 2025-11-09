@@ -1,7 +1,6 @@
 // tests/IrcChat.Client.Tests/Services/UnifiedAuthServiceCompleteTests.cs
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
 using Microsoft.Extensions.Logging;
@@ -65,16 +64,16 @@ public class UnifiedAuthServiceCompleteTests
             isAdmin: true);
 
         // Assert
-        service.Token.Should().Be("test-token");
-        service.Username.Should().Be("testuser");
-        service.Email.Should().Be("test@example.com");
-        service.AvatarUrl.Should().Be("https://example.com/avatar.jpg");
-        service.UserId.Should().Be(userId);
-        service.IsReserved.Should().BeTrue();
-        service.ReservedProvider.Should().Be(ExternalAuthProvider.Google);
-        service.IsAuthenticated.Should().BeTrue();
-        service.IsAdmin.Should().BeTrue();
-        eventTriggered.Should().BeTrue();
+        Assert.Equal("test-token", service.Token);
+        Assert.Equal("testuser", service.Username);
+        Assert.Equal("test@example.com", service.Email);
+        Assert.Equal("https://example.com/avatar.jpg", service.AvatarUrl);
+        Assert.Equal(userId, service.UserId);
+        Assert.True(service.IsReserved);
+        Assert.Equal(ExternalAuthProvider.Google, service.ReservedProvider);
+        Assert.True(service.IsAuthenticated);
+        Assert.True(service.IsAdmin);
+        Assert.True(eventTriggered);
     }
 
     [Fact]
@@ -113,19 +112,19 @@ public class UnifiedAuthServiceCompleteTests
         await service.LogoutAsync();
 
         // Assert
-        service.Token.Should().BeNull();
-        service.Email.Should().BeNull();
-        service.AvatarUrl.Should().BeNull();
-        service.UserId.Should().BeNull();
-        service.IsAdmin.Should().BeFalse();
-        service.IsAuthenticated.Should().BeFalse();
+        Assert.Null(service.Token);
+        Assert.Null(service.Email);
+        Assert.Null(service.AvatarUrl);
+        Assert.Null(service.UserId);
+        Assert.False(service.IsAdmin);
+        Assert.False(service.IsAuthenticated);
 
         // Le username et le statut réservé doivent être conservés
-        service.Username.Should().Be("testuser");
-        service.IsReserved.Should().BeTrue();
-        service.ReservedProvider.Should().Be(ExternalAuthProvider.Google);
+        Assert.Equal("testuser", service.Username);
+        Assert.True(service.IsReserved);
+        Assert.Equal(ExternalAuthProvider.Google, service.ReservedProvider);
 
-        eventTriggered.Should().BeTrue();
+        Assert.True(eventTriggered);
     }
 
     [Fact]
@@ -172,20 +171,20 @@ public class UnifiedAuthServiceCompleteTests
         await service.ForgetUsernameAndLogoutAsync();
 
         // Assert
-        service.Username.Should().BeNull();
-        service.Token.Should().BeNull();
-        service.IsReserved.Should().BeFalse();
-        service.ReservedProvider.Should().BeNull();
-        service.Email.Should().BeNull();
-        service.AvatarUrl.Should().BeNull();
-        service.UserId.Should().BeNull();
-        service.IsAdmin.Should().BeFalse();
-        service.IsAuthenticated.Should().BeFalse();
-        service.HasUsername.Should().BeFalse();
-        eventTriggered.Should().BeTrue();
+        Assert.Null(service.Username);
+        Assert.Null(service.Token);
+        Assert.False(service.IsReserved);
+        Assert.Null(service.ReservedProvider);
+        Assert.Null(service.Email);
+        Assert.Null(service.AvatarUrl);
+        Assert.Null(service.UserId);
+        Assert.False(service.IsAdmin);
+        Assert.False(service.IsAuthenticated);
+        Assert.False(service.HasUsername);
+        Assert.True(eventTriggered);
 
-        _mockHttp.GetMatchCount(mockedRequest)
-            .Should().Be(1);
+        var matchCount = _mockHttp.GetMatchCount(mockedRequest);
+        Assert.Equal(1, matchCount);
     }
 
     [Fact]
@@ -219,8 +218,8 @@ public class UnifiedAuthServiceCompleteTests
         await service.ForgetUsernameAndLogoutAsync();
 
         // Assert
-        service.Username.Should().BeNull();
-        service.HasUsername.Should().BeFalse();
+        Assert.Null(service.Username);
+        Assert.False(service.HasUsername);
     }
 
     [Fact]
@@ -264,9 +263,9 @@ public class UnifiedAuthServiceCompleteTests
         await service.ForgetUsernameAndLogoutAsync();
 
         // Assert - L'état local doit être nettoyé malgré l'erreur API
-        service.Username.Should().BeNull();
-        service.Token.Should().BeNull();
-        service.HasUsername.Should().BeFalse();
+        Assert.Null(service.Username);
+        Assert.Null(service.Token);
+        Assert.False(service.HasUsername);
     }
 
     [Fact]
@@ -290,7 +289,7 @@ public class UnifiedAuthServiceCompleteTests
         await service.SetUsernameAsync("guestuser", isReserved: false);
 
         // Act & Assert
-        service.CanForgetUsername.Should().BeTrue();
+        Assert.True(service.CanForgetUsername);
     }
 
     [Fact]
@@ -319,7 +318,7 @@ public class UnifiedAuthServiceCompleteTests
         await service.InitializeAsync();
 
         // Act & Assert
-        service.CanForgetUsername.Should().BeFalse();
+        Assert.False(service.CanForgetUsername);
     }
 
     [Fact]
@@ -351,7 +350,7 @@ public class UnifiedAuthServiceCompleteTests
             isAdmin: false);
 
         // Act & Assert
-        service.CanForgetUsername.Should().BeTrue();
+        Assert.True(service.CanForgetUsername);
     }
 
     [Fact]
@@ -370,8 +369,8 @@ public class UnifiedAuthServiceCompleteTests
         await service.InitializeAsync();
 
         // Assert - Ne devrait pas lancer d'exception
-        service.HasUsername.Should().BeFalse();
-        service.IsAuthenticated.Should().BeFalse();
+        Assert.False(service.HasUsername);
+        Assert.False(service.IsAuthenticated);
     }
 
     [Fact]
@@ -397,9 +396,9 @@ public class UnifiedAuthServiceCompleteTests
         await service.SetUsernameAsync("reserveduser", isReserved: true, ExternalAuthProvider.Microsoft);
 
         // Assert
-        service.Username.Should().Be("reserveduser");
-        service.IsReserved.Should().BeTrue();
-        service.ReservedProvider.Should().Be(ExternalAuthProvider.Microsoft);
+        Assert.Equal("reserveduser", service.Username);
+        Assert.True(service.IsReserved);
+        Assert.Equal(ExternalAuthProvider.Microsoft, service.ReservedProvider);
     }
 
     [Fact]
@@ -438,7 +437,7 @@ public class UnifiedAuthServiceCompleteTests
         await service.LogoutAsync();
 
         // Assert
-        setItemCalls.Should().Be(1);
+        Assert.Equal(1, setItemCalls);
     }
 
     [Fact]
@@ -461,7 +460,7 @@ public class UnifiedAuthServiceCompleteTests
         await service.InitializeAsync();
 
         // Assert
-        getItemCalls.Should().Be(1);
+        Assert.Equal(1, getItemCalls);
     }
 
     [Fact]
@@ -493,16 +492,16 @@ public class UnifiedAuthServiceCompleteTests
         await service.InitializeAsync();
 
         // Assert
-        service.Username.Should().Be("testuser");
-        service.Token.Should().Be("test-token");
-        service.IsReserved.Should().BeTrue();
-        service.ReservedProvider.Should().Be(ExternalAuthProvider.Google);
-        service.Email.Should().Be("test@example.com");
-        service.AvatarUrl.Should().Be("https://example.com/avatar.jpg");
-        service.UserId.Should().Be(userId);
-        service.IsAdmin.Should().BeTrue();
-        service.IsAuthenticated.Should().BeTrue();
-        service.HasUsername.Should().BeTrue();
+        Assert.Equal("testuser", service.Username);
+        Assert.Equal("test-token", service.Token);
+        Assert.True(service.IsReserved);
+        Assert.Equal(ExternalAuthProvider.Google, service.ReservedProvider);
+        Assert.Equal("test@example.com", service.Email);
+        Assert.Equal("https://example.com/avatar.jpg", service.AvatarUrl);
+        Assert.Equal(userId, service.UserId);
+        Assert.True(service.IsAdmin);
+        Assert.True(service.IsAuthenticated);
+        Assert.True(service.HasUsername);
     }
 
     [Fact]
@@ -533,16 +532,16 @@ public class UnifiedAuthServiceCompleteTests
         await service.InitializeAsync();
 
         // Assert
-        service.Username.Should().Be("testuser");
-        service.Token.Should().BeNull();
-        service.IsReserved.Should().BeFalse();
-        service.ReservedProvider.Should().BeNull();
-        service.Email.Should().BeNull();
-        service.AvatarUrl.Should().BeNull();
-        service.UserId.Should().BeNull();
-        service.IsAdmin.Should().BeFalse();
-        service.IsAuthenticated.Should().BeFalse();
-        service.HasUsername.Should().BeTrue();
+        Assert.Equal("testuser", service.Username);
+        Assert.Null(service.Token);
+        Assert.False(service.IsReserved);
+        Assert.Null(service.ReservedProvider);
+        Assert.Null(service.Email);
+        Assert.Null(service.AvatarUrl);
+        Assert.Null(service.UserId);
+        Assert.False(service.IsAdmin);
+        Assert.False(service.IsAuthenticated);
+        Assert.True(service.HasUsername);
     }
 
     [Fact]
@@ -576,11 +575,11 @@ public class UnifiedAuthServiceCompleteTests
         await service.SetUsernameAsync("guestuser", isReserved: false);
 
         // Assert
-        savedData.Should().Contain("guestuser");
-        savedData.Should().Contain("\"IsReserved\":false");
-        service.Username.Should().Be("guestuser");
-        service.IsReserved.Should().BeFalse();
-        service.ReservedProvider.Should().BeNull();
+        Assert.Contains("guestuser", savedData);
+        Assert.Contains("\"IsReserved\":false", savedData);
+        Assert.Equal("guestuser", service.Username);
+        Assert.False(service.IsReserved);
+        Assert.Null(service.ReservedProvider);
     }
 
     [Fact]
@@ -623,13 +622,13 @@ public class UnifiedAuthServiceCompleteTests
             isAdmin: true);
 
         // Assert
-        savedData.Should().Contain("auth-token");
-        savedData.Should().Contain("authuser");
-        savedData.Should().Contain("auth@example.com");
-        savedData.Should().Contain("https://example.com/pic.jpg");
-        savedData.Should().Contain(userId.ToString());
-        savedData.Should().Contain(((int)ExternalAuthProvider.Microsoft).ToString());
-        savedData.Should().Contain("\"IsAdmin\":true");
+        Assert.Contains("auth-token", savedData);
+        Assert.Contains("authuser", savedData);
+        Assert.Contains("auth@example.com", savedData);
+        Assert.Contains("https://example.com/pic.jpg", savedData);
+        Assert.Contains(userId.ToString(), savedData);
+        Assert.Contains(((int)ExternalAuthProvider.Microsoft).ToString(), savedData);
+        Assert.Contains("\"IsAdmin\":true", savedData);
     }
 
     [Fact]
@@ -674,17 +673,17 @@ public class UnifiedAuthServiceCompleteTests
         await service.ClearAllAsync();
 
         // Assert
-        service.Username.Should().BeNull();
-        service.Token.Should().BeNull();
-        service.IsReserved.Should().BeFalse();
-        service.ReservedProvider.Should().BeNull();
-        service.Email.Should().BeNull();
-        service.AvatarUrl.Should().BeNull();
-        service.UserId.Should().BeNull();
-        service.IsAdmin.Should().BeFalse();
-        service.IsAuthenticated.Should().BeFalse();
-        service.HasUsername.Should().BeFalse();
-        eventTriggered.Should().BeTrue();
+        Assert.Null(service.Username);
+        Assert.Null(service.Token);
+        Assert.False(service.IsReserved);
+        Assert.Null(service.ReservedProvider);
+        Assert.Null(service.Email);
+        Assert.Null(service.AvatarUrl);
+        Assert.Null(service.UserId);
+        Assert.False(service.IsAdmin);
+        Assert.False(service.IsAuthenticated);
+        Assert.False(service.HasUsername);
+        Assert.True(eventTriggered);
     }
 
     [Fact]
@@ -722,7 +721,7 @@ public class UnifiedAuthServiceCompleteTests
         await service.ClearAllAsync();
 
         // Assert
-        eventCount.Should().Be(4);
+        Assert.Equal(4, eventCount);
     }
 
     [Fact]
@@ -746,15 +745,15 @@ public class UnifiedAuthServiceCompleteTests
 
         // Test Google
         await service.SetAuthStateAsync("token1", "user1", "email1", null, Guid.NewGuid(), ExternalAuthProvider.Google, false);
-        service.ReservedProvider.Should().Be(ExternalAuthProvider.Google);
+        Assert.Equal(ExternalAuthProvider.Google, service.ReservedProvider);
 
         // Test Microsoft
         await service.SetAuthStateAsync("token2", "user2", "email2", null, Guid.NewGuid(), ExternalAuthProvider.Microsoft, false);
-        service.ReservedProvider.Should().Be(ExternalAuthProvider.Microsoft);
+        Assert.Equal(ExternalAuthProvider.Microsoft, service.ReservedProvider);
 
         // Test Facebook
         await service.SetAuthStateAsync("token3", "user3", "email3", null, Guid.NewGuid(), ExternalAuthProvider.Facebook, false);
-        service.ReservedProvider.Should().Be(ExternalAuthProvider.Facebook);
+        Assert.Equal(ExternalAuthProvider.Facebook, service.ReservedProvider);
     }
 
     [Fact]
@@ -790,9 +789,9 @@ public class UnifiedAuthServiceCompleteTests
         await service.LogoutAsync();
 
         // Assert
-        subscriber1Called.Should().Be(1);
-        subscriber2Called.Should().Be(1);
-        subscriber3Called.Should().Be(1);
+        Assert.Equal(1, subscriber1Called);
+        Assert.Equal(1, subscriber2Called);
+        Assert.Equal(1, subscriber3Called);
     }
 
     [Fact]
@@ -818,7 +817,7 @@ public class UnifiedAuthServiceCompleteTests
         await service.SetUsernameAsync("testuser", false);
 
         // Assert
-        service.HasUsername.Should().BeTrue();
+        Assert.True(service.HasUsername);
     }
 
     [Fact]
@@ -844,7 +843,7 @@ public class UnifiedAuthServiceCompleteTests
         await service.SetAuthStateAsync("token", "user", "email", null, Guid.NewGuid(), ExternalAuthProvider.Google, false);
 
         // Assert
-        service.IsAuthenticated.Should().BeTrue();
+        Assert.True(service.IsAuthenticated);
     }
 
     [Fact]
@@ -861,7 +860,7 @@ public class UnifiedAuthServiceCompleteTests
         await service.InitializeAsync();
 
         // Act & Assert
-        service.IsAuthenticated.Should().BeFalse();
+        Assert.False(service.IsAuthenticated);
     }
 
     [Fact]
@@ -878,7 +877,7 @@ public class UnifiedAuthServiceCompleteTests
         await service.InitializeAsync();
 
         // Act & Assert
-        service.CanForgetUsername.Should().BeFalse();
+        Assert.False(service.CanForgetUsername);
     }
 
     [Fact]
@@ -904,8 +903,8 @@ public class UnifiedAuthServiceCompleteTests
         await service.SetAuthStateAsync("token", "user", "email", null, Guid.NewGuid(), ExternalAuthProvider.Google, false);
 
         // Assert
-        service.AvatarUrl.Should().BeNull();
-        service.IsAuthenticated.Should().BeTrue();
+        Assert.Null(service.AvatarUrl);
+        Assert.True(service.IsAuthenticated);
     }
 
     [Fact]
@@ -940,14 +939,14 @@ public class UnifiedAuthServiceCompleteTests
         await service.LogoutAsync();
 
         // Assert
-        service.Username.Should().Be("reserveduser");
-        service.IsReserved.Should().BeTrue();
-        service.ReservedProvider.Should().Be(ExternalAuthProvider.Microsoft);
-        service.Token.Should().BeNull();
-        service.Email.Should().BeNull();
-        service.AvatarUrl.Should().BeNull();
-        service.UserId.Should().BeNull();
-        service.IsAdmin.Should().BeFalse();
+        Assert.Equal("reserveduser", service.Username);
+        Assert.True(service.IsReserved);
+        Assert.Equal(ExternalAuthProvider.Microsoft, service.ReservedProvider);
+        Assert.Null(service.Token);
+        Assert.Null(service.Email);
+        Assert.Null(service.AvatarUrl);
+        Assert.Null(service.UserId);
+        Assert.False(service.IsAdmin);
     }
 
     // tests/IrcChat.Client.Tests/Services/UnifiedAuthServiceTests.cs
@@ -970,7 +969,7 @@ public class UnifiedAuthServiceCompleteTests
         await service.InitializeAsync();
 
         // Assert
-        service.HasUsername.Should().BeFalse();
+        Assert.False(service.HasUsername);
         loggerMock.Verify(
             x => x.Log(
                 LogLevel.Error,
@@ -1024,7 +1023,7 @@ public class UnifiedAuthServiceCompleteTests
         await service.ForgetUsernameAndLogoutAsync();
 
         // Assert
-        service.Username.Should().BeNull();
+        Assert.Null(service.Username);
         loggerMock.Verify(
             x => x.Log(
                 LogLevel.Warning,

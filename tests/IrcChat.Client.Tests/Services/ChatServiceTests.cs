@@ -1,7 +1,6 @@
 // tests/IrcChat.Client.Tests/Services/ChatServiceTests.cs
 using System.Net;
 using Bunit;
-using FluentAssertions;
 using IrcChat.Client.Models;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
@@ -51,7 +50,7 @@ public class ChatServiceTests : TestContext
         var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
 
         // Assert
-        service.Should().NotBeNull();
+        Assert.NotNull(service);
     }
 
     [Fact]
@@ -77,8 +76,7 @@ public class ChatServiceTests : TestContext
         SetConnectedState(hubConnectionMock);
 
         // Act & Assert
-        var act = async () => await service.InitializeAsync(hubConnectionBuilderMock.Object);
-        await act.Should().NotThrowAsync();
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
         // Assert - Vérifier que tous les événements sont enregistrés
         hubConnectionMock.Verify(x => x.On("ReceiveMessage", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()), Times.Once);
@@ -141,8 +139,8 @@ public class ChatServiceTests : TestContext
         await onReceiveMessage!([testMessage], onReceiveMessageState!);
 
         // Assert
-        receivedMessage.Should().NotBeNull();
-        receivedMessage.Should().BeEquivalentTo(testMessage);
+        Assert.NotNull(receivedMessage);
+        Assert.Same(testMessage, receivedMessage);
     }
 
     [Fact]
@@ -187,8 +185,8 @@ public class ChatServiceTests : TestContext
         await onUserJoined!(["testUser", "testChannel"], onUserJoinedState!);
 
         // Assert
-        joinedUser.Should().Be("testUser");
-        joinedChannel.Should().Be("testChannel");
+        Assert.Equal("testUser", joinedUser);
+        Assert.Equal("testChannel", joinedChannel);
     }
 
     [Fact]
@@ -232,8 +230,8 @@ public class ChatServiceTests : TestContext
         await onUserLeft!(["testUser", "testChannel"], onUserLeftState!);
 
         // Assert
-        leftUser.Should().Be("testUser");
-        leftChannel.Should().Be("testChannel");
+        Assert.Equal("testUser", leftUser);
+        Assert.Equal("testChannel", leftChannel);
     }
 
     [Fact]
@@ -279,9 +277,9 @@ public class ChatServiceTests : TestContext
         await onUpdateUserList!([testUsers], onUpdateUserListState!);
 
         // Assert
-        updatedUsers.Should().NotBeNull();
-        updatedUsers.Should().HaveCount(2);
-        updatedUsers.Should().BeEquivalentTo(testUsers);
+        Assert.NotNull(updatedUsers);
+        Assert.Equal(2, updatedUsers.Count);
+        Assert.Same(testUsers, updatedUsers);
     }
 
     [Fact]
@@ -326,8 +324,8 @@ public class ChatServiceTests : TestContext
         await onChannelMuteStatusChanged!(["testChannel", true], onChannelMuteStatusChangedState!);
 
         // Assert
-        mutedChannel.Should().Be("testChannel");
-        muteStatus.Should().BeTrue();
+        Assert.Equal("testChannel", mutedChannel);
+        Assert.True(muteStatus);
     }
 
     [Fact]
@@ -368,7 +366,7 @@ public class ChatServiceTests : TestContext
         await onMessageBlocked!(["Channel is muted"], onMessageBlockedState!);
 
         // Assert
-        blockedReason.Should().Be("Channel is muted");
+        Assert.Equal("Channel is muted", blockedReason);
     }
 
     [Fact]
@@ -409,7 +407,7 @@ public class ChatServiceTests : TestContext
         await onChannelDeleted!(["testChannel"], onChannelDeletedState!);
 
         // Assert
-        deletedChannel.Should().Be("testChannel");
+        Assert.Equal("testChannel", deletedChannel);
     }
 
     [Fact]
@@ -449,7 +447,7 @@ public class ChatServiceTests : TestContext
         await onChannelNotFound!(["missingChannel"], onChannelNotFoundState!);
 
         // Assert
-        notFoundChannel.Should().Be("missingChannel");
+        Assert.Equal("missingChannel", notFoundChannel);
     }
 
     [Fact]
@@ -490,7 +488,7 @@ public class ChatServiceTests : TestContext
         await onChannelListUpdated!([], onChannelListUpdatedState!);
 
         // Assert
-        channelListUpdated.Should().BeTrue();
+        Assert.True(channelListUpdated);
     }
 
     [Fact]
@@ -630,10 +628,10 @@ public class ChatServiceTests : TestContext
         var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
 
         // Act
-        var act = async () => await service.DisposeAsync();
+        await service.DisposeAsync();
 
         // Assert
-        await act.Should().NotThrowAsync();
+        Assert.True(true);
     }
 
     [Fact]
@@ -643,10 +641,10 @@ public class ChatServiceTests : TestContext
         var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
 
         // Act
-        var act = async () => await service.JoinChannel("testUser", "testChannel");
+        await service.JoinChannel("testUser", "testChannel");
 
         // Assert
-        await act.Should().NotThrowAsync();
+        Assert.True(true);
     }
 
     [Fact]
@@ -687,10 +685,10 @@ public class ChatServiceTests : TestContext
         var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
 
         // Act
-        var act = async () => await service.LeaveChannel("testChannel");
+        await service.LeaveChannel("testChannel");
 
         // Assert
-        await act.Should().NotThrowAsync();
+        Assert.True(true);
     }
 
     [Fact]
@@ -736,10 +734,10 @@ public class ChatServiceTests : TestContext
         };
 
         // Act
-        var act = async () => await service.SendMessage(request);
+        await service.SendMessage(request);
 
         // Assert
-        await act.Should().NotThrowAsync();
+        Assert.True(true);
     }
 
     [Fact]
@@ -792,10 +790,10 @@ public class ChatServiceTests : TestContext
         };
 
         // Act
-        var act = async () => await service.SendPrivateMessage(request);
+        await service.SendPrivateMessage(request);
 
         // Assert
-        await act.Should().NotThrowAsync();
+        Assert.True(true);
     }
 
     [Fact]
@@ -842,10 +840,10 @@ public class ChatServiceTests : TestContext
         var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
 
         // Act
-        var act = async () => await service.MarkPrivateMessagesAsRead("sender");
+        await service.MarkPrivateMessagesAsRead("sender");
 
         // Assert
-        await act.Should().NotThrowAsync();
+        Assert.True(true);
     }
 
     [Fact]
@@ -924,10 +922,10 @@ public class ChatServiceTests : TestContext
 
         // Act
         await service.DisposeAsync();
-        var act = async () => await service.DisposeAsync();
+        await service.DisposeAsync();
 
         // Assert
-        await act.Should().NotThrowAsync();
+        Assert.True(true);
     }
 
     [Fact]
@@ -967,8 +965,8 @@ public class ChatServiceTests : TestContext
         await onMessageBlocked!(["test"], onMessageBlockedState!);
 
         // Assert
-        subscriber1Called.Should().Be(1);
-        subscriber2Called.Should().Be(1);
+        Assert.Equal(1, subscriber1Called);
+        Assert.Equal(1, subscriber2Called);
     }
 
     [Fact]
