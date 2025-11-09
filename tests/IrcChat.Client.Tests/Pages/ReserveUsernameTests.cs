@@ -32,7 +32,7 @@ public class ReserveUsernameTests : TestContext
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
         // Act
-        var cut = RenderComponent<ReserveUsername>();
+        RenderComponent<ReserveUsername>();
 
         // Assert
         Assert.EndsWith("/login", _navManager.Uri);
@@ -183,7 +183,7 @@ public class ReserveUsernameTests : TestContext
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", ""));
 
         // Act
-        var cut = RenderComponent<ReserveUsername>();
+        RenderComponent<ReserveUsername>();
 
         // Assert
         Assert.EndsWith("/login", _navManager.Uri);

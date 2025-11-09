@@ -539,6 +539,8 @@ public async Task MessageList_WhenDisposed_ShouldDisposeModule()
 ```
 tests/
 ├── IrcChat.Api.Tests/
+│   ├── Authorization/         # 🆕 Tests des Authorization Handlers
+│   │   └── *HandlerTests.cs
 │   ├── Integration/           # Tests d'intégration (endpoints)
 │   │   └── *EndpointsTests.cs
 │   ├── Services/              # Tests unitaires (services)
@@ -559,6 +561,35 @@ tests/
 │   └── Helpers/               # Utilitaires de test
 │       └── BunitTestContext.cs
 ```
+
+---
+
+## 📚 Ressources
+
+- [xUnit Documentation](https://xunit.net/)
+- [Moq Quickstart](https://github.com/moq/moq4/wiki/Quickstart)
+- [EF Core Testing](https://learn.microsoft.com/en-us/ef/core/testing/)
+- [SignalR Testing](https://learn.microsoft.com/en-us/aspnet/core/signalr/testing)
+- [Authorization Testing](https://learn.microsoft.com/en-us/aspnet/core/security/authorization/resourcebased)
+- [bUnit Documentation](https://bunit.dev/)
+- [JSInterop Testing](https://bunit.dev/docs/test-doubles/emulating-ijsruntime)
+
+---
+
+## ✅ Exemples complets
+
+### Backend (API)
+- `ChannelModificationHandlerTests.cs` - Tests d'Authorization Handler
+- `ChannelDeleteEndpointsTests.cs` - Pattern complet avec vérification BDD
+- `AdminManagementEndpointsTests.cs` - Tests avec autorisation
+- `ChatHubTests.cs` - Tests SignalR avec mocks
+- `OAuthEndpointsTests.cs` - Tests d'authentification
+
+### Frontend (Client)
+- `ChannelMuteButtonTests.cs` - Tests de composant avec HTTP mock
+- `ChatTests.cs` - Tests de page complexe avec SignalR
+- `UnifiedAuthServiceTests.cs` - Tests avec JSRuntime mock
+- `OAuthClientServiceTests.cs` - Tests OAuth avec PKCE
 
 ---
 

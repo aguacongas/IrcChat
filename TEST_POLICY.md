@@ -17,10 +17,14 @@ Lors de l'implémentation de toute nouvelle fonctionnalité, créer systématiqu
 
 ### Tests API (`tests/IrcChat.Api.Tests/`)
 ```
+Authorization/
+  - *HandlerTests.cs        # Tests des Authorization Handlers
 Integration/
   - *EndpointsTests.cs      # Tests d'intégration des endpoints
 Services/
   - *ServiceTests.cs        # Tests unitaires des services
+Hubs/
+  - *HubTests.cs            # Tests SignalR
 Helpers/
   - TestDataBuilder.cs      # Builders pour données de test
   - TestDbContextFactory.cs # Factory pour DbContext en mémoire
