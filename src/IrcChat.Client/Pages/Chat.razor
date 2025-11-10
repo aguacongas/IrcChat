@@ -13,6 +13,7 @@
 @inject NavigationManager Navigation
 @inject IOptions<ApiSettings> ApiSettingsOptions
 @inject ILogger<Chat> Logger
+@inject IDeviceDetectorService DeviceDetector
 @implements IAsyncDisposable
 
 <PageTitle>IRC Chat</PageTitle>
@@ -30,8 +31,13 @@ else if (!Auth.HasUsername)
 }
 else
 {
-    <div class="chat-container">
-        <Sidebar Username="@currentUsername"
+    <SidebarToggleButton IsOpen="sidebarOpen"
+                         UnreadCount="totalUnreadCount"
+                         OnToggle="HandleSidebarToggle" />
+
+    <div class="chat-container @(sidebarOpen ? "sidebar-open" : "sidebar-closed")">
+        <Sidebar IsOpen="sidebarOpen"
+                 Username="@currentUsername"
                  AvatarUrl="@avatarUrl"
                  IsOAuthUser="@Auth.IsReserved"
                  IsAdmin="@Auth.IsAdmin"
@@ -87,6 +93,8 @@ else
     private bool isInitialized = false;
     private bool isCurrentChannelMuted = false;
     private string muteNotification = "";
+    private bool sidebarOpen = false;
+    private int totalUnreadCount => privateConversations.Sum(c => c.UnreadCount);
 
     // Messages privés
     private List<PrivateConversation> privateConversations = new();
@@ -334,6 +342,7 @@ else
         // Charger le statut mute
         var channelInfo = channels.FirstOrDefault(c => c.Name == channel);
         isCurrentChannelMuted = channelInfo?.IsMuted ?? false;
+        sidebarOpen = false;
     }
 
     private async Task LoadChannels()
@@ -417,6 +426,7 @@ else
         await ChatService.MarkPrivateMessagesAsRead(username);
         await LoadPrivateConversations();
 
+        sidebarOpen = false;
         StateHasChanged();
     }
 
@@ -509,5 +519,10 @@ else
         PrivateMessageService.OnConversationDeleted -= OnConversationDeleted;
 
         await ChatService.DisposeAsync();
+    }
+
+    private void HandleSidebarToggle(bool args)
+    {
+        sidebarOpen = args;
     }
 }

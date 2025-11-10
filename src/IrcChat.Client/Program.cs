@@ -24,6 +24,7 @@ builder.Services.AddScoped<IChatService, ChatService>()
     .AddScoped<ILocalStorageService, LocalStorageService>()
     .AddScoped<IUnifiedAuthService, UnifiedAuthService>()
     .AddScoped<IOAuthClientService, OAuthClientService>()
-    .AddScoped<IPrivateMessageService, PrivateMessageService>();
+    .AddScoped<IPrivateMessageService, PrivateMessageService>()
+    .AddScoped<IDeviceDetectorService, DeviceDetectorService>();
 
 await builder.Build().RunAsync();

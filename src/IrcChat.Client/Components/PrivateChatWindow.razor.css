@@ -7,67 +7,92 @@
   width: 400px;
   height: 500px;
   background: #252525;
+  border: 1px solid #3e3e3e;
+  border-bottom: none;
   border-radius: 8px 8px 0 0;
-  box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
   z-index: 1000;
+  animation: slideUp 0.3s ease-out;
 }
 
-.chat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px;
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.private-chat-header {
   background: #1e1e1e;
-  border-radius: 8px 8px 0 0;
+  padding: 15px 20px;
   border-bottom: 2px solid #8ab4f8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 8px 8px 0 0;
+  flex-shrink: 0;
 }
 
-.header-left {
+.header-info {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 1;
+  min-width: 0;
 }
 
-.chat-header h3 {
-  margin: 0;
-  color: #8ab4f8;
-  font-size: 16px;
-}
+  .header-info .avatar {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
 
-.status-indicator {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: #48bb78;
-  color: #000;
-}
+  .header-info h3 {
+    margin: 0;
+    color: #8ab4f8;
+    font-size: 16px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
 .close-btn {
   background: none;
   border: none;
-  color: #aaa;
+  color: #888;
   cursor: pointer;
-  padding: 5px;
+  padding: 4px;
   display: flex;
   align-items: center;
-  transition: color 0.2s;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  flex-shrink: 0;
 }
 
   .close-btn:hover {
-    color: #fff;
+    background: #3e3e3e;
+    color: #f56565;
   }
 
+/* Messages container */
 .messages-container {
   flex: 1;
   overflow-y: auto;
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  padding: 20px;
+  scroll-behavior: smooth;
 }
 
+/* Messages */
 .private-message {
   margin-bottom: 10px;
   padding: 10px;
