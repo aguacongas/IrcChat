@@ -198,7 +198,7 @@ public class SidebarTests : TestContext
         // Assert
         Assert.Contains("Friend1", cut.Markup);
         Assert.Contains("Friend2", cut.Markup);
-    }    
+    }
 
     [Fact]
     public async Task Sidebar_UserInfoClick_ShouldInvokeCallback()
@@ -219,7 +219,7 @@ public class SidebarTests : TestContext
         // Assert
         Assert.True(userInfoClickedInvoked);
     }
-    
+
     [Fact]
     public void Sidebar_WithUnreadMessages_ShouldDisplayBadge()
     {
