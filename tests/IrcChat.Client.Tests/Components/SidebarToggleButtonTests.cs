@@ -200,4 +200,3 @@ public class SidebarToggleButtonTests : TestContext
         Assert.Equal(expected, badge.TextContent);
     }
 }
-    

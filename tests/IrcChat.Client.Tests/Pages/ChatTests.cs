@@ -2082,10 +2082,10 @@ public class ChatTests : TestContext
 
         _privateMessageServiceMock
             .Setup(x => x.GetConversationsAsync("TestUser"))
-            .ReturnsAsync(new List<PrivateConversation>
-            {
+            .ReturnsAsync(
+            [
             new() { OtherUsername = "Friend", LastMessage = "Hi", LastMessageTime = DateTime.UtcNow, UnreadCount = 0 }
-            });
+            ]);
 
         _privateMessageServiceMock
             .Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
