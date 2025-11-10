@@ -343,7 +343,7 @@ else
         // Charger le statut mute
         var channelInfo = channels.FirstOrDefault(c => c.Name == channel);
         isCurrentChannelMuted = channelInfo?.IsMuted ?? false;
-        sidebarOpen = false;
+        sidebarOpen = false;        
     }
 
     private async Task LoadChannels()
