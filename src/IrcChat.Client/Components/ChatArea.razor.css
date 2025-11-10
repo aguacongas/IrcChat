@@ -1,22 +1,169 @@
+/* src/IrcChat.Client/Components/ChatArea.razor.css */
+
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Welcome screen */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 20px;
+  color: #888;
+}
+
+  .welcome h2 {
+    color: #8ab4f8;
+    font-size: 32px;
+    margin: 0;
+  }
+
+  .welcome p {
+    font-size: 16px;
+    margin: 0;
+  }
+
+/* Chat header */
 .chat-header {
-  padding: 20px;
   background: #252525;
+  padding: 20px 30px;
   border-bottom: 2px solid #8ab4f8;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-shrink: 0;
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 15px;
+  flex: 1;
+}
+
+.channel-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+  .channel-name h2 {
+    margin: 0;
+    color: #8ab4f8;
+    font-size: 24px;
+    font-weight: 600;
+  }
+
+.channel-hash {
+  color: #8ab4f8;
 }
 
 .header-right {
   display: flex;
   align-items: center;
+  gap: 15px;
+}
+
+/* Status indicator */
+.status {
+  font-size: 14px;
+  padding: 5px 10px;
+  border-radius: 4px;
+}
+
+  .status.connected {
+    color: #48bb78;
+  }
+
+  .status.disconnected {
+    color: #f56565;
+  }
+
+/* Mute controls */
+.mute-controls {
+  display: flex;
+  align-items: center;
   gap: 10px;
+}
+
+.mute-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(245, 101, 101, 0.2);
+  border: 1px solid #f56565;
+  border-radius: 6px;
+  color: #f56565;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.btn-mute,
+.btn-unmute,
+.btn-delete-channel {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-mute {
+  background: #f56565;
+  color: #fff;
+}
+
+  .btn-mute:hover {
+    background: #e53e3e;
+    transform: translateY(-1px);
+  }
+
+.btn-unmute {
+  background: #48bb78;
+  color: #fff;
+}
+
+  .btn-unmute:hover {
+    background: #38a169;
+    transform: translateY(-1px);
+  }
+
+.btn-delete-channel {
+  background: #6e6e6e;
+  color: #fff;
+}
+
+  .btn-delete-channel:hover {
+    background: #f56565;
+    transform: translateY(-1px);
+  }
+
+
+
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .chat-content {
@@ -37,4 +184,31 @@
   border-left: 1px solid #6e6e6e;
   background: #252525;
   overflow-y: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .chat-header {
+    padding: 15px 20px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-left,
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .header-left {
+    padding-left: 60px;
+  }
+
+  .channel-name h2 {
+    font-size: 20px;
+  }
+
+  .mute-controls {
+    flex-wrap: wrap;
+  }
 }

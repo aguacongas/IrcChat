@@ -23,6 +23,7 @@ public class ChatTests : TestContext
     private readonly Mock<IChatService> _chatServiceMock;
     private readonly Mock<IUnifiedAuthService> _authServiceMock;
     private readonly Mock<IPrivateMessageService> _privateMessageServiceMock;
+    private readonly Mock<IDeviceDetectorService> _deviceDetectorMock;
     private readonly MockHttpMessageHandler _mockHttp;
     private readonly FakeNavigationManager _navManager;
 
@@ -32,6 +33,9 @@ public class ChatTests : TestContext
         _authServiceMock = new Mock<IUnifiedAuthService>();
         _privateMessageServiceMock = new Mock<IPrivateMessageService>();
         _mockHttp = new MockHttpMessageHandler();
+        _deviceDetectorMock = new Mock<IDeviceDetectorService>();
+        _deviceDetectorMock.Setup(x => x.IsMobileDeviceAsync())
+            .ReturnsAsync(false);
 
         var httpClient = _mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
@@ -39,6 +43,7 @@ public class ChatTests : TestContext
         Services.AddSingleton(_chatServiceMock.Object);
         Services.AddSingleton(_authServiceMock.Object);
         Services.AddSingleton(_privateMessageServiceMock.Object);
+        Services.AddSingleton(_deviceDetectorMock.Object);
         Services.AddSingleton(httpClient);
         Services.Configure<ApiSettings>(apiSettings =>
         {
@@ -94,6 +99,42 @@ public class ChatTests : TestContext
         // Assert
         Assert.Contains("general", cut.Markup);
         Assert.Contains("random", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Chat__WhenAuthenticated_ShoulSetAuthorizationToken()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.Token).Returns("test-token");
+        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
+
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
+            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        // Act
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Assert
+        var httpClient = Services.GetRequiredService<HttpClient>();
+        Assert.NotNull(httpClient.DefaultRequestHeaders.Authorization);
+        Assert.Equal("test-token", httpClient.DefaultRequestHeaders.Authorization.Parameter);
     }
 
     [Fact]
@@ -1860,5 +1901,242 @@ public class ChatTests : TestContext
         _chatServiceMock.Verify(
             x => x.SendPrivateMessage(It.IsAny<SendPrivateMessageRequest>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task Chat_HandleSidebarToggle_WhenCalledWithFalse_ShouldCloseSidebar()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act - Ouvrir puis fermer la sidebar
+        var toggleButton = cut.Find(".sidebar-toggle-btn");
+        await cut.InvokeAsync(() => toggleButton.Click());
+        await Task.Delay(100);
+
+        Assert.Contains("sidebar-open", cut.Markup);
+
+        await cut.InvokeAsync(() => toggleButton.Click());
+        await Task.Delay(100);
+
+        // Assert
+        Assert.Contains("sidebar-closed", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Chat_OnInitializedAsync_WhenAuthNotInitialized_ShouldHandleGracefully()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync())
+            .Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(false);
+
+        // Act & Assert - Ne devrait pas planter
+        RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        Assert.EndsWith("/login", _navManager.Uri);
+    }
+
+    [Fact]
+    public async Task Chat_InitializeSignalR_WhenConnectionFails_ShouldSetIsConnectedFalse()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .ThrowsAsync(new Exception("Connection failed"));
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        // Act
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Assert - Le composant devrait gérer l'erreur
+        Assert.NotNull(cut.Find(".chat-container"));
+    }
+
+    [Fact]
+    public async Task Chat_TotalUnreadCount_ShouldSumAllConversations()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        var conversations = new List<PrivateConversation>
+    {
+        new() { OtherUsername = "User1", UnreadCount = 3, LastMessage = "Hi", LastMessageTime = DateTime.UtcNow },
+        new() { OtherUsername = "User2", UnreadCount = 5, LastMessage = "Hello", LastMessageTime = DateTime.UtcNow },
+        new() { OtherUsername = "User3", UnreadCount = 2, LastMessage = "Hey", LastMessageTime = DateTime.UtcNow }
+    };
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync(conversations);
+
+        // Act
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Assert - Le badge devrait montrer le total (10)
+        var badge = cut.Find(".unread-badge");
+        Assert.Equal("10", badge.TextContent);
+    }
+
+    [Fact]
+    public async Task Chat_SendMessage_WithEmptyContent_ShouldNotCallService()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+
+        var channels = new List<Channel>
+    {
+        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+    };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Rejoindre un canal
+        var channelItems = cut.FindAll("ul.channel-list > li[blazor\\:onclick]");
+        if (channelItems.Count > 0)
+        {
+            await cut.InvokeAsync(() => channelItems[0].Click());
+            await Task.Delay(100);
+        }
+
+        // Act - Essayer d'envoyer un message vide
+        var button = cut.Find(".input-area button");
+        await cut.InvokeAsync(() => button.Click());
+
+        // Assert - Ne devrait pas appeler le service
+        _chatServiceMock.Verify(
+            x => x.SendMessage(It.IsAny<SendMessageRequest>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Chat_ClosePrivateChat_ShouldClearSelectedUser()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync(
+            [
+            new() { OtherUsername = "Friend", LastMessage = "Hi", LastMessageTime = DateTime.UtcNow, UnreadCount = 0 }
+            ]);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Ouvrir le chat privé
+        var conversations = cut.FindAll(".conversation-list li");
+        if (conversations.Count > 0)
+        {
+            await cut.InvokeAsync(() => conversations[0].Click());
+            await Task.Delay(100);
+        }
+
+        Assert.Contains("private-chat-window", cut.Markup);
+
+        // Act - Fermer le chat privé
+        var closeButton = cut.Find(".private-chat-window .close-btn");
+        await cut.InvokeAsync(() => closeButton.Click());
+        await Task.Delay(100);
+
+        // Assert
+        Assert.DoesNotContain("private-chat-window", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Chat_CanManageCurrentChannel_WhenNoChannel_ShouldReturnFalse()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.IsAdmin).Returns(false);
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        // Act
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Assert - Pas de contrôles de mute visible
+        Assert.DoesNotContain("channel-mute-control", cut.Markup);
     }
 }
