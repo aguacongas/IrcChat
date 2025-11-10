@@ -135,22 +135,22 @@ code {
       box-shadow: 0 5px 20px rgba(138, 180, 248, 0.4);
     }
 
-.oauth-btn.apple {
-  background-color: #000000;
-  color: white;
-}
-
-  .oauth-btn.apple:hover {
-    background-color: #333333;
-  }
-
-  .oauth-btn.apple svg {
-    fill: white;
-  }
-
 .oauth-btn {
   margin-bottom: 10px;
 }
+
+  .oauth-btn.apple {
+    background-color: #000000;
+    color: white;
+  }
+
+    .oauth-btn.apple:hover {
+      background-color: #333333;
+    }
+
+    .oauth-btn.apple svg {
+      fill: white;
+    }
 
 .chip {
   margin-bottom: 10px;
@@ -170,6 +170,33 @@ code {
   display: flex;
   flex-direction: column;
 }
+
+  .sidebar h3,
+  .sidebar h4 {
+    margin-bottom: 15px;
+    color: #8ab4f8;
+  }
+
+  .sidebar input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    background: #1e1e1e;
+    border: 1px solid #6e6e6e;
+    color: #fff;
+    border-radius: 4px;
+  }
+
+  .sidebar button {
+    padding: 8px;
+    background: #8ab4f8;
+    border: none;
+    color: #000;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 20px;
+  }
 
 /* User info avec settings icon */
 .user-info {
@@ -225,33 +252,7 @@ code {
     background: #e53e3e !important;
   }
 
-.sidebar h3,
-.sidebar h4 {
-  margin-bottom: 15px;
-  color: #8ab4f8;
-}
-
-.sidebar input {
-  width: 100%;
-  padding: 8px;
-  margin-bottom: 10px;
-  background: #1e1e1e;
-  border: 1px solid #3e3e3e;
-  color: #fff;
-  border-radius: 4px;
-}
-
-.sidebar button {
-  padding: 8px;
-  background: #8ab4f8;
-  border: none;
-  color: #000;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  margin-bottom: 20px;
-}
-
+/* Channel list */
 .channel-list,
 .users ul {
   list-style: none;
@@ -266,7 +267,7 @@ code {
   }
 
     .channel-list li:hover {
-      background: #3e3e3e;
+      background: #6e6e6e;
     }
 
     .channel-list li.active {
@@ -275,6 +276,7 @@ code {
       font-weight: bold;
     }
 
+/* Users list */
 .users {
   margin-top: 30px;
   flex: 1;
@@ -290,17 +292,32 @@ code {
       font-weight: bold;
     }
 
+.user-list li {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+  .user-list li:hover {
+    background: #6e6e6e;
+  }
+
+  .user-list li.current {
+    color: #8ab4f8;
+    font-weight: bold;
+  }
+
+/* Admin link */
 .admin-link {
   margin-top: auto;
   padding-top: 20px;
-  border-top: 1px solid #3e3e3e;
+  border-top: 1px solid #6e6e6e;
 }
 
   .admin-link a {
     display: block;
     padding: 10px;
     text-align: center;
-    background: #3e3e3e;
+    background: #6e6e6e;
     color: #8ab4f8;
     text-decoration: none;
     border-radius: 4px;
@@ -308,13 +325,15 @@ code {
   }
 
     .admin-link a:hover {
-      background: #4e4e4e;
+      background: #8e8e8e;
     }
 
+/* Chat main */
 .chat-main {
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .welcome {
@@ -325,6 +344,7 @@ code {
   height: 100%;
 }
 
+/* Status indicators */
 .status {
   font-size: 14px;
   padding: 5px 10px;
@@ -339,6 +359,23 @@ code {
     color: #f56565;
   }
 
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+  .status-dot.online {
+    background: #48bb78;
+  }
+
+  .status-dot.offline {
+    background: #888;
+  }
+
+/* Messages */
 .messages {
   flex: 1;
   overflow-y: auto;
@@ -353,6 +390,27 @@ code {
   border-left: 3px solid #8ab4f8;
   animation: slideIn 0.2s ease-out;
 }
+
+  .message.own {
+    background: #2d3748;
+    border-left-color: #48bb78;
+  }
+
+  .message .username {
+    font-weight: bold;
+    color: #8ab4f8;
+    margin-right: 10px;
+  }
+
+  .message .time {
+    font-size: 12px;
+    color: #888;
+  }
+
+  .message .content {
+    margin-top: 5px;
+    line-height: 1.5;
+  }
 
 /* Smooth scrolling pour les conteneurs de messages */
 .messages,
@@ -373,60 +431,29 @@ code {
 
   .messages::-webkit-scrollbar-thumb,
   .messages-container::-webkit-scrollbar-thumb {
-    background: #3e3e3e;
+    background: #6e6e6e;
     border-radius: 4px;
   }
 
     .messages::-webkit-scrollbar-thumb:hover,
     .messages-container::-webkit-scrollbar-thumb:hover {
-      background: #4e4e4e;
+      background: #8e8e8e;
     }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.message.own {
-  background: #2d3748;
-  border-left-color: #48bb78;
-}
-
-.message .username {
-  font-weight: bold;
-  color: #8ab4f8;
-  margin-right: 10px;
-}
-
-.message .time {
-  font-size: 12px;
-  color: #888;
-}
-
-.message .content {
-  margin-top: 5px;
-  line-height: 1.5;
-}
-
+/* Input area */
 .input-area {
   display: flex;
   padding: 20px;
   background: #252525;
-  border-top: 1px solid #3e3e3e;
+  border-top: 1px solid #6e6e6e;
+  flex-shrink: 0;
 }
 
   .input-area input {
     flex: 1;
     padding: 12px;
     background: #1e1e1e;
-    border: 1px solid #3e3e3e;
+    border: 1px solid #6e6e6e;
     color: #fff;
     border-radius: 4px;
     margin-right: 10px;
@@ -457,6 +484,66 @@ code {
       background: #9cc5ff;
     }
 
+/* Channel input */
+.channel-input {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 15px;
+}
+
+  .channel-input input {
+    flex: 1;
+    padding: 8px;
+    background: #1e1e1e;
+    border: 1px solid #6e6e6e;
+    color: #fff;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+
+  .channel-input button {
+    padding: 8px 15px;
+    background: #8ab4f8;
+    border: none;
+    color: #000;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+  }
+
+    .channel-input button:hover:not(:disabled) {
+      background: #9cc5ff;
+    }
+
+    .channel-input button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+/* Channel hash */
+.channel-hash {
+  color: #8ab4f8;
+  margin-right: 5px;
+  font-weight: bold;
+}
+
+/* Section des conversations privées dans le sidebar */
+.channels-section,
+.users-section,
+.private-conversations {
+  margin-bottom: 20px;
+}
+
+  .channels-section h3,
+  .users-section h4,
+  .private-conversations h4 {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+
 /* Styles Admin */
 .admin-container {
   min-height: 100vh;
@@ -485,7 +572,7 @@ code {
     padding: 12px;
     margin-bottom: 15px;
     background: #1e1e1e;
-    border: 1px solid #3e3e3e;
+    border: 1px solid #6e6e6e;
     color: #fff;
     border-radius: 4px;
     font-size: 14px;
@@ -598,7 +685,7 @@ code {
 
   .admin-table td {
     padding: 12px;
-    border-bottom: 1px solid #3e3e3e;
+    border-bottom: 1px solid #6e6e6e;
   }
 
   .admin-table tbody tr:hover {
@@ -612,38 +699,6 @@ code {
   text-decoration: none;
   font-size: 14px;
 }
-
-/* Amélioration de la liste des utilisateurs pour le clic */
-.user-list li {
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-  .user-list li:hover {
-    background: #3e3e3e;
-  }
-
-  .user-list li.current {
-    color: #8ab4f8;
-    font-weight: bold;
-  }
-
-/* Indicateur de statut en ligne */
-.status-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 8px;
-}
-
-  .status-dot.online {
-    background: #48bb78;
-  }
-
-  .status-dot.offline {
-    background: #888;
-  }
 
 /* Badges */
 .badges {
@@ -663,7 +718,6 @@ code {
   color: white;
 }
 
-/* Badge admin */
 .badge.admin {
   background: linear-gradient(135deg, #8ab4f8 0%, #48bb78 100%);
   color: #000;
@@ -692,7 +746,6 @@ code {
   min-width: 0;
 }
 
-  /* Ajustements pour le badge dans user-details */
   .user-details .badge {
     display: inline-block;
     margin-top: 4px;
@@ -714,76 +767,6 @@ code {
   animation: pulse 2s infinite;
 }
 
-/* Responsive pour la fenêtre de chat privé */
-@media (max-width: 480px) {
-  .private-chat-window {
-    width: calc(100vw - 20px);
-    height: 400px;
-  }
-}
-
-/* Section des conversations privées dans le sidebar */
-.channels-section,
-.users-section,
-.private-conversations {
-  margin-bottom: 20px;
-}
-
-  .channels-section h3,
-  .users-section h4,
-  .private-conversations h4 {
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 10px;
-  }
-
-/* Amélioration du channel input (input de création de salon) */
-.channel-input {
-  display: flex;
-  gap: 5px;
-  margin-bottom: 15px;
-}
-
-  .channel-input input {
-    flex: 1;
-    padding: 8px;
-    background: #1e1e1e;
-    border: 1px solid #3e3e3e;
-    color: #fff;
-    border-radius: 4px;
-    font-size: 13px;
-  }
-
-  .channel-input button {
-    padding: 8px 15px;
-    background: #8ab4f8;
-    border: none;
-    color: #000;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 16px;
-  }
-
-    .channel-input button:hover:not(:disabled) {
-      background: #9cc5ff;
-    }
-
-    .channel-input button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-/* Channel hash */
-.channel-hash {
-  color: #8ab4f8;
-  margin-right: 5px;
-  font-weight: bold;
-}
-
-/* Ajoutez ces styles à src/IrcChat.Client/wwwroot/css/app.css */
-
 /* Notification de mute */
 .mute-notification {
   position: fixed;
@@ -803,6 +786,19 @@ code {
   text-align: center;
 }
 
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -813,45 +809,6 @@ code {
     opacity: 1;
     transform: translate(-50%, 0);
   }
-}
-
-
-.status {
-  font-size: 14px;
-  padding: 5px 10px;
-  border-radius: 4px;
-}
-
-  .status.connected {
-    color: #48bb78;
-  }
-
-  .status.disconnected {
-    color: #f56565;
-  }
-
-/* Assurer que chat-main occupe tout l'espace */
-.chat-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* Messages container */
-.messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-}
-
-/* Input area reste en bas */
-.input-area {
-  display: flex;
-  padding: 20px;
-  background: #252525;
-  border-top: 1px solid #3e3e3e;
-  flex-shrink: 0;
 }
 
 /* Responsive */
@@ -871,5 +828,12 @@ code {
   .header-left {
     width: 100%;
     justify-content: space-between;
+  }
+}
+
+@media (max-width: 480px) {
+  .private-chat-window {
+    width: calc(100vw - 20px);
+    height: 400px;
   }
 }
