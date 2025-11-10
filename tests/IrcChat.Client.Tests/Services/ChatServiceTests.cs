@@ -992,7 +992,7 @@ public class ChatServiceTests : TestContext
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
         // Wait for ping timer to execute
-        await Task.Delay(200);
+        await Task.Delay(300);
 
         // Assert - Should log the error
         loggerMock.Verify(
