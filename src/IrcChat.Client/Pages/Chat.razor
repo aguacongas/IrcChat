@@ -6,6 +6,7 @@
 @using IrcChat.Client.Components
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.Extensions.Options
+@using System.Net.Http.Headers
 @inject HttpClient Http
 @inject IChatService ChatService
 @inject IUnifiedAuthService Auth
@@ -121,7 +122,7 @@ else
             if (Auth.IsAuthenticated && !string.IsNullOrEmpty(Auth.Token))
             {
                 Http.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Auth.Token);
+                    new AuthenticationHeaderValue("Bearer", Auth.Token);
             }
 
             await LoadChannels();

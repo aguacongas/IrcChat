@@ -160,6 +160,116 @@ public class DeviceDetectorServiceTests : IAsyncDisposable
         _moduleMock.Verify(x => x.DisposeAsync(), Times.Once);
     }
 
+    // Tests supplémentaires pour DeviceDetectorService
+    // Ajouter à tests/IrcChat.Client.Tests/Services/DeviceDetectorServiceTests.cs
+
+    [Fact]
+    public async Task EnsureInitializedAsync_WhenModuleLoadFails_ShouldLogErrorAndThrow()
+    {
+        // Arrange
+        var jsRuntimeMock = new Mock<IJSRuntime>();
+        var loggerMock = new Mock<ILogger<DeviceDetectorService>>();
+
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()))
+            .ThrowsAsync(new JSException("Module load failed"));
+
+        var service = new DeviceDetectorService(jsRuntimeMock.Object, loggerMock.Object);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<JSException>(async () => await service.IsMobileDeviceAsync());
+
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_WhenModuleNotInitialized_ShouldNotThrow()
+    {
+        // Arrange
+        var jsRuntimeMock = new Mock<IJSRuntime>();
+        var loggerMock = new Mock<ILogger<DeviceDetectorService>>();
+        var service = new DeviceDetectorService(jsRuntimeMock.Object, loggerMock.Object);
+
+        // Act & Assert - Ne devrait pas lever d'exception
+        await service.DisposeAsync();
+
+        Assert.True(true);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_WhenDisposeThrows_ShouldLogWarning()
+    {
+        // Arrange
+        var jsRuntimeMock = new Mock<IJSRuntime>();
+        var moduleMock = new Mock<IJSObjectReference>();
+        var loggerMock = new Mock<ILogger<DeviceDetectorService>>();
+
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()))
+            .ReturnsAsync(moduleMock.Object);
+
+        moduleMock
+            .Setup(x => x.InvokeAsync<bool>("isMobileDevice", It.IsAny<object[]>()))
+            .ReturnsAsync(false);
+
+        moduleMock
+            .Setup(x => x.DisposeAsync())
+            .Throws(new Exception("Dispose error"));
+
+        var service = new DeviceDetectorService(jsRuntimeMock.Object, loggerMock.Object);
+        await service.IsMobileDeviceAsync();
+
+        // Act
+        await service.DisposeAsync();
+
+        // Assert
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Theory]
+    [InlineData(320)]
+    [InlineData(768)]
+    [InlineData(1024)]
+    [InlineData(1920)]
+    [InlineData(2560)]
+    public async Task GetScreenWidthAsync_VariousWidths_ShouldReturnCorrectValue(int width)
+    {
+        // Arrange
+        var jsRuntimeMock = new Mock<IJSRuntime>();
+        var moduleMock = new Mock<IJSObjectReference>();
+        var loggerMock = new Mock<ILogger<DeviceDetectorService>>();
+
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()))
+            .ReturnsAsync(moduleMock.Object);
+
+        moduleMock
+            .Setup(x => x.InvokeAsync<int>("getScreenWidth", It.IsAny<object[]>()))
+            .ReturnsAsync(width);
+
+        var service = new DeviceDetectorService(jsRuntimeMock.Object, loggerMock.Object);
+
+        // Act
+        var result = await service.GetScreenWidthAsync();
+
+        // Assert
+        Assert.Equal(width, result);
+    }
+
     public async ValueTask DisposeAsync()
     {
         await _service.DisposeAsync();
