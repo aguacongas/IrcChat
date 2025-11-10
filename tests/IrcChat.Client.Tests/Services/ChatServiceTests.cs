@@ -25,7 +25,7 @@ public class ChatServiceTests : TestContext
 
     public ChatServiceTests()
     {
-        _privateMessageServiceMock = new Mock<IPrivateMessageService>();
+        _privateMessageServiceMock = new Mock<IPrivateMessageService>();        
 
         _apiSettings = Options.Create(new ApiSettings
         {
@@ -34,7 +34,7 @@ public class ChatServiceTests : TestContext
         });
 
         _mockHttp = new MockHttpMessageHandler();
-
+        
         var httpClient = _mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
 

@@ -23,6 +23,7 @@ public class ChatTests : TestContext
     private readonly Mock<IChatService> _chatServiceMock;
     private readonly Mock<IUnifiedAuthService> _authServiceMock;
     private readonly Mock<IPrivateMessageService> _privateMessageServiceMock;
+    private readonly Mock<IDeviceDetectorService> _deviceDetectorMock;
     private readonly MockHttpMessageHandler _mockHttp;
     private readonly FakeNavigationManager _navManager;
 
@@ -32,6 +33,9 @@ public class ChatTests : TestContext
         _authServiceMock = new Mock<IUnifiedAuthService>();
         _privateMessageServiceMock = new Mock<IPrivateMessageService>();
         _mockHttp = new MockHttpMessageHandler();
+        _deviceDetectorMock = new Mock<IDeviceDetectorService>();
+        _deviceDetectorMock.Setup(x => x.IsMobileDeviceAsync())
+            .ReturnsAsync(false);
 
         var httpClient = _mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
@@ -39,6 +43,7 @@ public class ChatTests : TestContext
         Services.AddSingleton(_chatServiceMock.Object);
         Services.AddSingleton(_authServiceMock.Object);
         Services.AddSingleton(_privateMessageServiceMock.Object);
+        Services.AddSingleton(_deviceDetectorMock.Object);
         Services.AddSingleton(httpClient);
         Services.Configure<ApiSettings>(apiSettings =>
         {
