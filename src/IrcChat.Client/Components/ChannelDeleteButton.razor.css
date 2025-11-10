@@ -1,4 +1,3 @@
-/* src/IrcChat.Client/Components/ChannelDeleteButton.razor.css */
 .channel-delete-control {
   display: flex;
   align-items: center;
@@ -66,7 +65,7 @@
   border-radius: 12px;
   max-width: 500px;
   width: 90%;
-  border: 1px solid #3e3e3e;
+  border: 1px solid #6e6e6e;
 }
 
   .modal-box h2 {
@@ -117,13 +116,13 @@
   }
 
 .btn-secondary {
-  background: #3e3e3e;
+  background: #6e6e6e;
   color: #fff;
-  border: 1px solid #4e4e4e;
+  border: 1px solid #8e8e8e;
 }
 
   .btn-secondary:hover:not(:disabled) {
-    background: #4e4e4e;
+    background: #8e8e8e;
   }
 
 .btn-danger {
