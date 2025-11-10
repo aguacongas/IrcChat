@@ -922,7 +922,6 @@ public class ChatServiceTests : TestContext
 
         // Act
         await service.DisposeAsync();
-        await service.DisposeAsync();
 
         // Assert
         Assert.True(true);

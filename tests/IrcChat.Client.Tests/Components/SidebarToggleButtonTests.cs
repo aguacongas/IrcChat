@@ -113,7 +113,7 @@ public class SidebarToggleButtonTests : TestContext
         var cut = RenderComponent<SidebarToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UnreadCount, 0)
-            .Add(p => p.OnToggle, EventCallback.Factory.Create<bool>(this, (bool state) =>
+            .Add(p => p.OnToggle, EventCallback.Factory.Create<bool>(this, state =>
             {
                 callbackInvoked = true;
                 newState = state;
@@ -138,7 +138,7 @@ public class SidebarToggleButtonTests : TestContext
         var cut = RenderComponent<SidebarToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.UnreadCount, 0)
-            .Add(p => p.OnToggle, EventCallback.Factory.Create<bool>(this, (bool state) =>
+            .Add(p => p.OnToggle, EventCallback.Factory.Create<bool>(this, state =>
             {
                 callbackInvoked = true;
                 newState = state;

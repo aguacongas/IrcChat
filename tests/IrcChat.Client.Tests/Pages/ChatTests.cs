@@ -128,7 +128,7 @@ public class ChatTests : TestContext
             .ReturnsAsync([]);
 
         // Act
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         // Assert
@@ -1765,7 +1765,6 @@ public class ChatTests : TestContext
     }
 
     [Fact]
-    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "RaiseAsync génére une erreur")]
     public async Task HandleMuteStatusChanged_ShouldReloadChannels()
     {
         // Arrange
