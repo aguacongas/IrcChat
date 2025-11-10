@@ -34,7 +34,7 @@
 
 .chat-users {
   width: 200px;
-  border-left: 1px solid var(--border-color, #3e3e3e);
-  background: var(--sidebar-bg, #252525);
+  border-left: 1px solid #6e6e6e;
+  background: #252525;
   overflow-y: auto;
 }
