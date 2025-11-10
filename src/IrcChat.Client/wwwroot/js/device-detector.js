@@ -6,13 +6,13 @@
  */
 export function isMobileDevice() {
   // Vérifier la largeur de l'écran
-  const isMobileWidth = window.innerWidth <= 768;
+  const isMobileWidth = globalThis.innerWidth <= 768;
 
   // Vérifier le user agent
   const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   // Vérifier les événements tactiles
-  const hasTouchScreen = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  const hasTouchScreen = ('ontouchstart' in globalThis) || (navigator.maxTouchPoints > 0);
 
   return isMobileWidth || (isMobileUserAgent && hasTouchScreen);
 }
@@ -22,7 +22,7 @@ export function isMobileDevice() {
  * @returns {number} - Largeur en pixels
  */
 export function getScreenWidth() {
-  return window.innerWidth;
+  return globalThis.innerWidth;
 }
 
 /**
@@ -51,5 +51,5 @@ export function attachResizeListener(dotNetHelper) {
  */
 export function detachResizeListener() {
   // En production, stocker la référence de la fonction pour pouvoir la supprimer
-  window.removeEventListener('resize', null);
+  globalThis.removeEventListener('resize', null);
 }
