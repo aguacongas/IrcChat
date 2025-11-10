@@ -322,9 +322,8 @@ public class MessageListTests : TestContext
         // Reset les appels précédents
         mockModule.Invocations.Clear();
 
-        // Act - Re-render sans changement de count
-        cut.SetParametersAndRender(parameters => parameters
-            .Add(p => p.Messages, messages));
+        // Act - Re-render sans changement de count        
+        cut.SetParametersAndRender(parameters => { });
 
         await Task.Delay(100);
 
