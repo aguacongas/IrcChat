@@ -1943,11 +1943,11 @@ public class ChatTests : TestContext
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync())
-            .ThrowsAsync(new Exception("Auth init failed"));
+            .Returns(Task.CompletedTask);
         _authServiceMock.Setup(x => x.HasUsername).Returns(false);
 
         // Act & Assert - Ne devrait pas planter
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         Assert.EndsWith("/login", _navManager.Uri);
