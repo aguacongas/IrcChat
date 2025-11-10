@@ -101,7 +101,7 @@ jobs:
       run: ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="$SONAR_TOKEN"
 
     - name: 📊 Upload coverage reports (optional)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: always()
       with:
         name: coverage-reports
