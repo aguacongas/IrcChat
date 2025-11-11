@@ -424,7 +424,7 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .settings-header {
     padding: 15px 20px;
   }

@@ -1,0 +1,74 @@
+/* src/IrcChat.Client/Components/UsersListToggleButton.razor.css */
+.users-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #6e6e6e;
+  border: 2px solid #8ab4f8;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+  .users-toggle-btn:hover {
+    background: #8e8e8e;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(138, 180, 248, 0.3);
+  }
+
+  .users-toggle-btn:active {
+    transform: translateY(0);
+  }
+
+  .users-toggle-btn.open {
+    background: #8ab4f8;
+    color: #000;
+  }
+
+    .users-toggle-btn.open:hover {
+      background: #9cc5ff;
+    }
+
+.user-count {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  min-width: 24px;
+  text-align: center;
+}
+
+.users-toggle-btn.open .user-count {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Animation de l'icône */
+.users-toggle-btn svg {
+  transition: transform 0.3s ease;
+}
+
+.users-toggle-btn.open svg {
+  transform: scale(1.1);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .users-toggle-btn {
+    padding: 10px 14px;
+  }
+
+    .users-toggle-btn span {
+      display: none;
+    }
+
+  .user-count {
+    display: flex;
+  }
+}

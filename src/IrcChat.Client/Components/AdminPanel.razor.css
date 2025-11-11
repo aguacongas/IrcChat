@@ -320,7 +320,7 @@
   }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .admin-panel-container {
     width: 95%;
     max-height: 95vh;

@@ -15,7 +15,7 @@
   justify-content: center;
   height: 100%;
   gap: 20px;
-  color: #888;
+  color: #aaa;
 }
 
   .welcome h2 {
@@ -48,27 +48,17 @@
   flex: 1;
 }
 
-.channel-name {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-  .channel-name h2 {
+  .header-left h2 {
     margin: 0;
     color: #8ab4f8;
     font-size: 24px;
     font-weight: 600;
   }
 
-.channel-hash {
-  color: #8ab4f8;
-}
-
 .header-right {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
 }
 
 /* Status indicator */
@@ -79,29 +69,19 @@
 }
 
   .status.connected {
-    color: #48bb78;
+    color: #68d391;
   }
 
   .status.disconnected {
-    color: #f56565;
+    color: #fc8181;
   }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
+/* Chat content */
 .chat-content {
   flex: 1;
   display: flex;
   overflow: hidden;
+  transition: all 0.3s ease;
 }
 
 .chat-messages {
@@ -109,38 +89,126 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: all 0.3s ease;
 }
 
+/* Users list */
 .chat-users {
-  width: 200px;
+  width: 250px;
   border-left: 1px solid #6e6e6e;
   background: #252525;
   overflow-y: auto;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .chat-header {
-    padding: 15px 20px;
-    flex-direction: column;
-    align-items: flex-start;
+  .chat-users.hidden {
+    width: 0;
+    opacity: 0;
+    overflow: hidden;
+    border-left: none;
   }
 
-  .header-left,
-  .header-right {
-    width: 100%;
-    justify-content: space-between;
+  .chat-users.visible {
+    width: 250px;
+    opacity: 1;
+  }
+
+  /* Scrollbar pour la liste des utilisateurs */
+  .chat-users::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .chat-users::-webkit-scrollbar-track {
+    background: #1e1e1e;
+  }
+
+  .chat-users::-webkit-scrollbar-thumb {
+    background: #6e6e6e;
+    border-radius: 4px;
+  }
+
+    .chat-users::-webkit-scrollbar-thumb:hover {
+      background: #8e8e8e;
+    }
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .chat-header {
+    padding: 15px 20px;
+    flex-wrap: wrap;
   }
 
   .header-left {
+    width: 100%;
     padding-left: 60px;
   }
 
-  .channel-name h2 {
-    font-size: 20px;
+    .header-left h2 {
+      font-size: 20px;
+    }
+
+  .header-right {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
 
-  .mute-controls {
-    flex-wrap: wrap;
+  /* Sur mobile, la liste des utilisateurs prend tout l'écran */
+  .chat-content.users-open {
+    position: relative;
+  }
+
+  .chat-users.visible {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 300px;
+    z-index: 100;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Overlay sombre quand la liste est ouverte */
+  .chat-content.users-open::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+    animation: fadeIn 0.3s ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Pour les très petits écrans */
+@media (max-width: 480px) {
+  .chat-header {
+    padding: 12px 15px;
+  }
+
+  .header-left {
+    padding-left: 55px;
+  }
+
+    .header-left h2 {
+      font-size: 18px;
+    }
+
+  .chat-users.visible {
+    max-width: 100%;
   }
 }
