@@ -43,8 +43,8 @@
   top: 80px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
-  color: white;
+  background: linear-gradient(135deg, #f56565 0%, #eb0f0f 100%);
+  color: #fff;
   padding: 16px 24px;
   border-radius: 12px;
   box-shadow: 0 6px 20px rgba(245, 101, 101, 0.4);

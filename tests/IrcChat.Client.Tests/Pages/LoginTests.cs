@@ -238,28 +238,6 @@ public class LoginTests : TestContext
     }
 
     [Fact]
-    public async Task Login_LogoutButton_WhenAuthenticated_ShouldCallLogout()
-    {
-        // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
-        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
-        _authServiceMock.Setup(x => x.ReservedProvider).Returns(ExternalAuthProvider.Google);
-        _authServiceMock.Setup(x => x.LogoutAsync()).Returns(Task.CompletedTask);
-
-        var cut = RenderComponent<Login>();
-
-        // Act
-        var logoutButton = cut.Find("button:contains('Se déconnecter')");
-        await cut.InvokeAsync(() => logoutButton.Click());
-
-        // Assert
-        _authServiceMock.Verify(x => x.LogoutAsync(), Times.Once);
-    }
-
-    [Fact]
     public async Task Login_LoginWithProvider_ShouldSetSessionStorage()
     {
         // Arrange

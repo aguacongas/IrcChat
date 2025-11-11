@@ -121,9 +121,9 @@ else
                                 Créer
                             </button>
                         </div>
-                        @if (!string.IsNullOrEmpty(channelMessage))
+                        @if (channelError)
                         {
-                            <div class="@(channelError ? "alert alert-error" : "alert alert-success")">
+                            <div class="alert alert-error)">
                                 @channelMessage
                             </div>
                         }

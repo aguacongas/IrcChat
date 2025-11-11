@@ -3,6 +3,9 @@ name: Pull Request Checks
 permissions:
   issues: write
   pull-requests: write
+  contents: read
+  actions: read  
+  checks: write
   
 on:
   pull_request:
@@ -100,6 +103,15 @@ jobs:
         echo "=== TestResults directory ==="
         ls -R ./TestResults || echo "TestResults not found"
 
+    - name: 🧪 Report test results to PR
+      uses: dorny/test-reporter@31a54ee7ebcacc03a09ea97a7e5465a47b84aea5
+      if: always()
+      with:
+        name: Unit Tests
+        path: ./TestResults/*.trx
+        reporter: dotnet-trx
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
     - name: 🔍 End SonarCloud analysis
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -112,21 +124,7 @@ jobs:
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       with:
-        scanMetadataReportFile: .sonarqube/out/.sonar/report-task.txt
-
-    - name: 📝 Comment PR with Test Results
-      uses: actions/github-script@v7
-      if: always()
-      with:
-        script: |
-          const fs = require('fs');
-          const testResults = '✅ Tous les tests sont passés';
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: `## 🧪 Test Results\n\n${testResults}`
-          });
+        scanMetadataReportFile: .sonarqube/out/.sonar/report-task.txt    
 
   check-migrations:
     name: Check Database Migrations
