@@ -73,7 +73,7 @@
 }
 
 .unread-count {
-  background: #f56565;
+  background: #eb0f0f;
   color: white;
   padding: 2px 6px;
   border-radius: 8px;
@@ -134,8 +134,8 @@
 }
 
   .conversation-list li.active .delete-conversation-btn:hover {
-    background: #e53e3e;
-    color: white;
+    background: #eb0f0f;
+    color: #fff;
   }
 
 .empty-state {

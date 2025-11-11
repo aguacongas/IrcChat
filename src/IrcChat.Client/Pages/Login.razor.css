@@ -109,7 +109,7 @@
   .status.unavailable {
     background: rgba(245, 101, 101, 0.2);
     border: 1px solid #f56565;
-    color: #f56565;
+    color: #f98585;
   }
 
 /* Status actions */
@@ -181,7 +181,7 @@
 .error-message {
   background: rgba(245, 101, 101, 0.2);
   border: 1px solid #f56565;
-  color: #f56565;
+  color: #f98585;
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 15px;
@@ -219,30 +219,6 @@
   font-size: 12px;
   font-weight: 600;
   margin-bottom: 15px;
-}
-
-/* Auth notices */
-.auth-required-notice,
-.auth-success-notice {
-  padding: 12px;
-  border-radius: 6px;
-  margin: 15px 0;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.auth-required-notice {
-  background: rgba(245, 101, 101, 0.1);
-  border: 1px solid #f56565;
-  color: #fc8181;
-}
-
-.auth-success-notice {
-  background: rgba(72, 187, 120, 0.1);
-  border: 1px solid #48bb78;
-  color: #68d391;
 }
 
 /* Loading */

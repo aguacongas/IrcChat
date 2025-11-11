@@ -52,7 +52,7 @@ else
                     @if (usernameStatus.IsReserved && usernameStatus.ReservedProvider.HasValue)
                     {
                         <div class="status reserved">
-                            <span>🔒</span> Ce pseudo est réservé avec @usernameStatus.ReservedProvider.Value
+                            <span>🔒</span> Ce pseudo est réservé
                         </div>
                         <button class="btn-primary" @onclick="() => LoginWithProvider(usernameStatus.ReservedProvider.Value)">
                             Se connecter
@@ -91,31 +91,15 @@ else
                     <p>Pseudo mémorisé: <strong>@Auth.Username</strong></p>
                     @if (Auth.IsReserved)
                     {
-                        <span class="badge-reserved">🔒 Réservé avec @Auth.ReservedProvider</span>
+                        <span class="badge-reserved">🔒 Réservé</span>
                         
                         @if (!Auth.IsAuthenticated)
-                        {
-                            <div class="auth-required-notice">
-                                <span>⚠️</span> Vous devez vous connecter pour utiliser ce pseudo réservé
-                            </div>
-                            <button class="btn-primary" @onclick="() => LoginWithProvider(Auth.ReservedProvider!.Value)">
-                                Se connecter avec @Auth.ReservedProvider
-                            </button>
+                        {                            
                             <button class="btn-link" @onclick="UseAnotherUsername">
                                 Utiliser un autre pseudo
                             </button>
-                        }
-                        else
-                        {
-                            <div class="auth-success-notice">
-                                <span>✅</span> Connecté en tant que @Auth.Email
-                            </div>
-                            <button class="btn-secondary" @onclick="Logout">
-                                Se déconnecter
-                            </button>
-                        }
+                        }                        
                     }
-                    @* Le bloc else pour l'utilisateur invité (avec le bouton "Oublier ce pseudo") a été supprimé. *@
                 </div>
             }
         </div>

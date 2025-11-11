@@ -263,24 +263,7 @@
     .admin-link a:hover {
       background: #4e4e4e;
     }
-/* Logout button */
-.logout-btn {
-  padding: 6px 12px !important;
-  background: #f56565 !important;
-  color: #fff !important;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: bold;
-  margin: 0 !important;
-  width: auto !important;
-  transition: background 0.2s;
-}
 
-  .logout-btn:hover {
-    background: #e53e3e !important;
-  }
 /* Gestion du responsive */
 @media (max-width: 768px) {
   .sidebar {

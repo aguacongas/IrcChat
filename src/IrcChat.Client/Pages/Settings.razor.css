@@ -298,12 +298,6 @@
   font-size: 14px;
 }
 
-.alert-success {
-  background: rgba(72, 187, 120, 0.2);
-  border: 1px solid #48bb78;
-  color: #68d391;
-}
-
 .alert-error {
   background: rgba(245, 101, 101, 0.2);
   border: 1px solid #f56565;
@@ -390,7 +384,6 @@
   }
 
 .modal-warning {
-  color: #f56565;
   font-weight: 600;
   padding: 12px;
   background: rgba(245, 101, 101, 0.1);
