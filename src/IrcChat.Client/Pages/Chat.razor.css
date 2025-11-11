@@ -69,7 +69,7 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .mute-notification {
     max-width: 90%;
     font-size: 13px;

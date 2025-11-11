@@ -60,9 +60,12 @@ else
                   Users="@users"
                   IsMuted="@isCurrentChannelMuted"
                   CanManage="@CanManageCurrentChannel()"
+                  UsersListOpen="@usersListOpen"
                   OnMessageSent="SendMessage"
                   OnUserClicked="HandleUserClicked"
-                  OnMuteStatusChanged="HandleMuteStatusChanged" />
+                  OnMuteStatusChanged="HandleMuteStatusChanged"
+                  OnChannelDeleted="HandleChannelDeleted"
+                  OnUsersListToggle="HandleUsersListToggle" />
     </div>
 
     @if (showPrivateChat && !string.IsNullOrEmpty(selectedPrivateUser))
@@ -95,6 +98,7 @@ else
     private bool isCurrentChannelMuted = false;
     private string muteNotification = "";
     private bool sidebarOpen = false;
+    private bool usersListOpen = false;
     private int totalUnreadCount => privateConversations.Sum(c => c.UnreadCount);
 
     // Messages privés
@@ -116,6 +120,9 @@ else
 
         currentUsername = Auth.Username!;
         avatarUrl = Auth.AvatarUrl;
+
+        // Déterminer l'état initial de la liste des utilisateurs selon la taille d'écran
+        usersListOpen = !await DeviceDetector.IsMobileDeviceAsync();
 
         if (!string.IsNullOrEmpty(currentUsername))
         {
@@ -156,7 +163,7 @@ else
             var hubConnectionBuilder = new HubConnectionBuilder()
                 .WithUrl(hubUrl, options =>
                 {
-                    options.AccessTokenProvider = () => Task.FromResult(Auth.Token);                    
+                    options.AccessTokenProvider = () => Task.FromResult(Auth.Token);
                 })
                 .WithAutomaticReconnect();
             await ChatService.InitializeAsync(hubConnectionBuilder);
@@ -168,8 +175,9 @@ else
 
             StateHasChanged();
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.LogError(ex, "Erreur lors de l'initialisation de SignalR");
             isConnected = false;
         }
     }
@@ -343,7 +351,14 @@ else
         // Charger le statut mute
         var channelInfo = channels.FirstOrDefault(c => c.Name == channel);
         isCurrentChannelMuted = channelInfo?.IsMuted ?? false;
-        sidebarOpen = false;        
+
+        // Fermer la sidebar sur mobile
+        sidebarOpen = false;
+
+        // Ouvrir la liste des utilisateurs sur desktop, fermer sur mobile
+        usersListOpen = !await DeviceDetector.IsMobileDeviceAsync();
+
+        StateHasChanged();
     }
 
     private async Task LoadChannels()
@@ -362,7 +377,6 @@ else
         }
     }
 
-
     private async Task LoadMessages()
     {
         try
@@ -378,7 +392,6 @@ else
             Logger.LogError(ex, "Erreur lors du chargement des messages pour le canal {Channel}", currentChannel);
         }
     }
-
 
     private async Task SendMessage(string content)
     {
@@ -401,7 +414,6 @@ else
             }
         }
     }
-
 
     private async Task HandleUserClicked(string username)
     {
@@ -502,6 +514,18 @@ else
         return isCreator || isAdmin;
     }
 
+    private void HandleSidebarToggle(bool newState)
+    {
+        sidebarOpen = newState;
+        StateHasChanged();
+    }
+
+    private void HandleUsersListToggle(bool newState)
+    {
+        usersListOpen = newState;
+        StateHasChanged();
+    }
+
     public async ValueTask DisposeAsync()
     {
         ChatService.OnMessageReceived -= OnMessageReceived;
@@ -520,10 +544,7 @@ else
         PrivateMessageService.OnConversationDeleted -= OnConversationDeleted;
 
         await ChatService.DisposeAsync();
-    }
 
-    private void HandleSidebarToggle(bool args)
-    {
-        sidebarOpen = args;
+        GC.SuppressFinalize(this);
     }
 }

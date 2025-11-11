@@ -6,7 +6,7 @@
  */
 export function isMobileDevice() {
   // Vérifier la largeur de l'écran
-  const isMobileWidth = globalThis.innerWidth <= 768;
+  const isMobileWidth = globalThis.innerWidth <= 1024;
 
   // Vérifier le user agent
   const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);

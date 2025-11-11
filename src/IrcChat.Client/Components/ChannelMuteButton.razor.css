@@ -91,3 +91,9 @@
     transform: translateY(0);
   }
 }
+
+@media (max-width: 1024px) {
+  .mute-btn span:not(.spinner-small) {
+    display: none;
+  }
+}

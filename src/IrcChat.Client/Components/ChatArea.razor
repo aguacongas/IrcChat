@@ -19,6 +19,9 @@
                 </span>
             </div>
             <div class="header-right">
+                <UsersListToggleButton IsOpen="@UsersListOpen"
+                                       UserCount="@(Users?.Count ?? 0)"
+                                       OnToggle="OnUsersListToggle" />
                 <ChannelMuteButton ChannelName="@CurrentChannel"
                                    IsMuted="@IsMuted"
                                    CanManage="@CanManage"
@@ -29,7 +32,7 @@
             </div>
         </div>
 
-        <div class="chat-content">
+        <div class="chat-content @(UsersListOpen ? "users-open" : "users-closed")">
             <div class="chat-messages">
                 <MessageList Messages="Messages" CurrentUsername="@Username" />
 
@@ -37,7 +40,7 @@
                               OnSendMessage="OnMessageSent" />
             </div>
 
-            <div class="chat-users">
+            <div class="chat-users @(UsersListOpen ? "visible" : "hidden")">
                 <ChannelUsersList CurrentChannel="@CurrentChannel"
                                   Username="@Username"
                                   Users="@Users"
@@ -70,6 +73,9 @@
     public bool CanManage { get; set; }
 
     [Parameter]
+    public bool UsersListOpen { get; set; }
+
+    [Parameter]
     public EventCallback<string> OnMessageSent { get; set; }
 
     [Parameter]
@@ -80,4 +86,7 @@
 
     [Parameter]
     public EventCallback<string> OnChannelDeleted { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnUsersListToggle { get; set; }
 }
