@@ -209,13 +209,7 @@ else
         errorMessage = "";
         StateHasChanged();
     }
-
-    private async Task Logout()
-    {
-        await Auth.LogoutAsync();
-        StateHasChanged();
-    }
-
+    
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
         if (e.Key == "Enter" && usernameStatus?.Available == true)
