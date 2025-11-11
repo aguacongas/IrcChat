@@ -235,7 +235,7 @@ public class LoginTests : TestContext
         _authServiceMock.Verify(
             x => x.SetUsernameAsync("TestUser", false, null),
             Times.Once);
-    }    
+    }
 
     [Fact]
     public async Task Login_LoginWithProvider_ShouldSetSessionStorage()
