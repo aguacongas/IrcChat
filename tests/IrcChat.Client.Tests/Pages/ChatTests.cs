@@ -2079,6 +2079,9 @@ public class ChatTests : TestContext
         _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
+        _chatServiceMock.Setup(x => x.LeaveChannel(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
         _privateMessageServiceMock
             .Setup(x => x.GetConversationsAsync("TestUser"))
             .ReturnsAsync(
@@ -2101,15 +2104,17 @@ public class ChatTests : TestContext
             await Task.Delay(100);
         }
 
-        Assert.Contains("private-chat-window", cut.Markup);
+        // Vérifier que le chat privé est affiché (avec l'icône 💬 et le nom de l'utilisateur)
+        Assert.Contains("💬", cut.Markup);
+        Assert.Contains("Friend", cut.Markup);
 
-        // Act - Fermer le chat privé
-        var closeButton = cut.Find(".private-chat-window .close-btn");
+        // Act - Fermer le chat privé via le bouton close dans le header
+        var closeButton = cut.Find(".close-btn");
         await cut.InvokeAsync(() => closeButton.Click());
         await Task.Delay(100);
 
-        // Assert
-        Assert.DoesNotContain("private-chat-window", cut.Markup);
+        // Assert - On devrait revenir à l'écran de bienvenue
+        Assert.Contains("Bienvenue", cut.Markup);
     }
 
     [Fact]
@@ -2150,9 +2155,9 @@ public class ChatTests : TestContext
         _authServiceMock.Setup(x => x.Username).Returns("TestUser");
 
         var channels = new List<Channel>
-        {
-            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
-        };
+    {
+        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+    };
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
@@ -2177,16 +2182,9 @@ public class ChatTests : TestContext
         await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
         await Task.Delay(100);
 
-        // Vérifier l'état initial (ouvert sur desktop par défaut)
-        Assert.Contains("users-open", cut.Markup);
-
-        // Act - Cliquer sur le toggle
-        var toggleButton = cut.Find(".users-toggle-btn");
-        await cut.InvokeAsync(() => toggleButton.Click());
-        await Task.Delay(100);
-
-        // Assert - L'état devrait avoir changé
-        Assert.Contains("users-closed", cut.Markup);
+        // Assert - La liste d'utilisateurs devrait toujours être visible pour les salons publics
+        Assert.Contains("chat-users", cut.Markup);
+        Assert.Contains("users-section", cut.Markup);
     }
 
     [Fact]
@@ -2245,9 +2243,9 @@ public class ChatTests : TestContext
         _authServiceMock.Setup(x => x.Username).Returns("TestUser");
 
         var channels = new List<Channel>
-        {
-            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
-        };
+    {
+        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+    };
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
@@ -2273,9 +2271,11 @@ public class ChatTests : TestContext
         await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
         await Task.Delay(100);
 
-        // Assert - Sur desktop, devrait être ouvert par défaut
-        Assert.Contains("users-open", cut.Markup);
+        // Assert - Sur desktop, la liste d'utilisateurs devrait être visible pour les salons publics
+        Assert.Contains("chat-users", cut.Markup);
+        Assert.Contains("users-section", cut.Markup);
     }
+
 
     [Fact]
     public async Task Chat_SwitchChannel_OnMobile_ShouldCloseUsersList()
@@ -2316,24 +2316,22 @@ public class ChatTests : TestContext
         var cut = RenderComponent<Chat>();
         await Task.Delay(200);
 
-        // Rejoindre le premier canal et ouvrir la liste
+        // Rejoindre le premier canal
         var channelItems = cut.FindAll("ul.channel-list > li[blazor\\:onclick]");
         await cut.InvokeAsync(() => channelItems[0].Click());
         await Task.Delay(100);
 
-        var toggleButton = cut.Find(".users-toggle-btn");
-        await cut.InvokeAsync(() => toggleButton.Click());
-        await Task.Delay(100);
-
-        Assert.Contains("users-open", cut.Markup);
+        // Sur mobile, la liste d'utilisateurs est toujours rendue (pas de toggle dans la nouvelle version)
+        // On vérifie simplement qu'elle est présente
+        Assert.Contains("chat-users", cut.Markup);
 
         // Act - Changer de canal
         channelItems = cut.FindAll("ul.channel-list > li[blazor\\:onclick]");
         await cut.InvokeAsync(() => channelItems[1].Click());
         await Task.Delay(100);
 
-        // Assert - La liste devrait être fermée
-        Assert.Contains("users-closed", cut.Markup);
+        // Assert - La liste devrait toujours être présente
+        Assert.Contains("chat-users", cut.Markup);
     }
 
     [Fact]
@@ -2348,10 +2346,10 @@ public class ChatTests : TestContext
         _authServiceMock.Setup(x => x.Username).Returns("TestUser");
 
         var channels = new List<Channel>
-        {
-            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
-            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
-        };
+    {
+        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
+        new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+    };
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
@@ -2380,15 +2378,16 @@ public class ChatTests : TestContext
         await cut.InvokeAsync(() => channelItems[0].Click());
         await Task.Delay(100);
 
-        Assert.Contains("users-open", cut.Markup);
+        // Vérifier que la liste des utilisateurs est présente (chat-users)
+        Assert.Contains("chat-users", cut.Markup);
 
         // Act - Changer de canal
         channelItems = cut.FindAll("ul.channel-list > li[blazor\\:onclick]");
         await cut.InvokeAsync(() => channelItems[1].Click());
         await Task.Delay(100);
 
-        // Assert - La liste devrait rester ouverte sur desktop
-        Assert.Contains("users-open", cut.Markup);
+        // Assert - La liste des utilisateurs devrait toujours être présente
+        Assert.Contains("chat-users", cut.Markup);
     }
 
     [Fact]
@@ -2400,9 +2399,9 @@ public class ChatTests : TestContext
         _authServiceMock.Setup(x => x.Username).Returns("TestUser");
 
         var channels = new List<Channel>
-        {
-            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
-        };
+    {
+        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+    };
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
@@ -2427,22 +2426,11 @@ public class ChatTests : TestContext
         await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
         await Task.Delay(100);
 
-        var toggleButton = cut.Find(".users-toggle-btn");
-
-        // Act & Assert - Premier clic (fermer)
-        await cut.InvokeAsync(() => toggleButton.Click());
-        await Task.Delay(100);
-        Assert.Contains("users-closed", cut.Markup);
-
-        // Act & Assert - Deuxième clic (ouvrir)
-        await cut.InvokeAsync(() => toggleButton.Click());
-        await Task.Delay(100);
-        Assert.Contains("users-open", cut.Markup);
-
-        // Act & Assert - Troisième clic (fermer)
-        await cut.InvokeAsync(() => toggleButton.Click());
-        await Task.Delay(100);
-        Assert.Contains("users-closed", cut.Markup);
+        // Dans la nouvelle version, la liste des utilisateurs est toujours affichée pour les salons publics
+        // Il n'y a plus de bouton toggle pour la liste d'utilisateurs
+        // Ce test n'est plus applicable, on vérifie juste que la liste est présente
+        Assert.Contains("chat-users", cut.Markup);
+        Assert.Contains("users-section", cut.Markup);
     }
 
     [Fact]
