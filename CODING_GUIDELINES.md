@@ -466,6 +466,275 @@ var processed = users.Select(u =>
 });
 ```
 
+## Conventions CSS à respecter
+
+### Contraste des couleurs (WCAG AA)
+
+⚠️ **CRITIQUE : Toujours respecter les ratios de contraste WCAG pour l'accessibilité**
+
+Les ratios minimum requis sont :
+- **4.5:1** pour le texte normal (< 18pt ou < 14pt gras)
+- **3:1** pour le texte large (≥ 18pt ou ≥ 14pt gras) et les composants UI
+
+```css
+/* ❌ MAUVAIS - Contraste insuffisant */
+.button {
+  background: #f56565;
+  color: #fff; /* Ratio: 3.16:1 - INSUFFISANT pour texte normal */
+}
+
+.badge {
+  background: #6e6e6e;
+  color: #fff; /* Ratio: 4.36:1 - LIMITE, préférer mieux */
+}
+
+.text-muted {
+  color: #888; /* Sur fond #1e1e1e - Ratio: 3.89:1 - INSUFFISANT */
+}
+
+/* ✅ BON - Contraste suffisant */
+.button {
+  background: #f56565;
+  color: #000; /* Ratio: 10.35:1 - EXCELLENT */
+}
+
+.badge {
+  background: #6e6e6e;
+  color: #000; /* Ratio: 9.78:1 - EXCELLENT */
+}
+
+.text-muted {
+  color: #aaa; /* Sur fond #1e1e1e - Ratio: 6.89:1 - BON */
+}
+
+/* ✅ BON - Nuances pour meilleur contraste sur fond sombre */
+.text-primary {
+  color: #9cc5ff; /* Au lieu de #8ab4f8 - Meilleur contraste */
+}
+
+.text-success {
+  color: #68d391; /* Au lieu de #48bb78 - Meilleur contraste */
+}
+
+.text-danger {
+  color: #fc8181; /* Au lieu de #f56565 - Meilleur contraste */
+}
+
+/* ✅ BON - Indicateurs d'état avec bon contraste */
+.status-dot.online {
+  background: #68d391; /* Au lieu de #48bb78 */
+}
+
+.status.connected {
+  color: #68d391; /* Au lieu de #48bb78 */
+}
+
+.status.disconnected {
+  color: #fc8181; /* Au lieu de #f56565 */
+}
+```
+
+**Outil pour vérifier les contrastes :**
+- [WebAIM Contrast Checker](https://webaim.org/resources/contrastchecker/)
+- [Colour Contrast Analyser](https://www.tpgi.com/color-contrast-checker/)
+- DevTools Chrome/Firefox (intégré dans l'inspecteur)
+
+**Règles à suivre :**
+
+1. **Toujours tester** les nouvelles couleurs avec un outil de vérification de contraste
+2. **Privilégier** `color: #000` (noir) sur les fonds colorés clairs
+3. **Utiliser** les variantes plus claires (#9cc5ff au lieu de #8ab4f8) pour le texte sur fond sombre
+4. **Éviter** le blanc pur (#fff) sur les fonds colorés sauf si le ratio est > 4.5:1
+5. **Documenter** les choix de couleurs dans les commentaires CSS si nécessaire
+
+**Cas particuliers :**
+
+```css
+/* ✅ Gradients - S'assurer que le texte a un bon contraste sur TOUTES les parties */
+.gradient-button {
+  background: linear-gradient(135deg, #8ab4f8 0%, #48bb78 100%);
+  color: #000; /* Noir pour garantir le contraste sur tout le gradient */
+}
+
+/* ✅ Badges avec indicateur - Priorité au contraste du texte principal */
+.badge {
+  background: #f56565;
+  color: #000; /* Texte principal en noir */
+}
+
+.badge-icon {
+  color: #fff; /* Icône peut être blanche si le badge est assez clair */
+  font-weight: bold;
+}
+
+/* ✅ États hover - Maintenir le même niveau de contraste */
+.button {
+  background: #8ab4f8;
+  color: #000;
+}
+
+.button:hover {
+  background: #9cc5ff; /* Plus clair mais garde color: #000 */
+  color: #000;
+}
+```
+
+## Conventions JavaScript à respecter
+
+### Utilisation de globalThis
+
+⚠️ **TOUJOURS utiliser `globalThis` au lieu de `window`, `self` ou `global`**
+
+```javascript
+// ❌ MAUVAIS - Utilise window (spécifique au navigateur)
+export function isMobileDevice() {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    
+    if (window.innerWidth <= 768) {
+        return true;
+    }
+    
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        return true;
+    }
+    
+    return false;
+}
+
+// ✅ BON - Utilise globalThis (portable, standard ES2020)
+export function isMobileDevice() {
+    const userAgent = navigator.userAgent || navigator.vendor || globalThis.opera;
+    
+    if (globalThis.innerWidth <= 768) {
+        return true;
+    }
+    
+    if ('ontouchstart' in globalThis || navigator.maxTouchPoints > 0) {
+        return true;
+    }
+    
+    return false;
+}
+```
+
+**Pourquoi `globalThis` ?**
+
+1. **Portabilité** : Fonctionne dans tous les environnements JavaScript
+   - Navigateur : `globalThis === window`
+   - Node.js : `globalThis === global`
+   - Web Workers : `globalThis === self`
+   - Service Workers : `globalThis === self`
+
+2. **Standard ES2020** : Recommandation officielle ECMAScript
+
+3. **Cohérence** : Un seul nom pour tous les environnements
+
+4. **Future-proof** : Compatible avec les futurs environnements JavaScript
+
+**Exemples d'utilisation :**
+
+```javascript
+// ✅ Accès aux propriétés globales
+const width = globalThis.innerWidth;
+const height = globalThis.innerHeight;
+const location = globalThis.location;
+
+// ✅ Vérification de disponibilité d'API
+if ('serviceWorker' in globalThis.navigator) {
+    // Service Worker disponible
+}
+
+if ('IntersectionObserver' in globalThis) {
+    // Intersection Observer disponible
+}
+
+// ✅ Timers
+globalThis.setTimeout(() => {
+    console.log('Hello');
+}, 1000);
+
+// ✅ Événements
+globalThis.addEventListener('resize', handleResize);
+
+// ✅ Variables globales (à éviter mais si nécessaire)
+globalThis.myGlobalVar = 'value';
+
+// ✅ Dans des modules
+export function getWindowInfo() {
+    return {
+        width: globalThis.innerWidth,
+        height: globalThis.innerHeight,
+        userAgent: globalThis.navigator.userAgent
+    };
+}
+```
+
+**Cas particuliers :**
+
+```javascript
+// ✅ Code qui doit être portable entre navigateur et Node.js
+export function isNode() {
+    return typeof globalThis.process !== 'undefined' 
+        && globalThis.process.versions 
+        && globalThis.process.versions.node;
+}
+
+export function isBrowser() {
+    return typeof globalThis.window !== 'undefined' 
+        && typeof globalThis.document !== 'undefined';
+}
+
+// ✅ Polyfill pour anciens navigateurs (si nécessaire)
+if (typeof globalThis === 'undefined') {
+    // Ne devrait jamais arriver avec les navigateurs modernes
+    (function() {
+        if (typeof self !== 'undefined') {
+            self.globalThis = self;
+        } else if (typeof window !== 'undefined') {
+            window.globalThis = window;
+        } else if (typeof global !== 'undefined') {
+            global.globalThis = global;
+        }
+    })();
+}
+```
+
+**À NE PAS faire :**
+
+```javascript
+// ❌ N'utilisez JAMAIS ces patterns obsolètes
+var global = window || self || global;  // Obsolète
+var root = typeof window !== 'undefined' ? window : global;  // Complexe et inutile
+
+// ❌ N'accédez pas directement à window sauf si strictement nécessaire
+window.location.href = '/page';  // Éviter
+
+// ✅ Utilisez globalThis à la place
+globalThis.location.href = '/page';
+```
+
+**Exceptions acceptables :**
+
+Les seuls cas où `window` est acceptable :
+- Détection spécifique du navigateur (vs Node.js)
+- APIs strictement liées au DOM (déjà dans le contexte du navigateur)
+
+```javascript
+// ✅ Acceptable - Détection d'environnement
+if (typeof window !== 'undefined') {
+    // Code spécifique navigateur
+    // Ici on peut utiliser window.document, etc.
+}
+
+// ✅ Acceptable - Dans un contexte DOM explicite
+function attachToWindow(element) {
+    // On sait qu'on est dans un navigateur
+    window.addEventListener('scroll', () => {
+        // ...
+    });
+}
+```
+
 ## Architecture
 
 - **Clean separation** : API, Client, Shared projects

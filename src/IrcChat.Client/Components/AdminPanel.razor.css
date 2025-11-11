@@ -74,9 +74,9 @@
 
 .close-btn {
   padding: 10px 20px;
-  background: #f56565;
+  background: #eb0f0f;
   border: none;
-  color: #000;
+  color: #fff;
   border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
@@ -248,8 +248,8 @@
     }
 
   .btn-action.demote {
-    background: #f56565;
-    color: #000;
+    background: #eb0f0f;
+    color: #fff;
   }
 
     .btn-action.demote:hover {

@@ -122,7 +122,7 @@
 }
 
 .btn-mute {
-  background: #f56565;
+  background: #eb0f0f;
   color: #fff;
 }
 
@@ -147,7 +147,7 @@
 }
 
   .btn-delete-channel:hover {
-    background: #f56565;
+    background: #eb0f0f;
     transform: translateY(-1px);
   }
 
