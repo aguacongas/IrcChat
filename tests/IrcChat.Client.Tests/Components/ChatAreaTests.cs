@@ -92,10 +92,10 @@ public class ChatAreaTests : TestContext
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
             .Add(p => p.UsersListOpen, true)
-            .Add(p => p.Users, new List<User>
-            {
+            .Add(p => p.Users,
+            [
                 new() { Username = "User1", ConnectedAt = DateTime.UtcNow }
-            }));
+            ]));
 
         // Assert
         Assert.Contains("users-open", cut.Markup);
@@ -129,11 +129,11 @@ public class ChatAreaTests : TestContext
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
             .Add(p => p.UsersListOpen, false)
-            .Add(p => p.Users, new List<User>
-            {
+            .Add(p => p.Users,
+            [
                 new() { Username = "User1", ConnectedAt = DateTime.UtcNow },
                 new() { Username = "User2", ConnectedAt = DateTime.UtcNow }
-            }));
+            ]));
 
         // Assert
         Assert.Contains("users-toggle-btn", cut.Markup);
@@ -264,10 +264,10 @@ public class ChatAreaTests : TestContext
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
             .Add(p => p.UsersListOpen, false)
-            .Add(p => p.Users, new List<User>
-            {
+            .Add(p => p.Users,
+            [
                 new() { Username = "User1", ConnectedAt = DateTime.UtcNow }
-            })
+            ])
             .Add(p => p.OnUsersListToggle, state =>
             {
                 callbackInvoked = true;
@@ -332,7 +332,7 @@ public class ChatAreaTests : TestContext
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
-            .Add(p => p.Messages, new List<Message>())
+            .Add(p => p.Messages, [])
             .Add(p => p.UsersListOpen, false));
 
         // Assert
@@ -347,7 +347,7 @@ public class ChatAreaTests : TestContext
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
-            .Add(p => p.Users, new List<User>())
+            .Add(p => p.Users, [])
             .Add(p => p.UsersListOpen, false));
 
         // Assert
@@ -394,10 +394,10 @@ public class ChatAreaTests : TestContext
             .Add(p => p.IsConnected, true)
             .Add(p => p.CanManage, true)
             .Add(p => p.UsersListOpen, false)
-            .Add(p => p.Users, new List<User>
-            {
+            .Add(p => p.Users,
+            [
                 new() { Username = "User1", ConnectedAt = DateTime.UtcNow }
-            }));
+            ]));
 
         // Assert
         var headerRight = cut.Find(".header-right");
