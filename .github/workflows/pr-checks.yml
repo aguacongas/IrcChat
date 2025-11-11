@@ -100,6 +100,15 @@ jobs:
         echo "=== TestResults directory ==="
         ls -R ./TestResults || echo "TestResults not found"
 
+    - name: 🧪 Report test results to PR
+      uses: dorny/test-reporter@31a54ee7ebcacc03a09ea97a7e5465a47b84aea5
+      if: always()
+      with:
+        name: Unit Tests
+        path: ./TestResults/*.trx
+        reporter: dotnet-trx
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
     - name: 🔍 End SonarCloud analysis
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -112,17 +121,7 @@ jobs:
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       with:
-        scanMetadataReportFile: .sonarqube/out/.sonar/report-task.txt
-
-    - name: 🧪 Report test results to PR
-      uses: dorny/test-reporter@31a54ee7ebcacc03a09ea97a7e5465a47b84aea5
-      if: always()
-      with:
-        name: Unit Tests
-        path: ./TestResults/*.trx
-        reporter: dotnet-trx
-        token: ${{ secrets.GITHUB_TOKEN }}
-
+        scanMetadataReportFile: .sonarqube/out/.sonar/report-task.txt    
 
   check-migrations:
     name: Check Database Migrations
