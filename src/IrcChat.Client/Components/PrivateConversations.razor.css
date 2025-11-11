@@ -18,8 +18,8 @@
   }
 
 .unread-badge {
-  background: #f56565;
-  color: white;
+  background: #eb0f0f;
+  color: #fff;
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 12px;
@@ -125,8 +125,8 @@
 }
 
 .delete-conversation-btn:hover {
-  background: #f56565;
-  color: white;
+  background: #eb0f0f;
+  color: #fff;
 }
 
 .conversation-list li.active .delete-conversation-btn {

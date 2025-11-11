@@ -141,7 +141,7 @@ code {
 
   .badge.verified {
     background: #48bb78;
-    color: #fff;
+    color: #000;
   }
 
   .badge.guest {
