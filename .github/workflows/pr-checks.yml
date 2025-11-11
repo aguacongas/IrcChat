@@ -115,7 +115,7 @@ jobs:
         scanMetadataReportFile: .sonarqube/out/.sonar/report-task.txt
 
     - name: 🧪 Report test results to PR
-      uses: dorny/test-reporter@v1
+      uses: dorny/test-reporter@31a54ee7ebcacc03a09ea97a7e5465a47b84aea5
       if: always()
       with:
         name: Unit Tests
