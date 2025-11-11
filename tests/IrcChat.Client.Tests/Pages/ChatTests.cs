@@ -2155,9 +2155,9 @@ public class ChatTests : TestContext
         _authServiceMock.Setup(x => x.Username).Returns("TestUser");
 
         var channels = new List<Channel>
-    {
-        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
-    };
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
@@ -2243,10 +2243,10 @@ public class ChatTests : TestContext
         _authServiceMock.Setup(x => x.Username).Returns("TestUser");
 
         var channels = new List<Channel>
-    {
-        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
-    };
-
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+  
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
 
@@ -2346,10 +2346,10 @@ public class ChatTests : TestContext
         _authServiceMock.Setup(x => x.Username).Returns("TestUser");
 
         var channels = new List<Channel>
-    {
-        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
-        new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
-    };
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
+            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
@@ -2399,9 +2399,9 @@ public class ChatTests : TestContext
         _authServiceMock.Setup(x => x.Username).Returns("TestUser");
 
         var channels = new List<Channel>
-    {
-        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
-    };
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));

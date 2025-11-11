@@ -114,6 +114,9 @@ else
         currentUsername = Auth.Username!;
         avatarUrl = Auth.AvatarUrl;
 
+        // Déterminer l'état initial de la liste des utilisateurs selon la taille d'écran
+        usersListOpen = !await DeviceDetector.IsMobileDeviceAsync();
+
         if (!string.IsNullOrEmpty(currentUsername))
         {
             if (Auth.IsAuthenticated && !string.IsNullOrEmpty(Auth.Token))
@@ -164,8 +167,9 @@ else
 
             StateHasChanged();
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.LogError(ex, "Erreur lors de l'initialisation de SignalR");
             isConnected = false;
         }
     }
@@ -341,7 +345,14 @@ else
 
         var channelInfo = channels.FirstOrDefault(c => c.Name == channel);
         isCurrentChannelMuted = channelInfo?.IsMuted ?? false;
+
+        // Fermer la sidebar sur mobile
         sidebarOpen = false;
+
+        // Ouvrir la liste des utilisateurs sur desktop, fermer sur mobile
+        usersListOpen = !await DeviceDetector.IsMobileDeviceAsync();
+
+        StateHasChanged();
     }
 
     private async Task LoadChannels()

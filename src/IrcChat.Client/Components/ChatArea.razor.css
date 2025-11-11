@@ -145,6 +145,36 @@
   font-size: 14px;
 }
 
+  .chat-users.hidden {
+    width: 0;
+    opacity: 0;
+    overflow: hidden;
+    border-left: none;
+  }
+
+  .chat-users.visible {
+    width: 250px;
+    opacity: 1;
+  }
+
+  /* Scrollbar pour la liste des utilisateurs */
+  .chat-users::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .chat-users::-webkit-scrollbar-track {
+    background: #1e1e1e;
+  }
+
+  .chat-users::-webkit-scrollbar-thumb {
+    background: #6e6e6e;
+    border-radius: 4px;
+  }
+
+    .chat-users::-webkit-scrollbar-thumb:hover {
+      background: #8e8e8e;
+    }
+
 /* Responsive */
 @media (max-width: 1024px) {
   .chat-header {
