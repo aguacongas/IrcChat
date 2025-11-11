@@ -132,6 +132,19 @@
       background: #8e8e8e;
     }
 
+.close-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #6e6e6e;
+  border: none;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .chat-header {
@@ -153,7 +166,6 @@
     justify-content: flex-end;
     flex-wrap: wrap;
   }
-
   /* Sur mobile, la liste des utilisateurs prend tout l'écran */
   .chat-content.users-open {
     position: relative;
@@ -169,7 +181,6 @@
     z-index: 100;
     box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
   }
-
   /* Overlay sombre quand la liste est ouverte */
   .chat-content.users-open::before {
     content: '';
@@ -182,6 +193,10 @@
     z-index: 99;
     animation: fadeIn 0.3s ease-out;
   }
+
+  .close-btn span {
+    display: none;
+  }
 }
 
 @keyframes fadeIn {
@@ -193,7 +208,6 @@
     opacity: 1;
   }
 }
-
 /* Pour les très petits écrans */
 @media (max-width: 480px) {
   .chat-header {

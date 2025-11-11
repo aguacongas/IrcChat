@@ -46,6 +46,7 @@ else
                  Channels="@channels"
                  Users="@users"
                  PrivateConversations="@privateConversations"
+                 SelectedPrivateUser="@selectedPrivateUser"
                  OnChannelSelected="SwitchChannel"
                  OnUserClicked="OpenPrivateChat"
                  OnPrivateConversationSelected="OpenPrivateChat"
@@ -54,29 +55,21 @@ else
                  OnChannelDeleted="HandleChannelDeleted" />
 
         <ChatArea Username="@currentUsername"
-                  CurrentChannel="@currentChannel"
+                  CurrentChannel="@GetCurrentChannelOrUsername()"
                   IsConnected="@isConnected"
-                  Messages="@messages"
-                  Users="@users"
+                  Messages="@GetCurrentMessages()"
+                  Users="@(isPrivateConversation ? null : users)"
                   IsMuted="@isCurrentChannelMuted"
                   CanManage="@CanManageCurrentChannel()"
                   UsersListOpen="@usersListOpen"
-                  OnMessageSent="SendMessage"
+                  IsPrivateConversation="@isPrivateConversation"
+                  OnMessageSent="@(isPrivateConversation ? SendPrivateMessage : SendMessage)"
                   OnUserClicked="HandleUserClicked"
                   OnMuteStatusChanged="HandleMuteStatusChanged"
+                  OnClosePrivateConversation="ClosePrivateChat"
                   OnChannelDeleted="HandleChannelDeleted"
                   OnUsersListToggle="HandleUsersListToggle" />
     </div>
-
-    @if (showPrivateChat && !string.IsNullOrEmpty(selectedPrivateUser))
-    {
-        <PrivateChatWindow CurrentUsername="@currentUsername"
-                           OtherUsername="@selectedPrivateUser"
-                           Messages="@privateMessages"
-                           IsConnected="@isConnected"
-                           OnSendMessage="SendPrivateMessage"
-                           OnClose="ClosePrivateChat" />
-    }
 
     @if (!string.IsNullOrEmpty(muteNotification))
     {
@@ -105,7 +98,7 @@ else
     private List<PrivateConversation> privateConversations = new();
     private List<PrivateMessage> privateMessages = new();
     private string? selectedPrivateUser = null;
-    private bool showPrivateChat = false;
+    private bool isPrivateConversation = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -120,9 +113,6 @@ else
 
         currentUsername = Auth.Username!;
         avatarUrl = Auth.AvatarUrl;
-
-        // Déterminer l'état initial de la liste des utilisateurs selon la taille d'écran
-        usersListOpen = !await DeviceDetector.IsMobileDeviceAsync();
 
         if (!string.IsNullOrEmpty(currentUsername))
         {
@@ -169,15 +159,13 @@ else
             await ChatService.InitializeAsync(hubConnectionBuilder);
             isConnected = true;
 
-            // Écouter les changements de statut mute
             ChatService.OnChannelMuteStatusChanged += OnChannelMuteStatusChanged;
             ChatService.OnMessageBlocked += OnMessageBlocked;
 
             StateHasChanged();
         }
-        catch (Exception ex)
+        catch
         {
-            Logger.LogError(ex, "Erreur lors de l'initialisation de SignalR");
             isConnected = false;
         }
     }
@@ -185,7 +173,7 @@ else
     // Handlers pour canaux publics
     private void OnMessageReceived(Message message)
     {
-        if (message.Channel == currentChannel)
+        if (message.Channel == currentChannel && !isPrivateConversation)
         {
             messages.Add(message);
             InvokeAsync(StateHasChanged);
@@ -194,7 +182,7 @@ else
 
     private void OnUserJoined(string user, string channel)
     {
-        if (channel == currentChannel)
+        if (channel == currentChannel && !isPrivateConversation)
         {
             InvokeAsync(StateHasChanged);
         }
@@ -202,7 +190,7 @@ else
 
     private void OnUserLeft(string user, string channel)
     {
-        if (channel == currentChannel)
+        if (channel == currentChannel && !isPrivateConversation)
         {
             InvokeAsync(StateHasChanged);
         }
@@ -214,10 +202,9 @@ else
         InvokeAsync(StateHasChanged);
     }
 
-    // Nouveaux handlers pour le mute
     private void OnChannelMuteStatusChanged(string channel, bool isMuted)
     {
-        if (channel == currentChannel)
+        if (channel == currentChannel && !isPrivateConversation)
         {
             isCurrentChannelMuted = isMuted;
             InvokeAsync(StateHasChanged);
@@ -236,12 +223,11 @@ else
         });
     }
 
-    // Nouveaux handlers pour la gestion des canaux
     private async void OnChannelDeleted(string channelName)
     {
         channels = channels.Where(c => c.Name != channelName).ToList();
 
-        if (currentChannel == channelName)
+        if (currentChannel == channelName && !isPrivateConversation)
         {
             currentChannel = "";
             messages.Clear();
@@ -277,13 +263,14 @@ else
     // Handlers pour messages privés
     private void OnPrivateMessageReceived(PrivateMessage message)
     {
-        if (message.SenderUsername == selectedPrivateUser || message.RecipientUsername == selectedPrivateUser)
+        if (isPrivateConversation &&
+            (message.SenderUsername == selectedPrivateUser || message.RecipientUsername == selectedPrivateUser))
         {
             privateMessages.Add(message);
 
-            if (showPrivateChat && message.SenderUsername == selectedPrivateUser)
+            if (message.SenderUsername == selectedPrivateUser)
             {
-                _ = ChatService.MarkPrivateMessagesAsRead(selectedPrivateUser);
+                _ = ChatService.MarkPrivateMessagesAsRead(selectedPrivateUser!);
             }
         }
 
@@ -296,7 +283,7 @@ else
 
     private void OnPrivateMessageSent(PrivateMessage message)
     {
-        if (message.RecipientUsername == selectedPrivateUser)
+        if (isPrivateConversation && message.RecipientUsername == selectedPrivateUser)
         {
             privateMessages.Add(message);
         }
@@ -319,7 +306,7 @@ else
 
     private void OnConversationDeleted(string username)
     {
-        if (selectedPrivateUser == username)
+        if (selectedPrivateUser == username && isPrivateConversation)
         {
             ClosePrivateChat();
         }
@@ -339,26 +326,22 @@ else
 
     private async Task SwitchChannel(string channel)
     {
-        if (!string.IsNullOrEmpty(currentChannel))
+        if (!string.IsNullOrEmpty(currentChannel) && !isPrivateConversation)
         {
             await ChatService.LeaveChannel(currentChannel);
         }
+
+        isPrivateConversation = false;
+        selectedPrivateUser = null;
+        privateMessages.Clear();
 
         currentChannel = channel;
         await LoadMessages();
         await ChatService.JoinChannel(currentUsername, channel);
 
-        // Charger le statut mute
         var channelInfo = channels.FirstOrDefault(c => c.Name == channel);
         isCurrentChannelMuted = channelInfo?.IsMuted ?? false;
-
-        // Fermer la sidebar sur mobile
         sidebarOpen = false;
-
-        // Ouvrir la liste des utilisateurs sur desktop, fermer sur mobile
-        usersListOpen = !await DeviceDetector.IsMobileDeviceAsync();
-
-        StateHasChanged();
     }
 
     private async Task LoadChannels()
@@ -431,11 +414,16 @@ else
 
     private async Task OpenPrivateChat(string username)
     {
+        if (!string.IsNullOrEmpty(currentChannel) && !isPrivateConversation)
+        {
+            await ChatService.LeaveChannel(currentChannel);
+        }
+
+        currentChannel = "";
+        isPrivateConversation = true;
         selectedPrivateUser = username;
-        showPrivateChat = true;
 
         privateMessages = await PrivateMessageService.GetPrivateMessagesAsync(currentUsername, username);
-
         await ChatService.MarkPrivateMessagesAsRead(username);
         await LoadPrivateConversations();
 
@@ -445,7 +433,7 @@ else
 
     private void ClosePrivateChat()
     {
-        showPrivateChat = false;
+        isPrivateConversation = false;
         selectedPrivateUser = null;
         privateMessages.Clear();
         StateHasChanged();
@@ -481,7 +469,7 @@ else
 
         if (success)
         {
-            if (selectedPrivateUser == otherUsername)
+            if (selectedPrivateUser == otherUsername && isPrivateConversation)
             {
                 ClosePrivateChat();
             }
@@ -494,16 +482,16 @@ else
     private async Task HandleMuteStatusChanged(bool isMuted)
     {
         isCurrentChannelMuted = isMuted;
-
-        // Recharger les informations du canal
         await LoadChannels();
-
         StateHasChanged();
     }
 
     private bool CanManageCurrentChannel()
     {
-        if (string.IsNullOrEmpty(currentChannel)) return false;
+        if (string.IsNullOrEmpty(currentChannel) || isPrivateConversation)
+        {
+          return false;
+        }
 
         var channel = channels.FirstOrDefault(c => c.Name == currentChannel);
         if (channel == null) return false;
@@ -524,6 +512,27 @@ else
     {
         usersListOpen = newState;
         StateHasChanged();
+    }
+
+    private string GetCurrentChannelOrUsername()
+    {
+        return isPrivateConversation ? selectedPrivateUser ?? "" : currentChannel;
+    }
+
+    private List<Message> GetCurrentMessages()
+    {
+        if (isPrivateConversation)
+        {
+            // Convertir les PrivateMessage en Message pour l'affichage
+            return privateMessages.Select(pm => new Message
+            {
+                Id = pm.Id,
+                Username = pm.SenderUsername,
+                Content = pm.Content,
+                Timestamp = pm.Timestamp
+            }).ToList();
+        }
+        return messages;
     }
 
     public async ValueTask DisposeAsync()
