@@ -13,22 +13,36 @@
     {
         <div class="chat-header">
             <div class="header-left">
-                <h2>#@CurrentChannel</h2>
+                <h2>@(IsPrivateConversation ? "💬" : "#")@CurrentChannel</h2>
                 <span class="status @(IsConnected ? "connected" : "disconnected")">
                     @(IsConnected ? "● Connecté" : "○ Déconnecté")
                 </span>
             </div>
             <div class="header-right">
-                <UsersListToggleButton IsOpen="@UsersListOpen"
-                                       UserCount="@(Users?.Count ?? 0)"
-                                       OnToggle="OnUsersListToggle" />
-                <ChannelMuteButton ChannelName="@CurrentChannel"
-                                   IsMuted="@IsMuted"
-                                   CanManage="@CanManage"
-                                   OnMuteStatusChanged="OnMuteStatusChanged" />
-                <ChannelDeleteButton ChannelName="@CurrentChannel"
-                                     CanManage="@CanManage"
-                                     OnChannelDeleted="OnChannelDeleted" />
+                @if (IsPrivateConversation)
+                {
+                    <button class="close-btn" @onclick="OnClosePrivateConversation" title="Fermer la conversation">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                        <span>Fermer</span>
+                    </button>
+                }
+                else
+                {
+                    <UsersListToggleButton IsOpen="@UsersListOpen"
+                                           UserCount="@(Users?.Count ?? 0)"
+                                           OnToggle="OnUsersListToggle" />
+
+                    <ChannelMuteButton ChannelName="@CurrentChannel"
+                                       IsMuted="@IsMuted"
+                                       CanManage="@CanManage"
+                                       OnMuteStatusChanged="OnMuteStatusChanged" />
+                    <ChannelDeleteButton ChannelName="@CurrentChannel"
+                                         CanManage="@CanManage"
+                                         OnChannelDeleted="OnChannelDeleted" />
+                }
             </div>
         </div>
 
@@ -40,12 +54,15 @@
                               OnSendMessage="OnMessageSent" />
             </div>
 
-            <div class="chat-users @(UsersListOpen ? "visible" : "hidden")">
-                <ChannelUsersList CurrentChannel="@CurrentChannel"
-                                  Username="@Username"
-                                  Users="@Users"
-                                  OnUserClicked="OnUserClicked" />
-            </div>
+            @if (Users != null)
+            {
+                <div class="chat-users @(UsersListOpen ? "visible" : "hidden")">
+                    <ChannelUsersList CurrentChannel="@CurrentChannel"
+                                      Username="@Username"
+                                      Users="@Users"
+                                      OnUserClicked="OnUserClicked" />
+                </div>
+            }
         </div>
     }
 </div>
@@ -64,7 +81,7 @@
     public List<Message> Messages { get; set; } = new();
 
     [Parameter]
-    public List<User> Users { get; set; } = new();
+    public List<User>? Users { get; set; }
 
     [Parameter]
     public bool IsMuted { get; set; }
@@ -74,6 +91,9 @@
 
     [Parameter]
     public bool UsersListOpen { get; set; }
+
+    [Parameter]
+    public bool IsPrivateConversation { get; set; }
 
     [Parameter]
     public EventCallback<string> OnMessageSent { get; set; }
@@ -89,4 +109,7 @@
 
     [Parameter]
     public EventCallback<bool> OnUsersListToggle { get; set; }
+
+    [Parameter]
+    public EventCallback OnClosePrivateConversation { get; set; }
 }
