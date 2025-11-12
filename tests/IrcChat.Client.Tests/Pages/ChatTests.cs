@@ -2728,14 +2728,14 @@ public class ChatTests : TestContext
         // Rejoindre le canal "general"
         await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
         cut.WaitForElement(".channel-mute-control .mute-btn");
-        
+
         // Act - Simuler un changement de statut mute sur un autre canal
         _chatServiceMock.Raise(
             x => x.OnChannelMuteStatusChanged += null,
             "random", // Différent du canal actuel
             true);
 
-        await Task.Delay(100);       
+        await Task.Delay(100);
 
         // Assert - Le statut du canal actuel ne devrait pas changer
         var channelMuteButton = await cut.InvokeAsync(() => cut.Find(".channel-mute-control .mute-btn"));
