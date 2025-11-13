@@ -17,7 +17,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
     : IClassFixture<ApiWebApplicationFactory>
 {
     private readonly HttpClient _client = factory.CreateClient();
-    
+
     [Fact]
     public async Task DeleteChannel_AsCreator_ShouldDeleteChannel()
     {

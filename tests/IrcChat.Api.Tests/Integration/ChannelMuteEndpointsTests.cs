@@ -16,7 +16,7 @@ namespace IrcChat.Api.Tests.Integration;
 public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
     : IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();    
+    private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
     public async Task ToggleMute_AsChannelCreator_ShouldToggleMuteAndBecomeActiveManager()

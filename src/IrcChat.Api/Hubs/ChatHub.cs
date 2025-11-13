@@ -271,7 +271,7 @@ public class ChatHub(
 
         // ✅ Un seul SaveChangesAsync
         await db.SaveChangesAsync();
-    }    
+    }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {

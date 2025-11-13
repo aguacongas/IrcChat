@@ -17,7 +17,7 @@ namespace IrcChat.Api.Tests.Integration;
 public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     : IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();    
+    private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
     public async Task CheckUsername_WithAvailableUsername_ShouldReturnAvailable()

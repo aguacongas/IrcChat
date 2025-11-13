@@ -53,7 +53,7 @@ public class ChatHubTests : IAsyncDisposable
         _clientsMock.Setup(c => c.Caller).Returns(_callerMock.Object);
         _clientsMock.Setup(c => c.All).Returns(_allClientsMock.Object);
         _clientsMock.Setup(c => c.Group(It.IsAny<string>())).Returns(_groupMock.Object);
-        _clientsMock.Setup(c => c.Client(It.IsAny<string>())).Returns(_singleClientMock.Object);        
+        _clientsMock.Setup(c => c.Client(It.IsAny<string>())).Returns(_singleClientMock.Object);
 
         _contextMock.Setup(c => c.ConnectionId).Returns(_testConnectionId);
 
@@ -348,7 +348,7 @@ public class ChatHubTests : IAsyncDisposable
             g => g.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), default),
             Times.Never);
     }
-   
+
 
     [Fact]
     public async Task SendMessage_ShouldSaveAndBroadcastMessage()
@@ -775,7 +775,7 @@ public class ChatHubTests : IAsyncDisposable
 
         // Assert
         Assert.True(exists);
-    }    
+    }
 
     [Fact]
     public async Task OnDisconnectedAsync_WithLastConnection_ShouldNotifyUserIsOffline()
@@ -794,7 +794,7 @@ public class ChatHubTests : IAsyncDisposable
 
         _contextMock.Setup(c => c.ConnectionId).Returns(connectionId);
         _contextMock.Setup(c => c.User).Returns(claimsPrincipal);
-        
+
         // Ajouter l'utilisateur connecté
         var connectedUser = new ConnectedUser
         {
@@ -916,7 +916,7 @@ public class ChatHubTests : IAsyncDisposable
 
         _contextMock.Setup(c => c.ConnectionId).Returns(connectionId);
         _contextMock.Setup(c => c.User).Returns(claimsPrincipal);
-        
+
         // Ajouter l'utilisateur sans canal (pas encore rejoint de canal)
         var connectedUser = new ConnectedUser
         {

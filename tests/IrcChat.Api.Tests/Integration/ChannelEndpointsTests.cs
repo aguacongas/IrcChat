@@ -14,7 +14,7 @@ namespace IrcChat.Api.Tests.Integration;
 
 public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();    
+    private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
     public async Task GetChannels_ShouldReturnChannelList()
