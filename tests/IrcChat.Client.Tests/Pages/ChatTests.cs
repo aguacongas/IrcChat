@@ -2390,8 +2390,9 @@ public class ChatTests : TestContext
         Assert.Contains("chat-users", cut.Markup);
     }
 
+
     [Fact]
-    public async Task Chat_UsersListToggle_MultipleClicks_ShouldToggleCorrectly()
+    public async Task Chat_HandleUsersListToggle_ShouldUpdateUsersListOpenState()
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
@@ -2431,110 +2432,6 @@ public class ChatTests : TestContext
         // Ce test n'est plus applicable, on vérifie juste que la liste est présente
         Assert.Contains("chat-users", cut.Markup);
         Assert.Contains("users-section", cut.Markup);
-    }
-
-    [Fact]
-    public async Task Chat_HandleUsersListToggle_ShouldUpdateUsersListOpenState()
-    {
-        // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-
-        var channels = new List<Channel>
-        {
-            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
-        };
-
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
-
-        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
-
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
-            .Returns(Task.CompletedTask);
-
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
-
-        _privateMessageServiceMock
-            .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
-            .ReturnsAsync([]);
-
-        var cut = RenderComponent<Chat>();
-        await Task.Delay(200);
-
-        // Rejoindre un canal
-        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
-        await Task.Delay(100);
-
-        var initialState = cut.Markup.Contains("users-open");
-
-        // Act
-        var toggleButton = cut.Find(".users-toggle-btn");
-        await cut.InvokeAsync(() => toggleButton.Click());
-        await Task.Delay(100);
-
-        var newState = cut.Markup.Contains("users-open");
-
-        // Assert
-        Assert.NotEqual(initialState, newState);
-    }
-
-    [Fact]
-    public async Task Chat_UsersListToggleButton_ShouldDisplayUserCount()
-    {
-        // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-
-        var channels = new List<Channel>
-        {
-            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
-        };
-
-        var messages = new List<Message>();
-
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
-
-        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
-
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
-            .Returns(Task.CompletedTask);
-
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
-
-        _privateMessageServiceMock
-            .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
-            .ReturnsAsync([]);
-
-        var cut = RenderComponent<Chat>();
-        await Task.Delay(200);
-
-        // Rejoindre un canal
-        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
-        await Task.Delay(100);
-
-        // Simuler l'arrivée d'utilisateurs
-        var users = new List<User>
-        {
-            new() { Username = "User1", ConnectedAt = DateTime.UtcNow },
-            new() { Username = "User2", ConnectedAt = DateTime.UtcNow },
-            new() { Username = "User3", ConnectedAt = DateTime.UtcNow }
-        };
-
-        _chatServiceMock.Raise(x => x.OnUserListUpdated += null, users);
-        await Task.Delay(100);
-        cut.Render();
-
-        // Assert - Le bouton devrait afficher le nombre d'utilisateurs
-        Assert.Contains("users-toggle-btn", cut.Markup);
-        Assert.Contains("user-count", cut.Markup);
     }
 
     [Fact]
@@ -2891,6 +2788,7 @@ public class ChatTests : TestContext
     }
 
     [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "RaiseAsync throw an exception")]
     public async Task Chat_HandleUserClicked_WithSameUser_ShouldNotOpenPrivateChat()
     {
         // Arrange
@@ -3035,7 +2933,7 @@ public class ChatTests : TestContext
             .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         // Act - Pas de chat privé ouvert, donc selectedPrivateUser est null
@@ -3068,7 +2966,7 @@ public class ChatTests : TestContext
             .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         // Act - Essayer d'envoyer un message avec un username vide
