@@ -3057,5 +3057,5 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.VerifyRemove(x => x.OnConversationDeleted -= It.IsAny<Action<string>>());
 
         _chatServiceMock.Verify(x => x.DisposeAsync(), Times.Once);
-    }    
+    }
 }
