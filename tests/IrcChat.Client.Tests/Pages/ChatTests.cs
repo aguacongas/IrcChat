@@ -85,7 +85,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -120,7 +120,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -148,7 +148,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
         _chatServiceMock
             .Setup(x => x.SendMessage(It.IsAny<SendMessageRequest>()))
@@ -196,10 +196,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
         _chatServiceMock
-            .Setup(x => x.JoinChannel("TestUser", "general"))
+            .Setup(x => x.JoinChannel("general"))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -216,7 +216,7 @@ public class ChatTests : TestContext
 
         // Assert
         _chatServiceMock.Verify(
-            x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()),
+            x => x.JoinChannel(It.IsAny<string>()),
             Times.AtLeastOnce);
     }
 
@@ -232,7 +232,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -270,7 +270,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         var conversations = new List<PrivateConversation>
@@ -313,7 +313,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -348,7 +348,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -383,7 +383,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -418,7 +418,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -458,7 +458,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -501,7 +501,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -549,9 +549,9 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/*")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -599,9 +599,9 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/*")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -621,7 +621,7 @@ public class ChatTests : TestContext
 
         // Assert - Le créateur peut gérer son canal
         _chatServiceMock.Verify(
-            x => x.JoinChannel("Creator", "my-channel"),
+            x => x.JoinChannel("my-channel"),
             Times.Once);
     }
 
@@ -645,9 +645,9 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/*")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
         _chatServiceMock.Setup(x => x.LeaveChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
@@ -684,7 +684,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -713,7 +713,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -748,7 +748,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         var conversations = new List<PrivateConversation>
@@ -800,7 +800,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -845,7 +845,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -892,10 +892,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/my-channel")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -939,10 +939,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/someone-channel")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -972,7 +972,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -1007,7 +1007,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
@@ -1058,7 +1058,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.InternalServerError);
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -1092,10 +1092,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.InternalServerError);
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -1112,7 +1112,7 @@ public class ChatTests : TestContext
 
         // Assert - Le composant devrait gérer l'erreur sans plantage
         _chatServiceMock.Verify(
-            x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()),
+            x => x.JoinChannel(It.IsAny<string>()),
             Times.Once);
     }
 
@@ -1137,7 +1137,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -1199,10 +1199,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -1265,10 +1265,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -1312,7 +1312,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -1347,7 +1347,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -1399,7 +1399,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(initialChannels));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -1446,7 +1446,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -1495,10 +1495,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _chatServiceMock.Setup(x => x.SendMessage(It.IsAny<SendMessageRequest>()))
@@ -1546,7 +1546,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
@@ -1596,7 +1596,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
@@ -1665,7 +1665,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _chatServiceMock.Setup(x => x.SendPrivateMessage(It.IsAny<SendPrivateMessageRequest>()))
@@ -1727,7 +1727,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         var conversations = new List<PrivateConversation>
@@ -1792,10 +1792,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
@@ -1846,7 +1846,7 @@ public class ChatTests : TestContext
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
         // Ne pas initialiser ChatService pour simuler une non-connexion
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Throws(new Exception("Connection failed"));
 
         _chatServiceMock.Setup(x => x.SendMessage(It.IsAny<SendMessageRequest>()))
@@ -1884,7 +1884,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Throws(new Exception("Connection failed"));
 
         _chatServiceMock.Setup(x => x.SendPrivateMessage(It.IsAny<SendPrivateMessageRequest>()))
@@ -1913,7 +1913,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -1963,7 +1963,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .ThrowsAsync(new Exception("Connection failed"));
 
         _privateMessageServiceMock
@@ -1989,7 +1989,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         var conversations = new List<PrivateConversation>
@@ -2031,10 +2031,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -2073,7 +2073,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
@@ -2129,7 +2129,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -2165,10 +2165,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -2209,10 +2209,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -2253,10 +2253,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -2300,10 +2300,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/*")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _chatServiceMock.Setup(x => x.LeaveChannel(It.IsAny<string>()))
@@ -2357,10 +2357,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/*")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _chatServiceMock.Setup(x => x.LeaveChannel(It.IsAny<string>()))
@@ -2410,10 +2410,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -2454,10 +2454,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -2509,10 +2509,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -2559,10 +2559,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -2609,10 +2609,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -2651,7 +2651,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -2694,7 +2694,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
@@ -2755,7 +2755,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -2809,10 +2809,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -2874,10 +2874,10 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
@@ -2923,7 +2923,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _chatServiceMock.Setup(x => x.SendPrivateMessage(It.IsAny<SendPrivateMessageRequest>()))
@@ -2956,7 +2956,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _chatServiceMock.Setup(x => x.SendMessage(It.IsAny<SendMessageRequest>()))
@@ -2995,7 +2995,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _privateMessageServiceMock
@@ -3024,7 +3024,7 @@ public class ChatTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _chatServiceMock.Setup(x => x.DisposeAsync())

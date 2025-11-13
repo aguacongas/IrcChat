@@ -76,7 +76,7 @@ public class ChatServiceTests : TestContext
         SetConnectedState(hubConnectionMock);
 
         // Act & Assert
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         // Assert - Vérifier que tous les événements sont enregistrés
         hubConnectionMock.Verify(x => x.On("ReceiveMessage", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()), Times.Once);
@@ -117,7 +117,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         var testMessage = new Message
         {
@@ -167,7 +167,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         // Act Without subscription
         await onUserJoined!(["testUser", "testChannel"], onUserJoinedState!);
@@ -212,7 +212,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         // Act Without subscription
         await onUserLeft!(["testUser", "testChannel"], onUserLeftState!);
@@ -258,7 +258,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         var testUsers = new List<User>
         {
@@ -306,7 +306,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         // Act without subscription
         await onChannelMuteStatusChanged!(["testChannel", true], onChannelMuteStatusChangedState!);
@@ -353,7 +353,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         // Act without subscription
         await onMessageBlocked!(["Channel is muted"], onMessageBlockedState!);
@@ -394,7 +394,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         // Act without subscription
         await onChannelDeleted!(["testChannel"], onChannelDeletedState!);
@@ -434,7 +434,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         // Act without subscription
         await onChannelNotFound!(["missingChannel"], onChannelNotFoundState!);
@@ -475,7 +475,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         // Act without subscription
         await onChannelListUpdated!([], onChannelListUpdatedState!);
@@ -516,7 +516,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         var testMessage = new PrivateMessage
         {
@@ -561,7 +561,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         var messageIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() };
         var username = "testUser";
@@ -600,7 +600,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         var testMessage = new PrivateMessage
         {
@@ -641,7 +641,7 @@ public class ChatServiceTests : TestContext
         var service = new ChatService(_privateMessageServiceMock.Object, NullLogger<ChatService>.Instance);
 
         // Act
-        await service.JoinChannel("testUser", "testChannel");
+        await service.JoinChannel("testChannel");
 
         // Assert
         Assert.True(true);
@@ -663,10 +663,10 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "testUser");
 
         // Act
-        await service.JoinChannel("testUser", "testChannel");
+        await service.JoinChannel("testChannel");
 
         // Assert
         hubConnectionMock.Verify(
@@ -707,7 +707,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         // Act
         await service.LeaveChannel("testChannel");
@@ -756,7 +756,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         var request = new SendMessageRequest
         {
@@ -812,7 +812,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         var request = new SendPrivateMessageRequest
         {
@@ -862,7 +862,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         // Act
         await service.MarkPrivateMessagesAsRead("sender");
@@ -893,7 +893,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         // Act
         await service.DisposeAsync();
@@ -918,7 +918,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         // Act
         await service.DisposeAsync();
@@ -958,7 +958,7 @@ public class ChatServiceTests : TestContext
         service.OnMessageBlocked += _ => subscriber1Called++;
         service.OnMessageBlocked += _ => subscriber2Called++;
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         // Act
         await onMessageBlocked!(["test"], onMessageBlockedState!);
@@ -988,7 +988,7 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+        await service.InitializeAsync(hubConnectionBuilderMock.Object, "TestUser");
 
         // Wait for ping timer to execute
         await Task.Delay(300);

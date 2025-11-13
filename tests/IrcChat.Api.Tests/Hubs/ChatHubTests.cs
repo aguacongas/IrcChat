@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using IrcChat.Api.Data;
 using IrcChat.Api.Hubs;
 using IrcChat.Api.Services;
@@ -52,7 +53,7 @@ public class ChatHubTests : IAsyncDisposable
         _clientsMock.Setup(c => c.Caller).Returns(_callerMock.Object);
         _clientsMock.Setup(c => c.All).Returns(_allClientsMock.Object);
         _clientsMock.Setup(c => c.Group(It.IsAny<string>())).Returns(_groupMock.Object);
-        _clientsMock.Setup(c => c.Client(It.IsAny<string>())).Returns(_singleClientMock.Object);
+        _clientsMock.Setup(c => c.Client(It.IsAny<string>())).Returns(_singleClientMock.Object);        
 
         _contextMock.Setup(c => c.ConnectionId).Returns(_testConnectionId);
 
@@ -63,8 +64,6 @@ public class ChatHubTests : IAsyncDisposable
             Groups = _groupManagerMock.Object
         };
     }
-
-    #region Ping Tests
 
     [Fact]
     public async Task Ping_WithNewUser_ShouldCreateUser()
@@ -118,10 +117,6 @@ public class ChatHubTests : IAsyncDisposable
         Assert.NotNull(updatedUser);
         Assert.True(updatedUser!.LastPing > oldPing);
     }
-
-    #endregion
-
-    #region JoinChannel Tests
 
     [Fact]
     public async Task JoinChannel_WithNewUser_ShouldCreateUserAndSetChannel()
@@ -277,10 +272,6 @@ public class ChatHubTests : IAsyncDisposable
             Times.Never);
     }
 
-    #endregion
-
-    #region LeaveChannel Tests
-
     [Fact]
     public async Task LeaveChannel_ShouldSetChannelToNull()
     {
@@ -357,10 +348,7 @@ public class ChatHubTests : IAsyncDisposable
             g => g.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), default),
             Times.Never);
     }
-
-    #endregion
-
-    #region SendMessage Tests
+   
 
     [Fact]
     public async Task SendMessage_ShouldSaveAndBroadcastMessage()
@@ -534,10 +522,6 @@ public class ChatHubTests : IAsyncDisposable
             Times.Once);
     }
 
-    #endregion
-
-    #region SendPrivateMessage Tests
-
     [Fact]
     public async Task SendPrivateMessage_ShouldSaveAndSendToRecipient()
     {
@@ -614,10 +598,6 @@ public class ChatHubTests : IAsyncDisposable
             Times.Once);
     }
 
-    #endregion
-
-    #region MarkPrivateMessagesAsRead Tests
-
     [Fact]
     public async Task MarkPrivateMessagesAsRead_ShouldMarkMessagesAndNotifySender()
     {
@@ -678,10 +658,6 @@ public class ChatHubTests : IAsyncDisposable
                 default),
             Times.Once);
     }
-
-    #endregion
-
-    #region OnDisconnectedAsync Tests
 
     [Fact]
     public async Task OnDisconnectedAsync_ShouldRemoveUser()
@@ -773,10 +749,6 @@ public class ChatHubTests : IAsyncDisposable
             Times.Never);
     }
 
-    #endregion
-
-    #region CheckUsername Integration
-
     [Fact]
     public async Task ConnectedUser_WithoutChannel_ShouldStillReserveUsername()
     {
@@ -803,9 +775,205 @@ public class ChatHubTests : IAsyncDisposable
 
         // Assert
         Assert.True(exists);
+    }    
+
+    [Fact]
+    public async Task OnDisconnectedAsync_WithLastConnection_ShouldNotifyUserIsOffline()
+    {
+        // Arrange
+        var username = "testuser";
+        var connectionId = "conn-123";
+        var channel = "general";
+
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Name, username)
+        };
+
+        var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(claims));
+
+        _contextMock.Setup(c => c.ConnectionId).Returns(connectionId);
+        _contextMock.Setup(c => c.User).Returns(claimsPrincipal);
+        
+        // Ajouter l'utilisateur connecté
+        var connectedUser = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            Username = username,
+            ConnectionId = connectionId,
+            Channel = channel,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            LastPing = DateTime.UtcNow,
+            ServerInstanceId = "server-1"
+        };
+
+        _db.ConnectedUsers.Add(connectedUser);
+        await _db.SaveChangesAsync();
+
+        // Act
+        await _hub.OnDisconnectedAsync(null);
+
+        // Assert
+        // Vérifier que l'utilisateur a été supprimé de ConnectedUsers
+        var userExists = await _db.ConnectedUsers
+            .AnyAsync(u => u.ConnectionId == connectionId);
+        Assert.False(userExists);
+
+        // Vérifier que la notification offline a été envoyée
+        _allClientsMock.Verify(
+            c => c.SendCoreAsync(
+                "UserStatusChanged",
+                It.Is<object[]>(o => o.Length == 2 && (string)o[0] == username && !(bool)o[1]),
+                default),
+            Times.Once);
+
+        // Vérifier que UserLeft a été appelé pour le canal
+        _groupMock.Verify(
+            c => c.SendCoreAsync(
+                "UserLeft",
+                It.Is<object[]>(o => o.Length == 2 && (string)o[0] == username && (string)o[1] == channel),
+                default),
+            Times.Once);
     }
 
-    #endregion
+    [Fact]
+    public async Task OnDisconnectedAsync_WithMultipleConnections_ShouldNotNotifyOffline()
+    {
+        // Arrange
+        var username = "testuser";
+        var connectionId1 = "conn-123";
+        var connectionId2 = "conn-456";
+
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Name, username)
+        };
+
+        var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(claims));
+
+        _contextMock.Setup(c => c.ConnectionId).Returns(connectionId1);
+        _contextMock.Setup(c => c.User).Returns(claimsPrincipal);
+
+        // Ajouter deux connexions pour le même utilisateur
+        _db.ConnectedUsers.AddRange(
+            new ConnectedUser
+            {
+                Id = Guid.NewGuid(),
+                Username = username,
+                ConnectionId = connectionId1,
+                Channel = "general",
+                ConnectedAt = DateTime.UtcNow,
+                LastActivity = DateTime.UtcNow,
+                LastPing = DateTime.UtcNow,
+                ServerInstanceId = "server-1"
+            },
+            new ConnectedUser
+            {
+                Id = Guid.NewGuid(),
+                Username = username,
+                ConnectionId = connectionId2,
+                Channel = "random",
+                ConnectedAt = DateTime.UtcNow,
+                LastActivity = DateTime.UtcNow,
+                LastPing = DateTime.UtcNow,
+                ServerInstanceId = "server-1"
+            });
+
+        await _db.SaveChangesAsync();
+
+        // Act
+        await _hub.OnDisconnectedAsync(null);
+
+        // Assert
+        // La notification offline ne doit PAS être envoyée car il reste une autre connexion
+        _allClientsMock.Verify(
+            c => c.SendCoreAsync(
+                "UserStatusChanged",
+                It.Is<object[]>(o => o.Length == 2 && !(bool)o[1]),
+                default),
+            Times.Never);
+
+        // Vérifier qu'il reste une connexion
+        var remainingConnections = await _db.ConnectedUsers
+            .CountAsync(u => u.Username == username);
+        Assert.Equal(1, remainingConnections);
+    }
+
+    [Fact]
+    public async Task OnDisconnectedAsync_WithoutChannel_ShouldStillNotifyOffline()
+    {
+        // Arrange
+        var username = "testuser";
+        var connectionId = "conn-123";
+
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Name, username)
+        };
+
+        var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(claims));
+
+        _contextMock.Setup(c => c.ConnectionId).Returns(connectionId);
+        _contextMock.Setup(c => c.User).Returns(claimsPrincipal);
+        
+        // Ajouter l'utilisateur sans canal (pas encore rejoint de canal)
+        var connectedUser = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            Username = username,
+            ConnectionId = connectionId,
+            Channel = null, // Pas de canal
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            LastPing = DateTime.UtcNow,
+            ServerInstanceId = "server-1"
+        };
+
+        _db.ConnectedUsers.Add(connectedUser);
+        await _db.SaveChangesAsync();
+
+        // Act
+        await _hub.OnDisconnectedAsync(null);
+
+        // Assert
+        _allClientsMock.Verify(
+            c => c.SendCoreAsync(
+                "UserStatusChanged",
+                It.Is<object[]>(o => o.Length == 2 && (string)o[0] == username && !(bool)o[1]),
+                default),
+            Times.Once);
+
+        // UserLeft ne doit PAS être appelé car il n'y avait pas de canal
+        _groupMock.Verify(
+            c => c.SendCoreAsync(
+                "UserLeft",
+                It.IsAny<object[]>(),
+                default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task OnConnectedAsync_WithoutUsername_ShouldNotNotifyUserStatus()
+    {
+        // Arrange
+        var connectionId = "conn-123";
+        var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity()); // Pas de claims
+
+        _contextMock.Setup(c => c.ConnectionId).Returns(connectionId);
+        _contextMock.Setup(c => c.User).Returns(claimsPrincipal);
+
+        // Act
+        await _hub.OnConnectedAsync();
+
+        // Assert
+        _allClientsMock.Verify(
+            c => c.SendCoreAsync(
+                "UserStatusChanged",
+                It.IsAny<object[]>(),
+                default),
+            Times.Never);
+    }
 
     public async ValueTask DisposeAsync()
     {

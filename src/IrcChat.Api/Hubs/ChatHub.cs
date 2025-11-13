@@ -14,6 +14,7 @@ public class ChatHub(
     IOptions<ConnectionManagerOptions> options,
     ILogger<ChatHub> logger) : Hub
 {
+    private static readonly string _userStatusChangedMethod = "UserStatusChanged";
     private static readonly string _updateUserListMethod = "UpdateUserList";
     private readonly string _instanceId = options.Value.GetInstanceId();
 
@@ -259,6 +260,7 @@ public class ChatHub(
                 ServerInstanceId = _instanceId
             };
 
+            await Clients.All.SendAsync(_userStatusChangedMethod, username, true);
             db.ConnectedUsers.Add(user);
             logger.LogInformation("Utilisateur {Username} enregistré via Ping", username);
         }
@@ -269,37 +271,49 @@ public class ChatHub(
 
         // ✅ Un seul SaveChangesAsync
         await db.SaveChangesAsync();
-    }
+    }    
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        var connectionId = Context.ConnectionId;
         var user = await db.ConnectedUsers
-            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
+            .FirstOrDefaultAsync(u => u.ConnectionId == connectionId);
 
         if (user != null)
         {
-            var username = user.Username;
             var channel = user.Channel;
-
-            // Notifier le salon si l'utilisateur y était
-            if (channel != null)
-            {
-                await Clients.Group(channel)
-                    .SendAsync("UserLeft", username, channel);
-
-                var channelUsers = await GetChannelUsers(channel);
-                await Clients.Group(channel)
-                    .SendAsync(_updateUserListMethod, channelUsers);
-            }
-
-            // Supprimer l'utilisateur
             db.ConnectedUsers.Remove(user);
-
-            // ✅ Un seul SaveChangesAsync
             await db.SaveChangesAsync();
 
-            logger.LogInformation("Utilisateur {Username} déconnecté (Salon: {Channel})",
-                username, channel ?? "aucun");
+            if (!string.IsNullOrEmpty(channel))
+            {
+                await Groups.RemoveFromGroupAsync(connectionId, channel);
+                await Clients.Group(channel).SendAsync("UserLeft", user.Username, channel);
+
+                var users = await db.ConnectedUsers
+                    .Where(u => u.Channel == channel)
+                    .OrderBy(u => u.Username)
+                    .Select(u => new User
+                    {
+                        Username = u.Username,
+                        ConnectedAt = u.ConnectedAt,
+                        ConnectionId = u.ConnectionId
+                    })
+                    .ToListAsync();
+
+                await Clients.Group(channel).SendAsync("UpdateUserList", users);
+            }
+
+            var username = user.Username;
+            // Vérifier si l'utilisateur n'a plus de connexions actives
+            var hasOtherConnections = await db.ConnectedUsers
+                .AnyAsync(u => u.Username == username);
+
+            if (!hasOtherConnections && !string.IsNullOrEmpty(username))
+            {
+                // Notifier tous les clients que l'utilisateur est hors ligne
+                await Clients.All.SendAsync(_userStatusChangedMethod, username, false);
+            }
         }
 
         await base.OnDisconnectedAsync(exception);

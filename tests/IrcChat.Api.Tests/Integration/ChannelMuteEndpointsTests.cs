@@ -16,14 +16,13 @@ namespace IrcChat.Api.Tests.Integration;
 public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
     : IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
-    private readonly ApiWebApplicationFactory _factory = factory;
+    private readonly HttpClient _client = factory.CreateClient();    
 
     [Fact]
     public async Task ToggleMute_AsChannelCreator_ShouldToggleMuteAndBecomeActiveManager()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var creator = new ReservedUsername
@@ -68,7 +67,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
         Assert.Equal(channel.Name, result.ChannelName);
 
         // Vérifier que le créateur reste le manager actif
-        using var verifyScope = _factory.Services.CreateScope();
+        using var verifyScope = factory.Services.CreateScope();
         using var verifyContext = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var updatedChannel = await verifyContext.Channels.FindAsync(channel.Id);
         Assert.NotNull(updatedChannel);
@@ -80,7 +79,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
     public async Task ToggleMute_AsAdmin_ShouldUnmuteAndBecomeActiveManager()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var creator = new ReservedUsername
@@ -136,7 +135,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
         Assert.False(result!.IsMuted);
 
         // Vérifier que l'admin devient le manager actif mais le créateur garde sa propriété
-        using var verifyScope = _factory.Services.CreateScope();
+        using var verifyScope = factory.Services.CreateScope();
         using var verifyContext = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var updatedChannel = await verifyContext.Channels.FindAsync(channel.Id);
         Assert.NotNull(updatedChannel);
@@ -148,7 +147,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
     public async Task ToggleMute_CreatorTakesBackControl_ShouldBecomeActiveManagerAgain()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var creator = new ReservedUsername
@@ -201,7 +200,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         // Vérifier que le créateur redevient le manager actif
-        using var verifyScope = _factory.Services.CreateScope();
+        using var verifyScope = factory.Services.CreateScope();
         using var verifyContext = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var updatedChannel = await verifyContext.Channels.FindAsync(channel.Id);
         Assert.NotNull(updatedChannel);
@@ -213,7 +212,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
     public async Task ToggleMute_MuteDoesNotChangeActiveManager()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var creator = new ReservedUsername
@@ -254,7 +253,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         // Vérifier que le manager actif n'a PAS changé lors du mute
-        using var verifyScope = _factory.Services.CreateScope();
+        using var verifyScope = factory.Services.CreateScope();
         using var verifyContext = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var updatedChannel = await verifyContext.Channels.FindAsync(channel.Id);
         Assert.NotNull(updatedChannel);
@@ -266,7 +265,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
     public async Task ToggleMute_AsRegularUser_ShouldReturnForbidden()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var creator = new ReservedUsername
@@ -323,7 +322,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
     public async Task ToggleMute_ChannelNotFound_ShouldReturnNotFound()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var user = new ReservedUsername

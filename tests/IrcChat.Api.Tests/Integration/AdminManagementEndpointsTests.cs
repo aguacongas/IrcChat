@@ -17,13 +17,12 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
     : IClassFixture<ApiWebApplicationFactory>
 {
     private readonly HttpClient _client = factory.CreateClient();
-    private readonly ApiWebApplicationFactory _factory = factory;
 
     [Fact]
     public async Task GetAllUsers_AsAdmin_ShouldReturnUserList()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var adminUser = new ReservedUsername
@@ -70,7 +69,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
     public async Task GetAllUsers_AsNonAdmin_ShouldReturnForbidden()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var regularUser = new ReservedUsername
@@ -102,7 +101,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
     public async Task PromoteUser_AsAdmin_ShouldPromoteUser()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var adminUser = new ReservedUsername
@@ -143,7 +142,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        using var verifyScope = _factory.Services.CreateScope();
+        using var verifyScope = factory.Services.CreateScope();
         using var verifyContext = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var updatedUser = await verifyContext.ReservedUsernames.FindAsync(targetUser.Id);
         Assert.NotNull(updatedUser);
@@ -154,7 +153,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
     public async Task PromoteUser_AlreadyAdmin_ShouldReturnBadRequest()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var adminUser = new ReservedUsername
@@ -200,7 +199,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
     public async Task DemoteUser_AsAdmin_ShouldDemoteUser()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var adminUser1 = new ReservedUsername
@@ -241,7 +240,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        using var verifyScope = _factory.Services.CreateScope();
+        using var verifyScope = factory.Services.CreateScope();
         using var verifyContext = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var updatedUser = await verifyContext.ReservedUsernames.FindAsync(adminUser2.Id);
         Assert.NotNull(updatedUser);
@@ -252,7 +251,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
     public async Task DemoteUser_Self_ShouldReturnBadRequest()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var adminUser = new ReservedUsername
@@ -286,7 +285,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
     public async Task CheckAdminStatus_AsAdmin_ShouldReturnTrue()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var adminUser = new ReservedUsername
@@ -321,7 +320,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
     public async Task CheckAdminStatus_AsNonAdmin_ShouldReturnFalse()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var regularUser = new ReservedUsername

@@ -14,8 +14,7 @@ namespace IrcChat.Api.Tests.Integration;
 
 public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
-    private readonly ApiWebApplicationFactory _factory = factory;
+    private readonly HttpClient _client = factory.CreateClient();    
 
     [Fact]
     public async Task GetChannels_ShouldReturnChannelList()
@@ -33,7 +32,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
     public async Task GetConnectedUsers_ShouldReturnUsersInChannel()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var channel = "test-channel-users";
@@ -81,7 +80,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
     public async Task CreateChannel_WithAuthentication_ShouldCreateChannel()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var reservedUser = new ReservedUsername
@@ -161,7 +160,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
     public async Task CreateChannel_DuplicateName_ShouldReturnBadRequest()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var reservedUser = new ReservedUsername
@@ -213,7 +212,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
     public async Task CreateChannel_ShouldTrimChannelName()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var reservedUser = new ReservedUsername

@@ -17,8 +17,7 @@ namespace IrcChat.Api.Tests.Integration;
 public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     : IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
-    private readonly ApiWebApplicationFactory _factory = factory;
+    private readonly HttpClient _client = factory.CreateClient();    
 
     [Fact]
     public async Task CheckUsername_WithAvailableUsername_ShouldReturnAvailable()
@@ -44,7 +43,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task CheckUsername_WithReservedUsername_ShouldReturnNotAvailable()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var reservedUser = new ReservedUsername
@@ -83,7 +82,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task CheckUsername_WithConnectedUser_ShouldReturnNotAvailable()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var connectedUser = new ConnectedUser
@@ -121,7 +120,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task CheckUsername_CaseInsensitive_ShouldWork()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var reservedUser = new ReservedUsername
@@ -200,7 +199,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task ForgetUsername_WithAuth_ShouldDeleteReservedUser()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var userToForget = new ReservedUsername
@@ -227,7 +226,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        using var verifyScope = _factory.Services.CreateScope();
+        using var verifyScope = factory.Services.CreateScope();
         using var verifyContext = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var deletedUser = await verifyContext.ReservedUsernames.FindAsync(userToForget.Id);
         Assert.Null(deletedUser);
@@ -263,7 +262,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task CheckUsername_WithReservedButNotCurrentlyUsed_ShouldReturnCorrectStatus()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var reservedUser = new ReservedUsername
@@ -299,7 +298,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task CheckUsername_WithReservedAndCurrentlyUsed_ShouldReturnBothFlags()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var reservedUser = new ReservedUsername
@@ -346,7 +345,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task CheckUsername_WithOnlyCurrentlyUsed_ShouldReturnCorrectStatus()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var connectedUser = new ConnectedUser
@@ -382,7 +381,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task ReserveUsername_WithExistingReservation_ShouldReturnBadRequest()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var existingUser = new ReservedUsername
@@ -443,7 +442,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task ForgetUsername_WithAuthentication_ShouldDeleteReservation()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var userToForget = new ReservedUsername
@@ -508,7 +507,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     [Fact]
     public async Task ReserveUsername_WithValidData_ShouldCreateReservationAndReturnToken()
     {
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
@@ -536,7 +535,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         Assert.True(result.IsNewUser);
 
         // Vérifier que l'utilisateur a été créé en base
-        using var scopeVerifier = _factory.Services.CreateScope();
+        using var scopeVerifier = factory.Services.CreateScope();
         var dbVerifier = scopeVerifier.ServiceProvider.GetRequiredService<ChatDbContext>();
         var created = await dbVerifier.ReservedUsernames
             .FirstOrDefaultAsync(r => r.Username == "new_user");
@@ -547,7 +546,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task ReserveUsername_FirstUser_ShouldBeAdmin()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         // S'assurer qu'il n'y a pas d'utilisateurs
@@ -576,7 +575,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task ReserveUsername_SecondUser_ShouldNotBeAdmin()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
@@ -619,7 +618,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task ReserveUsername_WithExistingExternalUserId_ShouldReturnAlreadyReserved()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var existingUser = new ReservedUsername
@@ -657,7 +656,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     [Fact]
     public async Task ReserveUsername_WithInvalidCode_ShouldReturnUnauthorized()
     {
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
@@ -684,7 +683,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task LoginReserved_WithValidCredentials_ShouldReturnTokenAndUpdateLastLogin()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
@@ -726,7 +725,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         Assert.False(result.IsNewUser);
 
         // Vérifier que LastLoginAt a été mis à jour
-        using var verifyScope = _factory.Services.CreateScope();
+        using var verifyScope = factory.Services.CreateScope();
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var updated = await verifyDb.ReservedUsernames.FindAsync(user.Id);
         Assert.True(updated!.LastLoginAt > oldLoginTime);
@@ -776,7 +775,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task LoginReserved_ShouldUpdateAvatarUrl()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
@@ -811,7 +810,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        using var verifyScope = _factory.Services.CreateScope();
+        using var verifyScope = factory.Services.CreateScope();
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var updated = await verifyDb.ReservedUsernames.FindAsync(user.Id);
         Assert.NotEqual("old_avatar.jpg", updated!.AvatarUrl);

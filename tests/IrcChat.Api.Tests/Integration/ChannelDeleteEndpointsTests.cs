@@ -17,13 +17,12 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
     : IClassFixture<ApiWebApplicationFactory>
 {
     private readonly HttpClient _client = factory.CreateClient();
-    private readonly ApiWebApplicationFactory _factory = factory;
-
+    
     [Fact]
     public async Task DeleteChannel_AsCreator_ShouldDeleteChannel()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var creator = new ReservedUsername
@@ -60,7 +59,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        using var verifScope = _factory.Services.CreateScope();
+        using var verifScope = factory.Services.CreateScope();
         using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var deletedChannel = await verifyContext.Channels
             .FirstOrDefaultAsync(c => c.Name == channel.Name);
@@ -71,7 +70,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
     public async Task DeleteChannel_AsAdmin_ShouldDeleteChannel()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var admin = new ReservedUsername
@@ -107,7 +106,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        using var verifScope = _factory.Services.CreateScope();
+        using var verifScope = factory.Services.CreateScope();
         using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var deletedChannel = await verifyContext.Channels
             .FirstOrDefaultAsync(c => c.Name == channel.Name);
@@ -118,7 +117,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
     public async Task DeleteChannel_AsRegularUser_ShouldReturnForbidden()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var user = new ReservedUsername
@@ -155,7 +154,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
         // Assert
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
 
-        using var verifScope = _factory.Services.CreateScope();
+        using var verifScope = factory.Services.CreateScope();
         using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var stillExists = await verifyContext.Channels
             .AnyAsync(c => c.Name == channel.Name);
@@ -166,7 +165,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
     public async Task DeleteChannel_WithoutAuth_ShouldReturnUnauthorized()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var channel = new Channel
@@ -191,7 +190,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
     public async Task DeleteChannel_NonExistent_ShouldReturnNotFound()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var user = new ReservedUsername
@@ -224,7 +223,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
     public async Task DeleteChannel_ShouldSoftDeleteMessages()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var creator = new ReservedUsername
@@ -272,7 +271,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        using var verifScope = _factory.Services.CreateScope();
+        using var verifScope = factory.Services.CreateScope();
         using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var deletedMessage = await verifyContext.Messages
             .FirstOrDefaultAsync(m => m.Id == message.Id);
@@ -284,7 +283,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
     public async Task DeleteChannel_ShouldRemoveConnectedUsers()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var creator = new ReservedUsername
@@ -334,7 +333,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        using var verifScope = _factory.Services.CreateScope();
+        using var verifScope = factory.Services.CreateScope();
         using var verifyContext = verifScope.ServiceProvider.GetRequiredService<ChatDbContext>();
         var remainingUsers = await verifyContext.ConnectedUsers
             .Where(u => u.Channel == channel.Name)

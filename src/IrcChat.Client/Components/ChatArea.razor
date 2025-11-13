@@ -13,10 +13,21 @@
     {
         <div class="chat-header">
             <div class="header-left">
-                <h2>@(IsPrivateConversation ? "💬" : "#")@CurrentChannel</h2>
-                <span class="status @(IsConnected ? "connected" : "disconnected")">
-                    @(IsConnected ? "● Connecté" : "○ Déconnecté")
-                </span>
+                @if (IsPrivateConversation)
+                {
+                    <h2>💬 @CurrentChannel</h2>
+                    <span class="user-status @(IsUserOnline ? "online" : "offline")">
+                        <span class="status-indicator"></span>
+                        @(IsUserOnline ? "En ligne" : "Hors ligne")
+                    </span>
+                }
+                else
+                {
+                    <h2>#@CurrentChannel</h2>
+                    <span class="status @(IsConnected ? "connected" : "disconnected")">
+                        @(IsConnected ? "● Connecté" : "○ Déconnecté")
+                    </span>
+                }
             </div>
             <div class="header-right">
                 @if (IsPrivateConversation)
@@ -94,6 +105,9 @@
 
     [Parameter]
     public bool IsPrivateConversation { get; set; }
+
+    [Parameter]
+    public bool IsUserOnline { get; set; }
 
     [Parameter]
     public EventCallback<string> OnMessageSent { get; set; }
