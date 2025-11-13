@@ -2390,49 +2390,7 @@ public class ChatTests : TestContext
         Assert.Contains("chat-users", cut.Markup);
     }
 
-    [Fact]
-    public async Task Chat_UsersListToggle_MultipleClicks_ShouldToggleCorrectly()
-    {
-        // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-
-        var channels = new List<Channel>
-        {
-            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
-        };
-
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
-
-        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
-
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
-            .Returns(Task.CompletedTask);
-
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
-
-        _privateMessageServiceMock
-            .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
-            .ReturnsAsync([]);
-
-        var cut = RenderComponent<Chat>();
-        await Task.Delay(200);
-
-        // Rejoindre un canal
-        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
-        await Task.Delay(100);
-
-        // Dans la nouvelle version, la liste des utilisateurs est toujours affichée pour les salons publics
-        // Il n'y a plus de bouton toggle pour la liste d'utilisateurs
-        // Ce test n'est plus applicable, on vérifie juste que la liste est présente
-        Assert.Contains("chat-users", cut.Markup);
-        Assert.Contains("users-section", cut.Markup);
-    }
-
+    
     [Fact]
     public async Task Chat_HandleUsersListToggle_ShouldUpdateUsersListOpenState()
     {
@@ -2483,6 +2441,7 @@ public class ChatTests : TestContext
     }
 
     [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "RaiseAsync throw an exception")]
     public async Task Chat_UsersListToggleButton_ShouldDisplayUserCount()
     {
         // Arrange
@@ -2891,6 +2850,7 @@ public class ChatTests : TestContext
     }
 
     [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "RaiseAsync throw an exception")]
     public async Task Chat_HandleUserClicked_WithSameUser_ShouldNotOpenPrivateChat()
     {
         // Arrange
@@ -3035,7 +2995,7 @@ public class ChatTests : TestContext
             .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         // Act - Pas de chat privé ouvert, donc selectedPrivateUser est null
@@ -3068,7 +3028,7 @@ public class ChatTests : TestContext
             .Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        RenderComponent<Chat>();
         await Task.Delay(200);
 
         // Act - Essayer d'envoyer un message avec un username vide

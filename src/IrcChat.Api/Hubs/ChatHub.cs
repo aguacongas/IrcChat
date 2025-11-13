@@ -11,13 +11,15 @@ namespace IrcChat.Api.Hubs;
 
 public class ChatHub(
     ChatDbContext db,
-    IOptions<ConnectionManagerOptions> options) : Hub
+    IOptions<ConnectionManagerOptions> options,
+    ILogger<ChatHub> logger) : Hub
 {
+    private static readonly string _updateUserListMethod = "UpdateUserList";
     private readonly string _instanceId = options.Value.GetInstanceId();
 
     public async Task JoinChannel(string username, string channel)
     {
-        // Vérifier si le canal existe toujours
+        // Vérifier si le canal existe
         var channelExists = await db.Channels
             .AnyAsync(c => c.Name == channel);
 
@@ -27,37 +29,55 @@ public class ChatHub(
             return;
         }
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, channel);
+        // Récupérer ou créer l'utilisateur (pas de Save ici !)
+        var user = await db.ConnectedUsers
+            .FirstOrDefaultAsync(u => u.Username == username
+                && u.ConnectionId == Context.ConnectionId);
 
-        var existingUser = await db.ConnectedUsers
-            .FirstOrDefaultAsync(u => u.Username == username && u.Channel == channel);
-
-        if (existingUser != null)
+        if (user == null)
         {
-            existingUser.ConnectionId = Context.ConnectionId;
-            existingUser.LastPing = DateTime.UtcNow;
-            existingUser.ServerInstanceId = _instanceId;
-        }
-        else
-        {
-            db.ConnectedUsers.Add(new ConnectedUser
+            user = new ConnectedUser
             {
                 Username = username,
                 Channel = channel,
                 ConnectionId = Context.ConnectionId,
                 LastPing = DateTime.UtcNow,
                 ServerInstanceId = _instanceId
-            });
+            };
+
+            db.ConnectedUsers.Add(user);
+            logger.LogInformation("Nouvel utilisateur {Username} rejoint {Channel}", username, channel);
+        }
+        else
+        {
+            // Si l'utilisateur était dans un autre salon, le quitter
+            if (user.Channel != null && user.Channel != channel)
+            {
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, user.Channel);
+                await Clients.Group(user.Channel).SendAsync("UserLeft", username, user.Channel);
+
+                var oldChannelUsers = await GetChannelUsers(user.Channel);
+                await Clients.Group(user.Channel).SendAsync(_updateUserListMethod, oldChannelUsers);
+
+                logger.LogInformation("Utilisateur {Username} a quitté {OldChannel}", username, user.Channel);
+            }
+
+            user.Channel = channel;
+            user.LastPing = DateTime.UtcNow;
         }
 
+        // ✅ Un seul SaveChangesAsync à la fin
         await db.SaveChangesAsync();
+
+        // Rejoindre le nouveau salon
+        await Groups.AddToGroupAsync(Context.ConnectionId, channel);
 
         // Notifier les autres utilisateurs
         await Clients.Group(channel).SendAsync("UserJoined", username, channel);
 
         // Envoyer la liste mise à jour des utilisateurs
         var channelUsers = await GetChannelUsers(channel);
-        await Clients.Group(channel).SendAsync("UpdateUserList", channelUsers);
+        await Clients.Group(channel).SendAsync(_updateUserListMethod, channelUsers);
 
         // Envoyer le statut mute du canal
         var channelInfo = await db.Channels
@@ -68,24 +88,31 @@ public class ChatHub(
             await Clients.Group(channel).SendAsync("ChannelMuteStatusChanged",
                 channel, channelInfo.IsMuted);
         }
+
+        logger.LogInformation("Utilisateur {Username} a rejoint {Channel}", username, channel);
     }
 
     public async Task LeaveChannel(string channel)
     {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, channel);
+        var user = await db.ConnectedUsers
+            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
 
-        var connectedUser = await db.ConnectedUsers
-            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId && u.Channel == channel);
-
-        if (connectedUser != null)
+        if (user != null && user.Channel == channel)
         {
-            db.ConnectedUsers.Remove(connectedUser);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, channel);
+
+            user.Channel = null;
+            user.LastPing = DateTime.UtcNow;
+
+            // ✅ Un seul SaveChangesAsync
             await db.SaveChangesAsync();
 
-            await Clients.Group(channel).SendAsync("UserLeft", connectedUser.Username, channel);
+            await Clients.Group(channel).SendAsync("UserLeft", user.Username, channel);
 
             var channelUsers = await GetChannelUsers(channel);
-            await Clients.Group(channel).SendAsync("UpdateUserList", channelUsers);
+            await Clients.Group(channel).SendAsync(_updateUserListMethod, channelUsers);
+
+            logger.LogInformation("Utilisateur {Username} a quitté {Channel}", user.Username, channel);
         }
     }
 
@@ -102,12 +129,11 @@ public class ChatHub(
             var user = await db.ReservedUsernames
                 .FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower());
 
-            var isCreator = channel.CreatedBy.ToLower() == request.Username.ToLower();
+            var isCreator = channel.CreatedBy.Equals(request.Username, StringComparison.OrdinalIgnoreCase);
             var isAdmin = user?.IsAdmin ?? false;
 
             if (!isCreator && !isAdmin)
             {
-                // Envoyer un message d'erreur uniquement à l'expéditeur
                 await Clients.Caller.SendAsync("MessageBlocked",
                     "Ce salon est actuellement muet. Seul le créateur ou un administrateur peut envoyer des messages.");
                 return;
@@ -116,11 +142,12 @@ public class ChatHub(
 
         // Mettre à jour la dernière activité
         var connectedUser = await db.ConnectedUsers
-            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId && u.Channel == request.Channel);
+            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
 
         if (connectedUser != null)
         {
             connectedUser.LastActivity = DateTime.UtcNow;
+            connectedUser.LastPing = DateTime.UtcNow;
         }
 
         var message = new Message
@@ -134,6 +161,8 @@ public class ChatHub(
         };
 
         db.Messages.Add(message);
+
+        // ✅ Un seul SaveChangesAsync pour message + LastActivity
         await db.SaveChangesAsync();
 
         await Clients.Group(request.Channel).SendAsync("ReceiveMessage", message);
@@ -153,6 +182,8 @@ public class ChatHub(
         };
 
         db.PrivateMessages.Add(privateMessage);
+
+        // ✅ Un seul SaveChangesAsync
         await db.SaveChangesAsync();
 
         // Trouver la connexion du destinataire
@@ -178,6 +209,8 @@ public class ChatHub(
 
         if (currentUser == null)
         {
+            logger.LogWarning("Tentative de marquer des messages comme lus sans utilisateur enregistré (ConnectionId: {ConnectionId})",
+                Context.ConnectionId);
             return;
         }
 
@@ -192,6 +225,7 @@ public class ChatHub(
             message.IsRead = true;
         }
 
+        // ✅ Un seul SaveChangesAsync pour tous les messages
         await db.SaveChangesAsync();
 
         // Notifier l'expéditeur que ses messages ont été lus
@@ -207,42 +241,65 @@ public class ChatHub(
         }
     }
 
-    public async Task Ping()
+    public async Task Ping(string username)
+    {
+        // Récupérer ou créer l'utilisateur
+        var user = await db.ConnectedUsers
+            .FirstOrDefaultAsync(u => u.Username == username
+                && u.ConnectionId == Context.ConnectionId);
+
+        if (user == null)
+        {
+            user = new ConnectedUser
+            {
+                Username = username,
+                Channel = null,
+                ConnectionId = Context.ConnectionId,
+                LastPing = DateTime.UtcNow,
+                ServerInstanceId = _instanceId
+            };
+
+            db.ConnectedUsers.Add(user);
+            logger.LogInformation("Utilisateur {Username} enregistré via Ping", username);
+        }
+        else
+        {
+            user.LastPing = DateTime.UtcNow;
+        }
+
+        // ✅ Un seul SaveChangesAsync
+        await db.SaveChangesAsync();
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var user = await db.ConnectedUsers
             .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
 
         if (user != null)
         {
-            user.LastPing = DateTime.UtcNow;
-            await db.SaveChangesAsync();
-        }
-    }
+            var username = user.Username;
+            var channel = user.Channel;
 
-    public override async Task OnDisconnectedAsync(Exception? exception)
-    {
-        // Récupérer toutes les connexions de cet utilisateur
-        var userConnections = await db.ConnectedUsers
-            .Where(u => u.ConnectionId == Context.ConnectionId)
-            .ToListAsync();
-
-        if (userConnections.Count != 0)
-        {
-            // Notifier chaque canal
-            foreach (var connection in userConnections)
+            // Notifier le salon si l'utilisateur y était
+            if (channel != null)
             {
-                await Clients.Group(connection.Channel)
-                    .SendAsync("UserLeft", connection.Username, connection.Channel);
+                await Clients.Group(channel)
+                    .SendAsync("UserLeft", username, channel);
 
-                db.ConnectedUsers.Remove(connection);
-
-                // Envoyer la liste mise à jour
-                var channelUsers = await GetChannelUsers(connection.Channel);
-                await Clients.Group(connection.Channel)
-                    .SendAsync("UpdateUserList", channelUsers);
+                var channelUsers = await GetChannelUsers(channel);
+                await Clients.Group(channel)
+                    .SendAsync(_updateUserListMethod, channelUsers);
             }
 
+            // Supprimer l'utilisateur
+            db.ConnectedUsers.Remove(user);
+
+            // ✅ Un seul SaveChangesAsync
             await db.SaveChangesAsync();
+
+            logger.LogInformation("Utilisateur {Username} déconnecté (Salon: {Channel})",
+                username, channel ?? "aucun");
         }
 
         await base.OnDisconnectedAsync(exception);
