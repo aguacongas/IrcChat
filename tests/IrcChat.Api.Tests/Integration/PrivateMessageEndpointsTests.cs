@@ -1,4 +1,5 @@
 // tests/IrcChat.Api.Tests/Integration/PrivateMessageEndpointsTests.cs
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
 using IrcChat.Api.Data;
@@ -450,16 +451,19 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
     private sealed class UserStatusResponse
     {
         public string Username { get; set; } = string.Empty;
+        [SuppressMessage("Major Code Smell", "S1144:Unused private types or members should be removed", Justification = "Deserialized")]
         public bool IsOnline { get; set; }
     }
 
     private sealed class UnreadCountResponse
     {
+        [SuppressMessage("Major Code Smell", "S1144:Unused private types or members should be removed", Justification = "Deserialized")]
         public int UnreadCount { get; set; }
     }
 
     private sealed class DeleteConversationResponse
     {
+        [SuppressMessage("Major Code Smell", "S1144:Unused private types or members should be removed", Justification = "Deserialized")]
         public int Deleted { get; set; }
     }
 }

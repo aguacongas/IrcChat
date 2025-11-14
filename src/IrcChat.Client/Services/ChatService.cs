@@ -5,7 +5,7 @@ namespace IrcChat.Client.Services;
 
 public class ChatService(IPrivateMessageService privateMessageService, ILogger<ChatService> logger) : IChatService
 {
-    private string _currentUserName;
+    private string? _currentUserName;
     private HubConnection? _hubConnection;
     private Timer? _pingTimer;
 
