@@ -14,9 +14,10 @@ public interface IChatService : IAsyncDisposable
     event Action<string>? OnChannelDeleted;
     event Action<string>? OnChannelNotFound;
     event Action? OnChannelListUpdated;
+    event Action<string, bool>? OnUserStatusChanged;
 
-    Task InitializeAsync(IHubConnectionBuilder hubConnectionBuilder);
-    Task JoinChannel(string username, string channel);
+    Task InitializeAsync(IHubConnectionBuilder hubConnectionBuilder, string currentUserName);
+    Task JoinChannel(string channel);
     Task LeaveChannel(string channel);
     Task SendMessage(SendMessageRequest request);
     Task SendPrivateMessage(SendPrivateMessageRequest request);

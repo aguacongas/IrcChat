@@ -15,10 +15,12 @@
         <ul class="conversation-list">
             @foreach (var conv in Conversations)
             {
-                <li class="@(conv.OtherUsername == SelectedUser ? "active" : "")" 
+                <li class="@(conv.OtherUsername == SelectedUser ? "active" : "")"
                     @onclick="() => OnConversationSelected.InvokeAsync(conv.OtherUsername)">
                     <div class="conversation-item">
                         <div class="conversation-info">
+                            <span class="status-dot @(conv.IsOnline ? "online" : "offline")"
+                                  title="@(conv.IsOnline ? "En ligne" : "Hors ligne")"></span>
                             <span class="username">@conv.OtherUsername</span>
                             @if (conv.UnreadCount > 0)
                             {
@@ -75,7 +77,7 @@
 
     private static string TruncateMessage(string message)
     {
-        return message.Length > 25 ? message.Substring(0, 25) + "..." : message;
+        return message.Length > 25 ? message[..25] + "..." : message;
     }
 
     private static string FormatTime(DateTime time)

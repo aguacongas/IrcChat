@@ -33,6 +33,11 @@ public static class PrivateMessageEndpoints
             .WithName("DeleteConversation")
             .WithOpenApi();
 
+        // Vérifier le statut de connexion d'un utilisateur
+        group.MapGet("/status/{username}", GetUserStatusAsync)
+            .WithName("GetUserStatus")
+            .WithOpenApi();
+
         return app;
     }
 
@@ -52,12 +57,21 @@ public static class PrivateMessageEndpoints
             })
             .ToListAsync();
 
+        // Récupérer les statuts de connexion en une seule requête
+        var usernames = conversations.Select(c => c.OtherUsername).ToList();
+        var onlineUsers = await db.ConnectedUsers
+            .Where(u => usernames.Contains(u.Username))
+            .Select(u => u.Username)
+            .Distinct()
+            .ToListAsync();
+
         var result = conversations.Select(c => new PrivateConversation
         {
             OtherUsername = c.OtherUsername,
             LastMessage = c.LastMessage.Content,
             LastMessageTime = c.LastMessage.Timestamp,
-            UnreadCount = c.UnreadCount
+            UnreadCount = c.UnreadCount,
+            IsOnline = onlineUsers.Contains(c.OtherUsername)
         }).OrderByDescending(c => c.LastMessageTime);
 
         return Results.Ok(result);
@@ -114,5 +128,15 @@ public static class PrivateMessageEndpoints
         await db.SaveChangesAsync();
 
         return Results.Ok(new { Deleted = messages.Count });
+    }
+
+    private static async Task<IResult> GetUserStatusAsync(
+        string username,
+        ChatDbContext db)
+    {
+        var isOnline = await db.ConnectedUsers
+            .AnyAsync(u => u.Username == username);
+
+        return Results.Ok(new { Username = username, IsOnline = isOnline });
     }
 }

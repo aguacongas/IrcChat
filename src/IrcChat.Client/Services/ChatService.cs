@@ -5,6 +5,7 @@ namespace IrcChat.Client.Services;
 
 public class ChatService(IPrivateMessageService privateMessageService, ILogger<ChatService> logger) : IChatService
 {
+    private string? _currentUserName;
     private HubConnection? _hubConnection;
     private Timer? _pingTimer;
 
@@ -23,8 +24,12 @@ public class ChatService(IPrivateMessageService privateMessageService, ILogger<C
     public event Action<string>? OnChannelNotFound;
     public event Action? OnChannelListUpdated;
 
-    public async Task InitializeAsync(IHubConnectionBuilder hubConnectionBuilder)
+    // Event pour le statut de connexion des utilisateurs
+    public event Action<string, bool>? OnUserStatusChanged;
+
+    public async Task InitializeAsync(IHubConnectionBuilder hubConnectionBuilder, string currentUserName)
     {
+        _currentUserName = currentUserName;
         _hubConnection = hubConnectionBuilder.Build();
 
         // Handlers pour les canaux publics
@@ -48,6 +53,9 @@ public class ChatService(IPrivateMessageService privateMessageService, ILogger<C
 
         _hubConnection.On("ChannelListUpdated", () => OnChannelListUpdated?.Invoke());
 
+        // Handler pour le statut de connexion des utilisateurs
+        _hubConnection.On<string, bool>("UserStatusChanged", (username, isOnline) => OnUserStatusChanged?.Invoke(username, isOnline));
+
         // Handlers pour les messages privés
         _hubConnection.On<PrivateMessage>("ReceivePrivateMessage", message => privateMessageService.NotifyPrivateMessageReceived(message));
 
@@ -63,7 +71,7 @@ public class ChatService(IPrivateMessageService privateMessageService, ILogger<C
             {
                 if (_hubConnection?.State == HubConnectionState.Connected)
                 {
-                    await _hubConnection.SendAsync("Ping");
+                    await _hubConnection.SendAsync("Ping", _currentUserName);
                 }
             }
             catch (Exception ex)
@@ -74,11 +82,11 @@ public class ChatService(IPrivateMessageService privateMessageService, ILogger<C
     }
 
     // Méthodes pour les canaux publics
-    public async Task JoinChannel(string username, string channel)
+    public async Task JoinChannel(string channel)
     {
         if (_hubConnection != null)
         {
-            await _hubConnection.SendAsync("JoinChannel", username, channel);
+            await _hubConnection.SendAsync("JoinChannel", _currentUserName, channel);
         }
     }
 

@@ -165,8 +165,10 @@ public class AdminPanelTests : TestContext
         _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(HttpStatusCode.OK, JsonContent.Create(updatedUsers));
 
+        cut.Render();
+
         // Act
-        var promoteButton = cut.Find(".btn-action.promote");
+        var promoteButton = await cut.InvokeAsync(() => cut.Find(".btn-action.promote"));
         await cut.InvokeAsync(() => promoteButton.Click());
         await Task.Delay(300);
 
