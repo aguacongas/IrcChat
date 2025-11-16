@@ -10,4 +10,5 @@ public class ConnectedUser
     public DateTime LastActivity { get; set; }
     public DateTime LastPing { get; set; }
     public string ServerInstanceId { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
 }

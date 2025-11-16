@@ -1,7 +1,9 @@
 // tests/IrcChat.Api.Tests/Integration/MessageEndpointsTests.cs
 using System.Net;
 using System.Net.Http.Json;
+using IrcChat.Api.Data;
 using IrcChat.Shared.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace IrcChat.Api.Tests.Integration;
@@ -12,45 +14,28 @@ public class MessageEndpointsTests(ApiWebApplicationFactory factory)
     private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
-    public async Task SendMessage_ShouldCreateMessage()
-    {
-        // Arrange
-        var messageRequest = new SendMessageRequest
-        {
-            Username = "testuser",
-            Content = "Hello, World!",
-            Channel = "general"
-        };
-
-        // Act
-        var response = await _client.PostAsJsonAsync("/api/messages", messageRequest);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var message = await response.Content.ReadFromJsonAsync<Message>();
-        Assert.NotNull(message);
-        Assert.Equal("Hello, World!", message!.Content);
-        Assert.Equal("testuser", message.Username);
-    }
-
-    [Fact]
     public async Task GetMessages_ShouldReturnMessagesForChannel()
     {
         // Arrange
-        var channel = "general";
-        await _client.PostAsJsonAsync("/api/messages", new SendMessageRequest
+        var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        var channel = Guid.NewGuid().ToString();
+        db.Messages.Add(new Message
         {
             Username = "testuser",
             Content = "Test message 1",
-            Channel = channel
+            Channel = channel,
+            Timestamp = DateTime.UtcNow
         });
-
-        await _client.PostAsJsonAsync("/api/messages", new SendMessageRequest
+        db.Messages.Add(new Message
         {
             Username = "testuser",
             Content = "Test message 2",
-            Channel = channel
+            Channel = channel,
+            Timestamp = DateTime.UtcNow
         });
+        await db.SaveChangesAsync();
 
         // Act
         var response = await _client.GetAsync($"/api/messages/{channel}");
@@ -59,6 +44,6 @@ public class MessageEndpointsTests(ApiWebApplicationFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var messages = await response.Content.ReadFromJsonAsync<List<Message>>();
         Assert.NotNull(messages);
-        Assert.True(messages.Count >= 2);
+        Assert.Equal(2, messages.Count);
     }
 }

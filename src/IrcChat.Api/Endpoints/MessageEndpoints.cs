@@ -17,10 +17,6 @@ public static class MessageEndpoints
             .WithName("GetMessages")
             .WithOpenApi();
 
-        group.MapPost("", SendMessageAsync)
-            .WithName("SendMessage")
-            .WithOpenApi();
-
         return app;
     }
 
@@ -36,25 +32,5 @@ public static class MessageEndpoints
             .ToListAsync();
 
         return Results.Ok(messages);
-    }
-
-    private static async Task<IResult> SendMessageAsync(
-        SendMessageRequest req,
-        ChatDbContext db)
-    {
-        var msg = new Message
-        {
-            Id = Guid.NewGuid(),
-            Username = req.Username,
-            Content = req.Content,
-            Channel = req.Channel,
-            Timestamp = DateTime.UtcNow,
-            IsDeleted = false
-        };
-
-        db.Messages.Add(msg);
-        await db.SaveChangesAsync();
-
-        return Results.Created($"/api/messages/{msg.Id}", msg);
     }
 }

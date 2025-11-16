@@ -1,13 +1,19 @@
 // src/IrcChat.Client/Services/UnifiedAuthService.cs
 using System.Text.Json;
 using IrcChat.Shared.Models;
+using Microsoft.JSInterop;
 
 namespace IrcChat.Client.Services;
 
-public class UnifiedAuthService(ILocalStorageService localStorage, HttpClient httpClient, ILogger<UnifiedAuthService> logger) : IUnifiedAuthService
+public class UnifiedAuthService(ILocalStorageService localStorage,
+    HttpClient httpClient,
+    IJSRuntime jsRuntime,
+    ILogger<UnifiedAuthService> logger) : IUnifiedAuthService
 {
     private static readonly string _authKey = "ircchat_unified_auth";
     private bool _isInitialized = false;
+    private IJSObjectReference? _userIdModule;
+    private string? _clientUserId; // UserId généré côté client
 
     public event Action? OnAuthStateChanged;
 
@@ -119,6 +125,69 @@ public class UnifiedAuthService(ILocalStorageService localStorage, HttpClient ht
 
         await ClearLocalStorageAsync();
         OnAuthStateChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// Obtient le UserId client (GUID pour invités, Username pour OAuth)
+    /// </summary>
+    public async Task<string> GetClientUserIdAsync()
+    {
+        if (!string.IsNullOrEmpty(_clientUserId))
+        {
+            return _clientUserId;
+        }
+
+        // Initialiser le module si nécessaire
+        if (_userIdModule == null)
+        {
+            try
+            {
+                _userIdModule = await jsRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", "./js/userIdManager.js");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors du chargement du module userIdManager");
+                // Fallback : générer un GUID temporaire
+                _clientUserId = Guid.NewGuid().ToString();
+                return _clientUserId;
+            }
+        }
+
+        if (IsReserved && !string.IsNullOrEmpty(Username))
+        {
+            // Utilisateur OAuth : clientUserId = Username
+            _clientUserId = Username;
+
+            // Stocker en IndexedDB pour cohérence
+            try
+            {
+                await _userIdModule.InvokeVoidAsync("setUserId", _clientUserId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Erreur lors du stockage du UserId en IndexedDB");
+            }
+        }
+        else
+        {
+            // Utilisateur invité : clientUserId = GUID depuis IndexedDB
+            try
+            {
+                _clientUserId = await _userIdModule.InvokeAsync<string>("getUserId");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors de la récupération du UserId depuis IndexedDB");
+                // Fallback : générer un GUID
+                _clientUserId = Guid.NewGuid().ToString();
+            }
+        }
+
+        logger.LogInformation("ClientUserId récupéré: {UserId} (IsReserved: {IsReserved})",
+            _clientUserId, IsReserved);
+
+        return _clientUserId;
     }
 
     private async Task SaveToLocalStorageAsync()

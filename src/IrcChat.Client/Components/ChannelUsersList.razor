@@ -5,12 +5,12 @@
     <div class="users-section">
         <h4>Utilisateurs (@(Users?.Count ?? 0))</h4>
         <ul class="user-list">
-            @foreach (var userName in Users?.Select(user => user.Username) ?? [])
+            @foreach (var user in Users ?? [])
             {
-                <li class="@(userName == Username ? "current" : "")"
-                    @onclick="() => OnUserClicked.InvokeAsync(userName)">
+                <li class="@(user.Username == Username ? "current" : "")"
+                    @onclick="() => OnUserClicked.InvokeAsync(user)">
                     <span class="status-dot online"></span>
-                    @userName
+                    @user.Username
                 </li>
             }
         </ul>
@@ -21,5 +21,5 @@
     [Parameter] public string? CurrentChannel { get; set; }
     [Parameter] public string Username { get; set; } = string.Empty;
     [Parameter] public List<User>? Users { get; set; }
-    [Parameter] public EventCallback<string> OnUserClicked { get; set; }
+    [Parameter] public EventCallback<User> OnUserClicked { get; set; }
 }

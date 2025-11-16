@@ -46,7 +46,7 @@ public static class ChannelDeleteEndpoints
 
         // Supprimer tous les utilisateurs connectés au canal
         var connectedUsers = await db.ConnectedUsers
-            .Where(u => u.Channel.ToLower() == channelName.ToLower())
+            .Where(u => u.Channel!.ToLower() == channelName.ToLower())
             .ToListAsync();
 
         db.ConnectedUsers.RemoveRange(connectedUsers);

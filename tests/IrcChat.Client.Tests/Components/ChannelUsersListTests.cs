@@ -124,16 +124,16 @@ public class ChannelUsersListTests : TestContext
         // Arrange
         var users = new List<User>
         {
-            new() { Username = "alice", ConnectedAt = DateTime.UtcNow },
-            new() { Username = "bob", ConnectedAt = DateTime.UtcNow }
+            new() { UserId = "alice", Username = "alice", ConnectedAt = DateTime.UtcNow },
+            new() { UserId = "bob", Username = "bob", ConnectedAt = DateTime.UtcNow }
         };
 
-        string? clickedUsername = null;
+        User? clickedUser = null;
         var cut = RenderComponent<ChannelUsersList>(parameters => parameters
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.Username, "testuser")
             .Add(p => p.Users, users)
-            .Add(p => p.OnUserClicked, username => clickedUsername = username));
+            .Add(p => p.OnUserClicked, user => clickedUser = user));
 
         // Act
         var userItems = cut.FindAll(".user-list li");
@@ -141,7 +141,7 @@ public class ChannelUsersListTests : TestContext
         await cut.InvokeAsync(() => aliceItem.Click());
 
         // Assert
-        Assert.Equal("alice", clickedUsername);
+        Assert.Equal("alice", clickedUser?.Username);
     }
 
     [Fact]
@@ -150,22 +150,22 @@ public class ChannelUsersListTests : TestContext
         // Arrange
         var users = new List<User>
         {
-            new() { Username = "testuser", ConnectedAt = DateTime.UtcNow }
+            new() { UserId = "testuser", Username = "testuser", ConnectedAt = DateTime.UtcNow }
         };
 
-        string? clickedUsername = null;
+        User? clickedUser = null;
         var cut = RenderComponent<ChannelUsersList>(parameters => parameters
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.Username, "testuser")
             .Add(p => p.Users, users)
-            .Add(p => p.OnUserClicked, username => clickedUsername = username));
+            .Add(p => p.OnUserClicked, user => clickedUser = user));
 
         // Act
         var userItem = cut.Find(".user-list li");
         await cut.InvokeAsync(() => userItem.Click());
 
         // Assert
-        Assert.Equal("testuser", clickedUsername);
+        Assert.Equal("testuser", clickedUser?.Username);
     }
 
     [Fact]

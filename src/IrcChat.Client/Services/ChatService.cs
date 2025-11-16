@@ -3,17 +3,17 @@ using Microsoft.AspNetCore.SignalR.Client;
 
 namespace IrcChat.Client.Services;
 
-public class ChatService(IPrivateMessageService privateMessageService, ILogger<ChatService> logger) : IChatService
+public class ChatService(IPrivateMessageService privateMessageService,
+    IUnifiedAuthService authService,
+    ILogger<ChatService> logger) : IChatService
 {
-    private string? _currentUserName;
     private HubConnection? _hubConnection;
     private Timer? _pingTimer;
 
     // Events pour les canaux publics
     public event Action<Message>? OnMessageReceived;
-    public event Action<string, string>? OnUserJoined;
-    public event Action<string, string>? OnUserLeft;
-    public event Action<List<User>>? OnUserListUpdated;
+    public event Action<string, string, string>? OnUserJoined;
+    public event Action<string, string, string>? OnUserLeft;
 
     // Events pour le mute
     public event Action<string, bool>? OnChannelMuteStatusChanged;
@@ -27,19 +27,16 @@ public class ChatService(IPrivateMessageService privateMessageService, ILogger<C
     // Event pour le statut de connexion des utilisateurs
     public event Action<string, bool>? OnUserStatusChanged;
 
-    public async Task InitializeAsync(IHubConnectionBuilder hubConnectionBuilder, string currentUserName)
+    public async Task InitializeAsync(IHubConnectionBuilder hubConnectionBuilder)
     {
-        _currentUserName = currentUserName;
         _hubConnection = hubConnectionBuilder.Build();
 
         // Handlers pour les canaux publics
         _hubConnection.On<Message>("ReceiveMessage", message => OnMessageReceived?.Invoke(message));
 
-        _hubConnection.On<string, string>("UserJoined", (username, channel) => OnUserJoined?.Invoke(username, channel));
+        _hubConnection.On<string, string, string>("UserJoined", (username, userId, channel) => OnUserJoined?.Invoke(username, userId, channel));
 
-        _hubConnection.On<string, string>("UserLeft", (username, channel) => OnUserLeft?.Invoke(username, channel));
-
-        _hubConnection.On<List<User>>("UpdateUserList", users => OnUserListUpdated?.Invoke(users));
+        _hubConnection.On<string, string, string>("UserLeft", (username, userId, channel) => OnUserLeft?.Invoke(username, userId, channel));
 
         // Handlers pour le mute
         _hubConnection.On<string, bool>("ChannelMuteStatusChanged", (channel, isMuted) => OnChannelMuteStatusChanged?.Invoke(channel, isMuted));
@@ -71,7 +68,16 @@ public class ChatService(IPrivateMessageService privateMessageService, ILogger<C
             {
                 if (_hubConnection?.State == HubConnectionState.Connected)
                 {
-                    await _hubConnection.SendAsync("Ping", _currentUserName);
+                    var userId = await authService.GetClientUserIdAsync();
+
+                    if (!string.IsNullOrEmpty(userId))
+                    {
+                        await _hubConnection.SendAsync("Ping", authService.Username, userId);
+                    }
+                    else
+                    {
+                        logger.LogWarning("UserId vide lors du ping pour {Username}", authService.Username);
+                    }
                 }
             }
             catch (Exception ex)
@@ -86,7 +92,7 @@ public class ChatService(IPrivateMessageService privateMessageService, ILogger<C
     {
         if (_hubConnection != null)
         {
-            await _hubConnection.SendAsync("JoinChannel", _currentUserName, channel);
+            await _hubConnection.SendAsync("JoinChannel", channel);
         }
     }
 
@@ -115,11 +121,11 @@ public class ChatService(IPrivateMessageService privateMessageService, ILogger<C
         }
     }
 
-    public async Task MarkPrivateMessagesAsRead(string senderUsername)
+    public async Task MarkPrivateMessagesAsRead(string senderUserId)
     {
         if (_hubConnection != null)
         {
-            await _hubConnection.SendAsync("MarkPrivateMessagesAsRead", senderUsername);
+            await _hubConnection.SendAsync("MarkPrivateMessagesAsRead", senderUserId);
         }
     }
 

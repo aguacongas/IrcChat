@@ -84,6 +84,7 @@ else
 @code {
     private string currentChannel = "";
     private string currentUsername = "";
+    private string currentUserId = "";
     private string? avatarUrl = null;
     private List<Message> messages = new();
     private List<Channel> channels = new();
@@ -99,7 +100,7 @@ else
     // Messages privés
     private List<PrivateConversation> privateConversations = new();
     private List<PrivateMessage> privateMessages = new();
-    private string? selectedPrivateUser = null;
+    private User? selectedPrivateUser = null;
     private bool isPrivateConversation = false;
     private bool isSelectedUserOnline = false;
 
@@ -115,6 +116,7 @@ else
         }
 
         currentUsername = Auth.Username!;
+        currentUserId = await Auth.GetClientUserIdAsync();
         avatarUrl = Auth.AvatarUrl;
 
         // Déterminer l'état initial de la liste des utilisateurs selon la taille d'écran
@@ -139,7 +141,6 @@ else
         ChatService.OnMessageReceived += OnMessageReceived;
         ChatService.OnUserJoined += OnUserJoined;
         ChatService.OnUserLeft += OnUserLeft;
-        ChatService.OnUserListUpdated += OnUserListUpdated;
         ChatService.OnChannelDeleted += OnChannelDeleted;
         ChatService.OnChannelNotFound += OnChannelNotFound;
         ChatService.OnChannelListUpdated += OnChannelListUpdated;
@@ -163,7 +164,7 @@ else
                     options.AccessTokenProvider = () => Task.FromResult(Auth.Token);
                 })
                 .WithAutomaticReconnect();
-            await ChatService.InitializeAsync(hubConnectionBuilder, currentUsername);
+            await ChatService.InitializeAsync(hubConnectionBuilder);
             isConnected = true;
 
             ChatService.OnChannelMuteStatusChanged += OnChannelMuteStatusChanged;
@@ -188,26 +189,22 @@ else
         }
     }
 
-    private void OnUserJoined(string user, string channel)
+    private void OnUserJoined(string user, string userId, string channel)
     {
         if (channel == currentChannel && !isPrivateConversation)
         {
+            users.Add(new User { Username = user, UserId = userId });
             InvokeAsync(StateHasChanged);
         }
     }
 
-    private void OnUserLeft(string user, string channel)
+    private void OnUserLeft(string user, string userId, string channel)
     {
         if (channel == currentChannel && !isPrivateConversation)
         {
+            users = users.Where(u => u.UserId != userId).ToList();
             InvokeAsync(StateHasChanged);
         }
-    }
-
-    private void OnUserListUpdated(List<User> updatedUsers)
-    {
-        users = updatedUsers;
-        InvokeAsync(StateHasChanged);
     }
 
     private void OnChannelMuteStatusChanged(string channel, bool isMuted)
@@ -265,14 +262,14 @@ else
     private async void OnUserStatusChanged(string username, bool isOnline)
     {
         // Mettre à jour le statut dans les conversations
-        var conversation = privateConversations.FirstOrDefault(c => c.OtherUsername == username);
+        var conversation = privateConversations.FirstOrDefault(c => c.OtherUser?.Username == username);
         if (conversation != null)
         {
             conversation.IsOnline = isOnline;
         }
 
         // Mettre à jour le statut de l'utilisateur sélectionné
-        if (isPrivateConversation && selectedPrivateUser == username)
+        if (isPrivateConversation && selectedPrivateUser?.Username == username)
         {
             isSelectedUserOnline = isOnline;
         }
@@ -290,13 +287,13 @@ else
     private void OnPrivateMessageReceived(PrivateMessage message)
     {
         if (isPrivateConversation &&
-            (message.SenderUsername == selectedPrivateUser || message.RecipientUsername == selectedPrivateUser))
+            (message.SenderUserId == selectedPrivateUser?.UserId || message.RecipientUserId == selectedPrivateUser?.UserId))
         {
             privateMessages.Add(message);
 
-            if (message.SenderUsername == selectedPrivateUser)
+            if (message.SenderUserId == selectedPrivateUser?.UserId)
             {
-                _ = ChatService.MarkPrivateMessagesAsRead(selectedPrivateUser!);
+                _ = ChatService.MarkPrivateMessagesAsRead(selectedPrivateUser!.UserId);
             }
         }
 
@@ -309,7 +306,7 @@ else
 
     private void OnPrivateMessageSent(PrivateMessage message)
     {
-        if (isPrivateConversation && message.RecipientUsername == selectedPrivateUser)
+        if (isPrivateConversation && message.RecipientUserId == selectedPrivateUser?.UserId)
         {
             privateMessages.Add(message);
         }
@@ -332,7 +329,7 @@ else
 
     private void OnConversationDeleted(string username)
     {
-        if (selectedPrivateUser == username && isPrivateConversation)
+        if (selectedPrivateUser?.UserId == username && isPrivateConversation)
         {
             ClosePrivateChat();
         }
@@ -363,9 +360,10 @@ else
         isSelectedUserOnline = false;
 
         currentChannel = channel;
-        await LoadMessages();
         await ChatService.JoinChannel(channel);
-
+        await LoadMessages();
+        await LoadUsers();
+        
         var channelInfo = channels.FirstOrDefault(c => c.Name == channel);
         isCurrentChannelMuted = channelInfo?.IsMuted ?? false;
 
@@ -410,43 +408,55 @@ else
         }
     }
 
-    private async Task SendMessage(string content)
+    private async Task LoadUsers()
     {
-        if (!string.IsNullOrEmpty(currentUsername) && isConnected)
+        try
         {
-            var req = new SendMessageRequest
+            var result = await Http.GetFromJsonAsync<List<User>>($"/api/channels/{currentChannel}/users");
+            if (result != null)
             {
-                Username = currentUsername,
-                Content = content,
-                Channel = currentChannel
-            };
-
-            try
-            {
-                await ChatService.SendMessage(req);
+                users = result;
             }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "Erreur lors de l'envoi du message");
-            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors du chargement des users pour le canal {Channel}", currentChannel);
         }
     }
 
-    private async Task HandleUserClicked(string username)
+    private async Task SendMessage(string content)
     {
-        if (username != currentUsername)
+        var req = new SendMessageRequest
         {
-            await OpenPrivateChat(username);
+            Content = content,
+            Channel = currentChannel
+        };
+
+        try
+        {
+            await ChatService.SendMessage(req);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de l'envoi du message");
+        }
+    }
+
+    private async Task HandleUserClicked(User user)
+    {
+        if (user.Username != currentUsername)
+        {
+            await OpenPrivateChat(user);
         }
     }
 
     // Méthodes pour messages privés
     private async Task LoadPrivateConversations()
     {
-        privateConversations = await PrivateMessageService.GetConversationsAsync(currentUsername);
+        privateConversations = await PrivateMessageService.GetConversationsAsync(currentUserId);
     }
 
-    private async Task OpenPrivateChat(string username)
+    private async Task OpenPrivateChat(User user)
     {
         if (!string.IsNullOrEmpty(currentChannel) && !isPrivateConversation)
         {
@@ -455,14 +465,14 @@ else
 
         currentChannel = "";
         isPrivateConversation = true;
-        selectedPrivateUser = username;
+        selectedPrivateUser = user;
 
-        privateMessages = await PrivateMessageService.GetPrivateMessagesAsync(currentUsername, username);
-        await ChatService.MarkPrivateMessagesAsRead(username);
+        privateMessages = await PrivateMessageService.GetPrivateMessagesAsync(currentUserId, user.UserId);
+        await ChatService.MarkPrivateMessagesAsRead(user.UserId);
         await LoadPrivateConversations();
 
         // Charger le statut de connexion de l'utilisateur
-        await UpdateSelectedUserStatus(username);
+        await UpdateSelectedUserStatus(user.Username);
 
         sidebarOpen = false;
         usersListOpen = false;
@@ -497,15 +507,15 @@ else
 
     private async Task SendPrivateMessage(string content)
     {
-        if (string.IsNullOrEmpty(selectedPrivateUser) || !isConnected)
+        if (string.IsNullOrEmpty(selectedPrivateUser?.UserId) || !isConnected)
         {
             return;
         }
 
         var request = new SendPrivateMessageRequest
         {
-            SenderUsername = currentUsername,
-            RecipientUsername = selectedPrivateUser,
+            RecipientUserId = selectedPrivateUser.UserId,
+            RecipientUsername = selectedPrivateUser.Username,
             Content = content
         };
 
@@ -519,13 +529,13 @@ else
         }
     }
 
-    private async Task DeleteConversation(string otherUsername)
+    private async Task DeleteConversation(User otherUser)
     {
-        var success = await PrivateMessageService.DeleteConversationAsync(currentUsername, otherUsername);
+        var success = await PrivateMessageService.DeleteConversationAsync(currentUserId, otherUser.UserId);
 
         if (success)
         {
-            if (selectedPrivateUser == otherUsername && isPrivateConversation)
+            if (selectedPrivateUser == otherUser && isPrivateConversation)
             {
                 ClosePrivateChat();
             }
@@ -572,7 +582,7 @@ else
 
     private string GetCurrentChannelOrUsername()
     {
-        return isPrivateConversation ? selectedPrivateUser ?? "" : currentChannel;
+        return isPrivateConversation ? selectedPrivateUser?.Username ?? "" : currentChannel;
     }
 
     private List<Message> GetCurrentMessages()
@@ -596,7 +606,6 @@ else
         ChatService.OnMessageReceived -= OnMessageReceived;
         ChatService.OnUserJoined -= OnUserJoined;
         ChatService.OnUserLeft -= OnUserLeft;
-        ChatService.OnUserListUpdated -= OnUserListUpdated;
         ChatService.OnChannelMuteStatusChanged -= OnChannelMuteStatusChanged;
         ChatService.OnMessageBlocked -= OnMessageBlocked;
         ChatService.OnChannelDeleted -= OnChannelDeleted;

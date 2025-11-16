@@ -117,14 +117,14 @@ public class PrivateMessageServiceTests
         {
             new()
             {
-                OtherUsername = "user1",
+                OtherUser = new User { UserId= "user1", Username="user1" },
                 LastMessage = "Hello",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 2
             },
             new()
             {
-                OtherUsername = "user2",
+                OtherUser = new User{ UserId = "user2", Username = "user2" },
                 LastMessage = "Hi",
                 LastMessageTime = DateTime.UtcNow.AddHours(-1),
                 UnreadCount = 0
@@ -141,10 +141,10 @@ public class PrivateMessageServiceTests
 
         // Assert
         Assert.Equal(2, result.Count);
-        Assert.Equal("user1", result[0].OtherUsername);
+        Assert.Equal("user1", result[0].OtherUser?.UserId);
         Assert.Equal("Hello", result[0].LastMessage);
         Assert.Equal(2, result[0].UnreadCount);
-        Assert.Equal("user2", result[1].OtherUsername);
+        Assert.Equal("user2", result[1].OtherUser?.UserId);
         Assert.Equal("Hi", result[1].LastMessage);
         Assert.Equal(0, result[1].UnreadCount);
     }

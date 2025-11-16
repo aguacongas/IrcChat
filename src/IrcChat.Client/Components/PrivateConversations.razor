@@ -15,13 +15,13 @@
         <ul class="conversation-list">
             @foreach (var conv in Conversations)
             {
-                <li class="@(conv.OtherUsername == SelectedUser ? "active" : "")"
-                    @onclick="() => OnConversationSelected.InvokeAsync(conv.OtherUsername)">
+                <li class="@(conv.OtherUser!.UserId == SelectedUser?.UserId ? "active" : "")"
+                    @onclick="() => OnConversationSelected.InvokeAsync(conv.OtherUser)">
                     <div class="conversation-item">
                         <div class="conversation-info">
                             <span class="status-dot @(conv.IsOnline ? "online" : "offline")"
                                   title="@(conv.IsOnline ? "En ligne" : "Hors ligne")"></span>
-                            <span class="username">@conv.OtherUsername</span>
+                            <span class="username">@conv.OtherUser?.Username</span>
                             @if (conv.UnreadCount > 0)
                             {
                                 <span class="unread-count">@conv.UnreadCount</span>
@@ -37,7 +37,7 @@
                         </div>
                     </div>
                     <button class="delete-conversation-btn"
-                            @onclick="async () => await DeleteConversation(conv.OtherUsername)"
+                            @onclick="async () => await DeleteConversation(conv.OtherUser)"
                             @onclick:stopPropagation="true"
                             title="Supprimer la conversation">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -65,13 +65,13 @@
     public List<PrivateConversation> Conversations { get; set; } = new();
 
     [Parameter]
-    public string? SelectedUser { get; set; }
+    public User? SelectedUser { get; set; }
 
     [Parameter]
-    public EventCallback<string> OnConversationSelected { get; set; }
+    public EventCallback<User> OnConversationSelected { get; set; }
 
     [Parameter]
-    public EventCallback<string> OnConversationDeleted { get; set; }
+    public EventCallback<User> OnConversationDeleted { get; set; }
 
     private int TotalUnreadCount => Conversations.Sum(c => c.UnreadCount);
 
@@ -97,8 +97,8 @@
         return time.ToLocalTime().ToString("dd/MM");
     }
 
-    private async Task DeleteConversation(string username)
+    private async Task DeleteConversation(User user)
     {
-        await OnConversationDeleted.InvokeAsync(username);
+        await OnConversationDeleted.InvokeAsync(user);
     }
 }

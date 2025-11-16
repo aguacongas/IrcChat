@@ -24,4 +24,10 @@ public interface IUnifiedAuthService
     Task ForgetUsernameAndLogoutAsync();
     Task LogoutAsync();
     Task ClearAllAsync();
+
+    /// <summary>
+    /// Obtient le UserId client (GUID pour invités, Username pour OAuth)
+    /// </summary>
+    Task<string> GetClientUserIdAsync();
+
 }

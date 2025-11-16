@@ -147,7 +147,7 @@ public class AdminPanelTests : TestContext
             }
         };
 
-        var getUsersRequest = _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
+        _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(HttpStatusCode.OK, JsonContent.Create(initialUsers));
 
         _mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/promote")
