@@ -425,7 +425,7 @@ public class ChatTests : TestContext
         _chatServiceMock.VerifyAdd(
             x => x.OnUserLeft += It.IsAny<Action<string, string, string>>());
     }
-    
+
     [Fact]
     [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "RaiseAsync génére une erreur")]
     public async Task Chat_PrivateMessageReceived_ShouldUpdateConversations()

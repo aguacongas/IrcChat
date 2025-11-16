@@ -31,7 +31,7 @@ public class ChatHub(
         var user = await db.ConnectedUsers
             .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
 
-        if(user == null)
+        if (user == null)
         {
             logger.LogWarning("Tentative de connexion sur un salon   sans expéditeur identifié");
             await Clients.Caller.SendAsync("Error", "Utilisateur non identifié");
@@ -48,7 +48,7 @@ public class ChatHub(
 
         user.Channel = channel;
         user.LastPing = DateTime.UtcNow;
-        
+
         await db.SaveChangesAsync();
 
         await Groups.AddToGroupAsync(Context.ConnectionId, channel);

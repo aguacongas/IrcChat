@@ -56,7 +56,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         var message2 = new PrivateMessage
         {
             Id = Guid.NewGuid(),
-            SenderUserId= recipient,
+            SenderUserId = recipient,
             SenderUsername = recipient,
             RecipientUserId = sender,
             RecipientUsername = sender,
@@ -418,7 +418,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         var msg1 = new PrivateMessage
         {
             Id = Guid.NewGuid(),
-            SenderUserId= user1,
+            SenderUserId = user1,
             SenderUsername = user1,
             RecipientUserId = user2,
             RecipientUsername = user2,
