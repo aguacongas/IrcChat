@@ -1,33 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>IrcChat.Client</title>
-    <base href="/" />
-    <link rel="stylesheet" href="css/index.css" />
-    <link rel="stylesheet" href="css/app.css" />
-    <link rel="icon" type="image/png" href="favicon.png" />
-    <link href="IrcChat.Client.styles.css" rel="stylesheet" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IrcChat</title>
+  <base href="/" />
+  <link href="css/app.css" rel="stylesheet" />
+  <link href="css/index.css" rel="stylesheet" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link href="IrcChat.Client.styles.css" rel="stylesheet" />
 </head>
-
 <body>
-    <div id="app">
-        <svg class="loading-progress">
-            <circle r="40%" cx="50%" cy="50%" />
-            <circle r="40%" cx="50%" cy="50%" />
-        </svg>
-        <div class="loading-progress-text"></div>
+  <div id="app">
+    <div id="blazor-loading-screen">
+      <div class="irc-terminal">
+        <div class="terminal-header">
+          <div class="terminal-buttons">
+            <div class="terminal-button close"></div>
+            <div class="terminal-button minimize"></div>
+            <div class="terminal-button maximize"></div>
+          </div>
+          <div class="terminal-title">IrcChat - Connecting</div>
+        </div>
+        <div class="terminal-body">
+          <div class="terminal-line server">*** Looking up your hostname...</div>
+          <div class="terminal-line server">*** Found your hostname</div>
+          <div class="terminal-line info">*** Connecting to IRC server...</div>
+          <div class="terminal-line success">*** Connected to server</div>
+          <div class="terminal-line info">*** Loading client application<span class="loading-dots"></span></div>
+          <div class="terminal-line">
+            <span class="terminal-prompt">&gt;</span>
+            <span class="terminal-text">Initializing IrcChat</span>
+            <span class="terminal-cursor"></span>
+          </div>
+        </div>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
+          <div class="progress-text">Loading Blazor WebAssembly...</div>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <div id="blazor-error-ui">
-        An unhandled error has occurred.
-        <a href="." class="reload">Reload</a>
-        <span class="dismiss">🗙</span>
-    </div>
-    <script src="_framework/blazor.webassembly.js"></script>
-    <script src="js/localStorage.js"></script>
+  <div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+  </div>
+  <script src="_framework/blazor.webassembly.js"></script>
+  <script src="js/localStorage.js"></script>  
 </body>
-
 </html>
