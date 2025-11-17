@@ -156,6 +156,9 @@ jobs:
     - name: 📦 Install EF Core Tools
       run: dotnet tool install --global dotnet-ef
 
+    - name: 📦 Restore dependencies
+      run: dotnet restore
+      
     - name: 🗄️ Test Migrations
       run: |
         dotnet ef database update \
