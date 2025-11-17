@@ -15,28 +15,23 @@ public static class PrivateMessageEndpoints
 
         // Récupérer les conversations
         group.MapGet("/conversations/{userId}", GetConversationsAsync)
-            .WithName("GetConversations")
-            .WithOpenApi();
+            .WithName("GetConversations");
 
         // Récupérer les messages d'une conversation
         group.MapGet("/{userId}/with/{otherUserId}", GetPrivateMessagesAsync)
-            .WithName("GetPrivateMessages")
-            .WithOpenApi();
+            .WithName("GetPrivateMessages");
 
         // Récupérer le nombre de messages non lus
         group.MapGet("/{userId}/unread-count", GetUnreadCountAsync)
-            .WithName("GetUnreadCount")
-            .WithOpenApi();
+            .WithName("GetUnreadCount");
 
         // Supprimer une conversation (soft delete)
         group.MapDelete("/{userId}/conversation/{otherUserId}", DeleteConversationAsync)
-            .WithName("DeleteConversation")
-            .WithOpenApi();
+            .WithName("DeleteConversation");
 
         // Vérifier le statut de connexion d'un utilisateur
         group.MapGet("/status/{username}", GetUserStatusAsync)
-            .WithName("GetUserStatus")
-            .WithOpenApi();
+            .WithName("GetUserStatus");
 
         return app;
     }

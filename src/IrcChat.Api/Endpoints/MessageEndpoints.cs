@@ -14,8 +14,7 @@ public static class MessageEndpoints
             .WithTags("Messages");
 
         group.MapGet("/{channel}", GetMessagesAsync)
-            .WithName("GetMessages")
-            .WithOpenApi();
+            .WithName("GetMessages");
 
         return app;
     }

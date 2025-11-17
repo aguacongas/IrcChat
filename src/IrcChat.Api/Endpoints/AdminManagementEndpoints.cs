@@ -16,23 +16,19 @@ public static class AdminManagementEndpoints
 
         // Obtenir la liste de tous les utilisateurs réservés
         group.MapGet("/users", GetUsersAsync)
-        .WithName("GetAllReservedUsers")
-        .WithOpenApi();
+        .WithName("GetAllReservedUsers");
 
         // Promouvoir un utilisateur en admin
         group.MapPost("/{userId}/promote", PromoteAsAdminAsync)
-        .WithName("PromoteUserToAdmin")
-        .WithOpenApi();
+        .WithName("PromoteUserToAdmin");
 
         // Révoquer le statut d'admin
         group.MapPost("/{userId}/demote", DemoteAsync)
-        .WithName("DemoteUserFromAdmin")
-        .WithOpenApi();
+        .WithName("DemoteUserFromAdmin");
 
         // Vérifier si l'utilisateur actuel est admin
         group.MapGet("/check-admin", CheckIsAdminAsync)
-        .WithName("CheckAdminStatus")
-        .WithOpenApi();
+        .WithName("CheckAdminStatus");
 
         return app;
     }
