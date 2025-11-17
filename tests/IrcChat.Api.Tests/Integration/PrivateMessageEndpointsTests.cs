@@ -43,7 +43,9 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         var message1 = new PrivateMessage
         {
             Id = Guid.NewGuid(),
+            SenderUserId = sender,
             SenderUsername = sender,
+            RecipientUserId = recipient,
             RecipientUsername = recipient,
             Content = "Hello",
             Timestamp = DateTime.UtcNow.AddMinutes(-5),
@@ -54,7 +56,9 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         var message2 = new PrivateMessage
         {
             Id = Guid.NewGuid(),
+            SenderUserId = recipient,
             SenderUsername = recipient,
+            RecipientUserId = sender,
             RecipientUsername = sender,
             Content = "Hi there",
             Timestamp = DateTime.UtcNow,
@@ -68,6 +72,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         var connectedUser = new ConnectedUser
         {
             Id = Guid.NewGuid(),
+            UserId = recipient,
             Username = recipient,
             ConnectionId = "conn-123",
             ConnectedAt = DateTime.UtcNow,
@@ -93,7 +98,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         Assert.Single(conversations);
 
         var conversation = conversations[0];
-        Assert.Equal(recipient, conversation.OtherUsername);
+        Assert.Equal(recipient, conversation.OtherUser?.UserId);
         Assert.Equal("Hi there", conversation.LastMessage);
         Assert.Equal(1, conversation.UnreadCount);
         Assert.True(conversation.IsOnline); // user2 est connecté
@@ -116,7 +121,9 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         var message = new PrivateMessage
         {
             Id = Guid.NewGuid(),
+            SenderUserId = sender,
             SenderUsername = sender,
+            RecipientUserId = recipient,
             RecipientUsername = recipient,
             Content = "Test",
             Timestamp = DateTime.UtcNow,
@@ -138,7 +145,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         Assert.Single(conversations);
 
         var conversation = conversations[0];
-        Assert.Equal(recipient, conversation.OtherUsername);
+        Assert.Equal(recipient, conversation.OtherUser?.UserId);
         Assert.False(conversation.IsOnline); // user3 n'est pas connecté
     }
 
@@ -153,6 +160,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         var connectedUser = new ConnectedUser
         {
             Id = Guid.NewGuid(),
+            UserId = username,
             Username = username,
             ConnectionId = "conn-456",
             ConnectedAt = DateTime.UtcNow,
@@ -209,7 +217,9 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         db.PrivateMessages.Add(new PrivateMessage
         {
             Id = Guid.NewGuid(),
+            SenderUserId = currentUser,
             SenderUsername = currentUser,
+            RecipientUserId = onlineUser,
             RecipientUsername = onlineUser,
             Content = "Hello online",
             Timestamp = DateTime.UtcNow,
@@ -221,7 +231,9 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         db.PrivateMessages.Add(new PrivateMessage
         {
             Id = Guid.NewGuid(),
+            SenderUserId = currentUser,
             SenderUsername = currentUser,
+            RecipientUserId = offlineUser,
             RecipientUsername = offlineUser,
             Content = "Hello offline",
             Timestamp = DateTime.UtcNow,
@@ -233,6 +245,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         db.ConnectedUsers.Add(new ConnectedUser
         {
             Id = Guid.NewGuid(),
+            UserId = onlineUser,
             Username = onlineUser,
             ConnectionId = "conn-789",
             ConnectedAt = DateTime.UtcNow,
@@ -253,8 +266,8 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         Assert.NotNull(conversations);
         Assert.Equal(2, conversations.Count);
 
-        var onlineConv = conversations.First(c => c.OtherUsername == onlineUser);
-        var offlineConv = conversations.First(c => c.OtherUsername == offlineUser);
+        var onlineConv = conversations.First(c => c.OtherUser?.UserId == onlineUser);
+        var offlineConv = conversations.First(c => c.OtherUser?.UserId == offlineUser);
 
         Assert.True(onlineConv.IsOnline);
         Assert.False(offlineConv.IsOnline);
@@ -273,7 +286,9 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         var msg1 = new PrivateMessage
         {
             Id = Guid.NewGuid(),
+            SenderUserId = user1,
             SenderUsername = user1,
+            RecipientUserId = user2,
             RecipientUsername = user2,
             Content = "First",
             Timestamp = DateTime.UtcNow.AddMinutes(-10),
@@ -284,7 +299,9 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         var msg2 = new PrivateMessage
         {
             Id = Guid.NewGuid(),
+            SenderUserId = user2,
             SenderUsername = user2,
+            RecipientUserId = user1,
             RecipientUsername = user1,
             Content = "Second",
             Timestamp = DateTime.UtcNow.AddMinutes(-5),
@@ -295,7 +312,9 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         var msg3 = new PrivateMessage
         {
             Id = Guid.NewGuid(),
+            SenderUserId = user1,
             SenderUsername = user1,
+            RecipientUserId = user2,
             RecipientUsername = user2,
             Content = "Third",
             Timestamp = DateTime.UtcNow,
@@ -334,7 +353,9 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
             new PrivateMessage
             {
                 Id = Guid.NewGuid(),
+                SenderUserId = "sender1",
                 SenderUsername = "sender1",
+                RecipientUserId = recipient,
                 RecipientUsername = recipient,
                 Content = "Unread 1",
                 Timestamp = DateTime.UtcNow,
@@ -344,7 +365,9 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
             new PrivateMessage
             {
                 Id = Guid.NewGuid(),
+                SenderUserId = "sender2",
                 SenderUsername = "sender2",
+                RecipientUserId = recipient,
                 RecipientUsername = recipient,
                 Content = "Unread 2",
                 Timestamp = DateTime.UtcNow,
@@ -355,7 +378,9 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
             new PrivateMessage
             {
                 Id = Guid.NewGuid(),
+                SenderUserId = "sender3",
                 SenderUsername = "sender3",
+                RecipientUserId = recipient,
                 RecipientUsername = recipient,
                 Content = "Read",
                 Timestamp = DateTime.UtcNow,
@@ -393,7 +418,9 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         var msg1 = new PrivateMessage
         {
             Id = Guid.NewGuid(),
+            SenderUserId = user1,
             SenderUsername = user1,
+            RecipientUserId = user2,
             RecipientUsername = user2,
             Content = "Message 1",
             Timestamp = DateTime.UtcNow,
@@ -404,8 +431,10 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         var msg2 = new PrivateMessage
         {
             Id = Guid.NewGuid(),
-            SenderUsername = user2,
-            RecipientUsername = user1,
+            SenderUserId = user1,
+            SenderUsername = user1,
+            RecipientUserId = user2,
+            RecipientUsername = user2,
             Content = "Message 2",
             Timestamp = DateTime.UtcNow,
             IsRead = false,

@@ -13,8 +13,8 @@ public interface IPrivateMessageService
     void NotifyPrivateMessageReceived(PrivateMessage message);
     void NotifyPrivateMessageSent(PrivateMessage message);
     void NotifyMessagesRead(string username, List<Guid> messageIds);
-    Task<List<PrivateConversation>> GetConversationsAsync(string username);
-    Task<List<PrivateMessage>> GetPrivateMessagesAsync(string username, string otherUsername);
-    Task<int> GetUnreadCountAsync(string username);
-    Task<bool> DeleteConversationAsync(string username, string otherUsername);
+    Task<List<PrivateConversation>> GetConversationsAsync(string userId);
+    Task<List<PrivateMessage>> GetPrivateMessagesAsync(string userId, string otherUserId);
+    Task<int> GetUnreadCountAsync(string userId);
+    Task<bool> DeleteConversationAsync(string userId, string otherUserId);
 }

@@ -23,62 +23,62 @@ public class PrivateMessageService(HttpClient httpClient, ILogger<PrivateMessage
 
     public void NotifyMessagesRead(string username, List<Guid> messageIds) => OnMessagesRead?.Invoke(username, messageIds);
 
-    public async Task<List<PrivateConversation>> GetConversationsAsync(string username)
+    public async Task<List<PrivateConversation>> GetConversationsAsync(string userId)
     {
         try
         {
             var result = await httpClient.GetFromJsonAsync<List<PrivateConversation>>(
-                $"/api/private-messages/conversations/{username}");
+                $"/api/private-messages/conversations/{userId}");
             return result ?? [];
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Erreur lors de la récupération des conversations pour {Username}", username);
+            logger.LogError(ex, "Erreur lors de la récupération des conversations pour {Username}", userId);
             return [];
         }
     }
 
-    public async Task<List<PrivateMessage>> GetPrivateMessagesAsync(string username, string otherUsername)
+    public async Task<List<PrivateMessage>> GetPrivateMessagesAsync(string userId, string otherUserId)
     {
         try
         {
             var result = await httpClient.GetFromJsonAsync<List<PrivateMessage>>(
-                $"/api/private-messages/{username}/with/{otherUsername}");
+                $"/api/private-messages/{userId}/with/{otherUserId}");
             return result ?? [];
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Erreur lors de la récupération des messages entre {Username} et {OtherUsername}",
-                username, otherUsername);
+                userId, otherUserId);
             return [];
         }
     }
 
-    public async Task<int> GetUnreadCountAsync(string username)
+    public async Task<int> GetUnreadCountAsync(string userId)
     {
         try
         {
             var result = await httpClient.GetFromJsonAsync<UnreadCountResponse>(
-                $"/api/private-messages/{username}/unread-count");
+                $"/api/private-messages/{userId}/unread-count");
             return result?.UnreadCount ?? 0;
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Erreur lors de la récupération du nombre de messages non lus pour {Username}", username);
+            logger.LogWarning(ex, "Erreur lors de la récupération du nombre de messages non lus pour {Username}", userId);
             return 0;
         }
     }
 
-    public async Task<bool> DeleteConversationAsync(string username, string otherUsername)
+    public async Task<bool> DeleteConversationAsync(string userId, string otherUserId)
     {
         try
         {
             var response = await httpClient.DeleteAsync(
-                $"/api/private-messages/{username}/conversation/{otherUsername}");
+                $"/api/private-messages/{userId}/conversation/{otherUserId}");
 
             if (response.IsSuccessStatusCode)
             {
-                OnConversationDeleted?.Invoke(otherUsername);
+                OnConversationDeleted?.Invoke(otherUserId);
                 OnUnreadCountChanged?.Invoke();
                 return true;
             }
@@ -88,7 +88,7 @@ public class PrivateMessageService(HttpClient httpClient, ILogger<PrivateMessage
         catch (Exception ex)
         {
             logger.LogError(ex, "Erreur lors de la suppression de la conversation entre {Username} et {OtherUsername}",
-                username, otherUsername);
+                userId, otherUserId);
             return false;
         }
     }

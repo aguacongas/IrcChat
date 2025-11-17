@@ -174,14 +174,22 @@ public class SidebarTests : TestContext
         {
             new()
             {
-                OtherUsername = "Friend1",
+                OtherUser = new User
+                {
+                    UserId = "Friend1",
+                    Username = "Friend1"
+                },
                 LastMessage = "Hello",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 2
             },
             new()
             {
-                OtherUsername = "Friend2",
+                OtherUser = new User
+                {
+                    UserId = "Friend2",
+                    Username = "Friend2"
+                },
                 LastMessage = "Hi",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0
@@ -228,7 +236,11 @@ public class SidebarTests : TestContext
         {
             new()
             {
-                OtherUsername = "Friend",
+                OtherUser = new User
+                {
+                    UserId = "Friend",
+                    Username = "Friend"
+                },
                 LastMessage = "Hello",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 5

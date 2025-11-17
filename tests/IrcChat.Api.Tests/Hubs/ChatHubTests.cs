@@ -72,7 +72,7 @@ public class ChatHubTests : IAsyncDisposable
         var username = "testuser";
 
         // Act
-        await _hub.Ping(username);
+        await _hub.Ping(username, username);
 
         // Assert
         var user = await _db.ConnectedUsers
@@ -95,6 +95,7 @@ public class ChatHubTests : IAsyncDisposable
         var user = new ConnectedUser
         {
             Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
             Username = username,
             Channel = null,
             ConnectionId = _testConnectionId,
@@ -108,7 +109,7 @@ public class ChatHubTests : IAsyncDisposable
 
         // Act
         await Task.Delay(100);
-        await _hub.Ping(username);
+        await _hub.Ping(username, user.UserId);
 
         // Assert
         var updatedUser = await _db.ConnectedUsers
@@ -119,7 +120,7 @@ public class ChatHubTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task JoinChannel_WithNewUser_ShouldCreateUserAndSetChannel()
+    public async Task JoinChannel_WithNewUser_ShouldNotCreateUser()
     {
         // Arrange
         var username = "testuser";
@@ -137,22 +138,17 @@ public class ChatHubTests : IAsyncDisposable
         await _db.SaveChangesAsync();
 
         // Act
-        await _hub.JoinChannel(username, channel);
+        await _hub.JoinChannel(channel);
 
         // Assert
         var connectedUser = await _db.ConnectedUsers
             .FirstOrDefaultAsync(u => u.Username == username);
 
-        Assert.NotNull(connectedUser);
-        Assert.Equal(channel, connectedUser!.Channel);
-        Assert.Equal(_testConnectionId, connectedUser.ConnectionId);
+        Assert.Null(connectedUser);
 
-        _groupManagerMock.Verify(
-            g => g.AddToGroupAsync(_testConnectionId, channel, default),
-            Times.Once);
-
-        _groupMock.Verify(
-            g => g.SendCoreAsync("UserJoined", It.Is<object[]>(args => args.Length == 2), default),
+        _callerMock.Verify(
+            g => g.SendCoreAsync("Error",
+                It.Is<object[]>(args => args.Length == 1 && (string)args[0] == "Utilisateur non identifié"), default),
             Times.Once);
     }
 
@@ -163,8 +159,22 @@ public class ChatHubTests : IAsyncDisposable
         var username = "testuser";
         var channel = "nonexistent";
 
+        var user = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
+            Username = username,
+            Channel = null,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
+            ServerInstanceId = "test-instance"
+        };
+
+        _db.ConnectedUsers.Add(user);
+        await _db.SaveChangesAsync();
+
         // Act
-        await _hub.JoinChannel(username, channel);
+        await _hub.JoinChannel(channel);
 
         // Assert
         _callerMock.Verify(
@@ -173,11 +183,6 @@ public class ChatHubTests : IAsyncDisposable
                 It.Is<object[]>(args => args.Length == 1 && (string)args[0] == channel),
                 default),
             Times.Once);
-
-        var connectedUser = await _db.ConnectedUsers
-            .FirstOrDefaultAsync(u => u.Username == username);
-
-        Assert.Null(connectedUser);
     }
 
     [Fact]
@@ -196,6 +201,7 @@ public class ChatHubTests : IAsyncDisposable
         var user = new ConnectedUser
         {
             Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
             Username = username,
             Channel = channel1,
             ConnectionId = _testConnectionId,
@@ -208,7 +214,7 @@ public class ChatHubTests : IAsyncDisposable
         await _db.SaveChangesAsync();
 
         // Act
-        await _hub.JoinChannel(username, channel2);
+        await _hub.JoinChannel(channel2);
 
         // Assert
         var updatedUser = await _db.ConnectedUsers
@@ -222,11 +228,11 @@ public class ChatHubTests : IAsyncDisposable
             Times.Once);
 
         _groupMock.Verify(
-            g => g.SendCoreAsync("UserLeft", It.Is<object[]>(args => (string)args[1] == channel1), default),
+            g => g.SendCoreAsync("UserLeft", It.Is<object[]>(args => (string)args[2] == channel1), default),
             Times.Once);
 
         _groupMock.Verify(
-            g => g.SendCoreAsync("UserJoined", It.Is<object[]>(args => (string)args[1] == channel2), default),
+            g => g.SendCoreAsync("UserJoined", It.Is<object[]>(args => (string)args[2] == channel2), default),
             Times.Once);
     }
 
@@ -248,6 +254,7 @@ public class ChatHubTests : IAsyncDisposable
         var user = new ConnectedUser
         {
             Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
             Username = username,
             Channel = channel,
             ConnectionId = _testConnectionId,
@@ -260,7 +267,7 @@ public class ChatHubTests : IAsyncDisposable
         await _db.SaveChangesAsync();
 
         // Act
-        await _hub.JoinChannel(username, channel);
+        await _hub.JoinChannel(channel);
 
         // Assert
         _groupManagerMock.Verify(
@@ -282,6 +289,7 @@ public class ChatHubTests : IAsyncDisposable
         var user = new ConnectedUser
         {
             Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
             Username = username,
             Channel = channel,
             ConnectionId = _testConnectionId,
@@ -308,7 +316,7 @@ public class ChatHubTests : IAsyncDisposable
             Times.Once);
 
         _groupMock.Verify(
-            g => g.SendCoreAsync("UserLeft", It.Is<object[]>(args => args.Length == 2), default),
+            g => g.SendCoreAsync("UserLeft", It.Is<object[]>(args => args.Length == 3), default),
             Times.Once);
     }
 
@@ -323,6 +331,7 @@ public class ChatHubTests : IAsyncDisposable
         var user = new ConnectedUser
         {
             Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
             Username = username,
             Channel = actualChannel,
             ConnectionId = _testConnectionId,
@@ -365,11 +374,22 @@ public class ChatHubTests : IAsyncDisposable
             IsMuted = false
         };
         _db.Channels.Add(channelEntity);
+        var connectorUser = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
+            Username = "sender",
+            Channel = channel,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastPing = DateTime.UtcNow,
+            ServerInstanceId = "test-instance"
+        };
+        _db.ConnectedUsers.Add(connectorUser);
         await _db.SaveChangesAsync();
 
         var messageRequest = new SendMessageRequest
         {
-            Username = "sender",
             Content = "Hello, World!",
             Channel = channel
         };
@@ -379,7 +399,7 @@ public class ChatHubTests : IAsyncDisposable
 
         // Assert
         var message = await _db.Messages
-            .FirstOrDefaultAsync(m => m.Username == messageRequest.Username && m.Content == messageRequest.Content);
+            .FirstOrDefaultAsync(m => m.UserId == connectorUser.UserId && m.Content == messageRequest.Content);
 
         Assert.NotNull(message);
         Assert.Equal(messageRequest.Channel, message!.Channel);
@@ -409,6 +429,7 @@ public class ChatHubTests : IAsyncDisposable
         var user = new ConnectedUser
         {
             Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
             Username = username,
             Channel = channel,
             ConnectionId = _testConnectionId,
@@ -425,7 +446,6 @@ public class ChatHubTests : IAsyncDisposable
 
         var messageRequest = new SendMessageRequest
         {
-            Username = username,
             Content = "Test message",
             Channel = channel
         };
@@ -436,7 +456,7 @@ public class ChatHubTests : IAsyncDisposable
 
         // Assert
         var updatedUser = await _db.ConnectedUsers
-            .FirstOrDefaultAsync(u => u.Username == username);
+            .FirstOrDefaultAsync(u => u.UserId == user.UserId);
 
         Assert.NotNull(updatedUser);
         Assert.True(updatedUser!.LastActivity > oldActivity);
@@ -448,7 +468,7 @@ public class ChatHubTests : IAsyncDisposable
         // Arrange
         var channel = "muted-channel";
 
-        var mutedChannel = new Channel
+        var mutedChannel = new Shared.Models.Channel
         {
             Id = Guid.NewGuid(),
             Name = channel,
@@ -457,12 +477,26 @@ public class ChatHubTests : IAsyncDisposable
             IsMuted = true
         };
 
+        var user = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
+            Username = "user-123",
+            Channel = channel,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
+            LastPing = DateTime.UtcNow.AddMinutes(-5),
+            LastActivity = DateTime.UtcNow.AddMinutes(-10),
+            ServerInstanceId = "test-instance"
+        };
+
+        _db.ConnectedUsers.Add(user);
+
         _db.Channels.Add(mutedChannel);
         await _db.SaveChangesAsync();
 
         var messageRequest = new SendMessageRequest
         {
-            Username = "sender",
             Content = "This should not be sent",
             Channel = channel
         };
@@ -472,7 +506,7 @@ public class ChatHubTests : IAsyncDisposable
 
         // Assert
         var message = await _db.Messages
-            .FirstOrDefaultAsync(m => m.Username == messageRequest.Username && m.Content == messageRequest.Content);
+            .FirstOrDefaultAsync(m => m.UserId == user.UserId && m.Content == messageRequest.Content);
 
         Assert.Null(message);
 
@@ -497,12 +531,26 @@ public class ChatHubTests : IAsyncDisposable
             IsMuted = true
         };
 
+        var user = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
+            Username = creatorUsername,
+            Channel = channel,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
+            LastPing = DateTime.UtcNow.AddMinutes(-5),
+            LastActivity = DateTime.UtcNow.AddMinutes(-10),
+            ServerInstanceId = "test-instance"
+        };
+
+        _db.ConnectedUsers.Add(user);
+
         _db.Channels.Add(mutedChannel);
         await _db.SaveChangesAsync();
 
         var messageRequest = new SendMessageRequest
         {
-            Username = creatorUsername,
             Content = "Creator can send",
             Channel = channel
         };
@@ -512,7 +560,7 @@ public class ChatHubTests : IAsyncDisposable
 
         // Assert
         var message = await _db.Messages
-            .FirstOrDefaultAsync(m => m.Username == messageRequest.Username && m.Content == messageRequest.Content);
+            .FirstOrDefaultAsync(m => m.UserId == user.UserId && m.Content == messageRequest.Content);
 
         Assert.NotNull(message);
         Assert.Equal("Creator can send", message!.Content);
@@ -530,6 +578,7 @@ public class ChatHubTests : IAsyncDisposable
         {
             Id = Guid.NewGuid(),
             Username = "recipient",
+            UserId = Guid.NewGuid().ToString(),
             Channel = "general",
             ConnectionId = "recipient-connection-id",
             ConnectedAt = DateTime.UtcNow,
@@ -538,11 +587,27 @@ public class ChatHubTests : IAsyncDisposable
         };
 
         _db.ConnectedUsers.Add(recipientUser);
+
+        var user = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
+            Username = "sender",
+            Channel = "general",
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
+            LastPing = DateTime.UtcNow.AddMinutes(-5),
+            LastActivity = DateTime.UtcNow.AddMinutes(-10),
+            ServerInstanceId = "test-instance"
+        };
+
+        _db.ConnectedUsers.Add(user);
+
         await _db.SaveChangesAsync();
 
         var messageRequest = new SendPrivateMessageRequest
         {
-            SenderUsername = "sender",
+            RecipientUserId = recipientUser.UserId,
             RecipientUsername = "recipient",
             Content = "Private message"
         };
@@ -553,8 +618,8 @@ public class ChatHubTests : IAsyncDisposable
         // Assert
         var message = await _db.PrivateMessages
             .FirstOrDefaultAsync(m =>
-                m.SenderUsername == messageRequest.SenderUsername &&
-                m.RecipientUsername == messageRequest.RecipientUsername);
+                m.SenderUserId == user.UserId &&
+                m.RecipientUserId == messageRequest.RecipientUserId);
 
         Assert.NotNull(message);
         Assert.Equal(messageRequest.Content, message!.Content);
@@ -573,9 +638,25 @@ public class ChatHubTests : IAsyncDisposable
     public async Task SendPrivateMessage_WithOfflineRecipient_ShouldOnlyNotifySender()
     {
         // Arrange
+        var user = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
+            Username = "sender",
+            Channel = "general",
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
+            LastPing = DateTime.UtcNow.AddMinutes(-5),
+            LastActivity = DateTime.UtcNow.AddMinutes(-10),
+            ServerInstanceId = "test-instance"
+        };
+
+        _db.ConnectedUsers.Add(user);
+        await _db.SaveChangesAsync();
+
         var messageRequest = new SendPrivateMessageRequest
         {
-            SenderUsername = "sender",
+            RecipientUserId = "offline_recipient",
             RecipientUsername = "offline_recipient",
             Content = "Message to offline user"
         };
@@ -585,7 +666,7 @@ public class ChatHubTests : IAsyncDisposable
 
         // Assert
         var message = await _db.PrivateMessages
-            .FirstOrDefaultAsync(m => m.RecipientUsername == "offline_recipient");
+            .FirstOrDefaultAsync(m => m.SenderUserId == user.UserId && m.RecipientUserId == "offline_recipient");
 
         Assert.NotNull(message);
 
@@ -608,6 +689,7 @@ public class ChatHubTests : IAsyncDisposable
         var recipientUser = new ConnectedUser
         {
             Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
             Username = recipientUsername,
             Channel = "general",
             ConnectionId = _testConnectionId,
@@ -619,6 +701,7 @@ public class ChatHubTests : IAsyncDisposable
         var senderUser = new ConnectedUser
         {
             Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
             Username = senderUsername,
             Channel = "general",
             ConnectionId = "sender-connection-id",
@@ -632,7 +715,9 @@ public class ChatHubTests : IAsyncDisposable
         var unreadMessage = new PrivateMessage
         {
             Id = Guid.NewGuid(),
+            SenderUserId = senderUser.UserId,
             SenderUsername = senderUsername,
+            RecipientUserId = recipientUser.UserId,
             RecipientUsername = recipientUsername,
             Content = "Unread message",
             Timestamp = DateTime.UtcNow,
@@ -644,7 +729,7 @@ public class ChatHubTests : IAsyncDisposable
         await _db.SaveChangesAsync();
 
         // Act
-        await _hub.MarkPrivateMessagesAsRead(senderUsername);
+        await _hub.MarkPrivateMessagesAsRead(senderUser.UserId);
 
         // Assert
         var message = await _db.PrivateMessages.FindAsync(unreadMessage.Id);
@@ -799,6 +884,7 @@ public class ChatHubTests : IAsyncDisposable
         var connectedUser = new ConnectedUser
         {
             Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
             Username = username,
             ConnectionId = connectionId,
             Channel = channel,
@@ -824,7 +910,7 @@ public class ChatHubTests : IAsyncDisposable
         _allClientsMock.Verify(
             c => c.SendCoreAsync(
                 "UserStatusChanged",
-                It.Is<object[]>(o => o.Length == 2 && (string)o[0] == username && !(bool)o[1]),
+                It.Is<object[]>(o => o.Length == 3 && (string)o[0] == username && !(bool)o[2]),
                 default),
             Times.Once);
 
@@ -832,7 +918,7 @@ public class ChatHubTests : IAsyncDisposable
         _groupMock.Verify(
             c => c.SendCoreAsync(
                 "UserLeft",
-                It.Is<object[]>(o => o.Length == 2 && (string)o[0] == username && (string)o[1] == channel),
+                It.Is<object[]>(o => o.Length == 3 && (string)o[0] == username && (string)o[2] == channel),
                 default),
             Times.Once);
     }
@@ -921,6 +1007,7 @@ public class ChatHubTests : IAsyncDisposable
         var connectedUser = new ConnectedUser
         {
             Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
             Username = username,
             ConnectionId = connectionId,
             Channel = null, // Pas de canal
@@ -940,7 +1027,7 @@ public class ChatHubTests : IAsyncDisposable
         _allClientsMock.Verify(
             c => c.SendCoreAsync(
                 "UserStatusChanged",
-                It.Is<object[]>(o => o.Length == 2 && (string)o[0] == username && !(bool)o[1]),
+                It.Is<object[]>(o => o.Length == 3 && (string)o[0] == username && (string)o[1] == connectedUser.UserId && !(bool)o[2]),
                 default),
             Times.Once);
 

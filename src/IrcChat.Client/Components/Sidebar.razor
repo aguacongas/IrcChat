@@ -79,19 +79,19 @@
     public List<PrivateConversation> PrivateConversations { get; set; } = new();
 
     [Parameter]
-    public string? SelectedPrivateUser { get; set; }
+    public User? SelectedPrivateUser { get; set; }
 
     [Parameter]
     public EventCallback<string> OnChannelSelected { get; set; }
 
     [Parameter]
-    public EventCallback<string> OnUserClicked { get; set; }
+    public EventCallback<User> OnUserClicked { get; set; }
 
     [Parameter]
-    public EventCallback<string> OnPrivateConversationSelected { get; set; }
+    public EventCallback<User> OnPrivateConversationSelected { get; set; }
 
     [Parameter]
-    public EventCallback<string> OnConversationDeleted { get; set; }
+    public EventCallback<User> OnConversationDeleted { get; set; }
 
     [Parameter]
     public EventCallback OnUserInfoClicked { get; set; }

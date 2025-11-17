@@ -8,4 +8,5 @@ public class Message
     public string Channel { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; }
     public bool IsDeleted { get; set; }
+    public string UserId { get; set; } = string.Empty;
 }

@@ -9,4 +9,6 @@ public class PrivateMessage
     public DateTime Timestamp { get; set; }
     public bool IsRead { get; set; }
     public bool IsDeleted { get; set; }
+    public string SenderUserId { get; set; } = string.Empty;
+    public string RecipientUserId { get; set; } = string.Empty;
 }

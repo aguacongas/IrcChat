@@ -80,9 +80,9 @@ public static class ChannelEndpoints
             .OrderBy(u => u.Username)
             .Select(u => new User
             {
+                UserId = u.UserId,
                 Username = u.Username,
                 ConnectedAt = u.ConnectedAt,
-                ConnectionId = u.ConnectionId
             })
             .ToListAsync();
 

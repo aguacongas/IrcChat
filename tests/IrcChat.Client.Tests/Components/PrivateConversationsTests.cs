@@ -32,7 +32,11 @@ public class PrivateConversationsTests : TestContext
         {
             new()
             {
-                OtherUsername = "alice",
+                OtherUser = new User
+                {
+                    UserId = "alice",
+                    Username = "alice",
+                },
                 LastMessage = "Hello",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0,
@@ -40,7 +44,11 @@ public class PrivateConversationsTests : TestContext
             },
             new()
             {
-                OtherUsername = "bob",
+                OtherUser = new User
+                {
+                    UserId = "bob",
+                    Username = "bob",
+                },
                 LastMessage = "Hi there",
                 LastMessageTime = DateTime.UtcNow.AddMinutes(-5),
                 UnreadCount = 2,
@@ -67,7 +75,11 @@ public class PrivateConversationsTests : TestContext
         {
             new()
             {
-                OtherUsername = "onlineuser",
+                OtherUser = new User
+                {
+                    UserId = "onlineuser",
+                    Username = "onlineuser",
+                },
                 LastMessage = "Test",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0,
@@ -93,7 +105,11 @@ public class PrivateConversationsTests : TestContext
         {
             new()
             {
-                OtherUsername = "offlineuser",
+                OtherUser = new User
+                {
+                    UserId = "offlineuser",
+                    Username = "offlineuser",
+                },
                 LastMessage = "Test",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0,
@@ -119,7 +135,11 @@ public class PrivateConversationsTests : TestContext
         {
             new()
             {
-                OtherUsername = "user1",
+                OtherUser = new User
+                {
+                    UserId = "user1",
+                    Username = "user1",
+                },
                 LastMessage = "Test",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 3,
@@ -145,7 +165,11 @@ public class PrivateConversationsTests : TestContext
         {
             new()
             {
-                OtherUsername = "user1",
+                OtherUser = new User
+                {
+                    UserId = "user1",
+                    Username = "user1",
+                },
                 LastMessage = "Test1",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 2,
@@ -153,7 +177,11 @@ public class PrivateConversationsTests : TestContext
             },
             new()
             {
-                OtherUsername = "user2",
+                OtherUser = new User
+                {
+                    UserId = "user2",
+                    Username = "user2",
+                },
                 LastMessage = "Test2",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 3,
@@ -179,7 +207,11 @@ public class PrivateConversationsTests : TestContext
         {
             new()
             {
-                OtherUsername = "alice",
+                OtherUser = new User
+                {
+                    UserId = "alice",
+                    Username = "alice",
+                },
                 LastMessage = "Test",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0,
@@ -191,8 +223,8 @@ public class PrivateConversationsTests : TestContext
 
         var cut = RenderComponent<PrivateConversations>(parameters => parameters
             .Add(p => p.Conversations, conversations)
-            .Add(p => p.OnConversationSelected, EventCallback.Factory.Create<string>(
-                this, username => selectedUsername = username)));
+            .Add(p => p.OnConversationSelected, EventCallback.Factory.Create<User>(
+                this, user => selectedUsername = user.Username)));
 
         cut.Render();
 
@@ -212,7 +244,11 @@ public class PrivateConversationsTests : TestContext
         {
             new()
             {
-                OtherUsername = "bob",
+                OtherUser = new User
+                {
+                    UserId = "bob",
+                    Username = "bob",
+                },
                 LastMessage = "Test",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0,
@@ -224,8 +260,8 @@ public class PrivateConversationsTests : TestContext
 
         var cut = RenderComponent<PrivateConversations>(parameters => parameters
             .Add(p => p.Conversations, conversations)
-            .Add(p => p.OnConversationDeleted, EventCallback.Factory.Create<string>(
-                this, username => deletedUsername = username)));
+            .Add(p => p.OnConversationDeleted, EventCallback.Factory.Create<User>(
+                this, user => deletedUsername = user.Username)));
 
         cut.Render();
 
@@ -245,7 +281,11 @@ public class PrivateConversationsTests : TestContext
         {
             new()
             {
-                OtherUsername = "alice",
+                OtherUser = new User
+                {
+                    UserId = "alice",
+                    Username = "alice",
+                },
                 LastMessage = "Test",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0,
@@ -253,7 +293,11 @@ public class PrivateConversationsTests : TestContext
             },
             new()
             {
-                OtherUsername = "bob",
+                OtherUser = new User
+                {
+                    UserId = "bob",
+                    Username = "bob",
+                },
                 LastMessage = "Test",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0,
@@ -264,7 +308,11 @@ public class PrivateConversationsTests : TestContext
         // Act
         var cut = RenderComponent<PrivateConversations>(parameters => parameters
             .Add(p => p.Conversations, conversations)
-            .Add(p => p.SelectedUser, "alice"));
+            .Add(p => p.SelectedUser, new User
+            {
+                UserId = "alice",
+                Username = "alice",
+            }));
 
         // Assert
         var items = cut.FindAll(".conversation-list li");
@@ -282,7 +330,11 @@ public class PrivateConversationsTests : TestContext
         {
             new()
             {
-                OtherUsername = "user1",
+                OtherUser = new User
+                {
+                    UserId = "user1",
+                    Username = "user1",
+                },
                 LastMessage = longMessage,
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0,
@@ -309,7 +361,7 @@ public class PrivateConversationsTests : TestContext
         {
             new()
             {
-                OtherUsername = "user1",
+                OtherUser = new User { UserId = "user1", Username = "user1" },
                 LastMessage = "Test",
                 LastMessageTime = DateTime.UtcNow.AddMinutes(-30),
                 UnreadCount = 0,
