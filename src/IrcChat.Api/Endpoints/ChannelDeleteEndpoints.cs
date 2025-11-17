@@ -20,8 +20,7 @@ public static class ChannelDeleteEndpoints
 
         group.MapDelete("/{channelName}", DeleteChannelAsync)
             .RequireAuthorization(AuthorizationPolicies.CanModifyChannel)
-            .WithName("DeleteChannel")
-            .WithOpenApi();
+            .WithName("DeleteChannel");
 
         return app;
     }

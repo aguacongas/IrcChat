@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace IrcChat.Api.Endpoints;
 
 [SuppressMessage("Performance", "CA1862", Justification = "Not needed in SQL")]
+[SuppressMessage("Performance", "CA1873:Avoid potentially expensive logging", Justification = "Accepatle")]
 public static class PrivateMessageEndpoints
 {
     public static WebApplication MapPrivateMessageEndpoints(this WebApplication app)
@@ -15,28 +16,23 @@ public static class PrivateMessageEndpoints
 
         // Récupérer les conversations
         group.MapGet("/conversations/{userId}", GetConversationsAsync)
-            .WithName("GetConversations")
-            .WithOpenApi();
+            .WithName("GetConversations");
 
         // Récupérer les messages d'une conversation
         group.MapGet("/{userId}/with/{otherUserId}", GetPrivateMessagesAsync)
-            .WithName("GetPrivateMessages")
-            .WithOpenApi();
+            .WithName("GetPrivateMessages");
 
         // Récupérer le nombre de messages non lus
         group.MapGet("/{userId}/unread-count", GetUnreadCountAsync)
-            .WithName("GetUnreadCount")
-            .WithOpenApi();
+            .WithName("GetUnreadCount");
 
         // Supprimer une conversation (soft delete)
         group.MapDelete("/{userId}/conversation/{otherUserId}", DeleteConversationAsync)
-            .WithName("DeleteConversation")
-            .WithOpenApi();
+            .WithName("DeleteConversation");
 
         // Vérifier le statut de connexion d'un utilisateur
         group.MapGet("/status/{username}", GetUserStatusAsync)
-            .WithName("GetUserStatus")
-            .WithOpenApi();
+            .WithName("GetUserStatus");
 
         return app;
     }
@@ -47,7 +43,7 @@ public static class PrivateMessageEndpoints
     private static async Task<IResult> GetConversationsAsync(
         string userId,
         ChatDbContext db,
-        ILogger<WebApplication> logger)
+        ILogger<Program> logger)
     {
         logger.LogInformation("Récupération des conversations pour UserId {UserId}", userId);
 
@@ -98,7 +94,7 @@ public static class PrivateMessageEndpoints
         string userId,
         string otherUserId,
         ChatDbContext db,
-        ILogger<WebApplication> logger)
+        ILogger<Program> logger)
     {
         logger.LogInformation(
             "Récupération des messages entre UserId {UserId} et {OtherUserId}",
@@ -123,7 +119,7 @@ public static class PrivateMessageEndpoints
     private static async Task<IResult> GetUnreadCountAsync(
         string userId,
         ChatDbContext db,
-        ILogger<WebApplication> logger)
+        ILogger<Program> logger)
     {
         // Compter directement par userId
         var count = await db.PrivateMessages
@@ -142,7 +138,7 @@ public static class PrivateMessageEndpoints
         string userId,
         string otherUserId,
         ChatDbContext db,
-        ILogger<WebApplication> logger)
+        ILogger<Program> logger)
     {
         // Récupérer tous les messages par userId
         var messages = await db.PrivateMessages

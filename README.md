@@ -13,11 +13,11 @@
 
 ## 📝 Description
 
-Application de chat IRC moderne développée avec .NET 9, Blazor WebAssembly et SignalR.
+Application de chat IRC moderne développée avec .NET 10, Blazor WebAssembly et SignalR.
 
 ## 🏗️ Architecture
 
-- **Backend** : ASP.NET Core 9.0 Web API
+- **Backend** : ASP.NET Core 10.0 Web API
 - **Frontend** : Blazor WebAssembly
 - **Temps réel** : SignalR
 - **Base de données** : PostgreSQL
@@ -52,7 +52,7 @@ Application de chat IRC moderne développée avec .NET 9, Blazor WebAssembly et 
 ## 🛠️ Technologies utilisées
 
 ### Backend
-- .NET 9.0
+- .NET 10.0
 - ASP.NET Core Web API
 - SignalR
 - Entity Framework Core
@@ -75,7 +75,7 @@ Application de chat IRC moderne développée avec .NET 9, Blazor WebAssembly et 
 
 ## 📋 Prérequis
 
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - [PostgreSQL 16+](https://www.postgresql.org/download/)
 - [Visual Studio 2022](https://visualstudio.microsoft.com/) ou [VS Code](https://code.visualstudio.com/)
 - [Node.js](https://nodejs.org/) (optionnel, pour Tailwind)

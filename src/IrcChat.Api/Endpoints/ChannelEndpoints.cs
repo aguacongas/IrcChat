@@ -14,16 +14,13 @@ public static class ChannelEndpoints
             .WithTags("Channels");
 
         group.MapGet("", GetChannelsAsync)
-            .WithName("GetChannels")
-            .WithOpenApi();
+            .WithName("GetChannels");
 
         group.MapPost("", CreateChannelAsync)
-            .WithName("CreateChannel")
-            .WithOpenApi();
+            .WithName("CreateChannel");
 
         group.MapGet("/{channel}/users", GetConnectedUsersAsync)
-            .WithName("GetConnectedUsers")
-            .WithOpenApi();
+            .WithName("GetConnectedUsers");
 
         return app;
     }

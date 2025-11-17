@@ -18,8 +18,7 @@ public static class ChannelMuteEndpoints
 
         group.MapPost("/{channelName}/toggle-mute", ToggleMuteAsync)
             .RequireAuthorization(AuthorizationPolicies.CanModifyChannel)
-            .WithName("ToggleChannelMute")
-            .WithOpenApi();
+            .WithName("ToggleChannelMute");
 
         return app;
     }

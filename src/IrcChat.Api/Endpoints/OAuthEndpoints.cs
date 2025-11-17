@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 namespace IrcChat.Api.Endpoints;
 
 [SuppressMessage("Performance", "CA1862", Justification = "Not needed in SQL")]
+[SuppressMessage("Performance", "CA1873:Avoid potentially expensive logging", Justification = "Accepatle")]
 public static class OAuthEndpoints
 {
     public static WebApplication MapOAuthEndpoints(this WebApplication app)
@@ -19,25 +20,20 @@ public static class OAuthEndpoints
             .WithTags("OAuth");
 
         oauth.MapPost("/check-username", CheckUsernameAsync)
-            .WithName("CheckUsername")
-            .WithOpenApi();
+            .WithName("CheckUsername");
 
         oauth.MapPost("/reserve-username", ReserveUsernameAsync)
-            .WithName("ReserveUsername")
-            .WithOpenApi();
+            .WithName("ReserveUsername");
 
         oauth.MapPost("/login-reserved", LoginReservedAsync)
-            .WithName("LoginReserved")
-            .WithOpenApi();
+            .WithName("LoginReserved");
 
         oauth.MapGet("/config/{provider}", GetProviderConfigAsync)
-            .WithName("GetProviderConfig")
-            .WithOpenApi();
+            .WithName("GetProviderConfig");
 
         oauth.MapPost("/forget-username", ForgetUsernameAsync)
             .RequireAuthorization()
-            .WithName("ForgetUsername")
-            .WithOpenApi();
+            .WithName("ForgetUsername");
 
         return app;
     }
