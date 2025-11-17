@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace IrcChat.Api.Endpoints;
 
 [SuppressMessage("Performance", "CA1862", Justification = "Not needed in SQL")]
+[SuppressMessage("Performance", "CA1873:Avoid potentially expensive logging", Justification = "Accepatle")]
 public static class PrivateMessageEndpoints
 {
     public static WebApplication MapPrivateMessageEndpoints(this WebApplication app)
@@ -42,7 +43,7 @@ public static class PrivateMessageEndpoints
     private static async Task<IResult> GetConversationsAsync(
         string userId,
         ChatDbContext db,
-        ILogger<WebApplication> logger)
+        ILogger<Program> logger)
     {
         logger.LogInformation("Récupération des conversations pour UserId {UserId}", userId);
 
@@ -93,7 +94,7 @@ public static class PrivateMessageEndpoints
         string userId,
         string otherUserId,
         ChatDbContext db,
-        ILogger<WebApplication> logger)
+        ILogger<Program> logger)
     {
         logger.LogInformation(
             "Récupération des messages entre UserId {UserId} et {OtherUserId}",
@@ -118,7 +119,7 @@ public static class PrivateMessageEndpoints
     private static async Task<IResult> GetUnreadCountAsync(
         string userId,
         ChatDbContext db,
-        ILogger<WebApplication> logger)
+        ILogger<Program> logger)
     {
         // Compter directement par userId
         var count = await db.PrivateMessages
@@ -137,7 +138,7 @@ public static class PrivateMessageEndpoints
         string userId,
         string otherUserId,
         ChatDbContext db,
-        ILogger<WebApplication> logger)
+        ILogger<Program> logger)
     {
         // Récupérer tous les messages par userId
         var messages = await db.PrivateMessages

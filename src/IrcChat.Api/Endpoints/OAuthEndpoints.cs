@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 namespace IrcChat.Api.Endpoints;
 
 [SuppressMessage("Performance", "CA1862", Justification = "Not needed in SQL")]
+[SuppressMessage("Performance", "CA1873:Avoid potentially expensive logging", Justification = "Accepatle")]
 public static class OAuthEndpoints
 {
     public static WebApplication MapOAuthEndpoints(this WebApplication app)
