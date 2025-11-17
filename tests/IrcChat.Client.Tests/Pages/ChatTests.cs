@@ -4167,4 +4167,859 @@ public class ChatTests : TestContext
         // Assert - Pas de bouton mute visible (on est en chat privé)
         Assert.Empty(cut.FindAll(".mute-btn"));
     }
+
+    // ==================== TESTS POUR UpdateSelectedUserStatus ====================
+
+    [Fact]
+    public async Task UpdateSelectedUserStatus_WhenApiReturnsOnline_ShouldSetIsSelectedUserOnlineTrue()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync("TestUser");
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/private-messages/status/Friend")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new { Username = "Friend", IsOnline = true }));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync([
+                new()
+                {
+                    OtherUser = new User { UserId = "Friend", Username = "Friend" },
+                    LastMessage = "Hello",
+                    LastMessageTime = DateTime.UtcNow,
+                    UnreadCount = 0
+                }
+            ]);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act - Ouvrir le chat privé (déclenche UpdateSelectedUserStatus)
+        await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert - Le statut "En ligne" devrait être affiché
+        Assert.Contains("En ligne", cut.Markup);
+        Assert.Contains("user-status online", cut.Markup);
+    }
+
+    [Fact]
+    public async Task UpdateSelectedUserStatus_WhenApiReturnsOffline_ShouldSetIsSelectedUserOnlineFalse()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync("TestUser");
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/private-messages/status/Friend")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new { Username = "Friend", IsOnline = false }));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync([
+                new()
+                {
+                    OtherUser = new User { UserId = "Friend", Username = "Friend" },
+                    LastMessage = "Hello",
+                    LastMessageTime = DateTime.UtcNow,
+                    UnreadCount = 0
+                }
+            ]);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act - Ouvrir le chat privé
+        await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert - Le statut "Hors ligne" devrait être affiché
+        Assert.Contains("Hors ligne", cut.Markup);
+        Assert.Contains("user-status offline", cut.Markup);
+    }
+
+    [Fact]
+    public async Task UpdateSelectedUserStatus_WhenApiCallFails_ShouldSetOfflineAndLogWarning()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync("TestUser");
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/private-messages/status/Friend")
+            .Respond(HttpStatusCode.InternalServerError);
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync([
+                new()
+                {
+                    OtherUser = new User { UserId = "Friend", Username = "Friend" },
+                    LastMessage = "Hello",
+                    LastMessageTime = DateTime.UtcNow,
+                    UnreadCount = 0
+                }
+            ]);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act - Ouvrir le chat privé (UpdateSelectedUserStatus va échouer)
+        await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert - Devrait afficher "Hors ligne" par défaut en cas d'erreur
+        Assert.Contains("Hors ligne", cut.Markup);
+    }
+
+    // ==================== TESTS POUR GetCurrentChannelOrUsername ====================
+
+    [Fact]
+    public async Task GetCurrentChannelOrUsername_WhenInChannel_ShouldReturnChannelName()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync("TestUser");
+
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<User>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.JoinChannel("general"))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act - Rejoindre un canal
+        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert - Le header devrait afficher le nom du canal avec #
+        Assert.Contains("#general", cut.Markup);
+    }
+
+    [Fact]
+    public async Task GetCurrentChannelOrUsername_WhenInPrivateChat_ShouldReturnUsername()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync("TestUser");
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/private-messages/status/Friend")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new { Username = "Friend", IsOnline = true }));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync([
+                new()
+                {
+                    OtherUser = new User { UserId = "Friend", Username = "Friend" },
+                    LastMessage = "Hello",
+                    LastMessageTime = DateTime.UtcNow,
+                    UnreadCount = 0
+                }
+            ]);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act - Ouvrir un chat privé
+        await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert - Le header devrait afficher le nom de l'utilisateur avec 💬
+        Assert.Contains("💬", cut.Markup);
+        Assert.Contains("Friend", cut.Markup);
+        Assert.DoesNotContain("#Friend", cut.Markup); // Pas de # pour les chats privés
+    }
+
+    // ==================== TESTS POUR GetCurrentMessages ====================
+
+    [Fact]
+    public async Task GetCurrentMessages_WhenInChannel_ShouldReturnChannelMessages()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync("TestUser");
+
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        var channelMessages = new List<Message>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Username = "User1",
+                Content = "Channel message",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channelMessages));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<User>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.JoinChannel("general"))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act - Rejoindre un canal
+        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert - Le message du canal devrait être affiché
+        Assert.Contains("Channel message", cut.Markup);
+    }
+
+    [Fact]
+    public async Task GetCurrentMessages_WhenInPrivateChat_ShouldReturnConvertedPrivateMessages()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync("TestUser");
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/private-messages/status/Friend")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new { Username = "Friend", IsOnline = true }));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        var privateMessages = new List<PrivateMessage>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                SenderUsername = "Friend",
+                SenderUserId = "Friend",
+                RecipientUsername = "TestUser",
+                RecipientUserId = "TestUser",
+                Content = "Private message content",
+                Timestamp = DateTime.UtcNow,
+                IsRead = false
+            }
+        };
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync([
+                new()
+                {
+                    OtherUser = new User { UserId = "Friend", Username = "Friend" },
+                    LastMessage = "Private message content",
+                    LastMessageTime = DateTime.UtcNow,
+                    UnreadCount = 0
+                }
+            ]);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
+            .ReturnsAsync(privateMessages);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act - Ouvrir un chat privé
+        await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert - Le message privé devrait être affiché (converti en Message)
+        Assert.Contains("Private message content", cut.Markup);
+        Assert.Contains("Friend", cut.Markup);
+    }
+
+    // ==================== TESTS POUR LoadUsers (erreur API) ====================
+
+    [Fact]
+    public async Task LoadUsers_WhenApiCallFails_ShouldHandleGracefully()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync("TestUser");
+
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+            .Respond(HttpStatusCode.InternalServerError);
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.JoinChannel("general"))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act - Rejoindre le canal (LoadUsers va échouer)
+        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
+        await Task.Delay(200);
+
+        // Assert - Le composant ne devrait pas planter
+        Assert.NotNull(cut.Find(".chat-container"));
+        Assert.Contains("#general", cut.Markup);
+    }
+
+    // ==================== TESTS POUR SendMessage avec exceptions ====================
+
+    [Fact]
+    public async Task SendMessage_WhenChatServiceThrowsException_ShouldLogError()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync("TestUser");
+
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<User>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.JoinChannel("general"))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.SendMessage(It.IsAny<SendMessageRequest>()))
+            .ThrowsAsync(new Exception("Network error"));
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Rejoindre un canal
+        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
+        await Task.Delay(200);
+
+        // Act - Envoyer un message (va échouer)
+        var input = cut.Find(".input-area input");
+        var button = cut.Find(".input-area button");
+
+        await cut.InvokeAsync(() => input.Input("Test message"));
+        await cut.InvokeAsync(() => button.Click());
+        await Task.Delay(100);
+
+        // Assert - Le composant ne devrait pas planter
+        Assert.NotNull(cut.Find(".chat-container"));
+    }
+
+    // ==================== TESTS POUR SendPrivateMessage avec exceptions ====================
+
+    [Fact]
+    public async Task SendPrivateMessage_WhenChatServiceThrowsException_ShouldLogError()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync("TestUser");
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/private-messages/status/Friend")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new { Username = "Friend", IsOnline = true }));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.SendPrivateMessage(It.IsAny<SendPrivateMessageRequest>()))
+            .ThrowsAsync(new Exception("Connection lost"));
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync([
+                new()
+                {
+                    OtherUser = new User { UserId = "Friend", Username = "Friend" },
+                    LastMessage = "Hello",
+                    LastMessageTime = DateTime.UtcNow,
+                    UnreadCount = 0
+                }
+            ]);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Ouvrir le chat privé
+        await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
+        await Task.Delay(200);
+
+        // Act - Envoyer un message privé (va échouer)
+        var input = cut.Find(".input-area input");
+        var button = cut.Find(".input-area button");
+
+        await cut.InvokeAsync(() => input.Input("Private test message"));
+        await cut.InvokeAsync(() => button.Click());
+        await Task.Delay(100);
+
+        // Assert - Le composant ne devrait pas planter
+        Assert.NotNull(cut.Find(".chat-container"));
+        Assert.Contains("Friend", cut.Markup);
+    }
+
+    // ==================== TEST POUR DeleteConversation quand elle échoue ====================
+
+    [Fact]
+    public async Task DeleteConversation_WhenServiceReturnsFalse_ShouldNotCloseChat()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync("TestUser");
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/private-messages/status/Friend")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new { Username = "Friend", IsOnline = true }));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        var conversations = new List<PrivateConversation>
+        {
+            new()
+            {
+                OtherUser = new User { UserId = "Friend", Username = "Friend" },
+                LastMessage = "Hello",
+                LastMessageTime = DateTime.UtcNow,
+                UnreadCount = 0
+            }
+        };
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync(conversations);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
+            .ReturnsAsync([]);
+
+        _privateMessageServiceMock
+            .Setup(x => x.DeleteConversationAsync("TestUser", "Friend"))
+            .ReturnsAsync(false); // Échec de la suppression
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Ouvrir le chat privé
+        await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
+        await Task.Delay(200);
+
+        var deleteButton = cut.Find(".delete-conversation-btn");
+
+        // Act - Essayer de supprimer (va échouer)
+        await cut.InvokeAsync(() => deleteButton.Click());
+        await Task.Delay(100);
+
+        // Assert - Le chat devrait toujours être ouvert
+        Assert.Contains("Friend", cut.Markup);
+        Assert.Contains("💬", cut.Markup);
+    }
+
+    // ==================== TESTS POUR LoadUsers ====================
+
+    [Fact]
+    public async Task LoadUsers_WhenApiReturnsUsers_ShouldPopulateUsersList()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync("TestUser");
+
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        var users = new List<User>
+        {
+            new() { UserId = "User1", Username = "User1" },
+            new() { UserId = "User2", Username = "User2" },
+            new() { UserId = "User3", Username = "User3" }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(users));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.JoinChannel("general"))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act - Rejoindre le canal (déclenche LoadUsers)
+        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert - Les 3 utilisateurs devraient être affichés
+        Assert.Contains("User1", cut.Markup);
+        Assert.Contains("User2", cut.Markup);
+        Assert.Contains("User3", cut.Markup);
+    }
+
+    // ==================== TESTS POUR SendMessage ====================
+
+    [Fact]
+    public async Task SendMessage_WithValidContent_ShouldCallChatServiceWithCorrectParameters()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync("TestUser");
+
+        var channels = new List<Channel>
+    {
+        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+    };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<User>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.JoinChannel("general"))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.SendMessage(It.IsAny<SendMessageRequest>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Rejoindre un canal
+        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
+        await Task.Delay(200);
+
+        // Act - Envoyer un message
+        var input = cut.Find(".input-area input");
+        var button = cut.Find(".input-area button");
+
+        await cut.InvokeAsync(() => input.Input("Test message content"));
+        await cut.InvokeAsync(() => button.Click());
+        await Task.Delay(100);
+
+        // Assert - Vérifier que SendMessage est appelé avec les bons paramètres
+        _chatServiceMock.Verify(
+            x => x.SendMessage(It.Is<SendMessageRequest>(req =>
+                req.Content == "Test message content" &&
+                req.Channel == "general")),
+            Times.Once);
+    }
+
+    // ==================== TESTS POUR HandleUserClicked ====================
+
+    [Fact]
+    public async Task HandleUserClicked_WithDifferentUser_ShouldCallOpenPrivateChat()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync("TestUser");
+
+        var channels = new List<Channel>
+    {
+        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+    };
+
+        var users = new List<User>
+    {
+        new() { UserId = "TestUser", Username = "TestUser" },
+        new() { UserId = "OtherUser", Username = "OtherUser" }
+    };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(users));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/private-messages/status/OtherUser")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new { Username = "OtherUser", IsOnline = true }));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.JoinChannel("general"))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.LeaveChannel("general"))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync([]);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetPrivateMessagesAsync("TestUser", "OtherUser"))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Rejoindre un canal
+        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
+        await Task.Delay(200);
+
+        // Act - Cliquer sur un autre utilisateur
+        var otherUserElements = cut.FindAll(".user-list li:not(.current)");
+        if (otherUserElements.Count > 0)
+        {
+            await cut.InvokeAsync(() => otherUserElements[0].Click());
+            await Task.Delay(200);
+        }
+
+        // Assert - Devrait ouvrir le chat privé
+        _chatServiceMock.Verify(x => x.LeaveChannel("general"), Times.Once);
+        _privateMessageServiceMock.Verify(
+            x => x.GetPrivateMessagesAsync("TestUser", "OtherUser"),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleUserClicked_WithSameUsername_ShouldNotOpenPrivateChat()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync("TestUser");
+
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        var users = new List<User>
+        {
+            new() { UserId = "TestUser", Username = "TestUser" }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(users));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+
+        _chatServiceMock.Setup(x => x.JoinChannel("general"))
+            .Returns(Task.CompletedTask);
+
+        _privateMessageServiceMock
+            .Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Rejoindre un canal
+        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
+        await Task.Delay(200);
+
+        // Act - Cliquer sur son propre nom
+        var currentUserElements = cut.FindAll(".user-list li.current");
+        if (currentUserElements.Count > 0)
+        {
+            await cut.InvokeAsync(() => currentUserElements[0].Click());
+            await Task.Delay(100);
+        }
+
+        // Assert - Ne devrait PAS ouvrir de chat privé
+        _privateMessageServiceMock.Verify(
+            x => x.GetPrivateMessagesAsync(It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never);
+    }
 }
