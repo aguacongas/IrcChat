@@ -37,7 +37,7 @@
                         </div>
                     </div>
                     <button class="delete-conversation-btn"
-                            @onclick="async () => await DeleteConversation(conv.OtherUser)"
+                            @onclick="async () => await DeleteConversation(conv.OtherUser!)"
                             @onclick:stopPropagation="true"
                             title="Supprimer la conversation">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
