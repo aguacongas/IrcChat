@@ -29,36 +29,281 @@
         content: "An error has occurred."
     }
 
-.loading-progress {
-    position: relative;
-    display: block;
-    width: 8rem;
-    height: 8rem;
-    margin: 20vh auto 1rem auto;
+/* Loading Screen pour IrcChat - Style cohérent avec l'application */
+#blazor-loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1e1e1e 0%, #2d3748 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  transition: opacity 0.5s ease-out;
 }
 
-    .loading-progress circle {
-        fill: none;
-        stroke: #e0e0e0;
-        stroke-width: 0.6rem;
-        transform-origin: 50% 50%;
-        transform: rotate(-90deg);
-    }
+  #blazor-loading-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+  }
 
-        .loading-progress circle:last-child {
-            stroke: #1b6ec2;
-            stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
-            transition: stroke-dasharray 0.05s ease-in-out;
-        }
-
-.loading-progress-text {
-    position: absolute;
-    text-align: center;
-    font-weight: bold;
-    inset: calc(20vh + 3.25rem) 0 auto 0.2rem;
+.irc-terminal {
+  width: 90%;
+  max-width: 600px;
+  background: #252525;
+  border: 2px solid #8ab4f8;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
 }
 
-    .loading-progress-text:after {
-        content: var(--blazor-load-percentage-text, "Loading");
-    }
+.terminal-header {
+  background: #1e1e1e;
+  padding: 15px 20px;
+  border-bottom: 2px solid #8ab4f8;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
+.terminal-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.terminal-button {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #6e6e6e;
+}
+
+  .terminal-button.close {
+    background: #eb0f0f;
+  }
+
+  .terminal-button.minimize {
+    background: #ffbd2e;
+  }
+
+  .terminal-button.maximize {
+    background: #48bb78;
+  }
+
+.terminal-title {
+  color: #8ab4f8;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.terminal-body {
+  padding: 25px;
+  min-height: 200px;
+}
+
+.terminal-line {
+  color: #e0e0e0;
+  font-size: 14px;
+  line-height: 1.8;
+  margin-bottom: 10px;
+  animation: fade-in 0.4s ease-in;
+  font-family: 'Courier New', 'Consolas', monospace;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.terminal-line.info {
+  color: #8ab4f8;
+}
+
+.terminal-line.success {
+  color: #48bb78;
+}
+
+.terminal-line.warning {
+  color: #ffbd2e;
+}
+
+.terminal-line.server {
+  color: #8ab4f8;
+}
+
+.terminal-prompt {
+  display: inline-block;
+  color: #48bb78;
+  margin-right: 8px;
+  font-weight: bold;
+}
+
+.terminal-text {
+  color: #e0e0e0;
+}
+
+/* Animation du curseur qui clignote */
+.terminal-cursor {
+  display: inline-block;
+  width: 10px;
+  height: 18px;
+  background: #8ab4f8;
+  animation: blink 1s step-start infinite;
+  margin-left: 3px;
+  vertical-align: text-bottom;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Barre de progression style IRC */
+.progress-container {
+  margin-top: 25px;
+  padding: 0 25px 20px 25px;
+}
+
+.progress-label {
+  color: #8ab4f8;
+  font-size: 13px;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #1e1e1e;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid #3e3e3e;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8ab4f8 0%, #48bb78 100%);
+  animation: progress 2s ease-in-out infinite;
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(138, 180, 248, 0.5);
+}
+
+@keyframes progress {
+  0% {
+    width: 0%;
+  }
+
+  50% {
+    width: 70%;
+  }
+
+  100% {
+    width: 100%;
+  }
+}
+
+.progress-text {
+  color: #888;
+  font-size: 12px;
+  text-align: center;
+  margin-top: 10px;
+}
+
+/* Dots animés */
+.loading-dots::after {
+  content: '';
+  animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0%, 20% {
+    content: '';
+  }
+
+  40% {
+    content: '.';
+  }
+
+  60% {
+    content: '..';
+  }
+
+  80%, 100% {
+    content: '...';
+  }
+}
+
+/* Logo IRC animé */
+.irc-logo {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.irc-logo-text {
+  font-size: 48px;
+  margin: 0;
+  background: linear-gradient(135deg, #8ab4f8 0%, #48bb78 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: bold;
+  animation: pulse-logo 2s ease-in-out infinite;
+}
+
+@keyframes pulse-logo {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+/* Version mobile */
+@media (max-width: 600px) {
+  .irc-terminal {
+    width: 95%;
+    max-width: none;
+  }
+
+  .terminal-header {
+    padding: 12px 15px;
+  }
+
+  .terminal-title {
+    font-size: 12px;
+  }
+
+  .terminal-body {
+    padding: 20px 15px;
+    min-height: 150px;
+  }
+
+  .terminal-line {
+    font-size: 12px;
+  }
+
+  .irc-logo-text {
+    font-size: 36px;
+  }
+
+  .progress-container {
+    padding: 0 15px 15px 15px;
+  }
+}

@@ -4958,7 +4958,6 @@ public class ChatTests : TestContext
         }
 
         // Assert - Devrait ouvrir le chat privé
-        _chatServiceMock.Verify(x => x.LeaveChannel("general"), Times.Once);
         _privateMessageServiceMock.Verify(
             x => x.GetPrivateMessagesAsync("TestUser", "OtherUser"),
             Times.Once);

@@ -349,7 +349,7 @@ else
 
     private async Task SwitchChannel(string channel)
     {
-        if (!string.IsNullOrEmpty(currentChannel) && !isPrivateConversation)
+        if (channel != currentChannel)
         {
             await ChatService.LeaveChannel(currentChannel);
         }
@@ -359,8 +359,12 @@ else
         privateMessages.Clear();
         isSelectedUserOnline = false;
 
-        currentChannel = channel;
-        await ChatService.JoinChannel(channel);
+        if (channel != currentChannel)
+        {
+            currentChannel = channel;
+            await ChatService.JoinChannel(channel);
+        }
+
         await LoadMessages();
         await LoadUsers();
         
@@ -458,12 +462,6 @@ else
 
     private async Task OpenPrivateChat(User user)
     {
-        if (!string.IsNullOrEmpty(currentChannel) && !isPrivateConversation)
-        {
-            await ChatService.LeaveChannel(currentChannel);
-        }
-
-        currentChannel = "";
         isPrivateConversation = true;
         selectedPrivateUser = user;
 
