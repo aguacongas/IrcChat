@@ -1,14 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <title>Redirection vers l'application Blazor</title>
-  <script>
-    // Redirige vers index.html pour toutes les routes
-    window.location.href = "/index.html#" + window.location.pathname + window.location.search;
-  </script>
+  <meta charset="utf-8">
+  <title>Redirecting…</title>
+  <meta http-equiv="refresh" content="0; url=/REPO_NAME/">
 </head>
 <body>
-  <p>Redirection en cours vers l'application Blazor...</p>
+  <script>
+    (function () {
+      var repo = "/IrcChat";
+      var path = location.pathname;
+      // Retire le préfixe repo si présent
+      if (path.startsWith(repo)) path = path.substring(repo.length);
+      // Redirige vers index avec la route encodée
+      var url = repo + "/?" + path + location.search + location.hash;
+      location.replace(url);
+    })();
+  </script>
 </body>
 </html>
