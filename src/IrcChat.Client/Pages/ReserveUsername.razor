@@ -1,4 +1,5 @@
 @page "/reserve"
+@using IrcChat.Client.Extensions
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Services
 @inject IUnifiedAuthService Auth
@@ -90,7 +91,7 @@ else
 
         if (string.IsNullOrEmpty(usernameToReserve))
         {
-            Navigation.NavigateTo("/login");
+            Navigation.NavigateToRelative("login");
         }
     }
 
@@ -98,6 +99,6 @@ else
     {
         // Sauvegarder le pseudo à réserver
         await JS.InvokeVoidAsync("sessionStorage.setItem", "temp_username_to_reserve", usernameToReserve);
-        Navigation.NavigateTo($"/oauth-login?provider={provider}&mode=reserve");
+        Navigation.NavigateToRelative($"oauth-login?provider={provider}&mode=reserve");
     }
 }

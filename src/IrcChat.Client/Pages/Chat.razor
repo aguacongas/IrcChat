@@ -1,5 +1,6 @@
 @* src/IrcChat.Client/Pages/Chat.razor *@
 @page "/chat"
+@using IrcChat.Client.Extensions
 @using IrcChat.Client.Models
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Services
@@ -111,7 +112,7 @@ else
 
         if (!Auth.HasUsername)
         {
-            Navigation.NavigateTo("/login");
+            Navigation.NavigateToRelative("login");
             return;
         }
 
@@ -344,7 +345,7 @@ else
     // Actions
     private void GoToSettings()
     {
-        Navigation.NavigateTo("/settings");
+        Navigation.NavigateToRelative("settings");
     }
 
     private async Task SwitchChannel(string channel)

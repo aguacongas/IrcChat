@@ -1,5 +1,6 @@
 @page "/"
 @page "/login"
+@using IrcChat.Client.Extensions
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Services
 @inject HttpClient Http
@@ -122,7 +123,7 @@ else
         // Si déjà authentifié, aller au chat
         if (Auth.IsAuthenticated)
         {
-            Navigation.NavigateTo("/chat");
+            Navigation.NavigateToRelative("chat");
             return;
         }
 
@@ -187,14 +188,14 @@ else
         }
 
         await Auth.SetUsernameAsync(cleanUsername, isReserved: false);
-        Navigation.NavigateTo("/chat");
+        Navigation.NavigateToRelative("chat");
     }
 
     private async Task LoginWithProvider(ExternalAuthProvider provider)
     {
         // Sauvegarder temporairement le username pour après l'OAuth
         await JS.InvokeVoidAsync("sessionStorage.setItem", "temp_username_for_login", username);
-        Navigation.NavigateTo($"/oauth-login?provider={provider}&mode=login");
+        Navigation.NavigateToRelative($"oauth-login?provider={provider}&mode=login");
     }
 
     // Le code de la méthode ForgetUsername() a été supprimé.
@@ -220,8 +221,8 @@ else
 
     private void NavigateToReserve()
     {
-        var url = $"/reserve?username={Uri.EscapeDataString(username)}";
-        Navigation.NavigateTo(url);
+        var url = $"reserve?username={Uri.EscapeDataString(username)}";
+        Navigation.NavigateToRelative(url);
     }
 
     public void Dispose()

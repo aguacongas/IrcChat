@@ -1,4 +1,5 @@
 @page "/settings"
+@using IrcChat.Client.Extensions
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Services
 @using IrcChat.Client.Components
@@ -222,18 +223,18 @@ else
 
         if (!Auth.HasUsername)
         {
-            Navigation.NavigateTo("/login");
+            Navigation.NavigateToRelative("login");
         }
     }
 
     private void GoBack()
     {
-        Navigation.NavigateTo("/chat");
+        Navigation.NavigateToRelative("chat");
     }
 
     private void GoToReserve()
     {
-        Navigation.NavigateTo($"/reserve?username={Uri.EscapeDataString(Auth.Username ?? "")}");
+        Navigation.NavigateToRelative($"reserve?username={Uri.EscapeDataString(Auth.Username ?? "")}");
     }
 
     private void OpenAdminPanel()
@@ -276,7 +277,7 @@ else
                 newChannelName = string.Empty;
 
                 await Task.Delay(2000);
-                Navigation.NavigateTo("/chat");
+                Navigation.NavigateToRelative("chat");
                 return;
             }
 
@@ -322,13 +323,13 @@ else
         showForgetModal = false;
         await Auth.ForgetUsernameAndLogoutAsync();
         Http.DefaultRequestHeaders.Authorization = null;
-        Navigation.NavigateTo("/login");
+        Navigation.NavigateToRelative("login");
     }
 
     private async Task Logout()
     {
         await Auth.LogoutAsync();
         Http.DefaultRequestHeaders.Authorization = null;
-        Navigation.NavigateTo("/login");
+        Navigation.NavigateToRelative("login");
     }
 }
