@@ -210,6 +210,25 @@ public class SettingsTests : TestContext
     }
 
     [Fact]
+    public void Settings_GuestUser_ReserveButton_ShouldNavigateToReserve()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("GuestUser");
+        _authServiceMock.Setup(x => x.IsReserved).Returns(false);
+
+        var cut = RenderComponent<Settings>();
+
+        // Act
+        var reserveButton = cut.Find("button:contains('Réserver mon pseudo')");
+        cut.InvokeAsync(() => reserveButton.Click());
+
+        // Assert
+        Assert.Contains("reserve?username=GuestUser", _navManager.Uri);
+    }
+
+    [Fact]
     public async Task Settings_Logout_ShouldCallServiceAndRedirect()
     {
         // Arrange
@@ -227,5 +246,277 @@ public class SettingsTests : TestContext
         // Assert
         _authServiceMock.Verify(x => x.LogoutAsync(), Times.Once);
         Assert.EndsWith("/login", _navManager.Uri);
+    }
+
+    [Fact]
+    public async Task Settings_ForgetUsername_ShouldShowConfirmation()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
+
+        var cut = RenderComponent<Settings>();
+
+        // Act
+        var forgetButton = cut.Find("button:contains('Oublier mon pseudo')");
+        await cut.InvokeAsync(() => forgetButton.Click());
+
+        // Assert
+        Assert.Contains("Confirmer la suppression", cut.Markup);
+        Assert.Contains("irréversible", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Settings_ForgetUsername_Confirm_ShouldCallServiceAndRedirect()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        _authServiceMock.Setup(x => x.ForgetUsernameAndLogoutAsync()).Returns(Task.CompletedTask);
+
+        var cut = RenderComponent<Settings>();
+
+        // Act
+        var forgetButton = cut.Find("button:contains('Oublier mon pseudo')");
+        await cut.InvokeAsync(() => forgetButton.Click());
+
+        var confirmButton = cut.Find("button:contains('Oui, oublier')");
+        await cut.InvokeAsync(() => confirmButton.Click());
+
+        // Assert
+        _authServiceMock.Verify(x => x.ForgetUsernameAndLogoutAsync(), Times.Once);
+        Assert.EndsWith("/login", _navManager.Uri);
+    }
+
+    [Fact]
+    public async Task Settings_ForgetUsername_Cancel_ShouldHideModal()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
+
+        var cut = RenderComponent<Settings>();
+
+        // Act
+        var forgetButton = cut.Find("button:contains('Oublier mon pseudo')");
+        await cut.InvokeAsync(() => forgetButton.Click());
+
+        var cancelButton = cut.Find("button:contains('Annuler')");
+        await cut.InvokeAsync(() => cancelButton.Click());
+
+        // Assert
+        _authServiceMock.Verify(x => x.ForgetUsernameAndLogoutAsync(), Times.Never);
+        Assert.DoesNotContain("Confirmer la suppression", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Settings_CreateChannel_Success_ShouldNavigateToChat()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
+        _authServiceMock.Setup(x => x.Token).Returns("test-token");
+
+        var createdChannel = new Channel
+        {
+            Id = Guid.NewGuid(),
+            Name = "new-channel",
+            CreatedBy = "TestUser",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _mockHttp.When(HttpMethod.Post, "*/api/channels")
+            .Respond(HttpStatusCode.Created, JsonContent.Create(createdChannel));
+
+        var cut = RenderComponent<Settings>();
+
+        // Act
+        var input = cut.Find(".input-group input");
+        await cut.InvokeAsync(() => input.Input("new-channel"));
+
+        var createButton = cut.Find(".input-group .btn-primary");
+        await cut.InvokeAsync(() => createButton.Click());
+        await Task.Delay(2100); // Attendre le délai + navigation
+
+        // Assert
+        Assert.EndsWith("/chat", _navManager.Uri);
+    }
+
+    [Fact]
+    public async Task Settings_CreateChannel_EnterKey_ShouldCreateChannel()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
+        _authServiceMock.Setup(x => x.Token).Returns("test-token");
+
+        var createdChannel = new Channel
+        {
+            Id = Guid.NewGuid(),
+            Name = "new-channel",
+            CreatedBy = "TestUser",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/channels")
+            .Respond(HttpStatusCode.Created, JsonContent.Create(createdChannel));
+
+        var cut = RenderComponent<Settings>();
+
+        // Act
+        var input = cut.Find(".input-group input");
+        await cut.InvokeAsync(() => input.Input("new-channel"));
+        await cut.InvokeAsync(() => input.KeyUp("Enter"));
+        await Task.Delay(100);
+
+        // Assert
+        var count = _mockHttp.GetMatchCount(mockedRequest);
+        Assert.Equal(1, count);
+    }
+
+    [Fact]
+    public void Settings_GuestUser_ShouldNotShowChannelCreation()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("GuestUser");
+        _authServiceMock.Setup(x => x.IsReserved).Returns(false);
+        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(false);
+
+        // Act
+        var cut = RenderComponent<Settings>();
+
+        // Assert
+        Assert.DoesNotContain("Gestion des salons", cut.Markup);
+    }
+
+    [Fact]
+    public void Settings_Loading_ShouldShowSpinner()
+    {
+        // Arrange
+        var taskCompletionSource = new TaskCompletionSource();
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(taskCompletionSource.Task);
+
+        // Act
+        var cut = RenderComponent<Settings>();
+
+        // Assert
+        Assert.Contains("Chargement", cut.Markup);
+        Assert.Contains("spinner", cut.Markup);
+    }
+
+    [Fact]
+    public void Settings_AdminUser_OpenAdminPanel_ShouldDisplayPanel()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("AdminUser");
+        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        _authServiceMock.Setup(x => x.UserId).Returns(Guid.NewGuid());
+
+        var cut = RenderComponent<Settings>();
+
+        // Act
+        var adminButton = cut.Find("button:contains('panneau d\\'administration')");
+        cut.InvokeAsync(() => adminButton.Click());
+
+        // Assert
+        // Le panneau admin devrait être visible (AdminPanel component)
+        Assert.Contains("admin-panel", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Settings_CreateChannel_WithError_ShouldShowError()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
+        _authServiceMock.Setup(x => x.Token).Returns("test-token");
+
+        _mockHttp.When(HttpMethod.Post, "*/api/channels")
+            .Respond(HttpStatusCode.InternalServerError);
+
+        var cut = RenderComponent<Settings>();
+
+        // Act
+        var input = cut.Find(".input-group input");
+        await cut.InvokeAsync(() => input.Input("test-channel"));
+
+        var createButton = cut.Find(".input-group .btn-primary");
+        await cut.InvokeAsync(() => createButton.Click());
+        await Task.Delay(100);
+
+        // Assert
+        Assert.Contains("Erreur lors de la création du salon", cut.Markup);
+    }
+
+    [Fact]
+    public void Settings_CreateChannelButton_WithEmptyInput_ShouldBeDisabled()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
+
+        // Act
+        var cut = RenderComponent<Settings>();
+
+        // Assert
+        var createButton = cut.Find(".input-group .btn-primary");
+        Assert.True(createButton.HasAttribute("disabled"));
+    }
+
+    [Fact]
+    public void Settings_WithAvatarUrl_ShouldDisplayAvatar()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.AvatarUrl).Returns("https://example.com/avatar.jpg");
+
+        // Act
+        var cut = RenderComponent<Settings>();
+
+        // Assert
+        Assert.Contains("avatar.jpg", cut.Markup);
+        var avatar = cut.Find(".profile-avatar");
+        Assert.Equal("https://example.com/avatar.jpg", avatar.GetAttribute("src"));
+    }
+
+    [Fact]
+    public void Settings_WithoutAvatarUrl_ShouldDisplayPlaceholder()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        _authServiceMock.Setup(x => x.AvatarUrl).Returns((string?)null);
+
+        // Act
+        var cut = RenderComponent<Settings>();
+
+        // Assert
+        Assert.Contains("avatar-placeholder", cut.Markup);
     }
 }

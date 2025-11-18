@@ -1,4 +1,5 @@
 @page "/oauth-login"
+@using IrcChat.Client.Extensions
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Services
 @inject HttpClient Http
@@ -68,7 +69,7 @@
         }
         else
         {
-            Navigation.NavigateTo("/login");
+            Navigation.NavigateToRelative("login");
         }
     }
 
@@ -184,7 +185,7 @@
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_code_verifier");
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_provider");
 
-                Navigation.NavigateTo("/chat");
+                Navigation.NavigateToRelative("chat");
             }
         }
         else
@@ -242,7 +243,7 @@
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_code_verifier");
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_provider");
 
-                Navigation.NavigateTo("/chat");
+                Navigation.NavigateToRelative("chat");
             }
         }
         else

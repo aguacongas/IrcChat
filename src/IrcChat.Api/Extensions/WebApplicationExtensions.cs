@@ -35,6 +35,7 @@ public static class WebApplicationExtensions
 
     public static WebApplication ConfigurePipeline(this WebApplication app)
     {
+        app.MapGet("/healthz", () => Results.Ok("Healthy"));
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
