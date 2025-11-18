@@ -179,7 +179,7 @@ public static class PrivateMessageEndpoints
         await db.SaveChangesAsync();
 
         logger.LogInformation(
-            "Suppression de {Count} messages entre {UserId} et {OtherUserId} pour {UserId} uniquement",
+            "Suppression de {Count} messages entre {UserId} et {OtherUserId} pour {CallerUserId} uniquement",
             messages.Count, userId, otherUserId, userId);
 
         return Results.Ok(new { Deleted = messages.Count });
