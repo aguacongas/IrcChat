@@ -142,7 +142,10 @@ else
         errorMessage = "";
 
         if (string.IsNullOrWhiteSpace(username) || username.Length < 3)
+        {
             return;
+        }
+
         _debounceTimer?.Dispose();
         _debounceTimer = new System.Threading.Timer(_ =>
         {
@@ -153,7 +156,10 @@ else
     private async Task CheckUsername()
     {
         if (string.IsNullOrWhiteSpace(username) || username.Length < 3)
+        {
             return;
+        }
+
         isChecking = true;
         StateHasChanged();
 
@@ -161,11 +167,8 @@ else
         {
             var request = new UsernameCheckRequest { Username = username.Trim() };
             var response = await Http.PostAsJsonAsync("/api/oauth/check-username", request);
-
-            if (response.IsSuccessStatusCode)
-            {
-                usernameStatus = await response.Content.ReadFromJsonAsync<UsernameCheckResponse>();
-            }
+            response.EnsureSuccessStatusCode();
+            usernameStatus = await response.Content.ReadFromJsonAsync<UsernameCheckResponse>();
         }
         catch
         {

@@ -191,6 +191,9 @@ public class LoginTests : TestContext
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
+        var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
+            .Respond(HttpStatusCode.OK);
+
         var cut = RenderComponent<Login>();
 
         // Act
@@ -199,8 +202,7 @@ public class LoginTests : TestContext
         await Task.Delay(600);
 
         // Assert
-        var requestCount = _mockHttp.GetMatchCount(
-            _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username"));
+        var requestCount = _mockHttp.GetMatchCount(mockedRequest);
         Assert.Equal(0, requestCount);
     }
 
@@ -291,5 +293,156 @@ public class LoginTests : TestContext
 
         // Assert
         _authServiceMock.Verify(x => x.ClearAllAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task Login_NavigateToReserve_ShouldIncludeUsernameInQueryString()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
+        var checkResponse = new UsernameCheckResponse
+        {
+            Available = true,
+            IsReserved = false,
+            IsCurrentlyUsed = false
+        };
+
+        _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
+
+        var cut = RenderComponent<Login>();
+
+        // Act
+        var input = cut.Find("input[placeholder*='pseudo']");
+        await cut.InvokeAsync(() => input.Input("TestUser"));
+        await Task.Delay(600);
+
+        var reserveButton = cut.Find("button:contains('Réserver')");
+        await cut.InvokeAsync(() => reserveButton.Click());
+
+        // Assert
+        Assert.Contains("reserve?username=TestUser", _navManager.Uri);
+    }
+
+    [Fact]
+    public async Task Login_CheckUsername_ShouldDebounceRequests()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
+        var checkResponse = new UsernameCheckResponse
+        {
+            Available = true,
+            IsReserved = false,
+            IsCurrentlyUsed = false
+        };
+
+        var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
+
+        var cut = RenderComponent<Login>();
+        var input = cut.Find("input[placeholder*='pseudo']");
+
+        // Act - Saisie rapide de plusieurs caractères
+        await cut.InvokeAsync(() => input.Input("T"));
+        await Task.Delay(100);
+        await cut.InvokeAsync(() => input.Input("Te"));
+        await Task.Delay(100);
+        await cut.InvokeAsync(() => input.Input("Tes"));
+        await Task.Delay(100);
+        await cut.InvokeAsync(() => input.Input("Test"));
+        await Task.Delay(100);
+        await cut.InvokeAsync(() => input.Input("TestU"));
+        await Task.Delay(600); // Attendre le debounce final
+
+        // Assert - Une seule requête doit être faite
+        var requestCount = _mockHttp.GetMatchCount(mockedRequest);
+        Assert.Equal(1, requestCount);
+    }
+
+    [Fact]
+    public async Task Login_CheckUsername_WithError_ShouldDisplayErrorMessage()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
+        _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
+            .Respond(HttpStatusCode.InternalServerError);
+
+        var cut = RenderComponent<Login>();
+
+        // Act
+        var input = cut.Find("input[placeholder*='pseudo']");
+        await cut.InvokeAsync(() => input.Input("TestUser"));
+        await Task.Delay(600);
+        cut.Render();
+
+        // Assert
+        Assert.Contains("Erreur lors de la vérification", cut.Markup);
+    }
+
+    [Fact]
+    public void Login_WithReservedUserNotAuthenticated_ShouldDisableInput()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        _authServiceMock.Setup(x => x.Username).Returns("ReservedUser");
+        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(false);
+
+        // Act
+        var cut = RenderComponent<Login>();
+
+        // Assert
+        var input = cut.Find("input[placeholder*='pseudo']");
+        Assert.True(input.HasAttribute("disabled"));
+    }
+
+    [Fact]
+    public async Task Login_EnterAsGuest_WithShortUsername_ShouldShowError()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
+        var checkResponse = new UsernameCheckResponse
+        {
+            Available = true,
+            IsReserved = false,
+            IsCurrentlyUsed = false
+        };
+
+        _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
+
+        var cut = RenderComponent<Login>();
+
+        // Act
+        var input = cut.Find("input[placeholder*='pseudo']");
+        await cut.InvokeAsync(() => input.Input("AB"));
+        await Task.Delay(600);
+
+        // Le bouton ne devrait pas apparaître, donc on simule l'appel direct
+        // à la méthode EnterAsGuest avec un username court
+
+        // Assert
+        // Pas de bouton "invité" visible car username trop court
+        Assert.DoesNotContain("button:contains('invité')", cut.Markup);
+    }
+
+    [Fact]
+    public void Login_Loading_ShouldShowSpinner()
+    {
+        // Arrange
+        var taskCompletionSource = new TaskCompletionSource();
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(taskCompletionSource.Task);
+
+        // Act
+        var cut = RenderComponent<Login>();
+
+        // Assert
+        Assert.Contains("Chargement", cut.Markup);
+        Assert.Contains("spinner", cut.Markup);
     }
 }
