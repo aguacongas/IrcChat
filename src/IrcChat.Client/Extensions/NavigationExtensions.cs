@@ -23,22 +23,4 @@ public static class NavigationExtensions
 
         navigationManager.NavigateTo(absoluteUri.ToString(), forceLoad);
     }
-
-    /// <summary>
-    /// Obtient l'URL relative actuelle (sans le baseHref)
-    /// </summary>
-    /// <param name="navigationManager">Instance de NavigationManager</param>
-    /// <returns>URI relative</returns>
-    public static string GetRelativeUri(this NavigationManager navigationManager)
-    {
-        var baseUri = navigationManager.BaseUri;
-        var currentUri = navigationManager.Uri;
-
-        if (currentUri.StartsWith(baseUri))
-        {
-            return currentUri[baseUri.Length..].TrimStart('/');
-        }
-
-        return string.Empty;
-    }
 }
