@@ -50,7 +50,8 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
             Content = "Hello",
             Timestamp = DateTime.UtcNow.AddMinutes(-5),
             IsRead = false,
-            IsDeleted = false
+            IsDeletedBySender = false,
+            IsDeletedByRecipient = false
         };
 
         var message2 = new PrivateMessage
@@ -63,7 +64,8 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
             Content = "Hi there",
             Timestamp = DateTime.UtcNow,
             IsRead = false,
-            IsDeleted = false
+            IsDeletedBySender = false,
+            IsDeletedByRecipient = false
         };
 
         db.PrivateMessages.AddRange(message1, message2);
@@ -114,7 +116,6 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         db.PrivateMessages.RemoveRange(db.PrivateMessages);
         await db.SaveChangesAsync();
 
-
         var sender = "user1";
         var recipient = "user3";
 
@@ -128,7 +129,8 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
             Content = "Test",
             Timestamp = DateTime.UtcNow,
             IsRead = false,
-            IsDeleted = false
+            IsDeletedBySender = false,
+            IsDeletedByRecipient = false
         };
 
         db.PrivateMessages.Add(message);
@@ -224,7 +226,8 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
             Content = "Hello online",
             Timestamp = DateTime.UtcNow,
             IsRead = false,
-            IsDeleted = false
+            IsDeletedBySender = false,
+            IsDeletedByRecipient = false
         });
 
         // Messages avec user3 (offline)
@@ -238,7 +241,8 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
             Content = "Hello offline",
             Timestamp = DateTime.UtcNow,
             IsRead = false,
-            IsDeleted = false
+            IsDeletedBySender = false,
+            IsDeletedByRecipient = false
         });
 
         // Marquer user2 comme connecté
@@ -293,7 +297,8 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
             Content = "First",
             Timestamp = DateTime.UtcNow.AddMinutes(-10),
             IsRead = true,
-            IsDeleted = false
+            IsDeletedBySender = false,
+            IsDeletedByRecipient = false
         };
 
         var msg2 = new PrivateMessage
@@ -306,7 +311,8 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
             Content = "Second",
             Timestamp = DateTime.UtcNow.AddMinutes(-5),
             IsRead = true,
-            IsDeleted = false
+            IsDeletedBySender = false,
+            IsDeletedByRecipient = false
         };
 
         var msg3 = new PrivateMessage
@@ -319,7 +325,8 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
             Content = "Third",
             Timestamp = DateTime.UtcNow,
             IsRead = false,
-            IsDeleted = false
+            IsDeletedBySender = false,
+            IsDeletedByRecipient = false
         };
 
         db.PrivateMessages.AddRange(msg1, msg2, msg3);
@@ -360,7 +367,8 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
                 Content = "Unread 1",
                 Timestamp = DateTime.UtcNow,
                 IsRead = false,
-                IsDeleted = false
+                IsDeletedBySender = false,
+                IsDeletedByRecipient = false
             },
             new PrivateMessage
             {
@@ -372,7 +380,8 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
                 Content = "Unread 2",
                 Timestamp = DateTime.UtcNow,
                 IsRead = false,
-                IsDeleted = false
+                IsDeletedBySender = false,
+                IsDeletedByRecipient = false
             },
             // 1 message lu
             new PrivateMessage
@@ -385,7 +394,8 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
                 Content = "Read",
                 Timestamp = DateTime.UtcNow,
                 IsRead = true,
-                IsDeleted = false
+                IsDeletedBySender = false,
+                IsDeletedByRecipient = false
             }
         );
 
@@ -403,7 +413,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
     }
 
     [Fact]
-    public async Task DeleteConversation_ShouldMarkAllMessagesAsDeleted()
+    public async Task DeleteConversation_ShouldMarkMessagesAsDeletedForUserOnly()
     {
         // Arrange
         using var scope = factory.Services.CreateScope();
@@ -425,26 +435,28 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
             Content = "Message 1",
             Timestamp = DateTime.UtcNow,
             IsRead = false,
-            IsDeleted = false
+            IsDeletedBySender = false,
+            IsDeletedByRecipient = false
         };
 
         var msg2 = new PrivateMessage
         {
             Id = Guid.NewGuid(),
-            SenderUserId = user1,
-            SenderUsername = user1,
-            RecipientUserId = user2,
-            RecipientUsername = user2,
+            SenderUserId = user2,
+            SenderUsername = user2,
+            RecipientUserId = user1,
+            RecipientUsername = user1,
             Content = "Message 2",
             Timestamp = DateTime.UtcNow,
             IsRead = false,
-            IsDeleted = false
+            IsDeletedBySender = false,
+            IsDeletedByRecipient = false
         };
 
         db.PrivateMessages.AddRange(msg1, msg2);
         await db.SaveChangesAsync();
 
-        // Act
+        // Act - user1 supprime la conversation
         var response = await _client.DeleteAsync($"/api/private-messages/{user1}/conversation/{user2}");
 
         // Assert
@@ -463,8 +475,116 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
 
         Assert.NotNull(deletedMsg1);
         Assert.NotNull(deletedMsg2);
-        Assert.True(deletedMsg1.IsDeleted);
-        Assert.True(deletedMsg2.IsDeleted);
+
+        // msg1: envoyé par user1 -> IsDeletedBySender = true
+        Assert.True(deletedMsg1.IsDeletedBySender);
+        Assert.False(deletedMsg1.IsDeletedByRecipient);
+
+        // msg2: reçu par user1 -> IsDeletedByRecipient = true
+        Assert.False(deletedMsg2.IsDeletedBySender);
+        Assert.True(deletedMsg2.IsDeletedByRecipient);
+    }
+
+    [Fact]
+    public async Task DeleteConversation_OnlyDeletesForRequestingUser()
+    {
+        // Arrange
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        db.PrivateMessages.RemoveRange(db.PrivateMessages);
+        await db.SaveChangesAsync();
+
+        var user1 = "user1";
+        var user2 = "user2";
+
+        var msg = new PrivateMessage
+        {
+            Id = Guid.NewGuid(),
+            SenderUserId = user1,
+            SenderUsername = user1,
+            RecipientUserId = user2,
+            RecipientUsername = user2,
+            Content = "Test message",
+            Timestamp = DateTime.UtcNow,
+            IsRead = false,
+            IsDeletedBySender = false,
+            IsDeletedByRecipient = false
+        };
+
+        db.PrivateMessages.Add(msg);
+        await db.SaveChangesAsync();
+
+        // Act - user1 supprime la conversation
+        await _client.DeleteAsync($"/api/private-messages/{user1}/conversation/{user2}");
+
+        // Assert - user1 ne voit plus la conversation
+        var response1 = await _client.GetAsync($"/api/private-messages/conversations/{user1}");
+        var conversations1 = await response1.Content.ReadFromJsonAsync<List<PrivateConversation>>();
+        Assert.NotNull(conversations1);
+        Assert.Empty(conversations1);
+
+        // Assert - user2 voit toujours la conversation
+        var response2 = await _client.GetAsync($"/api/private-messages/conversations/{user2}");
+        var conversations2 = await response2.Content.ReadFromJsonAsync<List<PrivateConversation>>();
+        Assert.NotNull(conversations2);
+        Assert.Single(conversations2);
+    }
+
+    [Fact]
+    public async Task DeleteConversation_BothUsersCanDeleteIndependently()
+    {
+        // Arrange
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        db.PrivateMessages.RemoveRange(db.PrivateMessages);
+        await db.SaveChangesAsync();
+
+        var user1 = "user1";
+        var user2 = "user2";
+
+        var msg = new PrivateMessage
+        {
+            Id = Guid.NewGuid(),
+            SenderUserId = user1,
+            SenderUsername = user1,
+            RecipientUserId = user2,
+            RecipientUsername = user2,
+            Content = "Test message",
+            Timestamp = DateTime.UtcNow,
+            IsRead = false,
+            IsDeletedBySender = false,
+            IsDeletedByRecipient = false
+        };
+
+        db.PrivateMessages.Add(msg);
+        await db.SaveChangesAsync();
+
+        // Act - user1 supprime sa vue
+        await _client.DeleteAsync($"/api/private-messages/{user1}/conversation/{user2}");
+
+        // Act - user2 supprime sa vue
+        await _client.DeleteAsync($"/api/private-messages/{user2}/conversation/{user1}");
+
+        // Assert - Les deux utilisateurs ne voient plus la conversation
+        var response1 = await _client.GetAsync($"/api/private-messages/conversations/{user1}");
+        var conversations1 = await response1.Content.ReadFromJsonAsync<List<PrivateConversation>>();
+        Assert.NotNull(conversations1);
+        Assert.Empty(conversations1);
+
+        var response2 = await _client.GetAsync($"/api/private-messages/conversations/{user2}");
+        var conversations2 = await response2.Content.ReadFromJsonAsync<List<PrivateConversation>>();
+        Assert.NotNull(conversations2);
+        Assert.Empty(conversations2);
+
+        // Assert - Le message est marqué comme supprimé des deux côtés
+        using var verifyScope = factory.Services.CreateScope();
+        using var verifyContext = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
+        var deletedMsg = await verifyContext.PrivateMessages.FindAsync(msg.Id);
+        Assert.NotNull(deletedMsg);
+        Assert.True(deletedMsg.IsDeletedBySender);
+        Assert.True(deletedMsg.IsDeletedByRecipient);
     }
 
     [Fact]
@@ -475,6 +595,58 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetUnreadCount_ShouldExcludeDeletedMessages()
+    {
+        // Arrange
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        var recipient = "testuser";
+
+        // Message non lu et non supprimé
+        db.PrivateMessages.Add(new PrivateMessage
+        {
+            Id = Guid.NewGuid(),
+            SenderUserId = "sender1",
+            SenderUsername = "sender1",
+            RecipientUserId = recipient,
+            RecipientUsername = recipient,
+            Content = "Unread",
+            Timestamp = DateTime.UtcNow,
+            IsRead = false,
+            IsDeletedBySender = false,
+            IsDeletedByRecipient = false
+        });
+
+        // Message non lu mais supprimé par le destinataire
+        db.PrivateMessages.Add(new PrivateMessage
+        {
+            Id = Guid.NewGuid(),
+            SenderUserId = "sender2",
+            SenderUsername = "sender2",
+            RecipientUserId = recipient,
+            RecipientUsername = recipient,
+            Content = "Unread but deleted",
+            Timestamp = DateTime.UtcNow,
+            IsRead = false,
+            IsDeletedBySender = false,
+            IsDeletedByRecipient = true
+        });
+
+        await db.SaveChangesAsync();
+
+        // Act
+        var response = await _client.GetAsync($"/api/private-messages/{recipient}/unread-count");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await response.Content.ReadFromJsonAsync<UnreadCountResponse>();
+        Assert.NotNull(result);
+        Assert.Equal(1, result.UnreadCount); // Seulement le message non supprimé
     }
 
     private sealed class UserStatusResponse

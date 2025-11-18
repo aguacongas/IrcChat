@@ -722,7 +722,6 @@ public class ChatHubTests : IAsyncDisposable
             Content = "Unread message",
             Timestamp = DateTime.UtcNow,
             IsRead = false,
-            IsDeleted = false
         };
 
         _db.PrivateMessages.Add(unreadMessage);

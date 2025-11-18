@@ -151,8 +151,7 @@ public class ChatHub(
             RecipientUserId = request.RecipientUserId,     // ✨ UserId du destinataire
             Content = request.Content,
             Timestamp = DateTime.UtcNow,
-            IsRead = false,
-            IsDeleted = false
+            IsRead = false
         };
 
         db.PrivateMessages.Add(privateMessage);
