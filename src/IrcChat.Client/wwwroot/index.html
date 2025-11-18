@@ -56,7 +56,9 @@
   </div>
   <script src="_framework/blazor.webassembly.js" autostart="false"></script>
   <script>
-    Blazor.start().then(() => {
+    (async () => {
+      await Blazor.start();
+
       // Fade out du loading screen une fois Blazor chargé
       const loadingScreen = document.getElementById('blazor-loading-screen');
       if (loadingScreen) {
@@ -65,7 +67,7 @@
           loadingScreen.remove();
         }, 500);
       }
-    });
+    })();
   </script>
 
   <script src="js/localStorage.js"></script>
