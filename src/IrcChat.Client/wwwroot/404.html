@@ -2,17 +2,14 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Redirecting…</title>
-  <meta http-equiv="refresh" content="0; url=/REPO_NAME/">
+  <title>Redirection…</title>
 </head>
 <body>
   <script>
     (function () {
       var repo = "/IrcChat";
       var path = location.pathname;
-      // Retire le préfixe repo si présent
       if (path.startsWith(repo)) path = path.substring(repo.length);
-      // Redirige vers index avec la route encodée
       var url = repo + "/?" + path + location.search + location.hash;
       location.replace(url);
     })();

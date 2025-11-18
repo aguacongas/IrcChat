@@ -58,9 +58,8 @@
   <script>
     (function () {
       var q = location.search && location.search.substring(1);
-      if (q) {
-        // Réécrit l’URL sans query pour Blazor Router
-        history.replaceState(null, null, "/" + q + location.hash);
+      if (q && q.startsWith("/")) {
+        history.replaceState(null, null, "/IrcChat" + q + location.hash);
       }
     })();
   </script>
