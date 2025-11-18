@@ -55,19 +55,17 @@
     <span class="dismiss">🗙</span>
   </div>
   <script src="_framework/blazor.webassembly.js" autostart="false"></script>
-  <script>
-    (async () => {
-      await Blazor.start();
+  <script type="module">
+    await Blazor.start();
 
-      // Fade out du loading screen une fois Blazor chargé
-      const loadingScreen = document.getElementById('blazor-loading-screen');
-      if (loadingScreen) {
-        loadingScreen.classList.add('fade-out');
-        setTimeout(() => {
-          loadingScreen.remove();
-        }, 500);
-      }
-    })();
+    // Fade out du loading screen une fois Blazor chargé
+    const loadingScreen = document.getElementById('blazor-loading-screen');
+    if (loadingScreen) {
+      loadingScreen.classList.add('fade-out');
+      setTimeout(() => {
+        loadingScreen.remove();
+      }, 500);
+    }
   </script>
 
   <script src="js/localStorage.js"></script>
