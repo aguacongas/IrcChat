@@ -23,6 +23,9 @@
           <div class="terminal-title">IrcChat - Connecting</div>
         </div>
         <div class="terminal-body">
+          <div class="irc-logo">
+            <h1 class="irc-logo-text">💬 IrcChat</h1>
+          </div>
           <div class="terminal-line server">*** Looking up your hostname...</div>
           <div class="terminal-line server">*** Found your hostname</div>
           <div class="terminal-line info">*** Connecting to IRC server...</div>
@@ -35,21 +38,36 @@
           </div>
         </div>
         <div class="progress-container">
+          <div class="progress-label">Loading Blazor WebAssembly</div>
           <div class="progress-bar">
             <div class="progress-fill"></div>
           </div>
-          <div class="progress-text">Loading Blazor WebAssembly...</div>
+          <div class="progress-text">Please wait...</div>
         </div>
       </div>
     </div>
   </div>
+
 
   <div id="blazor-error-ui">
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
   </div>
-  <script src="_framework/blazor.webassembly.js"></script>
-  <script src="js/localStorage.js"></script>  
+  <script src="_framework/blazor.webassembly.js" autostart="false"></script>
+  <script>
+    Blazor.start().then(() => {
+      // Fade out du loading screen une fois Blazor chargé
+      const loadingScreen = document.getElementById('blazor-loading-screen');
+      if (loadingScreen) {
+        loadingScreen.classList.add('fade-out');
+        setTimeout(() => {
+          loadingScreen.remove();
+        }, 500);
+      }
+    });
+  </script>
+
+  <script src="js/localStorage.js"></script>
 </body>
 </html>
