@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace IrcChat.Api.Endpoints;
 
 [SuppressMessage("Performance", "CA1862", Justification = "Not needed in SQL")]
-[SuppressMessage("Performance", "CA1873:Avoid potentially expensive logging", Justification = "Accepatle")]
+[SuppressMessage("Performance", "CA1873:Avoid potentially expensive logging", Justification = "Acceptable")]
 public static class PrivateMessageEndpoints
 {
     public static WebApplication MapPrivateMessageEndpoints(this WebApplication app)
@@ -26,7 +26,7 @@ public static class PrivateMessageEndpoints
         group.MapGet("/{userId}/unread-count", GetUnreadCountAsync)
             .WithName("GetUnreadCount");
 
-        // Supprimer une conversation (soft delete)
+        // Supprimer une conversation (soft delete pour l'utilisateur uniquement)
         group.MapDelete("/{userId}/conversation/{otherUserId}", DeleteConversationAsync)
             .WithName("DeleteConversation");
 
@@ -39,6 +39,7 @@ public static class PrivateMessageEndpoints
 
     /// <summary>
     /// Récupère les conversations d'un utilisateur via son userId client
+    /// Filtre les messages supprimés par cet utilisateur
     /// </summary>
     private static async Task<IResult> GetConversationsAsync(
         string userId,
@@ -47,10 +48,11 @@ public static class PrivateMessageEndpoints
     {
         logger.LogInformation("Récupération des conversations pour UserId {UserId}", userId);
 
-        // Filtrer directement par UserId client
+        // Filtrer directement par UserId client et exclure les messages supprimés par cet utilisateur
         var conversations = await db.PrivateMessages
             .Where(m => (m.SenderUserId == userId || m.RecipientUserId == userId)
-                     && !m.IsDeleted)
+                     && !(m.SenderUserId == userId && m.IsDeletedBySender)
+                     && !(m.RecipientUserId == userId && m.IsDeletedByRecipient))
             .GroupBy(m => m.SenderUserId == userId ? m.RecipientUsername : m.SenderUsername)
             .Select(g => new
             {
@@ -89,6 +91,7 @@ public static class PrivateMessageEndpoints
 
     /// <summary>
     /// Récupère les messages entre deux userId
+    /// Filtre les messages supprimés par l'utilisateur demandeur
     /// </summary>
     private static async Task<IResult> GetPrivateMessagesAsync(
         string userId,
@@ -100,11 +103,12 @@ public static class PrivateMessageEndpoints
             "Récupération des messages entre UserId {UserId} et {OtherUserId}",
             userId, otherUserId);
 
-        // Filtrer directement par userId
+        // Filtrer directement par userId et exclure les messages supprimés par cet utilisateur
         var messages = await db.PrivateMessages
             .Where(m => ((m.SenderUserId == userId && m.RecipientUserId == otherUserId) ||
                         (m.SenderUserId == otherUserId && m.RecipientUserId == userId))
-                     && !m.IsDeleted)
+                     && !(m.SenderUserId == userId && m.IsDeletedBySender)
+                     && !(m.RecipientUserId == userId && m.IsDeletedByRecipient))
             .OrderBy(m => m.Timestamp)
             .ToListAsync();
 
@@ -115,15 +119,18 @@ public static class PrivateMessageEndpoints
 
     /// <summary>
     /// Récupère le nombre de messages non lus pour un userId
+    /// Exclut les messages supprimés par cet utilisateur
     /// </summary>
     private static async Task<IResult> GetUnreadCountAsync(
         string userId,
         ChatDbContext db,
         ILogger<Program> logger)
     {
-        // Compter directement par userId
+        // Compter directement par userId et exclure les messages supprimés
         var count = await db.PrivateMessages
-            .CountAsync(m => m.RecipientUserId == userId && !m.IsRead && !m.IsDeleted);
+            .CountAsync(m => m.RecipientUserId == userId
+                          && !m.IsRead
+                          && !m.IsDeletedByRecipient);
 
         logger.LogInformation("Nombre de messages non lus pour UserId {UserId}: {Count}",
             userId, count);
@@ -132,7 +139,8 @@ public static class PrivateMessageEndpoints
     }
 
     /// <summary>
-    /// Supprime une conversation entre deux userId
+    /// Supprime une conversation pour l'utilisateur demandeur uniquement
+    /// L'autre utilisateur peut toujours voir ses messages
     /// </summary>
     private static async Task<IResult> DeleteConversationAsync(
         string userId,
@@ -140,11 +148,12 @@ public static class PrivateMessageEndpoints
         ChatDbContext db,
         ILogger<Program> logger)
     {
-        // Récupérer tous les messages par userId
+        // Récupérer tous les messages de la conversation
         var messages = await db.PrivateMessages
             .Where(m => ((m.SenderUserId == userId && m.RecipientUserId == otherUserId) ||
                         (m.SenderUserId == otherUserId && m.RecipientUserId == userId))
-                     && !m.IsDeleted)
+                     && !(m.SenderUserId == userId && m.IsDeletedBySender)
+                     && !(m.RecipientUserId == userId && m.IsDeletedByRecipient))
             .ToListAsync();
 
         if (messages.Count == 0)
@@ -154,16 +163,24 @@ public static class PrivateMessageEndpoints
             return Results.NotFound();
         }
 
-        // Soft delete
+        // Soft delete uniquement pour l'utilisateur demandeur
         foreach (var message in messages)
         {
-            message.IsDeleted = true;
+            if (message.SenderUserId == userId)
+            {
+                message.IsDeletedBySender = true;
+            }
+            else if (message.RecipientUserId == userId)
+            {
+                message.IsDeletedByRecipient = true;
+            }
         }
 
         await db.SaveChangesAsync();
 
-        logger.LogInformation("Suppression de {Count} messages entre {UserId} et {OtherUserId}",
-            messages.Count, userId, otherUserId);
+        logger.LogInformation(
+            "Suppression de {Count} messages entre {UserId} et {OtherUserId} pour {UserId} uniquement",
+            messages.Count, userId, otherUserId, userId);
 
         return Results.Ok(new { Deleted = messages.Count });
     }

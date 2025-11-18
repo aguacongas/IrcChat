@@ -87,8 +87,7 @@ public static class TestDataBuilder
             RecipientUsername = recipient,
             Content = content,
             Timestamp = DateTime.UtcNow,
-            IsRead = false,
-            IsDeleted = false
+            IsRead = false
         };
     }
 }
