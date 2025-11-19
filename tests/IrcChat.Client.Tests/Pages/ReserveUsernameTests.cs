@@ -3,7 +3,6 @@ using Bunit;
 using Bunit.TestDoubles;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
-using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -245,5 +244,117 @@ public class ReserveUsernameTests : TestContext
 
         // Assert
         Assert.Contains("Chargement", cut.Markup);
+    }
+
+    [Fact]
+    public async Task ReserveUsername_GetClientUserIdAsync_ShouldBeCalled()
+    {
+        // Arrange
+        var userId = Guid.NewGuid().ToString();
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(userId);
+
+        JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
+
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+
+        // Act
+        var cut = RenderComponent<ReserveUsername>();
+
+        await Task.Delay(100); // Attendre l'initialisation
+
+        // Assert
+        _authServiceMock.Verify(x => x.GetClientUserIdAsync(), Times.Once);
+    }
+
+    [Fact]
+    public void ReserveUsername_FailedToRetrieveUserId_ShouldShowError()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync())
+            .ReturnsAsync(string.Empty); // Impossible de récupérer l'UserId
+
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+
+        // Act
+        var cut = RenderComponent<ReserveUsername>();
+
+        // Assert
+        Assert.Contains("Erreur", cut.Markup);
+        Assert.Contains("identifiant utilisateur", cut.Markup);
+    }
+
+    [Fact]
+    public void ReserveUsername_InvalidUserIdFormat_ShouldShowError()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync())
+            .ReturnsAsync("not-a-valid-guid"); // Format GUID invalide
+
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+
+        // Act
+        var cut = RenderComponent<ReserveUsername>();
+
+        // Assert
+        Assert.Contains("Erreur", cut.Markup);
+    }
+
+    [Fact]
+    public async Task ReserveUsername_ReserveWithProvider_ShouldNotAllowWithoutUserId()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync())
+            .Returns(Task.FromResult<string>(null!)); // Aucun UserId
+
+        JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
+
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+
+        var cut = RenderComponent<ReserveUsername>();
+
+        // Act - Le composant devrait afficher une erreur
+        await Task.Delay(100);
+
+        // Assert
+        Assert.Contains("Erreur", cut.Markup);
+    }
+
+    [Fact]
+    public async Task ReserveUsername_ProviderButtons_ShouldBeSaveToSessionStorage()
+    {
+        // Arrange
+        var userId = Guid.NewGuid().ToString();
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(userId);
+
+        JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
+
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "MyPseudo"));
+
+        var cut = RenderComponent<ReserveUsername>();
+
+        // Act
+        var buttons = cut.FindAll("button.oauth-btn");
+        Assert.NotEmpty(buttons);
+
+        // Cliquer sur Google
+        await cut.InvokeAsync(() => buttons[0].Click());
+
+        // Assert - Vérifier que setItem a été appelé 2 fois (username + userId)
+        var setItemCalls = JSInterop.Invocations
+            .Where(inv => inv.Identifier == "sessionStorage.setItem")
+            .ToList();
+
+        Assert.NotEmpty(setItemCalls);
+        Assert.Contains(setItemCalls, inv =>
+            inv.Arguments[0]!.ToString() == "temp_username_to_reserve" &&
+            inv.Arguments[1]!.ToString() == "MyPseudo");
+        Assert.Contains(setItemCalls, inv =>
+            inv.Arguments[0]!.ToString() == "temp_user_id" &&
+            inv.Arguments[1]!.ToString() == userId);
     }
 }
