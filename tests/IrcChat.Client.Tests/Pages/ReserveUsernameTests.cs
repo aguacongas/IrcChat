@@ -281,8 +281,7 @@ public class ReserveUsernameTests : TestContext
         var cut = RenderComponent<ReserveUsername>();
 
         // Assert
-        Assert.Contains("Erreur", cut.Markup);
-        Assert.Contains("identifiant utilisateur", cut.Markup);
+        Assert.Contains("Impossible de récupérer votre identifiant utilisateur", cut.Markup);
     }
 
     [Fact]
@@ -299,7 +298,7 @@ public class ReserveUsernameTests : TestContext
         var cut = RenderComponent<ReserveUsername>();
 
         // Assert
-        Assert.Contains("Erreur", cut.Markup);
+        Assert.Contains("Impossible de récupérer votre identifiant utilisateur", cut.Markup);
     }
 
     [Fact]
@@ -320,7 +319,7 @@ public class ReserveUsernameTests : TestContext
         await Task.Delay(100);
 
         // Assert
-        Assert.Contains("Erreur", cut.Markup);
+        Assert.Contains("Impossible de récupérer votre identifiant utilisateur", cut.Markup);
     }
 
     [Fact]

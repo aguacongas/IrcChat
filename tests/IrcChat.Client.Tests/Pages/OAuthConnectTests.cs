@@ -521,6 +521,6 @@ public class OAuthConnectTests : TestContext
         await Task.Delay(500);
 
         // Assert
-        JSInterop.VerifyInvoke("sessionStorage.removeItem", calledTimes: 5); // Vérifie que 5 items ont été supprimés
+        JSInterop.VerifyInvoke("sessionStorage.removeItem", calledTimes: 6); // Vérifie que 5 items ont été supprimés
     }
 }

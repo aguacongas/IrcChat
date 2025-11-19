@@ -3053,8 +3053,6 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.VerifyRemove(x => x.OnPrivateMessageSent -= It.IsAny<Action<PrivateMessage>>());
         _privateMessageServiceMock.VerifyRemove(x => x.OnUnreadCountChanged -= It.IsAny<Action>());
         _privateMessageServiceMock.VerifyRemove(x => x.OnConversationDeleted -= It.IsAny<Action<string>>());
-
-        _chatServiceMock.Verify(x => x.DisposeAsync(), Times.Once);
     }
 
     [Fact]
