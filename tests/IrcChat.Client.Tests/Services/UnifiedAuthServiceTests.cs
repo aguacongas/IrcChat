@@ -1080,7 +1080,7 @@ public class UnifiedAuthServiceCompleteTests
     }
 
     [Fact]
-    public async Task GetClientUserIdAsync_WhenReservedUser_ShouldReturnUsername()
+    public async Task GetClientUserIdAsync_WhenReservedUser_ShouldReturnUserId()
     {
         // Arrange
         _jsRuntimeMock
@@ -1096,10 +1096,6 @@ public class UnifiedAuthServiceCompleteTests
             .ReturnsAsync((IJSVoidResult)null!);
 
         var mockModule = new Mock<IJSObjectReference>();
-        mockModule
-            .Setup(x => x.InvokeAsync<IJSVoidResult>("setUserId", It.IsAny<object[]>()))
-            .ReturnsAsync((IJSVoidResult)null!);
-
         _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()))
             .ReturnsAsync(mockModule.Object);
@@ -1107,16 +1103,14 @@ public class UnifiedAuthServiceCompleteTests
         var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
-        await service.SetUsernameAsync("ReservedUser", isReserved: true, ExternalAuthProvider.Google);
+        var id = Guid.NewGuid();
+        await service.SetAuthStateAsync("token", "ReservedUser", null, null, id, ExternalAuthProvider.Google);
 
         // Act
         var userId = await service.GetClientUserIdAsync();
 
         // Assert
-        Assert.Equal("ReservedUser", userId);
-        mockModule.Verify(
-            x => x.InvokeAsync<IJSVoidResult>("setUserId", It.Is<object[]>(o => o.Length == 1 && (string)o[0] == "ReservedUser")),
-            Times.Once);
+        Assert.Equal(id.ToString(), userId);
     }
 
     [Fact]
@@ -1233,43 +1227,6 @@ public class UnifiedAuthServiceCompleteTests
         Assert.NotEmpty(userId);
         // Devrait être un GUID valide
         Assert.True(Guid.TryParse(userId, out _));
-    }
-
-    [Fact]
-    public async Task GetClientUserIdAsync_WhenSetUserIdFails_ShouldStillReturnUsername()
-    {
-        // Arrange
-        _jsRuntimeMock
-            .Setup(x => x.InvokeAsync<string?>(
-                "localStorageHelper.getItem",
-                It.IsAny<object[]>()))
-            .ReturnsAsync((string?)null);
-
-        _jsRuntimeMock
-            .Setup(x => x.InvokeAsync<IJSVoidResult>(
-                "localStorageHelper.setItem",
-                It.IsAny<object[]>()))
-            .ReturnsAsync((IJSVoidResult)null!);
-
-        var mockModule = new Mock<IJSObjectReference>();
-        mockModule
-            .Setup(x => x.InvokeAsync<IJSVoidResult>("setUserId", It.IsAny<object[]>()))
-            .Throws(new JSException("IndexedDB write error"));
-
-        _jsRuntimeMock
-            .Setup(x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()))
-            .ReturnsAsync(mockModule.Object);
-
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
-        await service.InitializeAsync();
-
-        await service.SetUsernameAsync("ReservedUser", isReserved: true, ExternalAuthProvider.Microsoft);
-
-        // Act
-        var userId = await service.GetClientUserIdAsync();
-
-        // Assert - Devrait quand même retourner le username
-        Assert.Equal("ReservedUser", userId);
     }
 
     [Fact]

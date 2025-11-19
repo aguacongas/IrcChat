@@ -27,6 +27,8 @@ public class ChatService(IPrivateMessageService privateMessageService,
     // Event pour le statut de connexion des utilisateurs
     public event Action<string, bool>? OnUserStatusChanged;
 
+    public bool IsInitialized => _hubConnection != null && _hubConnection.State == HubConnectionState.Connected;
+
     public async Task InitializeAsync(IHubConnectionBuilder hubConnectionBuilder)
     {
         _hubConnection = hubConnectionBuilder.Build();

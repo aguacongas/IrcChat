@@ -100,6 +100,7 @@ public class OAuthConnectTests : TestContext
     public async Task OAuthConnect_HandleCallback_Reserve_ShouldCompleteReservation()
     {
         // Arrange
+        var userId = Guid.NewGuid();
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
         _authServiceMock.Setup(x => x.SetAuthStateAsync(
             It.IsAny<string>(),
@@ -119,6 +120,8 @@ public class OAuthConnectTests : TestContext
             .SetResult("Google");
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_code_verifier")
             .SetResult("test_verifier");
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
+            .SetResult(userId.ToString());
 
         JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
 
@@ -127,7 +130,7 @@ public class OAuthConnectTests : TestContext
             Token = "test-token",
             Username = "TestUser",
             Email = "test@example.com",
-            UserId = Guid.NewGuid(),
+            UserId = userId,
             IsNewUser = true,
             IsAdmin = false
         };
@@ -154,10 +157,136 @@ public class OAuthConnectTests : TestContext
                 "TestUser",
                 "test@example.com",
                 It.IsAny<string>(),
-                It.IsAny<Guid>(),
+                userId,
                 ExternalAuthProvider.Google,
                 false),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task OAuthConnect_HandleCallback_Reserve_ShouldPassUserIdToEndpoint()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.SetAuthStateAsync(
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<Guid>(),
+            It.IsAny<ExternalAuthProvider>(),
+            It.IsAny<bool>()))
+            .Returns(Task.CompletedTask);
+
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
+            .SetResult("reserve");
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_username_to_reserve")
+            .SetResult("NewUser");
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_provider")
+            .SetResult("Google");
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_code_verifier")
+            .SetResult("test_verifier");
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
+            .SetResult(userId.ToString());
+
+        JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
+
+        var reserveResponse = new OAuthLoginResponse
+        {
+            Token = "test-token",
+            Username = "NewUser",
+            Email = "new@example.com",
+            UserId = userId,
+            IsNewUser = true,
+            IsAdmin = false
+        };
+
+        var reserveRequest = _mockHttp.When(HttpMethod.Post, "*/api/oauth/reserve-username")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(reserveResponse));
+
+        // Act
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["code"] = "auth_code_123",
+            ["state"] = "random_state"
+        }));
+
+        RenderComponent<OAuthConnect>();
+
+        await Task.Delay(500);
+
+        // Assert
+        var request = _mockHttp.GetMatchCount(reserveRequest);
+        Assert.Equal(1, request);
+    }
+
+    [Fact]
+    public async Task OAuthConnect_HandleCallback_Reserve_WithMissingUserId_ShouldShowError()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
+            .SetResult("reserve");
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_username_to_reserve")
+            .SetResult("TestUser");
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_provider")
+            .SetResult("Google");
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_code_verifier")
+            .SetResult("test_verifier");
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
+            .SetResult(null!); // 👈 UserId manquant
+
+        JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
+
+        // Act
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["code"] = "auth_code_123",
+            ["state"] = "random_state"
+        }));
+
+        var cut = RenderComponent<OAuthConnect>();
+
+        await Task.Delay(300);
+
+        // Assert
+        Assert.Contains("invalide", cut.Markup);
+    }
+
+    [Fact]
+    public async Task OAuthConnect_HandleCallback_Reserve_WithInvalidUserId_ShouldShowError()
+    {
+        // Arrange
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
+            .SetResult("reserve");
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_username_to_reserve")
+            .SetResult("TestUser");
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_provider")
+            .SetResult("Google");
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_code_verifier")
+            .SetResult("test_verifier");
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
+            .SetResult("not-a-guid"); // 👈 Format GUID invalide
+
+        JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
+
+        // Act
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["code"] = "auth_code_123",
+            ["state"] = "random_state"
+        }));
+
+        var cut = RenderComponent<OAuthConnect>();
+
+        await Task.Delay(300);
+
+        // Assert
+        Assert.Contains("invalide", cut.Markup);
     }
 
     [Fact]
@@ -257,6 +386,8 @@ public class OAuthConnectTests : TestContext
             .SetResult("Google");
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_code_verifier")
             .SetResult("test_verifier");
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
+            .SetResult(Guid.NewGuid().ToString());
 
         _mockHttp.When(HttpMethod.Post, "*/api/oauth/reserve-username")
             .Respond(HttpStatusCode.BadRequest,
@@ -317,7 +448,9 @@ public class OAuthConnectTests : TestContext
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
             .SetResult("reserve");
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_username_to_reserve")
-            .SetResult((string)null!); // Pas de username stocké
+            .SetResult(null!); // Pas de username stocké
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
+            .SetResult(Guid.NewGuid().ToString());
 
         // Act
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
@@ -332,5 +465,62 @@ public class OAuthConnectTests : TestContext
 
         // Assert
         Assert.Contains("introuvable", cut.Markup);
+    }
+
+    [Fact]
+    public async Task OAuthConnect_SessionStorageCleaned_AfterSuccessfulReserve()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.SetAuthStateAsync(
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<Guid>(),
+            It.IsAny<ExternalAuthProvider>(),
+            It.IsAny<bool>()))
+            .Returns(Task.CompletedTask);
+
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
+            .SetResult("reserve");
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_username_to_reserve")
+            .SetResult("TestUser");
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_provider")
+            .SetResult("Google");
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_code_verifier")
+            .SetResult("test_verifier");
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
+            .SetResult(userId.ToString());
+
+        JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
+
+        var reserveResponse = new OAuthLoginResponse
+        {
+            Token = "test-token",
+            Username = "TestUser",
+            Email = "test@example.com",
+            UserId = userId,
+            IsNewUser = true,
+            IsAdmin = false
+        };
+
+        _mockHttp.When(HttpMethod.Post, "*/api/oauth/reserve-username")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(reserveResponse));
+
+        // Act
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["code"] = "auth_code_123",
+            ["state"] = "random_state"
+        }));
+
+        RenderComponent<OAuthConnect>();
+
+        await Task.Delay(500);
+
+        // Assert
+        JSInterop.VerifyInvoke("sessionStorage.removeItem", calledTimes: 6); // Vérifie que 5 items ont été supprimés
     }
 }
