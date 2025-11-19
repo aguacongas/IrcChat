@@ -222,8 +222,7 @@ public class ChatHub(
     public async Task Ping(string username, string userId)
     {
         var user = await db.ConnectedUsers
-            .FirstOrDefaultAsync(u => u.UserId == userId
-                && u.ConnectionId == Context.ConnectionId);
+            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
 
         if (user == null)
         {
