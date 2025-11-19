@@ -16,18 +16,21 @@ namespace IrcChat.Client.Tests.Pages;
 public class SettingsTests : TestContext
 {
     private readonly Mock<IUnifiedAuthService> _authServiceMock;
+    private readonly Mock<IChatService> _chatServiceMock;
     private readonly MockHttpMessageHandler _mockHttp;
     private readonly FakeNavigationManager _navManager;
 
     public SettingsTests()
     {
         _authServiceMock = new Mock<IUnifiedAuthService>();
+        _chatServiceMock = new Mock<IChatService>();
         _mockHttp = new MockHttpMessageHandler();
 
         var httpClient = _mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
 
         Services.AddSingleton(_authServiceMock.Object);
+        Services.AddSingleton(_chatServiceMock.Object);
         Services.AddSingleton(httpClient);
         Services.AddSingleton(JSInterop.JSRuntime);
 
