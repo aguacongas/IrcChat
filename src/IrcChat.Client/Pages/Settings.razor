@@ -5,6 +5,7 @@
 @using IrcChat.Client.Components
 @inject HttpClient Http
 @inject IUnifiedAuthService Auth
+@inject IChatService ChatService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject ILogger<Settings> Logger
@@ -329,6 +330,7 @@ else
     private async Task Logout()
     {
         await Auth.LogoutAsync();
+        await ChatService.DisposeAsync();
         Http.DefaultRequestHeaders.Authorization = null;
         Navigation.NavigateToRelative("login");
     }
