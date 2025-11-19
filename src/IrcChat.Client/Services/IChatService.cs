@@ -15,6 +15,8 @@ public interface IChatService : IAsyncDisposable
     event Action? OnChannelListUpdated;
     event Action<string, bool>? OnUserStatusChanged;
 
+    bool IsInitialized { get; }
+
     Task InitializeAsync(IHubConnectionBuilder hubConnectionBuilder);
     Task JoinChannel(string channel);
     Task LeaveChannel(string channel);

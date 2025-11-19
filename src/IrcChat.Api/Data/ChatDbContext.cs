@@ -5,11 +5,11 @@ namespace IrcChat.Api.Data;
 
 public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(options)
 {
-    public DbSet<Message>? Messages { get; set; }
-    public DbSet<Channel>? Channels { get; set; }
-    public DbSet<ConnectedUser>? ConnectedUsers { get; set; }
-    public DbSet<ReservedUsername>? ReservedUsernames { get; set; }
-    public DbSet<PrivateMessage>? PrivateMessages { get; set; }
+    public DbSet<Message> Messages { get; set; }
+    public DbSet<Channel> Channels { get; set; }
+    public DbSet<ConnectedUser> ConnectedUsers { get; set; }
+    public DbSet<ReservedUsername> ReservedUsernames { get; set; }
+    public DbSet<PrivateMessage> PrivateMessages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

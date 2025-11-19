@@ -152,6 +152,11 @@ else
         PrivateMessageService.OnUnreadCountChanged += OnUnreadCountChanged;
         PrivateMessageService.OnConversationDeleted += OnConversationDeleted;
 
+        if (ChatService.IsInitialized)
+        {
+            return;
+        }
+
         try
         {
             var apiSettings = ApiSettingsOptions.Value;
@@ -192,7 +197,7 @@ else
 
     private void OnUserJoined(string user, string userId, string channel)
     {
-        if (channel == currentChannel && !isPrivateConversation)
+        if (channel == currentChannel && !isPrivateConversation && !users.Any(u => u.Username == user))
         {
             users.Add(new User { Username = user, UserId = userId });
             InvokeAsync(StateHasChanged);
@@ -617,8 +622,6 @@ else
         PrivateMessageService.OnPrivateMessageSent -= OnPrivateMessageSent;
         PrivateMessageService.OnUnreadCountChanged -= OnUnreadCountChanged;
         PrivateMessageService.OnConversationDeleted -= OnConversationDeleted;
-
-        await ChatService.DisposeAsync();
 
         GC.SuppressFinalize(this);
     }
