@@ -3,6 +3,7 @@ using Bunit;
 using Bunit.TestDoubles;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
+using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -30,6 +31,7 @@ public class ReserveUsernameTests : TestContext
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
         // Act
         RenderComponent<ReserveUsername>();
@@ -43,6 +45,7 @@ public class ReserveUsernameTests : TestContext
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
@@ -59,6 +62,7 @@ public class ReserveUsernameTests : TestContext
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
@@ -76,6 +80,7 @@ public class ReserveUsernameTests : TestContext
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
         JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
@@ -88,7 +93,7 @@ public class ReserveUsernameTests : TestContext
         await cut.InvokeAsync(() => googleButton.Click());
 
         // Assert
-        JSInterop.VerifyInvoke("sessionStorage.setItem", 1);
+        JSInterop.VerifyInvoke("sessionStorage.setItem", 2);
         Assert.Contains("oauth-login", _navManager.Uri);
         Assert.Contains("provider=Google", _navManager.Uri);
         Assert.Contains("mode=reserve", _navManager.Uri);
@@ -99,6 +104,7 @@ public class ReserveUsernameTests : TestContext
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
         JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
@@ -111,7 +117,7 @@ public class ReserveUsernameTests : TestContext
         await cut.InvokeAsync(() => microsoftButton.Click());
 
         // Assert
-        JSInterop.VerifyInvoke("sessionStorage.setItem", 1);
+        JSInterop.VerifyInvoke("sessionStorage.setItem", 2);
         Assert.Contains("oauth-login", _navManager.Uri);
         Assert.Contains("provider=Microsoft", _navManager.Uri);
         Assert.Contains("mode=reserve", _navManager.Uri);
@@ -122,6 +128,7 @@ public class ReserveUsernameTests : TestContext
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
         JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
@@ -134,7 +141,7 @@ public class ReserveUsernameTests : TestContext
         await cut.InvokeAsync(() => facebookButton.Click());
 
         // Assert
-        JSInterop.VerifyInvoke("sessionStorage.setItem", 1);
+        JSInterop.VerifyInvoke("sessionStorage.setItem", 2);
         Assert.Contains("oauth-login", _navManager.Uri);
         Assert.Contains("provider=Facebook", _navManager.Uri);
         Assert.Contains("mode=reserve", _navManager.Uri);
@@ -145,6 +152,7 @@ public class ReserveUsernameTests : TestContext
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
@@ -163,6 +171,7 @@ public class ReserveUsernameTests : TestContext
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
@@ -179,6 +188,7 @@ public class ReserveUsernameTests : TestContext
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", ""));
 
@@ -190,12 +200,14 @@ public class ReserveUsernameTests : TestContext
     }
 
     [Fact]
-    public async Task ReserveUsername_SessionStorage_ShouldStoreUsername()
+    public async Task ReserveUsername_SessionStorage_ShouldStoreUsernameAndId()
     {
         // Arrange
+        var userId = Guid.NewGuid().ToString();
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(userId);
 
-        JSInterop.SetupVoid("sessionStorage.setItem", _ => true);
+        JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "MyUsername"));
         var cut = RenderComponent<ReserveUsername>();
@@ -210,6 +222,12 @@ public class ReserveUsernameTests : TestContext
             inv.Arguments.Count >= 2 &&
             inv.Arguments[0]!.ToString() == "temp_username_to_reserve" &&
             inv.Arguments[1]!.ToString() == "MyUsername");
+
+        Assert.Contains(JSInterop.Invocations, inv =>
+            inv.Identifier == "sessionStorage.setItem" &&
+            inv.Arguments.Count >= 2 &&
+            inv.Arguments[0]!.ToString() == "temp_user_id" &&
+            inv.Arguments[1]!.ToString() == userId);
     }
 
     [Fact]
@@ -218,6 +236,7 @@ public class ReserveUsernameTests : TestContext
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync())
             .Returns(async () => await Task.Delay(1000)); // Simulate slow loading
+        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 

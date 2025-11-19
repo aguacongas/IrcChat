@@ -108,7 +108,7 @@ public static class OAuthEndpoints
 
         var user = new ReservedUsername
         {
-            Id = Guid.NewGuid(),
+            Id = request.UserId,
             Username = request.Username.Trim(),
             Provider = request.Provider,
             ExternalUserId = userInfo.Id,

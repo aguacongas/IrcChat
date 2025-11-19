@@ -134,9 +134,18 @@
         StateHasChanged();
 
         var usernameToReserve = await JS.InvokeAsync<string>("sessionStorage.getItem", "temp_username_to_reserve");
+        var userIdStr = await JS.InvokeAsync<string>("sessionStorage.getItem", "temp_user_id");
+
         if (string.IsNullOrEmpty(usernameToReserve))
         {
             errorMessage = "Pseudo à réserver introuvable";
+            loadingMessage = "";
+            return;
+        }
+
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+        {
+            errorMessage = "Identifiant utilisateur invalide";
             loadingMessage = "";
             return;
         }
@@ -157,7 +166,8 @@
             Provider = provider,
             Code = CodeParam!,
             RedirectUri = redirectUri,
-            CodeVerifier = codeVerifier
+            CodeVerifier = codeVerifier,
+            UserId = userId // 👈 Passer le UserId de l'invité
         };
 
         var response = await Http.PostAsJsonAsync("/api/oauth/reserve-username", request);
@@ -174,12 +184,13 @@
                     result.AvatarUrl,
                     result.UserId,
                     provider,
-                    result.IsAdmin); // Ajout du flag IsAdmin
+                    result.IsAdmin);
 
                 Http.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.Token);
 
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "temp_username_to_reserve");
+                await JS.InvokeVoidAsync("sessionStorage.removeItem", "temp_user_id");
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_mode");
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_state");
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_code_verifier");
@@ -233,7 +244,7 @@
                     result.AvatarUrl,
                     result.UserId,
                     provider,
-                    result.IsAdmin); // Ajout du flag IsAdmin
+                    result.IsAdmin);
 
                 Http.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.Token);

@@ -7,4 +7,6 @@ public class ReserveUsernameRequest
     public string Code { get; set; } = string.Empty;
     public string RedirectUri { get; set; } = string.Empty;
     public string CodeVerifier { get; set; } = string.Empty;
+
+    public Guid UserId { get; set; }
 }

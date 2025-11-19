@@ -154,36 +154,24 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
             }
         }
 
-        if (IsReserved && !string.IsNullOrEmpty(Username))
+        if (IsReserved && !string.IsNullOrEmpty(Username) && UserId.HasValue)
         {
             // Utilisateur OAuth : clientUserId = Username
-            _clientUserId = Username;
-
-            // Stocker en IndexedDB pour cohérence
-            try
-            {
-                await _userIdModule.InvokeVoidAsync("setUserId", _clientUserId);
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Erreur lors du stockage du UserId en IndexedDB");
-            }
+            return UserId.Value.ToString();
         }
-        else
+
+        // Utilisateur invité : clientUserId = GUID depuis IndexedDB
+        try
         {
-            // Utilisateur invité : clientUserId = GUID depuis IndexedDB
-            try
-            {
-                _clientUserId = await _userIdModule.InvokeAsync<string>("getUserId");
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Erreur lors de la récupération du UserId depuis IndexedDB");
-                // Fallback : générer un GUID
-                _clientUserId = Guid.NewGuid().ToString();
-            }
+            _clientUserId = await _userIdModule.InvokeAsync<string>("getUserId");
         }
-
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Erreur lors de la récupération du UserId depuis IndexedDB");
+            // Fallback : générer un GUID
+            _clientUserId = Guid.NewGuid().ToString();
+        }
+        
         logger.LogInformation("ClientUserId récupéré: {UserId} (IsReserved: {IsReserved})",
             _clientUserId, IsReserved);
 

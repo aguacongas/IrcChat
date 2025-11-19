@@ -209,7 +209,7 @@ else
     }
 
     private void OnChannelMuteStatusChanged(string channel, bool isMuted)
-    {
+    {        
         if (channel == currentChannel && !isPrivateConversation)
         {
             isCurrentChannelMuted = isMuted;
@@ -368,6 +368,7 @@ else
 
         await LoadMessages();
         await LoadUsers();
+        await LoadChannels();
         
         var channelInfo = channels.FirstOrDefault(c => c.Name == channel);
         isCurrentChannelMuted = channelInfo?.IsMuted ?? false;

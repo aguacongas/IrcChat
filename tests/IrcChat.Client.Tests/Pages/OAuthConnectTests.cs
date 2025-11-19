@@ -119,6 +119,8 @@ public class OAuthConnectTests : TestContext
             .SetResult("Google");
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_code_verifier")
             .SetResult("test_verifier");
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
+            .SetResult(Guid.NewGuid().ToString());
 
         JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
 
@@ -317,8 +319,9 @@ public class OAuthConnectTests : TestContext
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
             .SetResult("reserve");
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_username_to_reserve")
-            .SetResult((string)null!); // Pas de username stocké
-
+            .SetResult(null!); // Pas de username stocké
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
+            .SetResult(Guid.NewGuid().ToString());
         // Act
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
