@@ -171,7 +171,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
             // Fallback : générer un GUID
             _clientUserId = Guid.NewGuid().ToString();
         }
-        
+
         logger.LogInformation("ClientUserId récupéré: {UserId} (IsReserved: {IsReserved})",
             _clientUserId, IsReserved);
 

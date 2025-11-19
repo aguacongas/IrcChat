@@ -1095,7 +1095,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var mockModule = new Mock<IJSObjectReference>();        
+        var mockModule = new Mock<IJSObjectReference>();
         _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()))
             .ReturnsAsync(mockModule.Object);
