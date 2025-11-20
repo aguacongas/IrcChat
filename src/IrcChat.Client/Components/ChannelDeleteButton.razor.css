@@ -81,10 +81,10 @@
   }
 
 .modal-warning {
-  color: #fed7d7;
+  color: #631414;
   font-weight: 600;
   padding: 12px;
-  background: rgba(245, 101, 101, 0.25);
+  background: rgba(245, 101, 101, 0.35);
   border-radius: 6px;
   border-left: 3px solid #f56565;
 }

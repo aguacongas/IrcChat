@@ -308,15 +308,15 @@
 }
 
   .alert.alert-success {
-    background: rgba(72, 187, 120, 0.18);
+    background: rgba(72, 187, 120, 0.35);
     border: 1px solid #48bb78;
-    color: #c6f6d5;
+    color: #1a4731;
   }
 
   .alert.alert-error {
-    background: rgba(245, 101, 101, 0.20);
+    background: rgba(245, 101, 101, 0.35);
     border: 1px solid #f56565;
-    color: #fed7d7;
+    color: #631414;
   }
 
 /* Responsive */
