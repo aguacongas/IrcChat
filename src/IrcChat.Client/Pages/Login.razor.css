@@ -107,9 +107,9 @@
   }
 
   .status.unavailable {
-    background: rgba(245, 101, 101, 0.26);
+    background: rgba(245, 101, 101, 0.35);
     border: 1px solid #f56565;
-    color: #fed7d7;
+    color: #631414;
   }
 
 /* Status actions */
@@ -179,9 +179,9 @@
 
 /* Error message */
 .error-message {
-  background: rgba(245, 101, 101, 0.26);
+  background: rgba(245, 101, 101, 0.35);
   border: 1px solid #f56565;
-  color: #fed7d7;
+  color: #631414;
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 15px;
