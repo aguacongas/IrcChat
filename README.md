@@ -36,6 +36,7 @@ Application de chat IRC moderne développée avec .NET 10, Blazor WebAssembly et
 - ✅ JWT Authentication
 - ✅ OAuth 2.0 (Google, Facebook, Microsoft)
 - ✅ Gestion des sessions
+- ✅ Réservation de pseudonymes avec historique conservé
 
 ### Administration
 - ✅ Gestion des utilisateurs
@@ -48,6 +49,7 @@ Application de chat IRC moderne développée avec .NET 10, Blazor WebAssembly et
 - ✅ Rate limiting
 - ✅ Validation des données
 - ✅ Protection contre XSS/CSRF
+- ✅ PKCE pour OAuth 2.0
 
 ## 🛠️ Technologies utilisées
 
@@ -58,19 +60,18 @@ Application de chat IRC moderne développée avec .NET 10, Blazor WebAssembly et
 - Entity Framework Core
 - PostgreSQL
 - JWT Bearer Authentication
-- Serilog (Logging)
 
 ### Frontend
 - Blazor WebAssembly
-- MudBlazor (UI Components)
 - HttpClient
 - SignalR Client
+- IndexedDB (pour stockage persistant)
 
 ### DevOps & Qualité
 - GitHub Actions (CI/CD)
 - SonarCloud (Analyse de code)
 - Dependabot (Mises à jour automatiques)
-- xUnit + FluentAssertions (Tests)
+- xUnit (Tests)
 - bUnit (Tests Blazor)
 
 ## 📋 Prérequis
@@ -95,8 +96,8 @@ cd IrcChat
 # Créer la base de données PostgreSQL
 createdb ircchat
 
-# Configurer la connection string dans appsettings.json
-# ou via user secrets
+# Configurer la connection string via user secrets
+cd src/IrcChat.Api
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Database=ircchat;Username=postgres;Password=votre_password"
 ```
 
@@ -109,19 +110,27 @@ dotnet ef database update
 
 ### 4. Configuration OAuth (optionnel)
 
+Pour configurer OAuth 2.0 avec Google, Microsoft et Facebook, suivre le guide complet :
+
+📖 **[Configuration OAuth 2.0 - Guide complet](docs/OAUTH_SETUP.md)**
+
+Résumé rapide :
+
 ```bash
 # Google OAuth
-dotnet user-secrets set "Authentication:Google:ClientId" "votre_client_id"
-dotnet user-secrets set "Authentication:Google:ClientSecret" "votre_client_secret"
-
-# Facebook OAuth
-dotnet user-secrets set "Authentication:Facebook:AppId" "votre_app_id"
-dotnet user-secrets set "Authentication:Facebook:AppSecret" "votre_app_secret"
+dotnet user-secrets set "OAuth:Google:ClientId" "YOUR_CLIENT_ID"
+dotnet user-secrets set "OAuth:Google:ClientSecret" "YOUR_CLIENT_SECRET"
 
 # Microsoft OAuth
-dotnet user-secrets set "Authentication:Microsoft:ClientId" "votre_client_id"
-dotnet user-secrets set "Authentication:Microsoft:ClientSecret" "votre_client_secret"
+dotnet user-secrets set "OAuth:Microsoft:ClientId" "YOUR_CLIENT_ID"
+dotnet user-secrets set "OAuth:Microsoft:ClientSecret" "YOUR_CLIENT_SECRET"
+
+# Facebook OAuth
+dotnet user-secrets set "OAuth:Facebook:AppId" "YOUR_APP_ID"
+dotnet user-secrets set "OAuth:Facebook:AppSecret" "YOUR_APP_SECRET"
 ```
+
+> ℹ️ Pour obtenir ces identifiants, consulter le [guide OAuth 2.0](docs/OAUTH_SETUP.md) qui explique comment les générer pour chaque provider.
 
 ### 5. Lancer l'application
 
@@ -179,6 +188,9 @@ IrcChat/
 │       ├── pr-checks.yml           # Vérifications PR
 │       ├── sonar-main-analysis.yml # Analyse SonarCloud
 │       └── release.yml             # Release automatique
+├── docs/
+│   ├── OAUTH_SETUP.md      # 📖 Configuration OAuth 2.0
+│   └── ...
 ├── src/
 │   ├── IrcChat.Api/        # Backend API
 │   │   ├── Controllers/
@@ -221,6 +233,7 @@ IrcChat/
 - [Politique de tests](TEST_POLICY.md)
 - [Bonnes pratiques de test](TESTING_BEST_PRACTICES.md)
 - [Configuration SonarCloud](SONARCLOUD_SETUP.md)
+- [Configuration OAuth 2.0](docs/OAUTH_SETUP.md) 🆕
 
 ## 🔄 Workflow CI/CD
 
