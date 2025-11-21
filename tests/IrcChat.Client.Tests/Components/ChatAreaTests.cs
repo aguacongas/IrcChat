@@ -1,6 +1,7 @@
 // tests/IrcChat.Client.Tests/Components/ChatAreaTests.cs
 using Bunit;
 using IrcChat.Client.Components;
+using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -12,13 +13,19 @@ namespace IrcChat.Client.Tests.Components;
 public class ChatAreaTests : TestContext
 {
     private readonly MockHttpMessageHandler _mockHttp;
+    private readonly Mock<IIgnoredUsersService> _ignoredUsersServiceMock;
 
     public ChatAreaTests()
     {
         _mockHttp = new MockHttpMessageHandler();
+        _ignoredUsersServiceMock = new Mock<IIgnoredUsersService>();
+        _ignoredUsersServiceMock.Setup(x => x.InitializeAsync())
+            .Returns(Task.CompletedTask);
+
         var httpClient = _mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
         Services.AddSingleton(httpClient);
+        Services.AddSingleton(_ignoredUsersServiceMock.Object);
 
         JSInterop.Mode = JSRuntimeMode.Loose;
     }

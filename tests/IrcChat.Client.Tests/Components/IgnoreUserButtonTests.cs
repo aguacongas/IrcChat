@@ -15,6 +15,9 @@ public class IgnoreUserButtonTests : TestContext
     public IgnoreUserButtonTests()
     {
         _ignoredUsersServiceMock = new Mock<IIgnoredUsersService>();
+        _ignoredUsersServiceMock
+            .Setup(x => x.InitializeAsync())
+            .Returns(Task.CompletedTask);
 
         Services.AddSingleton(_ignoredUsersServiceMock.Object);
         Services.AddSingleton(new Mock<ILogger<IgnoreUserButton>>().Object);
@@ -35,7 +38,7 @@ public class IgnoreUserButtonTests : TestContext
 
         // Assert
         Assert.NotNull(cut.Find("button.ignore-user-button"));
-        Assert.Contains("👁️ Ignorer", cut.Markup);
+        Assert.Contains("Ignorer", cut.Markup);
     }
 
     [Fact]
@@ -51,12 +54,12 @@ public class IgnoreUserButtonTests : TestContext
         var cut = RenderComponent<IgnoreUserButton>(parameters => parameters
             .Add(p => p.UserId, userId));
 
-        cut.WaitForState(() => cut.Markup.Contains("🚫 Ignoré"),
+        cut.WaitForState(() => cut.Markup.Contains("Ignoré"),
             TimeSpan.FromSeconds(2));
         cut.Render();
 
         // Assert
-        Assert.Contains("🚫 Ignoré", cut.Markup);
+        Assert.Contains("Ignoré", cut.Markup);
         Assert.Contains("ignore-user-button ignored", cut.Markup);
     }
 

@@ -22,6 +22,7 @@ public class ChatTests : TestContext
     private readonly Mock<IUnifiedAuthService> _authServiceMock;
     private readonly Mock<IPrivateMessageService> _privateMessageServiceMock;
     private readonly Mock<IDeviceDetectorService> _deviceDetectorMock;
+    private readonly Mock<IIgnoredUsersService> _ignoredUsersServiceMock;
     private readonly MockHttpMessageHandler _mockHttp;
     private readonly FakeNavigationManager _navManager;
 
@@ -32,8 +33,13 @@ public class ChatTests : TestContext
         _privateMessageServiceMock = new Mock<IPrivateMessageService>();
         _mockHttp = new MockHttpMessageHandler();
         _deviceDetectorMock = new Mock<IDeviceDetectorService>();
+        _ignoredUsersServiceMock = new Mock<IIgnoredUsersService>();
+
         _deviceDetectorMock.Setup(x => x.IsMobileDeviceAsync())
             .ReturnsAsync(false);
+
+        _ignoredUsersServiceMock.Setup(x => x.InitializeAsync())
+            .Returns(Task.CompletedTask);
 
         var httpClient = _mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
@@ -42,6 +48,7 @@ public class ChatTests : TestContext
         Services.AddSingleton(_authServiceMock.Object);
         Services.AddSingleton(_privateMessageServiceMock.Object);
         Services.AddSingleton(_deviceDetectorMock.Object);
+        Services.AddSingleton(_ignoredUsersServiceMock.Object);
         Services.AddSingleton(httpClient);
         Services.Configure<ApiSettings>(apiSettings =>
         {
@@ -2211,7 +2218,7 @@ public class ChatTests : TestContext
 
         // Assert - La liste d'utilisateurs devrait toujours être visible pour les salons publics
         Assert.Contains("chat-users", cut.Markup);
-        Assert.Contains("users-section", cut.Markup);
+        Assert.Contains("channel-users-list", cut.Markup);
     }
 
     [Fact]
@@ -2302,7 +2309,7 @@ public class ChatTests : TestContext
 
         // Assert - Sur desktop, la liste d'utilisateurs devrait être visible pour les salons publics
         Assert.Contains("chat-users", cut.Markup);
-        Assert.Contains("users-section", cut.Markup);
+        Assert.Contains("channel-users-list", cut.Markup);
     }
 
 
@@ -4898,15 +4905,15 @@ public class ChatTests : TestContext
         _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync("TestUser");
 
         var channels = new List<Channel>
-    {
-        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
-    };
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
 
         var users = new List<User>
-    {
-        new() { UserId = "TestUser", Username = "TestUser" },
-        new() { UserId = "OtherUser", Username = "OtherUser" }
-    };
+        {
+            new() { UserId = "TestUser", Username = "TestUser" },
+            new() { UserId = "OtherUser", Username = "OtherUser" }
+        };
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
@@ -4948,7 +4955,7 @@ public class ChatTests : TestContext
         await Task.Delay(200);
 
         // Act - Cliquer sur un autre utilisateur
-        var otherUserElements = cut.FindAll(".user-list li:not(.current)");
+        var otherUserElements = cut.FindAll(".user-item:not(.current)");
         if (otherUserElements.Count > 0)
         {
             await cut.InvokeAsync(() => otherUserElements[0].Click());
