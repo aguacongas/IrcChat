@@ -10,7 +10,7 @@ public class IgnoredUsersService(IJSRuntime jsRuntime, ILogger<IgnoredUsersServi
 {
     private bool _isInitialized = false;
     private IJSObjectReference? _module;
-    private List<string> _ignoredUsersCache;
+    private List<string> _ignoredUsersCache = [];
     public event Action? OnIgnoredUsersChanged;
 
     /// <summary>
@@ -29,13 +29,12 @@ public class IgnoredUsersService(IJSRuntime jsRuntime, ILogger<IgnoredUsersServi
                 "import", "./js/ignoredUsersManager.js");
             logger.LogInformation("Module ignoredUsersManager.js chargé avec succès");
             _ignoredUsersCache = await _module.InvokeAsync<List<string>>("getAllIgnoredUsers");
+            _isInitialized = true;
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Erreur lors du chargement du module ignoredUsersManager.js");
         }
-
-        _isInitialized = true;
     }
 
     /// <summary>
@@ -43,7 +42,7 @@ public class IgnoredUsersService(IJSRuntime jsRuntime, ILogger<IgnoredUsersServi
     /// </summary>
     public bool IsUserIgnored(string userId)
     {
-        if (_module == null)
+        if (!_isInitialized)
         {
             logger.LogWarning("Module non initialisé, impossible de vérifier si l'utilisateur est ignoré");
             return false;
@@ -57,7 +56,7 @@ public class IgnoredUsersService(IJSRuntime jsRuntime, ILogger<IgnoredUsersServi
     /// </summary>
     public async Task IgnoreUserAsync(string userId)
     {
-        if (_module == null)
+        if (!_isInitialized)
         {
             logger.LogWarning("Module non initialisé, impossible d'ignorer l'utilisateur");
             return;
@@ -65,7 +64,7 @@ public class IgnoredUsersService(IJSRuntime jsRuntime, ILogger<IgnoredUsersServi
 
         try
         {
-            await _module.InvokeVoidAsync("ignoreUser", userId);
+            await _module!.InvokeVoidAsync("ignoreUser", userId);
             _ignoredUsersCache.Add(userId);
             logger.LogInformation("Utilisateur {UserId} ignoré", userId);
             OnIgnoredUsersChanged?.Invoke();
@@ -81,7 +80,7 @@ public class IgnoredUsersService(IJSRuntime jsRuntime, ILogger<IgnoredUsersServi
     /// </summary>
     public async Task UnignoreUserAsync(string userId)
     {
-        if (_module == null)
+        if (!_isInitialized)
         {
             logger.LogWarning("Module non initialisé, impossible de dés-ignorer l'utilisateur");
             return;
@@ -89,7 +88,7 @@ public class IgnoredUsersService(IJSRuntime jsRuntime, ILogger<IgnoredUsersServi
 
         try
         {
-            await _module.InvokeVoidAsync("unignoreUser", userId);
+            await _module!.InvokeVoidAsync("unignoreUser", userId);
             _ignoredUsersCache.Remove(userId);
             logger.LogInformation("Utilisateur {UserId} dés-ignoré", userId);
             OnIgnoredUsersChanged?.Invoke();
