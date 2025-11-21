@@ -2,6 +2,7 @@
 @using IrcChat.Shared.Models
 @inject IIgnoredUsersService IgnoredUsersService
 @inject ILogger<IgnoreUserButton> Logger
+@implements IDisposable
 
 <button class="ignore-user-button @(IsIgnored ? "ignored" : "")"
         @onclick="HandleToggleIgnore"
