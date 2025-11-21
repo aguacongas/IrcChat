@@ -1,10 +1,10 @@
-/* Sections */
-.users-section {
-  margin-bottom: 20px;
+.channel-users-list {
   margin-left: 20px;
+  margin-right: 20px;
+  margin-bottom: 20px;
 }
 
-  .users-section h4 {
+  .channel-users-list h4 {
     font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -12,28 +12,47 @@
     color: #8ab4f8;
   }
 
-.user-list {
+.users-list {
   list-style: none;
-  padding: 0;
+  padding: 0;  
 }
 
-  .user-list li {
-    padding: 8px 10px;
-    font-size: 14px;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.user-item {
+  padding: 8px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+  .user-item:hover {
+    background: #3e3e3e;
   }
 
-    .user-list li:hover {
-      background: #3e3e3e;
-    }
+  .user-item.current {
+    cursor: default;
+    color: #8ab4f8;
+    font-weight: bold;
+  }
 
-    .user-list li.current {
-      cursor: default;
-      color: #8ab4f8;
-      font-weight: bold;
-    }
+
+  .user-item.ignored .user-name {
+    text-decoration: line-through;
+  }
+
+.ignore-indicator {
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+  font-size: 1rem;
+  cursor: default;
+}
+
+.empty-state {
+  padding: 1rem;
+  text-align: center;
+  color: #999;
+  font-size: 0.875rem;
+}

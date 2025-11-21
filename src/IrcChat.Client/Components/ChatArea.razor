@@ -18,8 +18,9 @@
                     <h2>💬 @CurrentChannel</h2>
                     <span class="user-status @(IsUserOnline ? "online" : "offline")">
                         <span class="status-indicator"></span>
-                        @(IsUserOnline ? "En ligne" : "Hors ligne")
+                        <span class="status-indicator-text">@(IsUserOnline ? "En ligne" : "Hors ligne")</span>
                     </span>
+                    <IgnoreUserButton UserId="@CurrentContactUserId" />
                 }
                 else
                 {
@@ -68,9 +69,8 @@
             @if (Users != null)
             {
                 <div class="chat-users @(UsersListOpen ? "visible" : "hidden")">
-                    <ChannelUsersList CurrentChannel="@CurrentChannel"
+                    <ChannelUsersList Users="@Users"
                                       Username="@Username"
-                                      Users="@Users"
                                       OnUserClicked="OnUserClicked" />
                 </div>
             }
@@ -81,6 +81,9 @@
 @code {
     [Parameter]
     public string Username { get; set; } = string.Empty;
+
+    [Parameter]
+    public string CurrentContactUserId { get; set; } = string.Empty;
 
     [Parameter]
     public string CurrentChannel { get; set; } = string.Empty;

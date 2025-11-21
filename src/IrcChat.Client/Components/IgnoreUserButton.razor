@@ -1,0 +1,76 @@
+@using IrcChat.Client.Services
+@using IrcChat.Shared.Models
+@inject IIgnoredUsersService IgnoredUsersService
+@inject ILogger<IgnoreUserButton> Logger
+
+<button class="ignore-user-button @(IsIgnored ? "ignored" : "")"
+        @onclick="HandleToggleIgnore"
+        title="@(IsIgnored ? "Dés-ignorer cet utilisateur" : "Ignorer cet utilisateur")"
+        type="button">
+    @if (IsIgnored)
+    {
+        <span class="icon">🚫</span><span> Ignoré</span>
+    }
+    else
+    {
+        <span class="icon">👁️</span><span> Ignorer</span>
+    }
+</button>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public string UserId { get; set; }
+
+    private bool IsIgnored { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await IgnoredUsersService.InitializeAsync();
+            IsIgnored = IgnoredUsersService.IsUserIgnored(UserId);
+
+            IgnoredUsersService.OnIgnoredUsersChanged += OnIgnoredUsersChanged;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de l'initialisation du bouton d'ignorance");
+        }
+    }
+
+    private async Task HandleToggleIgnore()
+    {
+        try
+        {
+            await IgnoredUsersService.ToggleIgnoreUserAsync(UserId);
+            IsIgnored = IgnoredUsersService.IsUserIgnored(UserId);
+            Logger.LogInformation("Statut d'ignorance basculé pour l'utilisateur {UserId}", UserId);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors du basculement du statut d'ignorance");
+        }
+    }
+
+    private async void OnIgnoredUsersChanged()
+    {
+        try
+        {
+            IsIgnored = IgnoredUsersService.IsUserIgnored(UserId);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de la mise à jour du bouton");
+        }
+    }
+
+    public void Dispose()
+    {
+        if (IgnoredUsersService is not null)
+        {
+            IgnoredUsersService.OnIgnoredUsersChanged -= OnIgnoredUsersChanged;
+        }
+    }
+}

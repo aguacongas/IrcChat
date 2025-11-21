@@ -1,0 +1,43 @@
+.ignore-user-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #6e6e6e;
+  color: #fff;
+}
+
+  .ignore-user-button:hover {
+    background: #8e8e8e;
+    transform: translateY(-1px);
+  }
+
+  .ignore-user-button.ignored {
+    background: #eb0f0f;
+    color: #fff;
+  }
+
+    .ignore-user-button.ignored:hover {
+      background: #e53e3e;
+    }
+
+  .ignore-user-button:active {
+    transform: scale(0.98);
+  }
+
+  .ignore-user-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+@media (max-width: 1024px) {
+  .ignore-user-button span:not(.icon) {
+    display: none;
+  }
+}

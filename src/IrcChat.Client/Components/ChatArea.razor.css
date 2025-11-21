@@ -297,4 +297,8 @@
   .chat-users.visible {
     max-width: 100%;
   }
+
+  .status-indicator-text {
+    display: none;
+  }
 }

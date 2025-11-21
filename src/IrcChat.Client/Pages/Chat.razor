@@ -17,6 +17,7 @@
 @inject IOptions<ApiSettings> ApiSettingsOptions
 @inject ILogger<Chat> Logger
 @inject IDeviceDetectorService DeviceDetector
+@inject IIgnoredUsersService IgnoredUsersService
 @implements IAsyncDisposable
 
 <PageTitle>IRC Chat</PageTitle>
@@ -57,6 +58,7 @@ else
                  OnChannelDeleted="HandleChannelDeleted" />
 
         <ChatArea Username="@currentUsername"
+                  CurrentContactUserId="@selectedPrivateUser?.UserId"
                   CurrentChannel="@GetCurrentChannelOrUsername()"
                   IsConnected="@isConnected"
                   Messages="@GetCurrentMessages()"
@@ -108,6 +110,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         await Auth.InitializeAsync();
+        await IgnoredUsersService.InitializeAsync();
         isInitialized = true;
 
         if (!Auth.HasUsername)
@@ -152,6 +155,8 @@ else
         PrivateMessageService.OnUnreadCountChanged += OnUnreadCountChanged;
         PrivateMessageService.OnConversationDeleted += OnConversationDeleted;
 
+        IgnoredUsersService.OnIgnoredUsersChanged += OnIgnoredUsersChanged;
+
         if (ChatService.IsInitialized)
         {
             return;
@@ -188,11 +193,16 @@ else
     // Handlers pour canaux publics
     private void OnMessageReceived(Message message)
     {
-        if (message.Channel == currentChannel && !isPrivateConversation)
+        InvokeAsync(async () =>
         {
-            messages.Add(message);
-            InvokeAsync(StateHasChanged);
-        }
+            if (message.Channel == currentChannel &&
+              !isPrivateConversation &&
+              !IgnoredUsersService.IsUserIgnored(message.UserId))
+            {
+                messages.Add(message);
+                StateHasChanged();
+            }
+        });
     }
 
     private void OnUserJoined(string user, string userId, string channel)
@@ -292,19 +302,20 @@ else
     // Handlers pour messages privés
     private void OnPrivateMessageReceived(PrivateMessage message)
     {
-        if (isPrivateConversation &&
-            (message.SenderUserId == selectedPrivateUser?.UserId || message.RecipientUserId == selectedPrivateUser?.UserId))
-        {
-            privateMessages.Add(message);
-
-            if (message.SenderUserId == selectedPrivateUser?.UserId)
-            {
-                _ = ChatService.MarkPrivateMessagesAsRead(selectedPrivateUser!.UserId);
-            }
-        }
-
         InvokeAsync(async () =>
         {
+            if (isPrivateConversation &&
+              (message.SenderUserId == selectedPrivateUser?.UserId || message.RecipientUserId == selectedPrivateUser?.UserId) &&
+              !(IgnoredUsersService.IsUserIgnored(message.SenderUserId)))
+            {
+                privateMessages.Add(message);
+
+                if (message.SenderUserId == selectedPrivateUser?.UserId)
+                {
+                    _ = ChatService.MarkPrivateMessagesAsRead(selectedPrivateUser!.UserId);
+                }
+            }
+
             await LoadPrivateConversations();
             StateHasChanged();
         });
@@ -347,6 +358,19 @@ else
         });
     }
 
+    private void OnIgnoredUsersChanged()
+    {
+        InvokeAsync(async () =>
+        {
+            // Recharger les messages privés si une conversation est ouverte
+            if (isPrivateConversation && selectedPrivateUser != null)
+            {
+                await OpenPrivateChat(selectedPrivateUser);
+                StateHasChanged();
+            }
+        });
+    }
+
     // Actions
     private void GoToSettings()
     {
@@ -374,7 +398,7 @@ else
         await LoadMessages();
         await LoadUsers();
         await LoadChannels();
-        
+
         var channelInfo = channels.FirstOrDefault(c => c.Name == channel);
         isCurrentChannelMuted = channelInfo?.IsMuted ?? false;
 
@@ -410,7 +434,15 @@ else
             var result = await Http.GetFromJsonAsync<List<Message>>($"/api/messages/{currentChannel}");
             if (result != null)
             {
-                messages = result;
+                messages = [];
+                foreach (var msg in result)
+                {
+                    if (IgnoredUsersService.IsUserIgnored(msg.UserId))
+                    {
+                        continue;
+                    }
+                    messages.Add(msg);
+                }                
             }
         }
         catch (Exception ex)
@@ -464,7 +496,16 @@ else
     // Méthodes pour messages privés
     private async Task LoadPrivateConversations()
     {
-        privateConversations = await PrivateMessageService.GetConversationsAsync(currentUserId);
+        var conversations = await PrivateMessageService.GetConversationsAsync(currentUserId);
+        privateConversations = [];
+        foreach(var conversation in conversations)
+        {
+            if (IgnoredUsersService.IsUserIgnored(conversation.OtherUser!.UserId))
+            {
+                continue;
+            }
+            privateConversations.Add(conversation);
+        }
     }
 
     private async Task OpenPrivateChat(User user)
@@ -472,7 +513,21 @@ else
         isPrivateConversation = true;
         selectedPrivateUser = user;
 
-        privateMessages = await PrivateMessageService.GetPrivateMessagesAsync(currentUserId, user.UserId);
+        if (IgnoredUsersService.IsUserIgnored(user.UserId))
+        {
+            privateMessages = [
+              new PrivateMessage
+              {
+                Content = "Vous ignorez cet utilisiteur",
+                SenderUsername = "🚫"
+              }
+            ];
+        }
+        else
+        {
+            privateMessages = await PrivateMessageService.GetPrivateMessagesAsync(currentUserId, user.UserId);
+        }
+        
         await ChatService.MarkPrivateMessagesAsRead(user.UserId);
         await LoadPrivateConversations();
 
@@ -622,6 +677,8 @@ else
         PrivateMessageService.OnPrivateMessageSent -= OnPrivateMessageSent;
         PrivateMessageService.OnUnreadCountChanged -= OnUnreadCountChanged;
         PrivateMessageService.OnConversationDeleted -= OnConversationDeleted;
+
+        IgnoredUsersService.OnIgnoredUsersChanged -= OnIgnoredUsersChanged;
 
         GC.SuppressFinalize(this);
     }

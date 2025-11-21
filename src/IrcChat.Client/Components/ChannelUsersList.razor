@@ -1,25 +1,52 @@
+@using IrcChat.Client.Services
 @using IrcChat.Shared.Models
+@inject IIgnoredUsersService IgnoredUsersService
+@inject ILogger<ChannelUsersList> Logger
 
-@if (!string.IsNullOrEmpty(CurrentChannel))
-{
-    <div class="users-section">
+<div class="channel-users-list">
+    @if (Users?.Any() == true)
+    {
         <h4>Utilisateurs (@(Users?.Count ?? 0))</h4>
-        <ul class="user-list">
-            @foreach (var user in Users ?? [])
+        <ul class="users-list">
+            @foreach (var user in Users!)
             {
-                <li class="@(user.Username == Username ? "current" : "")"
+                <li class="user-item @(IgnoredUsersService.IsUserIgnored(user.UserId) ? "ignored" : "") @(user.Username == Username ? "current" : "")"
                     @onclick="() => OnUserClicked.InvokeAsync(user)">
-                    <span class="status-dot online"></span>
-                    @user.Username
+                    <span class="user-name">@user.Username</span>
+                    @if (IgnoredUsersService.IsUserIgnored(user.UserId))
+                    {
+                        <span class="ignore-indicator" title="Vous ignorez cet utilisateur">🚫</span>
+                    }
                 </li>
             }
         </ul>
-    </div>
-}
+    }
+    else
+    {
+        <div class="empty-state">Aucun utilisateur connecté</div>
+    }
+</div>
 
 @code {
-    [Parameter] public string? CurrentChannel { get; set; }
-    [Parameter] public string Username { get; set; } = string.Empty;
-    [Parameter] public List<User>? Users { get; set; }
-    [Parameter] public EventCallback<User> OnUserClicked { get; set; }
+    [Parameter]
+    [EditorRequired]
+    public List<User> Users { get; set; } = [];
+
+    [Parameter]
+    public string Username { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<User> OnUserClicked { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await IgnoredUsersService.InitializeAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de l'initialisation du composant");
+        }
+    }
 }

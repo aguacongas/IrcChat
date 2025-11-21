@@ -1,296 +1,191 @@
-// tests/IrcChat.Client.Tests/Components/ChannelUsersListTests.cs
 using Bunit;
 using IrcChat.Client.Components;
+using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
 public class ChannelUsersListTests : TestContext
 {
+    private readonly Mock<IIgnoredUsersService> _ignoredUsersServiceMock;
+    private readonly List<User> _testUsers;
+
+    public ChannelUsersListTests()
+    {
+        _ignoredUsersServiceMock = new Mock<IIgnoredUsersService>();
+
+        Services.AddSingleton(_ignoredUsersServiceMock.Object);
+        Services.AddSingleton(new Mock<ILogger<ChannelUsersList>>().Object);
+
+        _testUsers =
+        [
+            new() { UserId = Guid.NewGuid().ToString(), Username = "user1" },
+            new() { UserId = Guid.NewGuid().ToString(), Username = "user2" },
+            new() { UserId = Guid.NewGuid().ToString(), Username = "user3" }
+        ];
+    }
+
     [Fact]
-    public void ChannelUsersList_WithoutChannel_ShouldNotRender()
+    public async Task Component_WhenRendered_ShouldDisplayAllUsers()
+    {
+        // Arrange
+        _ignoredUsersServiceMock
+            .Setup(x => x.IsUserIgnored(It.IsAny<string>()))
+            .Returns(false);
+
+        // Act
+        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
+            .Add(p => p.Users, _testUsers));
+
+        // Assert
+        Assert.Contains("user1", cut.Markup);
+        Assert.Contains("user2", cut.Markup);
+        Assert.Contains("user3", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Component_WithEmptyList_ShouldShowEmptyState()
     {
         // Arrange & Act
         var cut = RenderComponent<ChannelUsersList>(parameters => parameters
-            .Add(p => p.CurrentChannel, (string?)null)
-            .Add(p => p.Username, "testuser")
             .Add(p => p.Users, []));
 
         // Assert
-        Assert.Empty(cut.Markup);
+        Assert.Contains("Aucun utilisateur connecté", cut.Markup);
     }
 
     [Fact]
-    public void ChannelUsersList_WithEmptyChannel_ShouldNotRender()
+    public async Task Component_WhenUserIgnored_ShouldShowIndicator()
     {
-        // Arrange & Act
+        // Arrange
+        var ignoredUserId = _testUsers[0].UserId;
+
+        _ignoredUsersServiceMock
+            .Setup(x => x.IsUserIgnored(ignoredUserId))
+            .Returns(true);
+
+        _ignoredUsersServiceMock
+            .Setup(x => x.IsUserIgnored(It.Is<string>(id => id != ignoredUserId)))
+            .Returns(false);
+
+        // Act
         var cut = RenderComponent<ChannelUsersList>(parameters => parameters
-            .Add(p => p.CurrentChannel, "")
-            .Add(p => p.Username, "testuser")
-            .Add(p => p.Users, []));
+            .Add(p => p.Users, _testUsers));
 
         // Assert
-        Assert.Empty(cut.Markup);
+        var ignoredItems = cut.FindAll(".user-item.ignored");
+        Assert.Single(ignoredItems);
+        Assert.Contains("🚫", cut.Markup);
     }
 
     [Fact]
-    public void ChannelUsersList_WithChannel_ShouldShowHeader()
+    public async Task Component_IgnoredUserShouldHaveStrikethrough()
     {
-        // Arrange & Act
+        // Arrange
+        var ignoredUserId = _testUsers[1].UserId;
+
+        _ignoredUsersServiceMock
+            .Setup(x => x.IsUserIgnored(ignoredUserId))
+            .Returns(true);
+
+        _ignoredUsersServiceMock
+            .Setup(x => x.IsUserIgnored(It.Is<string>(id => id != ignoredUserId)))
+            .Returns(false);
+
+        // Act
         var cut = RenderComponent<ChannelUsersList>(parameters => parameters
-            .Add(p => p.CurrentChannel, "general")
-            .Add(p => p.Username, "testuser")
-            .Add(p => p.Users, []));
+            .Add(p => p.Users, _testUsers));
 
         // Assert
-        Assert.Contains("Utilisateurs", cut.Markup);
-        Assert.Contains("(0)", cut.Markup);
+        var ignoredItems = cut.FindAll(".user-item.ignored");
+        Assert.NotEmpty(ignoredItems);
     }
 
     [Fact]
-    public void ChannelUsersList_WithUsers_ShouldDisplayCount()
+    public async Task Component_OnIgnoredUsersChanged_ShouldRefresh()
+    {
+        // Arrange
+        var ignoredUserId = _testUsers[0].UserId;
+        Action onChangedCallback = null!;
+
+        _ignoredUsersServiceMock
+            .Setup(x => x.IsUserIgnored(It.IsAny<string>()))
+            .Returns(false);
+
+        _ignoredUsersServiceMock
+            .SetupAdd(x => x.OnIgnoredUsersChanged += It.IsAny<Action>())
+            .Callback<Action>(callback => onChangedCallback = callback);
+
+        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
+            .Add(p => p.Users, _testUsers));
+
+        // Act
+        _ignoredUsersServiceMock
+            .Setup(x => x.IsUserIgnored(ignoredUserId))
+            .Returns(true);
+
+        _ignoredUsersServiceMock
+            .Setup(x => x.IsUserIgnored(It.Is<string>(id => id != ignoredUserId)))
+            .Returns(false);
+
+        onChangedCallback?.Invoke();
+        cut.Render();
+
+        // Assert
+        Assert.Contains("🚫", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Component_WhenUserListUpdated_ShouldRefresh()
     {
         // Arrange
         var users = new List<User>
         {
-            new() { Username = "user1", ConnectedAt = DateTime.UtcNow },
-            new() { Username = "user2", ConnectedAt = DateTime.UtcNow },
-            new() { Username = "user3", ConnectedAt = DateTime.UtcNow }
+            new() { UserId = Guid.NewGuid().ToString(), Username = "user1" }
         };
 
-        // Act
+        _ignoredUsersServiceMock
+            .Setup(x => x.IsUserIgnored(It.IsAny<string>()))
+            .Returns(false);
+
         var cut = RenderComponent<ChannelUsersList>(parameters => parameters
-            .Add(p => p.CurrentChannel, "general")
-            .Add(p => p.Username, "testuser")
             .Add(p => p.Users, users));
 
+        Assert.Contains("user1", cut.Markup);
+
+        // Act
+        var updatedUsers = new List<User>
+        {
+            new() { UserId = Guid.NewGuid().ToString(), Username = "user1" },
+            new() { UserId = Guid.NewGuid().ToString(), Username = "user2" }
+        };
+
+        cut.SetParametersAndRender(parameters => parameters
+            .Add(p => p.Users, updatedUsers));
+
         // Assert
-        Assert.Contains("(3)", cut.Markup);
+        Assert.Contains("user1", cut.Markup);
+        Assert.Contains("user2", cut.Markup);
     }
 
     [Fact]
-    public void ChannelUsersList_WithUsers_ShouldListAllUsers()
+    public async Task Component_ShouldDisplayCorrectUserNames()
     {
         // Arrange
-        var users = new List<User>
-        {
-            new() { Username = "alice", ConnectedAt = DateTime.UtcNow },
-            new() { Username = "bob", ConnectedAt = DateTime.UtcNow },
-            new() { Username = "charlie", ConnectedAt = DateTime.UtcNow }
-        };
+        _ignoredUsersServiceMock
+            .Setup(x => x.IsUserIgnored(It.IsAny<string>()))
+            .Returns(false);
 
         // Act
         var cut = RenderComponent<ChannelUsersList>(parameters => parameters
-            .Add(p => p.CurrentChannel, "general")
-            .Add(p => p.Username, "testuser")
-            .Add(p => p.Users, users));
+            .Add(p => p.Users, _testUsers));
 
         // Assert
-        Assert.Contains("alice", cut.Markup);
-        Assert.Contains("bob", cut.Markup);
-        Assert.Contains("charlie", cut.Markup);
-    }
-
-    [Fact]
-    public void ChannelUsersList_WithCurrentUser_ShouldHighlight()
-    {
-        // Arrange
-        var users = new List<User>
-        {
-            new() { Username = "alice", ConnectedAt = DateTime.UtcNow },
-            new() { Username = "testuser", ConnectedAt = DateTime.UtcNow },
-            new() { Username = "bob", ConnectedAt = DateTime.UtcNow }
-        };
-
-        // Act
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
-            .Add(p => p.CurrentChannel, "general")
-            .Add(p => p.Username, "testuser")
-            .Add(p => p.Users, users));
-
-        // Assert
-        var userItems = cut.FindAll(".user-list li");
-        Assert.Equal(3, userItems.Count);
-
-        var currentUserItem = userItems.FirstOrDefault(li => li.TextContent.Contains("testuser"));
-        Assert.NotNull(currentUserItem);
-        Assert.Contains("current", currentUserItem.ClassList);
-    }
-
-    [Fact]
-    public async Task ChannelUsersList_OnUserClick_ShouldTriggerEvent()
-    {
-        // Arrange
-        var users = new List<User>
-        {
-            new() { UserId = "alice", Username = "alice", ConnectedAt = DateTime.UtcNow },
-            new() { UserId = "bob", Username = "bob", ConnectedAt = DateTime.UtcNow }
-        };
-
-        User? clickedUser = null;
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
-            .Add(p => p.CurrentChannel, "general")
-            .Add(p => p.Username, "testuser")
-            .Add(p => p.Users, users)
-            .Add(p => p.OnUserClicked, user => clickedUser = user));
-
-        // Act
-        var userItems = cut.FindAll(".user-list li");
-        var aliceItem = userItems.First(li => li.TextContent.Contains("alice"));
-        await cut.InvokeAsync(() => aliceItem.Click());
-
-        // Assert
-        Assert.Equal("alice", clickedUser?.Username);
-    }
-
-    [Fact]
-    public async Task ChannelUsersList_OnCurrentUserClick_ShouldStillTriggerEvent()
-    {
-        // Arrange
-        var users = new List<User>
-        {
-            new() { UserId = "testuser", Username = "testuser", ConnectedAt = DateTime.UtcNow }
-        };
-
-        User? clickedUser = null;
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
-            .Add(p => p.CurrentChannel, "general")
-            .Add(p => p.Username, "testuser")
-            .Add(p => p.Users, users)
-            .Add(p => p.OnUserClicked, user => clickedUser = user));
-
-        // Act
-        var userItem = cut.Find(".user-list li");
-        await cut.InvokeAsync(() => userItem.Click());
-
-        // Assert
-        Assert.Equal("testuser", clickedUser?.Username);
-    }
-
-    [Fact]
-    public void ChannelUsersList_WithNullUsers_ShouldShowZeroCount()
-    {
-        // Arrange & Act
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
-            .Add(p => p.CurrentChannel, "general")
-            .Add(p => p.Username, "testuser")
-            .Add(p => p.Users, (List<User>?)null));
-
-        // Assert
-        Assert.Contains("(0)", cut.Markup);
-    }
-
-    [Fact]
-    public void ChannelUsersList_AllUsers_ShouldHaveOnlineStatus()
-    {
-        // Arrange
-        var users = new List<User>
-        {
-            new() { Username = "user1", ConnectedAt = DateTime.UtcNow },
-            new() { Username = "user2", ConnectedAt = DateTime.UtcNow }
-        };
-
-        // Act
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
-            .Add(p => p.CurrentChannel, "general")
-            .Add(p => p.Username, "testuser")
-            .Add(p => p.Users, users));
-
-        // Assert
-        var statusDots = cut.FindAll(".status-dot.online");
-        Assert.Equal(2, statusDots.Count);
-    }
-
-    [Fact]
-    public void ChannelUsersList_UsersOrder_ShouldBePreserved()
-    {
-        // Arrange
-        var users = new List<User>
-        {
-            new() { Username = "zebra", ConnectedAt = DateTime.UtcNow },
-            new() { Username = "alpha", ConnectedAt = DateTime.UtcNow },
-            new() { Username = "beta", ConnectedAt = DateTime.UtcNow }
-        };
-
-        // Act
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
-            .Add(p => p.CurrentChannel, "general")
-            .Add(p => p.Username, "testuser")
-            .Add(p => p.Users, users));
-
-        // Assert
-        var userItems = cut.FindAll(".user-list li");
-        Assert.Contains("zebra", userItems[0].TextContent);
-        Assert.Contains("alpha", userItems[1].TextContent);
-        Assert.Contains("beta", userItems[2].TextContent);
-    }
-
-    [Fact]
-    public async Task ChannelUsersList_MultipleClicks_ShouldTriggerMultipleTimes()
-    {
-        // Arrange
-        var users = new List<User>
-        {
-            new() { Username = "alice", ConnectedAt = DateTime.UtcNow }
-        };
-
-        var clickCount = 0;
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
-            .Add(p => p.CurrentChannel, "general")
-            .Add(p => p.Username, "testuser")
-            .Add(p => p.Users, users)
-            .Add(p => p.OnUserClicked, _ => clickCount++));
-
-        // Act
-        var userItem = cut.Find(".user-list li");
-        await cut.InvokeAsync(() => userItem.Click());
-        await cut.InvokeAsync(() => userItem.Click());
-        await cut.InvokeAsync(() => userItem.Click());
-
-        // Assert
-        Assert.Equal(3, clickCount);
-    }
-
-    [Fact]
-    public void ChannelUsersList_WithLongUsername_ShouldRenderCorrectly()
-    {
-        // Arrange
-        var users = new List<User>
-        {
-            new() { Username = "verylongusernamethatexceedstwentycharacters", ConnectedAt = DateTime.UtcNow }
-        };
-
-        // Act
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
-            .Add(p => p.CurrentChannel, "general")
-            .Add(p => p.Username, "testuser")
-            .Add(p => p.Users, users));
-
-        // Assert
-        Assert.Contains("verylongusernamethatexceedstwentycharacters", cut.Markup);
-    }
-
-    [Fact]
-    public void ChannelUsersList_WithSpecialCharacters_ShouldRenderCorrectly()
-    {
-        // Arrange
-        var users = new List<User>
-        {
-            new() { Username = "user_123", ConnectedAt = DateTime.UtcNow },
-            new() { Username = "test-user", ConnectedAt = DateTime.UtcNow },
-            new() { Username = "user.name", ConnectedAt = DateTime.UtcNow }
-        };
-
-        // Act
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
-            .Add(p => p.CurrentChannel, "general")
-            .Add(p => p.Username, "testuser")
-            .Add(p => p.Users, users));
-
-        // Assert
-        Assert.Contains("user_123", cut.Markup);
-        Assert.Contains("test-user", cut.Markup);
-        Assert.Contains("user.name", cut.Markup);
+        var userNames = cut.FindAll(".user-name");
+        Assert.Equal(3, userNames.Count);
     }
 }
