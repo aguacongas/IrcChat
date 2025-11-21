@@ -10,6 +10,7 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
     public DbSet<ConnectedUser> ConnectedUsers { get; set; }
     public DbSet<ReservedUsername> ReservedUsernames { get; set; }
     public DbSet<PrivateMessage> PrivateMessages { get; set; }
+    public DbSet<MutedUser> MutedUsers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,6 +53,14 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
             // Index pour optimiser les requêtes de suppression par utilisateur
             entity.HasIndex(e => new { e.SenderUserId, e.IsDeletedBySender });
             entity.HasIndex(e => new { e.RecipientUserId, e.IsDeletedByRecipient });
+        });
+
+        modelBuilder.Entity<MutedUser>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ChannelName);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => new { e.ChannelName, e.UserId }).IsUnique();
         });
     }
 }

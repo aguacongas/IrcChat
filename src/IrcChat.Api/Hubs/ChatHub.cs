@@ -126,6 +126,16 @@ public class ChatHub(
         db.Messages.Add(message);
         await db.SaveChangesAsync();
 
+        // Vérifier si l'utilisateur est mute dans ce salon
+        var isMuted = await db.MutedUsers
+            .AnyAsync(m => m.ChannelName.ToLower() == request.Channel.ToLower()
+                        && m.UserId == connectedUser.UserId);
+
+        if (isMuted)
+        {
+            return;
+        }
+
         await Clients.Group(request.Channel).SendAsync("ReceiveMessage", message);
     }
 
