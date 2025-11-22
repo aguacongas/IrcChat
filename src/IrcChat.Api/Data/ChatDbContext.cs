@@ -50,7 +50,6 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
             entity.HasIndex(e => e.RecipientUsername);
             entity.HasIndex(e => e.Timestamp);
 
-            // Index pour optimiser les requêtes de suppression par utilisateur
             entity.HasIndex(e => new { e.SenderUserId, e.IsDeletedBySender });
             entity.HasIndex(e => new { e.RecipientUserId, e.IsDeletedByRecipient });
         });

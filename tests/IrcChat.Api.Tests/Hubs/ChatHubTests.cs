@@ -1061,6 +1061,350 @@ public class ChatHubTests : IAsyncDisposable
             Times.Never);
     }
 
+    [Fact]
+    public async Task SendMessage_WithMutedUser_ShouldSaveButNotBroadcast()
+    {
+        // Arrange
+        var channel = "general";
+
+        var channelEntity = new Channel
+        {
+            Id = Guid.NewGuid(),
+            Name = channel,
+            CreatedBy = "admin",
+            CreatedAt = DateTime.UtcNow,
+            IsMuted = false
+        };
+        _db.Channels.Add(channelEntity);
+
+        var connectedUser = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
+            Username = "muteduser",
+            Channel = channel,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastPing = DateTime.UtcNow,
+            ServerInstanceId = "test-instance"
+        };
+        _db.ConnectedUsers.Add(connectedUser);
+
+        // Muter l'utilisateur
+        var mute = new MutedUser
+        {
+            Id = Guid.NewGuid(),
+            ChannelName = channel,
+            UserId = connectedUser.UserId,
+            MutedByUserId = "admin-id",
+            MutedAt = DateTime.UtcNow,
+            Reason = "Spam"
+        };
+        _db.MutedUsers.Add(mute);
+        await _db.SaveChangesAsync();
+
+        var messageRequest = new SendMessageRequest
+        {
+            Content = "This message should be saved but not broadcast",
+            Channel = channel
+        };
+
+        // Act
+        await _hub.SendMessage(messageRequest);
+
+        // Assert
+        // Vérifier que le message est bien sauvegardé en BDD
+        var message = await _db.Messages
+            .FirstOrDefaultAsync(m => m.UserId == connectedUser.UserId && m.Content == messageRequest.Content);
+
+        Assert.NotNull(message);
+        Assert.Equal(messageRequest.Channel, message!.Channel);
+        Assert.False(message.IsDeleted);
+
+        // Vérifier qu'AUCUN message n'a été envoyé au groupe
+        _groupMock.Verify(
+            g => g.SendCoreAsync("ReceiveMessage", It.IsAny<object[]>(), default),
+            Times.Never);
+
+        // Vérifier qu'AUCUN message n'a été envoyé à l'appelant
+        _callerMock.Verify(
+            c => c.SendCoreAsync("ReceiveMessage", It.IsAny<object[]>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task SendMessage_WithMutedUserInMutedChannel_ShouldNotBroadcast()
+    {
+        // Arrange
+        var channel = "muted-channel";
+
+        var mutedChannel = new Channel
+        {
+            Id = Guid.NewGuid(),
+            Name = channel,
+            CreatedBy = "admin",
+            CreatedAt = DateTime.UtcNow,
+            IsMuted = true // Canal mute
+        };
+        _db.Channels.Add(mutedChannel);
+
+        var connectedUser = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
+            Username = "muteduser",
+            Channel = channel,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastPing = DateTime.UtcNow,
+            ServerInstanceId = "test-instance"
+        };
+        _db.ConnectedUsers.Add(connectedUser);
+
+        // Utilisateur mute individuellement
+        var mute = new MutedUser
+        {
+            Id = Guid.NewGuid(),
+            ChannelName = channel,
+            UserId = connectedUser.UserId,
+            MutedByUserId = "admin-id",
+            MutedAt = DateTime.UtcNow
+        };
+        _db.MutedUsers.Add(mute);
+        await _db.SaveChangesAsync();
+
+        var messageRequest = new SendMessageRequest
+        {
+            Content = "Double mute test",
+            Channel = channel
+        };
+
+        // Act
+        await _hub.SendMessage(messageRequest);
+
+        // Assert
+        // Message sauvegardé
+        var message = await _db.Messages
+            .FirstOrDefaultAsync(m => m.UserId == connectedUser.UserId);
+        Assert.NotNull(message);
+
+        // Pas de broadcast
+        _groupMock.Verify(
+            g => g.SendCoreAsync("ReceiveMessage", It.IsAny<object[]>(), default),
+            Times.Never);
+
+        // Pas de notification MessageBlocked car l'utilisateur est mute individuellement
+        _callerMock.Verify(
+            c => c.SendCoreAsync("MessageBlocked", It.IsAny<object[]>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task SendMessage_WithNonMutedUserInNormalChannel_ShouldBroadcast()
+    {
+        // Arrange
+        var channel = "general";
+
+        var channelEntity = new Channel
+        {
+            Id = Guid.NewGuid(),
+            Name = channel,
+            CreatedBy = "admin",
+            CreatedAt = DateTime.UtcNow,
+            IsMuted = false
+        };
+        _db.Channels.Add(channelEntity);
+
+        var connectedUser = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
+            Username = "normaluser",
+            Channel = channel,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastPing = DateTime.UtcNow,
+            ServerInstanceId = "test-instance"
+        };
+        _db.ConnectedUsers.Add(connectedUser);
+        await _db.SaveChangesAsync();
+
+        var messageRequest = new SendMessageRequest
+        {
+            Content = "Normal message",
+            Channel = channel
+        };
+
+        // Act
+        await _hub.SendMessage(messageRequest);
+
+        // Assert
+        // Message sauvegardé
+        var message = await _db.Messages
+            .FirstOrDefaultAsync(m => m.UserId == connectedUser.UserId);
+        Assert.NotNull(message);
+
+        // Message diffusé au groupe
+        _groupMock.Verify(
+            g => g.SendCoreAsync("ReceiveMessage", It.Is<object[]>(args => args.Length == 1), default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendMessage_MutedUserThenUnmuted_ShouldAllowBroadcast()
+    {
+        // Arrange
+        var channel = "general";
+
+        var channelEntity = new Channel
+        {
+            Id = Guid.NewGuid(),
+            Name = channel,
+            CreatedBy = "admin",
+            CreatedAt = DateTime.UtcNow,
+            IsMuted = false
+        };
+        _db.Channels.Add(channelEntity);
+
+        var connectedUser = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
+            Username = "testuser",
+            Channel = channel,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastPing = DateTime.UtcNow,
+            ServerInstanceId = "test-instance"
+        };
+        _db.ConnectedUsers.Add(connectedUser);
+
+        // Muter puis démuter
+        var mute = new MutedUser
+        {
+            Id = Guid.NewGuid(),
+            ChannelName = channel,
+            UserId = connectedUser.UserId,
+            MutedByUserId = "admin-id",
+            MutedAt = DateTime.UtcNow
+        };
+        _db.MutedUsers.Add(mute);
+        await _db.SaveChangesAsync();
+
+        // Premier message (mute)
+        var firstMessage = new SendMessageRequest
+        {
+            Content = "First message while muted",
+            Channel = channel
+        };
+        await _hub.SendMessage(firstMessage);
+
+        // Vérifier pas de broadcast
+        _groupMock.Verify(
+            g => g.SendCoreAsync("ReceiveMessage", It.IsAny<object[]>(), default),
+            Times.Never);
+
+        // Démuter
+        _db.MutedUsers.Remove(mute);
+        await _db.SaveChangesAsync();
+
+        // Deuxième message (non mute)
+        var secondMessage = new SendMessageRequest
+        {
+            Content = "Second message after unmute",
+            Channel = channel
+        };
+        await _hub.SendMessage(secondMessage);
+
+        // Assert
+        // Les deux messages sont en BDD
+        var messages = await _db.Messages
+            .Where(m => m.UserId == connectedUser.UserId)
+            .ToListAsync();
+        Assert.Equal(2, messages.Count);
+
+        // Le deuxième message a été diffusé
+        _groupMock.Verify(
+            g => g.SendCoreAsync("ReceiveMessage", It.Is<object[]>(args => args.Length == 1), default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendMessage_AdminInMutedChannel_CanStillSendEvenIfMuted()
+    {
+        // Arrange
+        var channel = "muted-channel";
+
+        var mutedChannel = new Channel
+        {
+            Id = Guid.NewGuid(),
+            Name = channel,
+            CreatedBy = "creator",
+            CreatedAt = DateTime.UtcNow,
+            IsMuted = true
+        };
+        _db.Channels.Add(mutedChannel);
+
+        var adminUser = new ReservedUsername
+        {
+            Id = Guid.NewGuid(),
+            Username = "admin",
+            Email = "admin@test.com",
+            Provider = ExternalAuthProvider.Google,
+            ExternalUserId = "ext-admin",
+            CreatedAt = DateTime.UtcNow,
+            LastLoginAt = DateTime.UtcNow,
+            IsAdmin = true
+        };
+        _db.ReservedUsernames.Add(adminUser);
+
+        var connectedUser = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = adminUser.Id.ToString(),
+            Username = adminUser.Username,
+            Channel = channel,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastPing = DateTime.UtcNow,
+            ServerInstanceId = "test-instance"
+        };
+        _db.ConnectedUsers.Add(connectedUser);
+
+        // Admin mute individuellement (rare mais possible)
+        var mute = new MutedUser
+        {
+            Id = Guid.NewGuid(),
+            ChannelName = channel,
+            UserId = connectedUser.UserId,
+            MutedByUserId = "creator-id",
+            MutedAt = DateTime.UtcNow
+        };
+        _db.MutedUsers.Add(mute);
+        await _db.SaveChangesAsync();
+
+        var messageRequest = new SendMessageRequest
+        {
+            Content = "Admin message in muted channel",
+            Channel = channel
+        };
+
+        // Act
+        await _hub.SendMessage(messageRequest);
+
+        // Assert
+        // Message sauvegardé
+        var message = await _db.Messages
+            .FirstOrDefaultAsync(m => m.UserId == connectedUser.UserId);
+        Assert.NotNull(message);
+
+        // Pas de broadcast car l'utilisateur est mute individuellement
+        // (le mute individuel prend le dessus sur le statut admin)
+        _groupMock.Verify(
+            g => g.SendCoreAsync("ReceiveMessage", It.IsAny<object[]>(), default),
+            Times.Never);
+    }
+
     public async ValueTask DisposeAsync()
     {
         await _db.DisposeAsync();

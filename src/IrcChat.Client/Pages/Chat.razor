@@ -431,7 +431,7 @@ else
     {
         try
         {
-            var result = await Http.GetFromJsonAsync<List<Message>>($"/api/messages/{currentChannel}");
+            var result = await Http.GetFromJsonAsync<List<Message>>($"/api/messages/{currentChannel}?userId={Auth.UserId}");
             if (result != null)
             {
                 messages = [];

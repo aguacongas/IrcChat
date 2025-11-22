@@ -33,7 +33,7 @@ public class ChatHub(
 
         if (user == null)
         {
-            logger.LogWarning("Tentative de connexion sur un salon   sans expéditeur identifié");
+            logger.LogWarning("Tentative de connexion sur un salon sans expéditeur identifié");
             await Clients.Caller.SendAsync("Error", "Utilisateur non identifié");
             return;
         }
@@ -96,6 +96,37 @@ public class ChatHub(
         var channel = await db.Channels
             .FirstOrDefaultAsync(c => c.Name.ToLower() == request.Channel.ToLower());
 
+        // Vérifier si l'utilisateur est mute dans ce salon
+        var isMuted = await db.MutedUsers
+            .AnyAsync(m => m.ChannelName.ToLower() == request.Channel.ToLower()
+                        && m.UserId == connectedUser.UserId);
+
+        // Créer le message (sauvegardé dans tous les cas pour audit)
+        var message = new Message
+        {
+            Id = Guid.NewGuid(),
+            UserId = connectedUser.UserId,
+            Username = connectedUser.Username,
+            Content = request.Content,
+            Channel = request.Channel,
+            Timestamp = DateTime.UtcNow,
+            IsDeleted = false
+        };
+
+        db.Messages.Add(message);
+        await db.SaveChangesAsync();
+
+        if (isMuted)
+        {
+            // L'utilisateur mute ne reçoit AUCUNE notification
+            // Son message est sauvegardé en BDD mais pas diffusé
+            logger.LogInformation(
+                "Message de l'utilisateur mute {UserId} sauvegardé mais non diffusé dans {Channel}",
+                connectedUser.UserId, request.Channel);
+            return;
+        }
+
+        // Vérifier si le salon est en mode mute général
         if (channel != null && channel.IsMuted)
         {
             var user = await db.ReservedUsernames
@@ -112,36 +143,12 @@ public class ChatHub(
             }
         }
 
-        var message = new Message
-        {
-            Id = Guid.NewGuid(),
-            UserId = connectedUser.UserId,
-            Username = connectedUser.Username,
-            Content = request.Content,
-            Channel = request.Channel,
-            Timestamp = DateTime.UtcNow,
-            IsDeleted = false
-        };
-
-        db.Messages.Add(message);
-        await db.SaveChangesAsync();
-
-        // Vérifier si l'utilisateur est mute dans ce salon
-        var isMuted = await db.MutedUsers
-            .AnyAsync(m => m.ChannelName.ToLower() == request.Channel.ToLower()
-                        && m.UserId == connectedUser.UserId);
-
-        if (isMuted)
-        {
-            return;
-        }
-
+        // Diffuser le message à tout le groupe
         await Clients.Group(request.Channel).SendAsync("ReceiveMessage", message);
     }
 
     public async Task SendPrivateMessage(SendPrivateMessageRequest request)
     {
-        // Récupérer l'expéditeur
         var sender = await db.ConnectedUsers
             .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
 
@@ -156,9 +163,9 @@ public class ChatHub(
         {
             Id = Guid.NewGuid(),
             SenderUsername = sender.Username,
-            SenderUserId = sender.UserId,           // ✨ UserId de l'expéditeur
+            SenderUserId = sender.UserId,
             RecipientUsername = request.RecipientUsername,
-            RecipientUserId = request.RecipientUserId,     // ✨ UserId du destinataire
+            RecipientUserId = request.RecipientUserId,
             Content = request.Content,
             Timestamp = DateTime.UtcNow,
             IsRead = false
@@ -171,19 +178,16 @@ public class ChatHub(
             "Message privé envoyé de {Sender} (UserId: {SenderUserId}) à {Recipient} (UserId: {RecipientUserId})",
             sender.Username, sender.UserId, request.RecipientUsername, request.RecipientUserId);
 
-        // Récupérer le destinataire (la connexion la plus récente)
         var recipient = await db.ConnectedUsers
             .Where(u => u.UserId == request.RecipientUserId)
             .OrderByDescending(u => u.LastPing)
             .FirstOrDefaultAsync();
 
-        // Envoyer au destinataire s'il est connecté
         if (recipient?.ConnectionId != null)
         {
             await Clients.Client(recipient.ConnectionId).SendAsync("ReceivePrivateMessage", privateMessage);
         }
 
-        // Confirmer à l'expéditeur
         await Clients.Caller.SendAsync("PrivateMessageSent", privateMessage);
     }
 
@@ -199,7 +203,6 @@ public class ChatHub(
             return;
         }
 
-        // Marquer comme lus tous les messages reçus de cet expéditeur
         var unreadMessages = await db.PrivateMessages
             .Where(m => m.RecipientUserId == currentUser.UserId
                      && m.SenderUserId == senderUserId
@@ -213,7 +216,6 @@ public class ChatHub(
 
         await db.SaveChangesAsync();
 
-        // Notifier l'expéditeur que ses messages ont été lus
         var senderConnection = await db.ConnectedUsers
             .Where(u => u.UserId == senderUserId)
             .Select(u => u.ConnectionId)
@@ -226,9 +228,6 @@ public class ChatHub(
         }
     }
 
-    /// <summary>
-    /// Ping avec UserId pour identifier l'utilisateur de manière unique
-    /// </summary>
     public async Task Ping(string username, string userId)
     {
         var user = await db.ConnectedUsers
@@ -239,7 +238,7 @@ public class ChatHub(
             user = new ConnectedUser
             {
                 Username = username,
-                UserId = userId,  // ✨ Stocker le UserId
+                UserId = userId,
                 Channel = null,
                 ConnectionId = Context.ConnectionId,
                 LastPing = DateTime.UtcNow,

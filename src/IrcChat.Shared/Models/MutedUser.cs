@@ -13,19 +13,14 @@ public class MutedUser
     public string ChannelName { get; set; } = string.Empty;
 
     /// <summary>
-    /// Nom d'utilisateur de la personne mutée
-    /// </summary>
-    public string? Username { get; set; }
-
-    /// <summary>
-    /// UserId de la personne mutée
+    /// UserId de la personne mutée (identifiant unique permanent)
     /// </summary>
     public string UserId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Nom d'utilisateur de la personne qui a effectué le mute
+    /// UserId de la personne qui a effectué le mute
     /// </summary>
-    public string MutedBy { get; set; } = string.Empty;
+    public string MutedByUserId { get; set; } = string.Empty;
 
     /// <summary>
     /// Date et heure du mute
