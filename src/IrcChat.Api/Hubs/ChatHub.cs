@@ -96,6 +96,23 @@ public class ChatHub(
         var channel = await db.Channels
             .FirstOrDefaultAsync(c => c.Name.ToLower() == request.Channel.ToLower());
 
+        // Vérifier si le salon est en mode mute général
+        if (channel != null && channel.IsMuted)
+        {
+            var user = await db.ReservedUsernames
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == connectedUser.Username.ToLower());
+
+            var isCreator = channel.CreatedBy.Equals(connectedUser.Username, StringComparison.OrdinalIgnoreCase);
+            var isAdmin = user?.IsAdmin ?? false;
+
+            if (!isCreator && !isAdmin)
+            {
+                await Clients.Caller.SendAsync("MessageBlocked",
+                    "Ce salon est actuellement muet. Seul le créateur ou un administrateur peut envoyer des messages.");
+                return;
+            }
+        }
+
         // Vérifier si l'utilisateur est mute dans ce salon
         var isMuted = await db.MutedUsers
             .AnyAsync(m => m.ChannelName.ToLower() == request.Channel.ToLower()
@@ -124,23 +141,6 @@ public class ChatHub(
                 "Message de l'utilisateur mute {UserId} sauvegardé mais non diffusé dans {Channel}",
                 connectedUser.UserId, request.Channel);
             return;
-        }
-
-        // Vérifier si le salon est en mode mute général
-        if (channel != null && channel.IsMuted)
-        {
-            var user = await db.ReservedUsernames
-                .FirstOrDefaultAsync(u => u.Username.ToLower() == connectedUser.Username.ToLower());
-
-            var isCreator = channel.CreatedBy.Equals(connectedUser.Username, StringComparison.OrdinalIgnoreCase);
-            var isAdmin = user?.IsAdmin ?? false;
-
-            if (!isCreator && !isAdmin)
-            {
-                await Clients.Caller.SendAsync("MessageBlocked",
-                    "Ce salon est actuellement muet. Seul le créateur ou un administrateur peut envoyer des messages.");
-                return;
-            }
         }
 
         // Diffuser le message à tout le groupe

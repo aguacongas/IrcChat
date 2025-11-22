@@ -38,7 +38,7 @@ public class MessageEndpointsTests(ApiWebApplicationFactory factory)
         await db.SaveChangesAsync();
 
         // Act
-        var response = await _client.GetAsync($"/api/messages/{channel}");
+        var response = await _client.GetAsync($"/api/messages/{channel}?userId=test");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
