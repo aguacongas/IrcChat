@@ -62,6 +62,7 @@ public static class WebApplicationExtensions
            .MapChannelDeleteEndpoints()
            .MapPrivateMessageEndpoints()
            .MapAdminManagementEndpoints()
+           .MapMutedUsersEndpoints()
            .MapSignalRHub();
 
     private static WebApplication MapSignalRHub(this WebApplication app)

@@ -4,7 +4,7 @@
  * Stockage dans la table 'ignored-users'
  */
 
-const DB_NAME = 'IrcChatDb';
+const DB_NAME = 'IrcChatIgnoredUser';
 const STORE_NAME = 'ignored-users';
 const DB_VERSION = 1;
 
