@@ -1062,7 +1062,7 @@ public class ChatHubTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task SendMessage_WithMutedUser_ShouldSaveButNotBroadcast()
+    public async Task SendMessage_WithMutedUser_ShouldSaveButNotBroadcastOnlyToCaller()
     {
         // Arrange
         var channel = "general";
@@ -1126,10 +1126,10 @@ public class ChatHubTests : IAsyncDisposable
             g => g.SendCoreAsync("ReceiveMessage", It.IsAny<object[]>(), default),
             Times.Never);
 
-        // Vérifier qu'AUCUN message n'a été envoyé à l'appelant
+        // Vérifier qu'UN message a été envoyé à l'appelant
         _callerMock.Verify(
             c => c.SendCoreAsync("ReceiveMessage", It.IsAny<object[]>(), default),
-            Times.Never);
+            Times.Once);
     }
 
     [Fact]
