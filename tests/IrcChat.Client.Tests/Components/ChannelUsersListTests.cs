@@ -28,7 +28,9 @@ public class ChannelUsersListTests : TestContext
         _ignoredUsersServiceMock.Setup(x => x.InitializeAsync()).Verifiable();
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored(It.IsAny<string>())).Returns(false);
 
-        Services.AddScoped(sp => _mockHttp.ToHttpClient());
+        var httpClient = _mockHttp.ToHttpClient();
+        httpClient.BaseAddress = new Uri("https://localhost:7000");
+        Services.AddScoped(sp => httpClient);
         Services.AddScoped(_ => _ignoredUsersServiceMock.Object);
         Services.AddScoped(_ => _loggerMock.Object);
     }
@@ -247,7 +249,7 @@ public class ChannelUsersListTests : TestContext
         cut.Render();
 
         // Act
-        var muteButton = cut.Find("button.btn-mute");
+        var muteButton = await cut.InvokeAsync(() => cut.Find("button.btn-mute"));
         await cut.InvokeAsync(() => muteButton.Click());
 
         // Attendre la requête
@@ -297,7 +299,7 @@ public class ChannelUsersListTests : TestContext
         cut.Render();
 
         // Act
-        var unmuteButton = cut.Find("button.btn-unmute");
+        var unmuteButton = await cut.InvokeAsync(() => cut.Find("button.btn-unmute"));
         await cut.InvokeAsync(() => unmuteButton.Click());
 
         // Attendre la requête
@@ -340,7 +342,7 @@ public class ChannelUsersListTests : TestContext
         cut.Render();
 
         // Act
-        var muteButton = cut.Find("button.btn-mute");
+        var muteButton = await cut.InvokeAsync(() => cut.Find("button.btn-mute"));
         await cut.InvokeAsync(() => muteButton.Click());
 
         // Attendre la requête
@@ -393,7 +395,7 @@ public class ChannelUsersListTests : TestContext
         cut.Render();
 
         // Act
-        var muteButton = cut.Find("button.btn-mute");
+        var muteButton = await cut.InvokeAsync(() => cut.Find("button.btn-mute"));
         await cut.InvokeAsync(() => muteButton.Click());
 
         // Attendre la requête et le callback
@@ -449,7 +451,7 @@ public class ChannelUsersListTests : TestContext
         cut.Render();
 
         // Act
-        var unmuteButton = cut.Find("button.btn-unmute");
+        var unmuteButton = await cut.InvokeAsync(() => cut.Find("button.btn-unmute"));
         await cut.InvokeAsync(() => unmuteButton.Click());
 
         // Attendre la requête et le callback

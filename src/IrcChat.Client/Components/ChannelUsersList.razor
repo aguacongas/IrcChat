@@ -172,13 +172,13 @@
             {
                 _mutedUserIds.Add(user.UserId);
                 _successMessage = $"{user.Username} a été rendu muet dans le salon";
+                await OnUserMuted.InvokeAsync(user.UserId);
+
                 StateHasChanged();
 
                 // Effacer le message après 3 secondes
                 await Task.Delay(3000);
                 _successMessage = string.Empty;
-
-                await OnUserMuted.InvokeAsync(user.UserId);
             }
             else
             {
@@ -220,13 +220,13 @@
             {
                 _mutedUserIds.Remove(user.UserId);
                 _successMessage = $"{user.Username} peut à nouveau parler dans le salon";
+                await OnUserUnmuted.InvokeAsync(user.UserId);
+
                 StateHasChanged();
 
                 // Effacer le message après 3 secondes
                 await Task.Delay(3000);
                 _successMessage = string.Empty;
-
-                await OnUserUnmuted.InvokeAsync(user.UserId);
             }
             else
             {
