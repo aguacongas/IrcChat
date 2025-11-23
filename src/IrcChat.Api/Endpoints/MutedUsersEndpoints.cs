@@ -59,14 +59,14 @@ public static class MutedUsersEndpoints
 
         var userInfoDict = userInfos.ToDictionary(u => u.Id.ToString(), u => u.Username);
 
-        var result = mutedUsers.Select(m => new
+        var result = mutedUsers.Select(m => new MutedUserResponse
         {
-            m.UserId,
+            UserId = m.UserId,
             Username = userInfoDict.TryGetValue(m.UserId, out var username) ? username : "Unknown",
-            m.MutedByUserId,
+            MutedByUserId = m.MutedByUserId,
             MutedByUsername = userInfoDict.TryGetValue(m.MutedByUserId, out var mutedBy) ? mutedBy : "Unknown",
-            m.MutedAt,
-            m.Reason
+            MutedAt = m.MutedAt,
+            Reason = m.Reason
         }).ToList();
 
         return Results.Ok(result);

@@ -42,7 +42,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var result = await response.Content.ReadFromJsonAsync<List<object>>();
+        var result = await response.Content.ReadFromJsonAsync<List<MutedUserResponse>>();
         Assert.NotNull(result);
         Assert.Empty(result);
     }
@@ -104,9 +104,16 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var result = await response.Content.ReadFromJsonAsync<List<Dictionary<string, object>>>();
+        var result = await response.Content.ReadFromJsonAsync<List<MutedUserResponse>>();
         Assert.NotNull(result);
         Assert.Single(result);
+
+        var firstMute = result[0];
+        Assert.Equal(mutedUser.Id.ToString(), firstMute.UserId);
+        Assert.Equal("muteduser", firstMute.Username);
+        Assert.Equal(creator.Id.ToString(), firstMute.MutedByUserId);
+        Assert.Equal("creator", firstMute.MutedByUsername);
+        Assert.Equal("Spam", firstMute.Reason);
     }
 
     [Fact]

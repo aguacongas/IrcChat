@@ -1,7 +1,10 @@
 @using IrcChat.Client.Services
 @using IrcChat.Shared.Models
+@using System.Net.Http.Json
 @inject IIgnoredUsersService IgnoredUsersService
+@inject HttpClient HttpClient
 @inject ILogger<ChannelUsersList> Logger
+@inject NavigationManager Navigation
 
 <div class="channel-users-list">
     @if (Users?.Any() == true)
@@ -13,9 +16,45 @@
                 <li class="user-item @(IgnoredUsersService.IsUserIgnored(user.UserId) ? "ignored" : "") @(user.Username == Username ? "current" : "")"
                     @onclick="() => OnUserClicked.InvokeAsync(user)">
                     <span class="user-name">@user.Username</span>
+
                     @if (IgnoredUsersService.IsUserIgnored(user.UserId))
                     {
                         <span class="ignore-indicator" title="Vous ignorez cet utilisateur">🚫</span>
+                    }
+
+                    @if (CanModifyChannel && user.Username != Username && !IsMutedUser(user.UserId))
+                    {
+                        <button class="btn-mute"
+                                @onclick="(MouseEventArgs e) => MuteUserAsync(user, ChannelName, e)"
+                                @onclick:stopPropagation="true"
+                                title="Rendre mute cet utilisateur"
+                                disabled="@_isMuting">
+                            @if (_isMuting && _mutingUserId == user.UserId)
+                            {
+                                <span>⏳</span>
+                            }
+                            else
+                            {
+                                <span>🔇</span>
+                            }
+                        </button>
+                    }
+                    else if (CanModifyChannel && user.Username != Username && IsMutedUser(user.UserId))
+                    {
+                        <button class="btn-unmute"
+                                @onclick="(MouseEventArgs e) => UnmuteUserAsync(user, ChannelName, e)"
+                                @onclick:stopPropagation="true"
+                                title="Retirer le mute de cet utilisateur"
+                                disabled="@_isMuting">
+                            @if (_isMuting && _mutingUserId == user.UserId)
+                            {
+                                <span>⏳</span>
+                            }
+                            else
+                            {
+                                <span>🔊</span>
+                            }
+                        </button>
                     }
                 </li>
             }
@@ -25,6 +64,16 @@
     {
         <div class="empty-state">Aucun utilisateur connecté</div>
     }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="error-message">@_errorMessage</div>
+    }
+
+    @if (!string.IsNullOrEmpty(_successMessage))
+    {
+        <div class="success-message">@_successMessage</div>
+    }
 </div>
 
 @code {
@@ -33,20 +82,168 @@
     public List<User> Users { get; set; } = [];
 
     [Parameter]
+    [EditorRequired]
+    public string ChannelName { get; set; } = string.Empty;
+
+    [Parameter]
     public string Username { get; set; } = string.Empty;
 
     [Parameter]
+    public bool CanModifyChannel { get; set; }
+
+    [Parameter]
     public EventCallback<User> OnUserClicked { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnUserMuted { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnUserUnmuted { get; set; }
+
+    private List<string> _mutedUserIds = [];
+    private bool _isMuting;
+    private string _mutingUserId = string.Empty;
+    private string _errorMessage = string.Empty;
+    private string _successMessage = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             await IgnoredUsersService.InitializeAsync();
+            await LoadMutedUsersAsync();
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Erreur lors de l'initialisation du composant");
+            _errorMessage = "Erreur lors du chargement des utilisateurs mutés";
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(ChannelName))
+        {
+            await LoadMutedUsersAsync();
+        }
+    }
+
+    private async Task LoadMutedUsersAsync()
+    {
+        try
+        {
+            var response = await HttpClient.GetAsync($"/api/channels/{Uri.EscapeDataString(ChannelName)}/muted-users");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var mutedUsers = await response.Content.ReadFromJsonAsync<List<MutedUserResponse>>();
+                _mutedUserIds = mutedUsers?
+                    .Select(m => m.UserId)
+                    .ToList() ?? [];
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Erreur lors du chargement de la liste des utilisateurs mutés");
+        }
+    }
+
+    private bool IsMutedUser(string userId) => _mutedUserIds.Contains(userId);
+
+    private async Task MuteUserAsync(User user, string channelName, MouseEventArgs e)
+    {
+        if (_isMuting)
+        {
+            return;
+        }
+
+        _isMuting = true;
+        _mutingUserId = user.UserId;
+        _errorMessage = string.Empty;
+        _successMessage = string.Empty;
+
+        try
+        {
+            var response = await HttpClient.PostAsJsonAsync(
+                $"/api/channels/{Uri.EscapeDataString(channelName)}/muted-users/{Uri.EscapeDataString(user.UserId)}",
+                new { reason = "" });
+
+            if (response.IsSuccessStatusCode)
+            {
+                _mutedUserIds.Add(user.UserId);
+                _successMessage = $"{user.Username} a été rendu muet dans le salon";
+                StateHasChanged();
+
+                // Effacer le message après 3 secondes
+                await Task.Delay(3000);
+                _successMessage = string.Empty;
+
+                await OnUserMuted.InvokeAsync(user.UserId);
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Logger.LogError("Erreur lors du mute: {Error}", error);
+                _errorMessage = "Impossible de rendre l'utilisateur muet";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors du mute de {Username}", user.Username);
+            _errorMessage = "Une erreur s'est produite lors du mute";
+        }
+        finally
+        {
+            _isMuting = false;
+            _mutingUserId = string.Empty;
+        }
+    }
+
+    private async Task UnmuteUserAsync(User user, string channelName, MouseEventArgs e)
+    {
+        if (_isMuting)
+        {
+            return;
+        }
+
+        _isMuting = true;
+        _mutingUserId = user.UserId;
+        _errorMessage = string.Empty;
+        _successMessage = string.Empty;
+
+        try
+        {
+            var response = await HttpClient.DeleteAsync(
+                $"/api/channels/{Uri.EscapeDataString(channelName)}/muted-users/{Uri.EscapeDataString(user.UserId)}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                _mutedUserIds.Remove(user.UserId);
+                _successMessage = $"{user.Username} peut à nouveau parler dans le salon";
+                StateHasChanged();
+
+                // Effacer le message après 3 secondes
+                await Task.Delay(3000);
+                _successMessage = string.Empty;
+
+                await OnUserUnmuted.InvokeAsync(user.UserId);
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Logger.LogError("Erreur lors de l'unmute: {Error}", error);
+                _errorMessage = "Impossible de retirer le mute de l'utilisateur";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de l'unmute de {Username}", user.Username);
+            _errorMessage = "Une erreur s'est produite lors du retrait du mute";
+        }
+        finally
+        {
+            _isMuting = false;
+            _mutingUserId = string.Empty;
         }
     }
 }

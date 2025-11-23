@@ -70,8 +70,12 @@
             {
                 <div class="chat-users @(UsersListOpen ? "visible" : "hidden")">
                     <ChannelUsersList Users="@Users"
+                                      ChannelName="@CurrentChannel"
                                       Username="@Username"
-                                      OnUserClicked="OnUserClicked" />
+                                      CanModifyChannel="@CanManage"
+                                      OnUserClicked="OnUserClicked"
+                                      OnUserMuted="OnUserMuted"
+                                      OnUserUnmuted="OnUserUnmuted" />
                 </div>
             }
         </div>
@@ -129,4 +133,10 @@
 
     [Parameter]
     public EventCallback OnClosePrivateConversation { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnUserMuted { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnUserUnmuted { get; set; }
 }
