@@ -265,37 +265,38 @@ public class ChannelUsersListTests : TestContext
     public async Task UnmuteButton_WhenClicked_ShouldCallUnmuteEndpoint()
     {
         // Arrange
+        var channelName = Guid.NewGuid().ToString();
         var users = new List<User>
         {
-            new() { UserId = "user1", Username = "Alice" },
-            new() { UserId = "user2", Username = "Bob" }
+            new() { UserId = "user3", Username = "Alice" },
+            new() { UserId = "user4", Username = "Bob" }
         };
 
         var mutedUsersData = new List<dynamic>
         {
-            new { userId = "user1", username = "Alice", mutedAt = DateTime.UtcNow }
+            new { userId = "user3", username = "Alice", mutedAt = DateTime.UtcNow }
         };
 
         var getMutedUsersRequest = _mockHttp
-            .When(HttpMethod.Get, "*/api/channels/general/muted-users")
+            .When(HttpMethod.Get, $"*/api/channels/{channelName}/muted-users")
             .Respond(System.Net.HttpStatusCode.OK, JsonContent.Create(mutedUsersData));
 
         var deleteUnmuteRequest = _mockHttp
-            .When(HttpMethod.Delete, "*/api/channels/general/muted-users/user1")
+            .When(HttpMethod.Delete, $"*/api/channels/{channelName}/muted-users/user3")
             .Respond(System.Net.HttpStatusCode.OK, JsonContent.Create(new
             {
-                channelName = "general",
-                userId = "user1",
+                channelName = channelName,
+                userId = "user3",
                 username = "Alice"
             }));
 
         var cut = RenderComponent<ChannelUsersList>(parameters => parameters
             .Add(p => p.Users, users)
-            .Add(p => p.ChannelName, "general")
+            .Add(p => p.ChannelName, channelName)
             .Add(p => p.Username, "Charlie")
             .Add(p => p.CanModifyChannel, true));
 
-        cut.WaitForState(() => cut.Markup.Contains("Alice"), TimeSpan.FromSeconds(2));
+        cut.WaitForState(() => cut.Markup.Contains("btn-unmute"), TimeSpan.FromSeconds(2));
         cut.Render();
 
         // Act
