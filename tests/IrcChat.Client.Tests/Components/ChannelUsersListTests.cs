@@ -3,7 +3,6 @@ using Bunit;
 using IrcChat.Client.Components;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
-using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -45,7 +44,7 @@ public class ChannelUsersListTests : TestContext
             new() { UserId = "user2", Username = "Bob" }
         };
 
-        var getMutedUsersRequest = _mockHttp
+        _mockHttp
             .When(HttpMethod.Get, "*/api/channels/general/muted-users")
             .Respond(System.Net.HttpStatusCode.OK,
                 JsonContent.Create(new List<dynamic>()));
@@ -72,7 +71,7 @@ public class ChannelUsersListTests : TestContext
         // Arrange
         var users = new List<User>();
 
-        var getMutedUsersRequest = _mockHttp
+        _mockHttp
             .When(HttpMethod.Get, "*/api/channels/general/muted-users")
             .Respond(System.Net.HttpStatusCode.OK,
                 JsonContent.Create(new List<dynamic>()));
@@ -102,7 +101,7 @@ public class ChannelUsersListTests : TestContext
 
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("user1")).Returns(true);
 
-        var getMutedUsersRequest = _mockHttp
+        _mockHttp
             .When(HttpMethod.Get, "*/api/channels/general/muted-users")
             .Respond(System.Net.HttpStatusCode.OK,
                 JsonContent.Create(new List<dynamic>()));
@@ -134,7 +133,7 @@ public class ChannelUsersListTests : TestContext
             new() { UserId = "user2", Username = "Bob" }
         };
 
-        var getMutedUsersRequest = _mockHttp
+        _mockHttp
             .When(HttpMethod.Get, "*/api/channels/general/muted-users")
             .Respond(System.Net.HttpStatusCode.OK,
                 JsonContent.Create(new List<dynamic>()));
@@ -164,7 +163,7 @@ public class ChannelUsersListTests : TestContext
             new() { UserId = "user2", Username = "Bob" }
         };
 
-        var getMutedUsersRequest = _mockHttp
+        _mockHttp
             .When(HttpMethod.Get, "*/api/channels/general/muted-users")
             .Respond(System.Net.HttpStatusCode.OK,
                 JsonContent.Create(new List<dynamic>()));
@@ -194,7 +193,7 @@ public class ChannelUsersListTests : TestContext
             new() { UserId = "user2", Username = "Bob" }
         };
 
-        var getMutedUsersRequest = _mockHttp
+        _mockHttp
             .When(HttpMethod.Get, "*/api/channels/general/muted-users")
             .Respond(System.Net.HttpStatusCode.OK,
                 JsonContent.Create(new List<dynamic>()));
@@ -224,7 +223,7 @@ public class ChannelUsersListTests : TestContext
             new() { UserId = "user2", Username = "Bob" }
         };
 
-        var getMutedUsersRequest = _mockHttp
+        _mockHttp
             .When(HttpMethod.Get, "*/api/channels/general/muted-users")
             .Respond(System.Net.HttpStatusCode.OK,
                 JsonContent.Create(new List<dynamic>()));
@@ -277,7 +276,7 @@ public class ChannelUsersListTests : TestContext
             new { userId = "user3", username = "Alice", mutedAt = DateTime.UtcNow }
         };
 
-        var getMutedUsersRequest = _mockHttp
+        _mockHttp
             .When(HttpMethod.Get, $"*/api/channels/{channelName}/muted-users")
             .Respond(System.Net.HttpStatusCode.OK, JsonContent.Create(mutedUsersData));
 
@@ -285,7 +284,7 @@ public class ChannelUsersListTests : TestContext
             .When(HttpMethod.Delete, $"*/api/channels/{channelName}/muted-users/user3")
             .Respond(System.Net.HttpStatusCode.OK, JsonContent.Create(new
             {
-                channelName = channelName,
+                channelName,
                 userId = "user3",
                 username = "Alice"
             }));
@@ -321,12 +320,12 @@ public class ChannelUsersListTests : TestContext
             new() { UserId = "user1", Username = "Alice" }
         };
 
-        var getMutedUsersRequest = _mockHttp
+        _mockHttp
             .When(HttpMethod.Get, "*/api/channels/general/muted-users")
             .Respond(System.Net.HttpStatusCode.OK,
                 JsonContent.Create(new List<dynamic>()));
 
-        var postMuteRequest = _mockHttp
+        _mockHttp
             .When(HttpMethod.Post, "*/api/channels/general/muted-users/user1")
             .Respond(System.Net.HttpStatusCode.BadRequest, JsonContent.Create(new
             {
@@ -352,114 +351,5 @@ public class ChannelUsersListTests : TestContext
 
         // Assert
         Assert.Contains("Impossible de rendre l'utilisateur muet", cut.Markup);
-    }
-
-    [Fact]
-    public async Task OnUserMuted_WhenMutingUser_ShouldRaiseCallback()
-    {
-        // Arrange
-        var users = new List<User>
-        {
-            new() { UserId = "user1", Username = "Alice" }
-        };
-
-        var getMutedUsersRequest = _mockHttp
-            .When(HttpMethod.Get, "*/api/channels/general/muted-users")
-            .Respond(System.Net.HttpStatusCode.OK,
-                JsonContent.Create(new List<dynamic>()));
-
-        var postMuteRequest = _mockHttp
-            .When(HttpMethod.Post, "*/api/channels/general/muted-users/user1")
-            .Respond(System.Net.HttpStatusCode.OK, JsonContent.Create(new
-            {
-                channelName = "general",
-                userId = "user1",
-                username = "Alice",
-                mutedAt = DateTime.UtcNow
-            }));
-
-        var callbackInvoked = false;
-        var mutedUserId = string.Empty;
-
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
-            .Add(p => p.Users, users)
-            .Add(p => p.ChannelName, "general")
-            .Add(p => p.Username, "Charlie")
-            .Add(p => p.CanModifyChannel, true)
-            .Add(p => p.OnUserMuted, EventCallback.Factory.Create(this, (string userId) =>
-            {
-                callbackInvoked = true;
-                mutedUserId = userId;
-            })));
-
-        cut.WaitForState(() => cut.Markup.Contains("Alice"), TimeSpan.FromSeconds(2));
-        cut.Render();
-
-        // Act
-        var muteButton = await cut.InvokeAsync(() => cut.Find("button.btn-mute"));
-        await cut.InvokeAsync(() => muteButton.Click());
-
-        // Attendre la requête et le callback
-        await Task.Delay(500);
-
-        // Assert
-        Assert.True(callbackInvoked);
-        Assert.Equal("user1", mutedUserId);
-    }
-
-    [Fact]
-    public async Task OnUserUnmuted_WhenUnmutingUser_ShouldRaiseCallback()
-    {
-        // Arrange
-        var users = new List<User>
-        {
-            new() { UserId = "user1", Username = "Alice" }
-        };
-
-        var mutedUsersData = new List<dynamic>
-        {
-            new { userId = "user1", username = "Alice", mutedAt = DateTime.UtcNow }
-        };
-
-        var getMutedUsersRequest = _mockHttp
-            .When(HttpMethod.Get, "*/api/channels/general/muted-users")
-            .Respond(System.Net.HttpStatusCode.OK, JsonContent.Create(mutedUsersData));
-
-        var deleteUnmuteRequest = _mockHttp
-            .When(HttpMethod.Delete, "*/api/channels/general/muted-users/user1")
-            .Respond(System.Net.HttpStatusCode.OK, JsonContent.Create(new
-            {
-                channelName = "general",
-                userId = "user1",
-                username = "Alice"
-            }));
-
-        var callbackInvoked = false;
-        var unmutedUserId = string.Empty;
-
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
-            .Add(p => p.Users, users)
-            .Add(p => p.ChannelName, "general")
-            .Add(p => p.Username, "Charlie")
-            .Add(p => p.CanModifyChannel, true)
-            .Add(p => p.OnUserUnmuted, EventCallback.Factory.Create(this, (string userId) =>
-            {
-                callbackInvoked = true;
-                unmutedUserId = userId;
-            })));
-
-        cut.WaitForState(() => cut.Markup.Contains("Alice"), TimeSpan.FromSeconds(2));
-        cut.Render();
-
-        // Act
-        var unmuteButton = await cut.InvokeAsync(() => cut.Find("button.btn-unmute"));
-        await cut.InvokeAsync(() => unmuteButton.Click());
-
-        // Attendre la requête et le callback
-        await Task.Delay(500);
-
-        // Assert
-        Assert.True(callbackInvoked);
-        Assert.Equal("user1", unmutedUserId);
     }
 }

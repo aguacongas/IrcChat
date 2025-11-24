@@ -73,9 +73,7 @@ else
                   OnMuteStatusChanged="HandleMuteStatusChanged"
                   OnClosePrivateConversation="ClosePrivateChat"
                   OnChannelDeleted="HandleChannelDeleted"
-                  OnUsersListToggle="HandleUsersListToggle"
-                  OnUserMuted="HandleUserMuted"
-                  OnUserUnmuted="HandleUserUnmuted" />
+                  OnUsersListToggle="HandleUsersListToggle" />
     </div>
 
     @if (!string.IsNullOrEmpty(muteNotification))
@@ -646,18 +644,6 @@ else
         isCurrentChannelMuted = isMuted;
         await LoadChannels();
         StateHasChanged();
-    }
-
-    private Task HandleUserMuted(string userId)
-    {
-        Logger.LogInformation("Utilisateur {UserId} mute via UI", userId);
-        return Task.CompletedTask;
-    }
-
-    private Task HandleUserUnmuted(string userId)
-    {
-        Logger.LogInformation("Utilisateur {UserId} unmute via UI", userId);
-        return Task.CompletedTask;
     }
 
     private bool CanManageCurrentChannel()

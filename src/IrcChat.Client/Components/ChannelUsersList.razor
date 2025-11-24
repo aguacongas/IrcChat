@@ -94,12 +94,6 @@
     [Parameter]
     public EventCallback<User> OnUserClicked { get; set; }
 
-    [Parameter]
-    public EventCallback<string> OnUserMuted { get; set; }
-
-    [Parameter]
-    public EventCallback<string> OnUserUnmuted { get; set; }
-
     private List<string> _mutedUserIds = [];
     private bool _isMuting;
     private string _mutingUserId = string.Empty;
@@ -172,7 +166,6 @@
             {
                 _mutedUserIds.Add(user.UserId);
                 _successMessage = $"{user.Username} a été rendu muet dans le salon";
-                await OnUserMuted.InvokeAsync(user.UserId);
 
                 StateHasChanged();
 
@@ -220,7 +213,6 @@
             {
                 _mutedUserIds.Remove(user.UserId);
                 _successMessage = $"{user.Username} peut à nouveau parler dans le salon";
-                await OnUserUnmuted.InvokeAsync(user.UserId);
 
                 StateHasChanged();
 

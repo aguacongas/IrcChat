@@ -73,9 +73,7 @@
                                       ChannelName="@CurrentChannel"
                                       Username="@Username"
                                       CanModifyChannel="@CanManage"
-                                      OnUserClicked="OnUserClicked"
-                                      OnUserMuted="OnUserMuted"
-                                      OnUserUnmuted="OnUserUnmuted" />
+                                      OnUserClicked="OnUserClicked" />
                 </div>
             }
         </div>
@@ -133,10 +131,4 @@
 
     [Parameter]
     public EventCallback OnClosePrivateConversation { get; set; }
-
-    [Parameter]
-    public EventCallback<string> OnUserMuted { get; set; }
-
-    [Parameter]
-    public EventCallback<string> OnUserUnmuted { get; set; }
 }
