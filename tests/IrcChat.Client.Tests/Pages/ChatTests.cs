@@ -1240,7 +1240,7 @@ public class ChatTests : TestContext
         await Task.Delay(200);
 
         // Act
-        _chatServiceMock.Raise(x => x.OnReconnecting += null, (string?)null);
+        _chatServiceMock.Raise(x => x.OnReconnecting += null, (string?)null!);
         await Task.Delay(200);
         cut.Render();
 
@@ -1501,7 +1501,7 @@ public class ChatTests : TestContext
         await Task.Delay(200);
 
         // Act
-        _chatServiceMock.Raise(x => x.OnReconnected += null);
+        await _chatServiceMock.RaiseAsync(x => x.OnReconnected += null);
         await Task.Delay(200);
         cut.Render();
 
@@ -1528,7 +1528,7 @@ public class ChatTests : TestContext
         await Task.Delay(200);
 
         // Act
-        _chatServiceMock.Raise(x => x.OnReconnecting += null, (string?)null);
+        await _chatServiceMock.RaiseAsync(x => x.OnReconnecting += null, (string?)null!);
         await Task.Delay(200);
         cut.Render();
 
@@ -1580,7 +1580,7 @@ public class ChatTests : TestContext
         Assert.Contains("Connexion perdue", cut.Markup);
 
         // Act - Tentative de reconnexion
-        _chatServiceMock.Raise(x => x.OnReconnecting += null, (string?)null);
+        await _chatServiceMock.RaiseAsync(x => x.OnReconnecting += null, (string?)null!);
         await Task.Delay(200);
         cut.Render();
 
@@ -1649,7 +1649,7 @@ public class ChatTests : TestContext
         Assert.Contains("error", cut.Markup);
 
         // Test Reconnecting
-        _chatServiceMock.Raise(x => x.OnReconnecting += null, (string?)null);
+        await _chatServiceMock.RaiseAsync(x => x.OnReconnecting += null, (string?)null!);
         await Task.Delay(200);
         cut.Render();
         Assert.Contains("warning", cut.Markup);
