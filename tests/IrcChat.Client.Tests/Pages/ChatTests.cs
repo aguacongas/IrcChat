@@ -1492,6 +1492,7 @@ public class ChatTests : TestContext
     }
 
     [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
     public async Task Chat_ConnectionNotification_ShouldAutoHideAfter4Seconds()
     {
         // Arrange
@@ -1501,7 +1502,7 @@ public class ChatTests : TestContext
         await Task.Delay(200);
 
         // Act
-        await _chatServiceMock.RaiseAsync(x => x.OnReconnected += null);
+        _chatServiceMock.Raise(x => x.OnReconnected += null);
         await Task.Delay(200);
         cut.Render();
 
@@ -1528,7 +1529,7 @@ public class ChatTests : TestContext
         await Task.Delay(200);
 
         // Act
-        await _chatServiceMock.RaiseAsync(x => x.OnReconnecting += null, (string?)null!);
+        _chatServiceMock.Raise(x => x.OnReconnecting += null, (string?)null!);
         await Task.Delay(200);
         cut.Render();
 
@@ -1580,7 +1581,7 @@ public class ChatTests : TestContext
         Assert.Contains("Connexion perdue", cut.Markup);
 
         // Act - Tentative de reconnexion
-        await _chatServiceMock.RaiseAsync(x => x.OnReconnecting += null, (string?)null!);
+        _chatServiceMock.Raise(x => x.OnReconnecting += null, (string?)null!);
         await Task.Delay(200);
         cut.Render();
 
@@ -1649,7 +1650,7 @@ public class ChatTests : TestContext
         Assert.Contains("error", cut.Markup);
 
         // Test Reconnecting
-        await _chatServiceMock.RaiseAsync(x => x.OnReconnecting += null, (string?)null!);
+        _chatServiceMock.Raise(x => x.OnReconnecting += null, (string?)null!);
         await Task.Delay(200);
         cut.Render();
         Assert.Contains("warning", cut.Markup);
