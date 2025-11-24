@@ -149,6 +149,8 @@ else
         ChatService.OnChannelNotFound += OnChannelNotFound;
         ChatService.OnChannelListUpdated += OnChannelListUpdated;
         ChatService.OnUserStatusChanged += OnUserStatusChanged;
+        ChatService.OnUserMuted += OnUserMutedSignalR;
+        ChatService.OnUserUnmuted += OnUserUnmutedSignalR;
 
         PrivateMessageService.OnPrivateMessageReceived += OnPrivateMessageReceived;
         PrivateMessageService.OnPrivateMessageSent += OnPrivateMessageSent;
@@ -240,6 +242,38 @@ else
             StateHasChanged();
             await Task.Delay(4000);
             muteNotification = "";
+            StateHasChanged();
+        });
+    }
+
+    private void OnUserMutedSignalR(string channel, string userId, string username, string mutedByUserId, string mutedByUsername)
+    {
+        InvokeAsync(async () =>
+        {
+            Logger.LogInformation("Utilisateur {Username} rendu mute dans {Channel} par {MutedBy}", username, channel, mutedByUsername);
+            
+            // Actualiser la liste des utilisateurs si c'est le salon courant
+            if (channel == currentChannel && !isPrivateConversation)
+            {
+                await LoadUsers();
+            }
+            
+            StateHasChanged();
+        });
+    }
+
+    private void OnUserUnmutedSignalR(string channel, string userId, string username, string unmutedByUserId, string unmutedByUsername)
+    {
+        InvokeAsync(async () =>
+        {
+            Logger.LogInformation("Utilisateur {Username} reçoit la parole dans {Channel} par {UnmutedBy}", username, channel, unmutedByUsername);
+            
+            // Actualiser la liste des utilisateurs si c'est le salon courant
+            if (channel == currentChannel && !isPrivateConversation)
+            {
+                await LoadUsers();
+            }
+            
             StateHasChanged();
         });
     }
@@ -431,7 +465,7 @@ else
     {
         try
         {
-            var result = await Http.GetFromJsonAsync<List<Message>>($"/api/messages/{currentChannel}?userId={Auth.UserId}");
+            var result = await Http.GetFromJsonAsync<List<Message>>($"/api/messages/{currentChannel}?userId={currentUserId}");
             if (result != null)
             {
                 messages = [];
@@ -672,6 +706,8 @@ else
         ChatService.OnChannelNotFound -= OnChannelNotFound;
         ChatService.OnChannelListUpdated -= OnChannelListUpdated;
         ChatService.OnUserStatusChanged -= OnUserStatusChanged;
+        ChatService.OnUserMuted -= OnUserMutedSignalR;
+        ChatService.OnUserUnmuted -= OnUserUnmutedSignalR;
 
         PrivateMessageService.OnPrivateMessageReceived -= OnPrivateMessageReceived;
         PrivateMessageService.OnPrivateMessageSent -= OnPrivateMessageSent;
@@ -682,7 +718,6 @@ else
 
         GC.SuppressFinalize(this);
     }
-
 
     private sealed class UserStatusResponse
     {

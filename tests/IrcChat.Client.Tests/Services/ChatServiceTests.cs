@@ -965,6 +965,403 @@ public class ChatServiceTests : TestContext
             Times.AtLeastOnce);
     }
 
+    // ============ TESTS POUR USER MUTED/UNMUTED ============
+
+    [Fact]
+    public async Task OnUserMuted_ShouldTriggerEvent()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        Func<object?[], object, Task>? onUserMuted = null;
+        object? onUserMutedState = null;
+
+        hubConnectionMock.Setup(x => x.On("UserMuted", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()))
+            .Callback<string, Type[], Func<object?[], object, Task>, object>((methodName, parameterTypes, handler, state) =>
+            {
+                onUserMuted = handler;
+                onUserMutedState = state;
+            })
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Act without subscription
+        await onUserMuted!(["general", "alice-id", "Alice", "admin-id", "Admin"], onUserMutedState!);
+
+        // Arrange
+        string? mutedChannel = null;
+        string? mutedUserId = null;
+        string? mutedUsername = null;
+        string? mutedByUserId = null;
+        string? mutedByUsername = null;
+
+        service.OnUserMuted += (channel, userId, username, mutedById, mutedByName) =>
+        {
+            mutedChannel = channel;
+            mutedUserId = userId;
+            mutedUsername = username;
+            mutedByUserId = mutedById;
+            mutedByUsername = mutedByName;
+        };
+
+        // Act
+        await onUserMuted!(["general", "alice-id", "Alice", "admin-id", "Admin"], onUserMutedState!);
+
+        // Assert
+        Assert.Equal("general", mutedChannel);
+        Assert.Equal("alice-id", mutedUserId);
+        Assert.Equal("Alice", mutedUsername);
+        Assert.Equal("admin-id", mutedByUserId);
+        Assert.Equal("Admin", mutedByUsername);
+    }
+
+    [Fact]
+    public async Task OnUserUnmuted_ShouldTriggerEvent()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        Func<object?[], object, Task>? onUserUnmuted = null;
+        object? onUserUnmutedState = null;
+
+        hubConnectionMock.Setup(x => x.On("UserUnmuted", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()))
+            .Callback<string, Type[], Func<object?[], object, Task>, object>((methodName, parameterTypes, handler, state) =>
+            {
+                onUserUnmuted = handler;
+                onUserUnmutedState = state;
+            })
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Act without subscription
+        await onUserUnmuted!(["general", "alice-id", "Alice", "admin-id", "Admin"], onUserUnmutedState!);
+
+        // Arrange
+        string? unmutedChannel = null;
+        string? unmutedUserId = null;
+        string? unmutedUsername = null;
+        string? unmutedByUserId = null;
+        string? unmutedByUsername = null;
+
+        service.OnUserUnmuted += (channel, userId, username, unmutedById, unmutedByName) =>
+        {
+            unmutedChannel = channel;
+            unmutedUserId = userId;
+            unmutedUsername = username;
+            unmutedByUserId = unmutedById;
+            unmutedByUsername = unmutedByName;
+        };
+
+        // Act
+        await onUserUnmuted!(["general", "alice-id", "Alice", "admin-id", "Admin"], onUserUnmutedState!);
+
+        // Assert
+        Assert.Equal("general", unmutedChannel);
+        Assert.Equal("alice-id", unmutedUserId);
+        Assert.Equal("Alice", unmutedUsername);
+        Assert.Equal("admin-id", unmutedByUserId);
+        Assert.Equal("Admin", unmutedByUsername);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_ShouldRegisterUserMutedHandler()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionMock.Setup(x => x.On(
+            It.IsAny<string>(),
+            It.IsAny<Type[]>(),
+            It.IsAny<Func<object?[], object, Task>>(),
+            It.IsAny<object>()))
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+        SetConnectedState(hubConnectionMock);
+
+        // Act
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Assert - Vérifier que le handler UserMuted est enregistré
+        hubConnectionMock.Verify(x => x.On("UserMuted", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_ShouldRegisterUserUnmutedHandler()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionMock.Setup(x => x.On(
+            It.IsAny<string>(),
+            It.IsAny<Type[]>(),
+            It.IsAny<Func<object?[], object, Task>>(),
+            It.IsAny<object>()))
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+        SetConnectedState(hubConnectionMock);
+
+        // Act
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Assert - Vérifier que le handler UserUnmuted est enregistré
+        hubConnectionMock.Verify(x => x.On("UserUnmuted", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnUserMuted_MultipleSubscribers_ShouldNotifyAll()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        Func<object?[], object, Task>? onUserMuted = null;
+        object? onUserMutedState = null;
+
+        hubConnectionMock.Setup(x => x.On("UserMuted", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()))
+            .Callback<string, Type[], Func<object?[], object, Task>, object>((methodName, parameterTypes, handler, state) =>
+            {
+                onUserMuted = handler;
+                onUserMutedState = state;
+            })
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        var subscriber1Called = 0;
+        var subscriber2Called = 0;
+
+        service.OnUserMuted += (channel, userId, username, mutedById, mutedByName) => subscriber1Called++;
+        service.OnUserMuted += (channel, userId, username, mutedById, mutedByName) => subscriber2Called++;
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Act
+        await onUserMuted!(["general", "alice-id", "Alice", "admin-id", "Admin"], onUserMutedState!);
+
+        // Assert
+        Assert.Equal(1, subscriber1Called);
+        Assert.Equal(1, subscriber2Called);
+    }
+
+    [Fact]
+    public async Task OnUserUnmuted_MultipleSubscribers_ShouldNotifyAll()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        Func<object?[], object, Task>? onUserUnmuted = null;
+        object? onUserUnmutedState = null;
+
+        hubConnectionMock.Setup(x => x.On("UserUnmuted", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()))
+            .Callback<string, Type[], Func<object?[], object, Task>, object>((methodName, parameterTypes, handler, state) =>
+            {
+                onUserUnmuted = handler;
+                onUserUnmutedState = state;
+            })
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        var subscriber1Called = 0;
+        var subscriber2Called = 0;
+
+        service.OnUserUnmuted += (channel, userId, username, unmutedById, unmutedByName) => subscriber1Called++;
+        service.OnUserUnmuted += (channel, userId, username, unmutedById, unmutedByName) => subscriber2Called++;
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Act
+        await onUserUnmuted!(["general", "alice-id", "Alice", "admin-id", "Admin"], onUserUnmutedState!);
+
+        // Assert
+        Assert.Equal(1, subscriber1Called);
+        Assert.Equal(1, subscriber2Called);
+    }
+
+    [Fact]
+    public async Task OnUserMuted_WithEmptyChannel_ShouldStillTrigger()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        Func<object?[], object, Task>? onUserMuted = null;
+        object? onUserMutedState = null;
+
+        hubConnectionMock.Setup(x => x.On("UserMuted", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()))
+            .Callback<string, Type[], Func<object?[], object, Task>, object>((methodName, parameterTypes, handler, state) =>
+            {
+                onUserMuted = handler;
+                onUserMutedState = state;
+            })
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        var eventTriggered = false;
+        service.OnUserMuted += (channel, userId, username, mutedById, mutedByName) => eventTriggered = true;
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Act
+        await onUserMuted!(["", "alice-id", "Alice", "admin-id", "Admin"], onUserMutedState!);
+
+        // Assert
+        Assert.True(eventTriggered);
+    }
+
+    [Fact]
+    public async Task OnUserUnmuted_WithEmptyChannel_ShouldStillTrigger()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        Func<object?[], object, Task>? onUserUnmuted = null;
+        object? onUserUnmutedState = null;
+
+        hubConnectionMock.Setup(x => x.On("UserUnmuted", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()))
+            .Callback<string, Type[], Func<object?[], object, Task>, object>((methodName, parameterTypes, handler, state) =>
+            {
+                onUserUnmuted = handler;
+                onUserUnmutedState = state;
+            })
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        var eventTriggered = false;
+        service.OnUserUnmuted += (channel, userId, username, unmutedById, unmutedByName) => eventTriggered = true;
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Act
+        await onUserUnmuted!(["", "alice-id", "Alice", "admin-id", "Admin"], onUserUnmutedState!);
+
+        // Assert
+        Assert.True(eventTriggered);
+    }
+
+    [Fact]
+    public async Task OnUserMuted_NoSubscribers_ShouldNotThrow()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        Func<object?[], object, Task>? onUserMuted = null;
+        object? onUserMutedState = null;
+
+        hubConnectionMock.Setup(x => x.On("UserMuted", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()))
+            .Callback<string, Type[], Func<object?[], object, Task>, object>((methodName, parameterTypes, handler, state) =>
+            {
+                onUserMuted = handler;
+                onUserMutedState = state;
+            })
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Act & Assert - Devrait ne pas lancer d'exception
+        await onUserMuted!(["general", "alice-id", "Alice", "admin-id", "Admin"], onUserMutedState!);
+        Assert.True(true);
+    }
+
+    [Fact]
+    public async Task OnUserUnmuted_NoSubscribers_ShouldNotThrow()
+    {
+        // Arrange
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        Func<object?[], object, Task>? onUserUnmuted = null;
+        object? onUserUnmutedState = null;
+
+        hubConnectionMock.Setup(x => x.On("UserUnmuted", It.IsAny<Type[]>(), It.IsAny<Func<object?[], object, Task>>(), It.IsAny<object>()))
+            .Callback<string, Type[], Func<object?[], object, Task>, object>((methodName, parameterTypes, handler, state) =>
+            {
+                onUserUnmuted = handler;
+                onUserUnmutedState = state;
+            })
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Act & Assert - Devrait ne pas lancer d'exception
+        await onUserUnmuted!(["general", "alice-id", "Alice", "admin-id", "Admin"], onUserUnmutedState!);
+        Assert.True(true);
+    }
+
+    [Fact]
+    public void ChatService_OnUserMuted_PropertyExists()
+    {
+        // Arrange
+
+        // Act & Assert - Vérifier que les propriétés d'événements existent
+        var userMutedEvent = typeof(ChatService).GetEvent("OnUserMuted");
+        var userUnmutedEvent = typeof(ChatService).GetEvent("OnUserUnmuted");
+
+        Assert.NotNull(userMutedEvent);
+        Assert.NotNull(userUnmutedEvent);
+    }
+
     private static void SetConnectedState(Mock<HubConnectionStub> hubConnectionMock)
     {
         // Simuler l'état connecté
@@ -973,7 +1370,6 @@ public class ChatServiceTests : TestContext
         var changeStateMethod = internalState!.GetType().GetMethod("ChangeState", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
         changeStateMethod!.Invoke(internalState, [HubConnectionState.Disconnected, HubConnectionState.Connected]);
     }
-
 }
 
 

@@ -140,6 +140,7 @@ public class ChatHub(
             logger.LogInformation(
                 "Message de l'utilisateur mute {UserId} sauvegardé mais non diffusé dans {Channel}",
                 connectedUser.UserId, request.Channel);
+            await Clients.Caller.SendAsync("ReceiveMessage", message);
             return;
         }
 

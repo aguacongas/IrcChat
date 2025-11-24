@@ -54,19 +54,19 @@ public static class MutedUsersEndpoints
 
         var userInfos = await db.ConnectedUsers
             .Where(u => allIds.Contains(u.UserId))
-            .Select(u => new { u.Id, u.Username })
+            .Select(u => new { u.UserId, u.Username })
             .ToListAsync();
 
-        var userInfoDict = userInfos.ToDictionary(u => u.Id.ToString(), u => u.Username);
+        var userInfoDict = userInfos.ToDictionary(u => u.UserId, u => u.Username);
 
-        var result = mutedUsers.Select(m => new
+        var result = mutedUsers.Select(m => new MutedUserResponse
         {
-            m.UserId,
+            UserId = m.UserId,
             Username = userInfoDict.TryGetValue(m.UserId, out var username) ? username : "Unknown",
-            m.MutedByUserId,
+            MutedByUserId = m.MutedByUserId,
             MutedByUsername = userInfoDict.TryGetValue(m.MutedByUserId, out var mutedBy) ? mutedBy : "Unknown",
-            m.MutedAt,
-            m.Reason
+            MutedAt = m.MutedAt,
+            Reason = m.Reason
         }).ToList();
 
         return Results.Ok(result);

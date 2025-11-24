@@ -42,7 +42,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var result = await response.Content.ReadFromJsonAsync<List<object>>();
+        var result = await response.Content.ReadFromJsonAsync<List<MutedUserResponse>>();
         Assert.NotNull(result);
         Assert.Empty(result);
     }
@@ -53,30 +53,21 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
         // Arrange
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
-
-        var creator = new ReservedUsername
+        var creator = new ConnectedUser
         {
             Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
             Username = "creator",
-            Email = "creator@test.com",
-            Provider = ExternalAuthProvider.Google,
-            ExternalUserId = "ext-creator",
-            CreatedAt = DateTime.UtcNow,
-            LastLoginAt = DateTime.UtcNow
         };
 
-        var mutedUser = new ReservedUsername
+        var mutedUser = new ConnectedUser
         {
             Id = Guid.NewGuid(),
-            Username = "muteduser",
-            Email = "muted@test.com",
-            Provider = ExternalAuthProvider.Google,
-            ExternalUserId = "ext-muted",
-            CreatedAt = DateTime.UtcNow,
-            LastLoginAt = DateTime.UtcNow
+            UserId = Guid.NewGuid().ToString(),
+            Username = "muteduser"
         };
 
-        db.ReservedUsernames.AddRange(creator, mutedUser);
+        db.ConnectedUsers.AddRange(mutedUser, creator);
 
         var channel = new Channel
         {
@@ -87,12 +78,13 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
         };
         db.Channels.Add(channel);
 
+
         var mute = new MutedUser
         {
             Id = Guid.NewGuid(),
             ChannelName = channel.Name,
-            UserId = mutedUser.Id.ToString(),
-            MutedByUserId = creator.Id.ToString(),
+            UserId = mutedUser.UserId,
+            MutedByUserId = creator.UserId,
             MutedAt = DateTime.UtcNow,
             Reason = "Spam"
         };
@@ -104,9 +96,16 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var result = await response.Content.ReadFromJsonAsync<List<Dictionary<string, object>>>();
+        var result = await response.Content.ReadFromJsonAsync<List<MutedUserResponse>>();
         Assert.NotNull(result);
         Assert.Single(result);
+
+        var firstMute = result[0];
+        Assert.Equal(mutedUser.UserId, firstMute.UserId);
+        Assert.Equal("muteduser", firstMute.Username);
+        Assert.Equal(creator.UserId, firstMute.MutedByUserId);
+        Assert.Equal("creator", firstMute.MutedByUsername);
+        Assert.Equal("Spam", firstMute.Reason);
     }
 
     [Fact]

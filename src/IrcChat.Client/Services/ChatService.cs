@@ -27,6 +27,9 @@ public class ChatService(IPrivateMessageService privateMessageService,
     // Event pour le statut de connexion des utilisateurs
     public event Action<string, bool>? OnUserStatusChanged;
 
+    public event Action<string, string, string, string, string>? OnUserMuted;
+    public event Action<string, string, string, string, string>? OnUserUnmuted;
+
     public bool IsInitialized => _hubConnection != null && _hubConnection.State == HubConnectionState.Connected;
 
     public async Task InitializeAsync(IHubConnectionBuilder hubConnectionBuilder)
@@ -61,6 +64,18 @@ public class ChatService(IPrivateMessageService privateMessageService,
         _hubConnection.On<PrivateMessage>("PrivateMessageSent", message => privateMessageService.NotifyPrivateMessageSent(message));
 
         _hubConnection.On<string, List<Guid>>("PrivateMessagesRead", (username, messageIds) => privateMessageService.NotifyMessagesRead(username, messageIds));
+
+        // Handler pour le mute d'un utilisateur
+        _hubConnection.On<string, string, string, string, string>(
+            "UserMuted",
+            (channel, userId, username, mutedByUserId, mutedByUsername)
+            => OnUserMuted?.Invoke(channel, userId, username, mutedByUserId, mutedByUsername));
+
+        // Handler pour le unmute d'un utilisateur
+        _hubConnection.On<string, string, string, string, string>(
+            "UserUnmuted",
+            (channel, userId, username, unmutedByUserId, unmutedByUsername)
+            => OnUserUnmuted?.Invoke(channel, userId, username, unmutedByUserId, unmutedByUsername));
 
         await _hubConnection.StartAsync();
 

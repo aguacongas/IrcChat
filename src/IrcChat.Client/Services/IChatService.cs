@@ -23,4 +23,14 @@ public interface IChatService : IAsyncDisposable
     Task SendMessage(SendMessageRequest request);
     Task SendPrivateMessage(SendPrivateMessageRequest request);
     Task MarkPrivateMessagesAsRead(string senderUserId);
+
+    /// <summary>
+    /// Événement levé quand un utilisateur est rendu mute dans un salon
+    /// </summary>
+    event Action<string, string, string, string, string> OnUserMuted;
+
+    /// <summary>
+    /// Événement levé quand un utilisateur reçoit la parole dans un salon
+    /// </summary>
+    event Action<string, string, string, string, string> OnUserUnmuted;
 }
