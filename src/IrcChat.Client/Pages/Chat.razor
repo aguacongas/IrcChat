@@ -76,10 +76,35 @@ else
                   OnUsersListToggle="HandleUsersListToggle" />
     </div>
 
+    @* Notification de mute *@
     @if (!string.IsNullOrEmpty(muteNotification))
     {
         <div class="mute-notification">
             @muteNotification
+        </div>
+    }
+
+    @* Notification de connexion *@
+    @if (!string.IsNullOrEmpty(connectionNotification))
+    {
+        <div class="connection-notification @connectionNotificationClass">
+            <div class="notification-icon">
+                @if (connectionNotificationType == ConnectionNotificationType.Disconnected)
+                {
+                    <span>⚠️</span>
+                }
+                else if (connectionNotificationType == ConnectionNotificationType.Reconnecting)
+                {
+                    <span class="spinner-small"></span>
+                }
+                else if (connectionNotificationType == ConnectionNotificationType.Reconnected)
+                {
+                    <span>✓</span>
+                }
+            </div>
+            <div class="notification-content">
+                @connectionNotification
+            </div>
         </div>
     }
 }
@@ -99,6 +124,11 @@ else
     private bool sidebarOpen = false;
     private bool usersListOpen = false;
     private int totalUnreadCount => privateConversations.Sum(c => c.UnreadCount);
+
+    // Notifications de connexion
+    private string connectionNotification = "";
+    private string connectionNotificationClass = "";
+    private ConnectionNotificationType connectionNotificationType = ConnectionNotificationType.None;    
 
     // Messages privés
     private List<PrivateConversation> privateConversations = new();
@@ -157,6 +187,11 @@ else
         PrivateMessageService.OnUnreadCountChanged += OnUnreadCountChanged;
         PrivateMessageService.OnConversationDeleted += OnConversationDeleted;
 
+        // Événements de connexion
+        ChatService.OnDisconnected += OnSignalRDisconnected;
+        ChatService.OnReconnecting += OnSignalRReconnecting;
+        ChatService.OnReconnected += OnSignalRReconnected;
+
         IgnoredUsersService.OnIgnoredUsersChanged += OnIgnoredUsersChanged;
 
         if (ChatService.IsInitialized)
@@ -189,6 +224,85 @@ else
         {
             Logger.LogError(ex, "Erreur lors de l'initialisation de SignalR");
             isConnected = false;
+        }
+    }
+
+    // Handlers pour les événements de connexion SignalR
+    private void OnSignalRDisconnected()
+    {
+        InvokeAsync(() =>
+        {
+            isConnected = false;
+            ShowConnectionNotification("Connexion perdue. Tentative de reconnexion...", ConnectionNotificationType.Disconnected);
+            StateHasChanged();
+        });
+    }
+
+    private void OnSignalRReconnecting(string? error)
+    {
+        InvokeAsync(() =>
+        {
+            isConnected = false;
+            var message = string.IsNullOrEmpty(error)
+                ? "Reconnexion en cours..."
+                : $"Reconnexion en cours... ({error})";
+            ShowConnectionNotification(message, ConnectionNotificationType.Reconnecting, persistent: true);
+            StateHasChanged();
+        });
+    }
+
+    private void OnSignalRReconnected()
+    {
+        InvokeAsync(async () =>
+        {
+            isConnected = true;
+            ShowConnectionNotification("Reconnexion réussie !", ConnectionNotificationType.Reconnected);
+
+            // Recharger les données après reconnexion
+            await LoadChannels();
+            if (!isPrivateConversation && !string.IsNullOrEmpty(currentChannel))
+            {
+                await LoadMessages();
+                await LoadUsers();
+            }
+            else if (selectedPrivateUser is not null)
+            {
+                await LoadPrivateMessages(selectedPrivateUser.UserId);
+            }
+            await LoadPrivateConversations();
+
+            StateHasChanged();
+        });
+    }
+
+    private void ShowConnectionNotification(string message, ConnectionNotificationType type, bool persistent = false)
+    {
+        connectionNotification = message;
+        connectionNotificationType = type;
+
+        connectionNotificationClass = type switch
+        {
+            ConnectionNotificationType.Disconnected => "error",
+            ConnectionNotificationType.Reconnecting => "warning",
+            ConnectionNotificationType.Reconnected => "success",
+            _ => ""
+        };
+
+        StateHasChanged();
+
+        if (!persistent)
+        {
+            // Auto-masquer après 4 secondes (sauf pour "Reconnecting" qui est persistant)
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(4000);
+                await InvokeAsync(() =>
+                {
+                    connectionNotification = "";
+                    connectionNotificationType = ConnectionNotificationType.None;
+                    StateHasChanged();
+                });
+            });
         }
     }
 
@@ -251,13 +365,13 @@ else
         InvokeAsync(async () =>
         {
             Logger.LogInformation("Utilisateur {Username} rendu mute dans {Channel} par {MutedBy}", username, channel, mutedByUsername);
-            
+
             // Actualiser la liste des utilisateurs si c'est le salon courant
             if (channel == currentChannel && !isPrivateConversation)
             {
                 await LoadUsers();
             }
-            
+
             StateHasChanged();
         });
     }
@@ -267,13 +381,13 @@ else
         InvokeAsync(async () =>
         {
             Logger.LogInformation("Utilisateur {Username} reçoit la parole dans {Channel} par {UnmutedBy}", username, channel, unmutedByUsername);
-            
+
             // Actualiser la liste des utilisateurs si c'est le salon courant
             if (channel == currentChannel && !isPrivateConversation)
             {
                 await LoadUsers();
             }
-            
+
             StateHasChanged();
         });
     }
@@ -547,7 +661,22 @@ else
         isPrivateConversation = true;
         selectedPrivateUser = user;
 
-        if (IgnoredUsersService.IsUserIgnored(user.UserId))
+        await LoadPrivateMessages(user.UserId);
+
+        await ChatService.MarkPrivateMessagesAsRead(user.UserId);
+        await LoadPrivateConversations();
+
+        // Charger le statut de connexion de l'utilisateur
+        await UpdateSelectedUserStatus(user.Username);
+
+        sidebarOpen = false;
+        usersListOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task LoadPrivateMessages(string userId)
+    {
+        if (IgnoredUsersService.IsUserIgnored(userId))
         {
             privateMessages = [
               new PrivateMessage
@@ -559,18 +688,8 @@ else
         }
         else
         {
-            privateMessages = await PrivateMessageService.GetPrivateMessagesAsync(currentUserId, user.UserId);
+            privateMessages = await PrivateMessageService.GetPrivateMessagesAsync(currentUserId, userId);
         }
-        
-        await ChatService.MarkPrivateMessagesAsRead(user.UserId);
-        await LoadPrivateConversations();
-
-        // Charger le statut de connexion de l'utilisateur
-        await UpdateSelectedUserStatus(user.Username);
-
-        sidebarOpen = false;
-        usersListOpen = false;
-        StateHasChanged();
     }
 
     private async Task UpdateSelectedUserStatus(string username)
@@ -724,5 +843,13 @@ else
         public string Username { get; set; } = string.Empty;
         [SuppressMessage("Major Code Smell", "S1144:Unused private types or members should be removed", Justification = "Deserialized")]
         public bool IsOnline { get; set; }
+    }
+
+    private enum ConnectionNotificationType
+    {
+        None,
+        Disconnected,
+        Reconnecting,
+        Reconnected
     }
 }
