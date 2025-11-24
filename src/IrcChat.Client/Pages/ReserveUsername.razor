@@ -77,7 +77,7 @@ else
                 <span>OU</span>
             </div>
 
-            <a href="/login" class="back-link">
+            <a href="javascript.void(0)" class="back-link" @onclick="() => Back()">
                 ← Retour
             </a>
         </div>
@@ -138,5 +138,10 @@ else
         await JS.InvokeVoidAsync("sessionStorage.setItem", "temp_username_to_reserve", usernameToReserve);
         await JS.InvokeVoidAsync("sessionStorage.setItem", "temp_user_id", clientUserId.ToString());
         Navigation.NavigateToRelative($"oauth-login?provider={provider}&mode=reserve");
+    }
+
+    private void Back()
+    {
+        Navigation.NavigateToRelative("login");
     }
 }

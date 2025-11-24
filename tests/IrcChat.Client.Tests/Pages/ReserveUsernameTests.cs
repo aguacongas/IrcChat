@@ -147,7 +147,7 @@ public class ReserveUsernameTests : TestContext
     }
 
     [Fact]
-    public void ReserveUsername_BackLink_ShouldNavigateToLogin()
+    public async Task ReserveUsername_BackLink_ShouldNavigateToLogin()
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
@@ -158,11 +158,12 @@ public class ReserveUsernameTests : TestContext
         var cut = RenderComponent<ReserveUsername>();
 
         // Act
-        var backLink = cut.Find("a[href='/login']");
+        var backLink = await cut.InvokeAsync(() => cut.Find("a.back-link"));
+        backLink.Click();
+        cut.Render();
 
-        // Assert
-        Assert.NotNull(backLink);
-        Assert.Equal("/login", backLink.GetAttribute("href"));
+        // Assert        
+        Assert.Equal("http://localhost/login", _navManager.Uri);
     }
 
     [Fact]
