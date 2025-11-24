@@ -21,7 +21,7 @@ jobs:
     
     steps:
     - name: 📥 Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
@@ -146,7 +146,7 @@ jobs:
 
     steps:
     - name: 📥 Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: 🔧 Setup .NET
       uses: actions/setup-dotnet@v4
@@ -177,7 +177,7 @@ jobs:
     
     steps:
     - name: 📥 Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: 🔍 Dependency Review
       uses: actions/dependency-review-action@v4
@@ -190,7 +190,7 @@ jobs:
     
     steps:
     - name: 📥 Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: 🏷️ Label PR by size
       uses: codelytv/pr-size-labeler@v1
