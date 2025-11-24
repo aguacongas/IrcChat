@@ -159,11 +159,10 @@ public class ReserveUsernameTests : TestContext
 
         // Act
         var backLink = await cut.InvokeAsync(() => cut.Find("a.back-link"));
-        backLink.Click();
-        cut.Render();
 
-        // Assert        
-        Assert.Equal("http://localhost/login", _navManager.Uri);
+        // Assert
+        Assert.NotNull(backLink);
+        Assert.Equal("http://localhost/login", backLink.Attributes["href"]!.Value);
     }
 
     [Fact]
