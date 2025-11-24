@@ -1189,6 +1189,524 @@ public class ChatTests : TestContext
         _chatServiceMock.VerifyAdd(x => x.OnUserUnmuted += It.IsAny<Action<string, string, string, string, string>>());
     }
 
+    // ============ TESTS POUR LES NOTIFICATIONS DE CONNEXION ============
+
+    [Fact]
+    public async Task Chat_OnInitialization_ShouldSubscribeToConnectionEvents()
+    {
+        // Arrange
+        SetupBasicAuth();
+        SetupBasicMocks();
+
+        // Act
+        RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Assert
+        _chatServiceMock.VerifyAdd(x => x.OnDisconnected += It.IsAny<Action>());
+        _chatServiceMock.VerifyAdd(x => x.OnReconnecting += It.IsAny<Action<string?>>());
+        _chatServiceMock.VerifyAdd(x => x.OnReconnected += It.IsAny<Action>());
+    }
+
+    [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
+    public async Task Chat_OnSignalRDisconnected_ShouldShowDisconnectedNotification()
+    {
+        // Arrange
+        SetupBasicAuth();
+        SetupBasicMocks();
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act
+        _chatServiceMock.Raise(x => x.OnDisconnected += null);
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert
+        Assert.Contains("connection-notification", cut.Markup);
+        Assert.Contains("error", cut.Markup);
+        Assert.Contains("Connexion perdue", cut.Markup);
+    }
+
+    [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
+    public async Task Chat_OnSignalRReconnecting_ShouldShowReconnectingNotification()
+    {
+        // Arrange
+        SetupBasicAuth();
+        SetupBasicMocks();
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act
+        _chatServiceMock.Raise(x => x.OnReconnecting += null, (string?)null);
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert
+        Assert.Contains("connection-notification", cut.Markup);
+        Assert.Contains("warning", cut.Markup);
+        Assert.Contains("Reconnexion en cours", cut.Markup);
+    }
+
+    [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
+    public async Task Chat_OnSignalRReconnecting_WithError_ShouldShowErrorMessage()
+    {
+        // Arrange
+        SetupBasicAuth();
+        SetupBasicMocks();
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act
+        _chatServiceMock.Raise(x => x.OnReconnecting += null, "Connection timeout");
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert
+        Assert.Contains("connection-notification", cut.Markup);
+        Assert.Contains("warning", cut.Markup);
+        Assert.Contains("Reconnexion en cours", cut.Markup);
+        Assert.Contains("Connection timeout", cut.Markup);
+    }
+
+    [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
+    public async Task Chat_OnSignalRReconnected_ShouldShowSuccessNotification()
+    {
+        // Arrange
+        SetupBasicAuth();
+        SetupBasicMocks();
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act
+        _chatServiceMock.Raise(x => x.OnReconnected += null);
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert
+        Assert.Contains("connection-notification", cut.Markup);
+        Assert.Contains("success", cut.Markup);
+        Assert.Contains("Reconnexion réussie", cut.Markup);
+    }
+
+    [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
+    public async Task Chat_OnSignalRReconnected_ShouldReloadChannels()
+    {
+        // Arrange
+        SetupBasicAuth();
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        var channelsRequest = _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act
+        _chatServiceMock.Raise(x => x.OnReconnected += null);
+        await Task.Delay(300);
+
+        // Assert - Devrait charger les canaux 2 fois : initial + après reconnexion
+        Assert.Equal(2, _mockHttp.GetMatchCount(channelsRequest));
+    }
+
+    [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
+    public async Task Chat_OnSignalRReconnected_WhenInChannel_ShouldReloadMessagesAndUsers()
+    {
+        // Arrange
+        SetupBasicAuth();
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+        var messages = new List<Message>
+        {
+            new() { Id = Guid.NewGuid(), Username = "User1", Content = "Hello", Channel = "general", Timestamp = DateTime.UtcNow }
+        };
+        var users = new List<User>
+        {
+            new() { UserId = "user1", Username = "User1" }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        var messagesRequest = _mockHttp.When(HttpMethod.Get, "*/api/messages/general*")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
+
+        var usersRequest = _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(users));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+        _chatServiceMock.Setup(x => x.JoinChannel("general")).Returns(Task.CompletedTask);
+        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
+        await Task.Delay(200);
+
+        // Act
+        _chatServiceMock.Raise(x => x.OnReconnected += null);
+        await Task.Delay(300);
+
+        // Assert - Devrait charger messages et users 2 fois : initial + après reconnexion
+        Assert.Equal(2, _mockHttp.GetMatchCount(messagesRequest));
+        Assert.Equal(2, _mockHttp.GetMatchCount(usersRequest));
+    }
+
+    [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
+    public async Task Chat_OnSignalRReconnected_WhenInPrivateChat_ShouldReloadPrivateMessages()
+    {
+        // Arrange
+        SetupBasicAuth();
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+        _mockHttp.When(HttpMethod.Get, "*/api/private-messages/status/Friend")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new { Username = "Friend", IsOnline = true }));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+        _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        var conversations = new List<PrivateConversation>
+        {
+            new() { OtherUser = new User { UserId = "Friend", Username = "Friend" }, LastMessage = "Hi", LastMessageTime = DateTime.UtcNow, UnreadCount = 0 }
+        };
+        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync(conversations);
+        _privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+        await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
+        await Task.Delay(200);
+
+        _privateMessageServiceMock.Invocations.Clear();
+
+        // Act
+        _chatServiceMock.Raise(x => x.OnReconnected += null);
+        await Task.Delay(300);
+
+        // Assert
+        _privateMessageServiceMock.Verify(x => x.GetPrivateMessagesAsync("TestUser", "Friend"), Times.AtLeastOnce);
+    }
+
+    [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
+    public async Task Chat_OnSignalRReconnected_ShouldReloadPrivateConversations()
+    {
+        // Arrange
+        SetupBasicAuth();
+        SetupBasicMocks();
+        var conversations = new List<PrivateConversation>
+        {
+            new() { OtherUser = new User { UserId = "User2", Username = "User2" }, LastMessage = "Hello", LastMessageTime = DateTime.UtcNow, UnreadCount = 1 }
+        };
+        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync(conversations);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        _privateMessageServiceMock.Invocations.Clear();
+
+        // Act
+        _chatServiceMock.Raise(x => x.OnReconnected += null);
+        await Task.Delay(300);
+
+        // Assert
+        _privateMessageServiceMock.Verify(x => x.GetConversationsAsync("TestUser"), Times.AtLeastOnce);
+    }
+
+    [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
+    public async Task Chat_OnSignalRDisconnected_ShouldSetIsConnectedToFalse()
+    {
+        // Arrange
+        SetupBasicAuth();
+        SetupBasicMocks();
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Vérifier que isConnected est true initialement
+        Assert.Contains("● Connecté", cut.Markup);
+
+        // Act
+        _chatServiceMock.Raise(x => x.OnDisconnected += null);
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert - Le statut devrait être déconnecté
+        Assert.Contains("○ Déconnecté", cut.Markup);
+    }
+
+    [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
+    public async Task Chat_OnSignalRReconnected_ShouldSetIsConnectedToTrue()
+    {
+        // Arrange
+        SetupBasicAuth();
+        SetupBasicMocks();
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Simuler une déconnexion
+        _chatServiceMock.Raise(x => x.OnDisconnected += null);
+        await Task.Delay(200);
+        cut.Render();
+
+        // Act
+        _chatServiceMock.Raise(x => x.OnReconnected += null);
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert - Le statut devrait être reconnecté
+        Assert.Contains("● Connecté", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Chat_ConnectionNotification_ShouldAutoHideAfter4Seconds()
+    {
+        // Arrange
+        SetupBasicAuth();
+        SetupBasicMocks();
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act
+        _chatServiceMock.Raise(x => x.OnReconnected += null);
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert - La notification devrait être visible
+        Assert.Contains("connection-notification", cut.Markup);
+        Assert.Contains("Reconnexion réussie", cut.Markup);
+
+        // Wait for auto-hide (4 seconds + buffer)
+        await Task.Delay(4500);
+        cut.Render();
+
+        // Assert - La notification devrait avoir disparu
+        Assert.DoesNotContain("Reconnexion réussie", cut.Markup);
+    }
+
+    [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
+    public async Task Chat_ReconnectingNotification_ShouldBePersistent()
+    {
+        // Arrange
+        SetupBasicAuth();
+        SetupBasicMocks();
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act
+        _chatServiceMock.Raise(x => x.OnReconnecting += null, (string?)null);
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert - La notification devrait être visible
+        Assert.Contains("connection-notification", cut.Markup);
+        Assert.Contains("Reconnexion en cours", cut.Markup);
+
+        // Wait more than 4 seconds
+        await Task.Delay(4500);
+        cut.Render();
+
+        // Assert - La notification devrait toujours être visible (persistante)
+        Assert.Contains("Reconnexion en cours", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Chat_DisposeAsync_ShouldUnsubscribeFromConnectionEvents()
+    {
+        // Arrange
+        SetupBasicAuth();
+        SetupBasicMocks();
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act
+        await cut.Instance.DisposeAsync();
+
+        // Assert
+        _chatServiceMock.VerifyRemove(x => x.OnDisconnected -= It.IsAny<Action>());
+        _chatServiceMock.VerifyRemove(x => x.OnReconnecting -= It.IsAny<Action<string?>>());
+        _chatServiceMock.VerifyRemove(x => x.OnReconnected -= It.IsAny<Action>());
+    }
+
+    [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
+    public async Task Chat_MultipleDisconnections_ShouldUpdateNotification()
+    {
+        // Arrange
+        SetupBasicAuth();
+        SetupBasicMocks();
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act - Première déconnexion
+        _chatServiceMock.Raise(x => x.OnDisconnected += null);
+        await Task.Delay(200);
+        cut.Render();
+
+        Assert.Contains("Connexion perdue", cut.Markup);
+
+        // Act - Tentative de reconnexion
+        _chatServiceMock.Raise(x => x.OnReconnecting += null, (string?)null);
+        await Task.Delay(200);
+        cut.Render();
+
+        Assert.Contains("Reconnexion en cours", cut.Markup);
+
+        // Act - Reconnexion réussie
+        _chatServiceMock.Raise(x => x.OnReconnected += null);
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert
+        Assert.Contains("Reconnexion réussie", cut.Markup);
+    }
+
+    [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
+    public async Task Chat_OnSignalRReconnected_WhenNotInChannelOrPrivateChat_ShouldNotReloadMessages()
+    {
+        // Arrange
+        SetupBasicAuth();
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        var messagesRequest = _mockHttp.When(HttpMethod.Get, "*/api/messages/*")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+
+        var usersRequest = _mockHttp.When(HttpMethod.Get, "*/api/channels/*/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<User>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act - Reconnexion sans être dans un canal
+        _chatServiceMock.Raise(x => x.OnReconnected += null);
+        await Task.Delay(300);
+
+        // Assert - Ne devrait pas charger de messages ou d'utilisateurs
+        Assert.Equal(0, _mockHttp.GetMatchCount(messagesRequest));
+        Assert.Equal(0, _mockHttp.GetMatchCount(usersRequest));
+    }
+
+    [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
+    public async Task Chat_ConnectionNotificationClass_ShouldChangeBasedOnType()
+    {
+        // Arrange
+        SetupBasicAuth();
+        SetupBasicMocks();
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Test Disconnected
+        _chatServiceMock.Raise(x => x.OnDisconnected += null);
+        await Task.Delay(200);
+        cut.Render();
+        Assert.Contains("error", cut.Markup);
+
+        // Test Reconnecting
+        _chatServiceMock.Raise(x => x.OnReconnecting += null, (string?)null);
+        await Task.Delay(200);
+        cut.Render();
+        Assert.Contains("warning", cut.Markup);
+
+        // Test Reconnected
+        _chatServiceMock.Raise(x => x.OnReconnected += null);
+        await Task.Delay(200);
+        cut.Render();
+        Assert.Contains("success", cut.Markup);
+    }
+
+    [Fact]
+    [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
+    public async Task Chat_OnSignalRDisconnected_ShouldNotAffectMuteNotification()
+    {
+        // Arrange
+        SetupBasicAuth();
+        SetupBasicMocks();
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(200);
+
+        // Act - Afficher une notification de mute
+        _chatServiceMock.Raise(x => x.OnMessageBlocked += null, "Ce salon est muet");
+        await Task.Delay(100);
+        cut.Render();
+
+        Assert.Contains("mute-notification", cut.Markup);
+        Assert.Contains("Ce salon est muet", cut.Markup);
+
+        // Act - Déclencher une déconnexion
+        _chatServiceMock.Raise(x => x.OnDisconnected += null);
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert - Les deux notifications devraient être visibles
+        Assert.Contains("mute-notification", cut.Markup);
+        Assert.Contains("Ce salon est muet", cut.Markup);
+        Assert.Contains("connection-notification", cut.Markup);
+        Assert.Contains("Connexion perdue", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Chat_InitializeSignalR_WhenFails_ShouldShowErrorNotification()
+    {
+        // Arrange
+        SetupBasicAuth();
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .ThrowsAsync(new Exception("Connection failed"));
+
+        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        // Act
+        var cut = RenderComponent<Chat>();
+        await Task.Delay(300);
+        cut.Render();
+
+        // Assert - Devrait avoir isConnected = false
+        Assert.Contains("○ Déconnecté", cut.Markup);
+    }
+
     private void SetupBasicAuth(string username = "TestUser")
     {
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);

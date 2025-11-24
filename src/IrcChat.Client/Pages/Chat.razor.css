@@ -161,7 +161,6 @@
 /* Responsive */
 @media (max-width: 1024px) {
   .mute-notification {
-    max-width: 90%;
     font-size: 13px;
     padding: 12px 16px;
     left: 10px;
@@ -175,7 +174,6 @@
   }
 
   .connection-notification {
-    max-width: 90%;
     font-size: 13px;
     padding: 12px 16px;
     left: 10px;
