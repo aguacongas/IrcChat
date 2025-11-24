@@ -1445,8 +1445,12 @@ public class ChatTests : TestContext
         // Arrange
         SetupBasicAuth();
         SetupBasicMocks();
+
         var cut = RenderComponent<Chat>();
-        await Task.Delay(200);
+        cut.WaitForElement("ul.channel-list > li");
+
+        var channelListItem = await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]"));
+        channelListItem.Click();
 
         // Vérifier que isConnected est true initialement
         Assert.Contains("● Connecté", cut.Markup);
@@ -1468,7 +1472,10 @@ public class ChatTests : TestContext
         SetupBasicAuth();
         SetupBasicMocks();
         var cut = RenderComponent<Chat>();
-        await Task.Delay(200);
+        cut.WaitForElement("ul.channel-list > li");
+
+        var channelListItem = await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]"));
+        channelListItem.Click();
 
         // Simuler une déconnexion
         _chatServiceMock.Raise(x => x.OnDisconnected += null);
@@ -1704,7 +1711,7 @@ public class ChatTests : TestContext
         cut.Render();
 
         // Assert - Devrait avoir isConnected = false
-        Assert.Contains("○ Déconnecté", cut.Markup);
+        Assert.Contains("Échec de connexion au serveur", cut.Markup);
     }
 
     private void SetupBasicAuth(string username = "TestUser")
@@ -1718,7 +1725,11 @@ public class ChatTests : TestContext
     private void SetupBasicMocks()
     {
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>
+            {
+                new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+            }));
+
         _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))

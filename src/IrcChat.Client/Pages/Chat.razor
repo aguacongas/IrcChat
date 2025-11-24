@@ -224,6 +224,7 @@ else
         {
             Logger.LogError(ex, "Erreur lors de l'initialisation de SignalR");
             isConnected = false;
+            ShowConnectionNotification("Échec de connexion au serveur", ConnectionNotificationType.Disconnected);
         }
     }
 
@@ -827,6 +828,11 @@ else
         ChatService.OnUserStatusChanged -= OnUserStatusChanged;
         ChatService.OnUserMuted -= OnUserMutedSignalR;
         ChatService.OnUserUnmuted -= OnUserUnmutedSignalR;
+
+        // Événements de connexion
+        ChatService.OnDisconnected -= OnSignalRDisconnected;
+        ChatService.OnReconnecting -= OnSignalRReconnecting;
+        ChatService.OnReconnected -= OnSignalRReconnected;
 
         PrivateMessageService.OnPrivateMessageReceived -= OnPrivateMessageReceived;
         PrivateMessageService.OnPrivateMessageSent -= OnPrivateMessageSent;

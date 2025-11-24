@@ -8,6 +8,7 @@ public class ChatService(IPrivateMessageService privateMessageService,
     ILogger<ChatService> logger) : IChatService
 {
     private HubConnection? _hubConnection;
+    private IHubConnectionEvents? _hubConnectionEvents;
     private Timer? _pingTimer;
 
     // Events pour les canaux publics
@@ -36,6 +37,8 @@ public class ChatService(IPrivateMessageService privateMessageService,
     public event Action? OnReconnected;
 
     public bool IsInitialized => _hubConnection != null && _hubConnection.State == HubConnectionState.Connected;
+
+    public Func<HubConnection, IHubConnectionEvents> WrapConnectionEvents { get; set; } = connection => new HubConnectionEventWrapper(connection);
 
     public async Task InitializeAsync(IHubConnectionBuilder hubConnectionBuilder)
     {
@@ -83,9 +86,11 @@ public class ChatService(IPrivateMessageService privateMessageService,
             => OnUserUnmuted?.Invoke(channel, userId, username, unmutedByUserId, unmutedByUsername));
 
         // Handlers pour les événements de connexion
-        _hubConnection.Closed += OnConnectionClosed;
-        _hubConnection.Reconnecting += OnConnectionReconnecting;
-        _hubConnection.Reconnected += OnConnectionReconnected;
+        _hubConnectionEvents = WrapConnectionEvents(_hubConnection);
+
+        _hubConnectionEvents.Closed += OnConnectionClosed;
+        _hubConnectionEvents.Reconnecting += OnConnectionReconnecting;
+        _hubConnectionEvents.Reconnected += OnConnectionReconnected;
 
         await _hubConnection.StartAsync();
         CreatePingTimer();
@@ -142,6 +147,11 @@ public class ChatService(IPrivateMessageService privateMessageService,
 
         if (_hubConnection != null)
         {
+            // Handlers pour les événements de connexion
+            _hubConnectionEvents!.Closed -= OnConnectionClosed;
+            _hubConnectionEvents!.Reconnecting -= OnConnectionReconnecting;
+            _hubConnectionEvents!.Reconnected -= OnConnectionReconnected;
+
             await _hubConnection.DisposeAsync();
         }
 

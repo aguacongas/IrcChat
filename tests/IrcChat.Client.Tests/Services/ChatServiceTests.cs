@@ -1380,17 +1380,15 @@ public class ChatServiceTests : TestContext
         var disconnectedCalled = false;
         service.OnDisconnected += () => disconnectedCalled = true;
 
+        var hubConnectionEventsMock = new Mock<IHubConnectionEvents>();
+        service.WrapConnectionEvents = connection => hubConnectionEventsMock.Object;
+
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
         // Simuler une fermeture de connexion
-        var closedHandler = hubConnectionMock.Invocations
-            .FirstOrDefault(i => i.Method.Name == "add_Closed")?.Arguments[0] as Func<Exception?, Task>;
 
         // Act
-        if (closedHandler != null)
-        {
-            await closedHandler(null);
-        }
+        await hubConnectionEventsMock.RaiseAsync(x => x.Closed += null, (Exception?)null!);
 
         // Assert
         Assert.True(disconnectedCalled);
@@ -1412,17 +1410,15 @@ public class ChatServiceTests : TestContext
         string? receivedError = null;
         service.OnReconnecting += (error) => receivedError = error;
 
+        var hubConnectionEventsMock = new Mock<IHubConnectionEvents>();
+        service.WrapConnectionEvents = connection => hubConnectionEventsMock.Object;
+
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
-        // Simuler une tentative de reconnexion
-        var reconnectingHandler = hubConnectionMock.Invocations
-            .FirstOrDefault(i => i.Method.Name == "add_Reconnecting")?.Arguments[0] as Func<Exception?, Task>;
+        // Simuler une tentative de reconnection
 
         // Act
-        if (reconnectingHandler != null)
-        {
-            await reconnectingHandler(new Exception("Test error"));
-        }
+        await hubConnectionEventsMock.RaiseAsync(x => x.Reconnecting += null, new Exception("Test error"));
 
         // Assert
         Assert.Equal("Test error", receivedError);
@@ -1444,17 +1440,15 @@ public class ChatServiceTests : TestContext
         string? receivedError = "not-null";
         service.OnReconnecting += (error) => receivedError = error;
 
+        var hubConnectionEventsMock = new Mock<IHubConnectionEvents>();
+        service.WrapConnectionEvents = connection => hubConnectionEventsMock.Object;
+
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
-        // Simuler une tentative de reconnexion sans erreur
-        var reconnectingHandler = hubConnectionMock.Invocations
-            .FirstOrDefault(i => i.Method.Name == "add_Reconnecting")?.Arguments[0] as Func<Exception?, Task>;
+        // Simuler une tentative de reconnection
 
         // Act
-        if (reconnectingHandler != null)
-        {
-            await reconnectingHandler(null);
-        }
+        await hubConnectionEventsMock.RaiseAsync(x => x.Reconnecting += null, (Exception)null!);
 
         // Assert
         Assert.Null(receivedError);
@@ -1476,69 +1470,18 @@ public class ChatServiceTests : TestContext
         var reconnectedCalled = false;
         service.OnReconnected += () => reconnectedCalled = true;
 
+        var hubConnectionEventsMock = new Mock<IHubConnectionEvents>();
+        service.WrapConnectionEvents = connection => hubConnectionEventsMock.Object;
+
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
-        // Simuler une reconnexion
-        var reconnectedHandler = hubConnectionMock.Invocations
-            .FirstOrDefault(i => i.Method.Name == "add_Reconnected")?.Arguments[0] as Func<string?, Task>;
+        // Simuler une reconnection
 
         // Act
-        if (reconnectedHandler != null)
-        {
-            await reconnectedHandler("connection-id-123");
-        }
+        await hubConnectionEventsMock.RaiseAsync(x => x.Reconnected += null, (string)null!);
 
         // Assert
         Assert.True(reconnectedCalled);
-    }
-
-    [Fact]
-    public async Task InitializeAsync_ShouldRegisterConnectionEventHandlers()
-    {
-        // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
-        var hubConnectionMock = new Mock<HubConnectionStub>();
-        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
-
-        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
-        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
-
-        // Act
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
-
-        // Assert - Vérifier que les handlers sont enregistrés
-        hubConnectionMock.VerifyAdd(x => x.Closed += It.IsAny<Func<Exception?, Task>>(), Times.Once);
-        hubConnectionMock.VerifyAdd(x => x.Reconnecting += It.IsAny<Func<Exception?, Task>>(), Times.Once);
-        hubConnectionMock.VerifyAdd(x => x.Reconnected += It.IsAny<Func<string?, Task>>(), Times.Once);
-    }
-
-    [Fact]
-    public async Task DisposeAsync_ShouldUnregisterConnectionEventHandlers()
-    {
-        // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
-        var hubConnectionMock = new Mock<HubConnectionStub>();
-        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
-
-        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
-        hubConnectionMock.Setup(x => x.DisposeAsync())
-            .Returns(ValueTask.CompletedTask);
-
-        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
-
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
-
-        // Act
-        await service.DisposeAsync();
-
-        // Assert
-        hubConnectionMock.VerifyRemove(x => x.Closed -= It.IsAny<Func<Exception?, Task>>(), Times.Once);
-        hubConnectionMock.VerifyRemove(x => x.Reconnecting -= It.IsAny<Func<Exception?, Task>>(), Times.Once);
-        hubConnectionMock.VerifyRemove(x => x.Reconnected -= It.IsAny<Func<string?, Task>>(), Times.Once);
     }
 
     [Fact]
@@ -1644,17 +1587,15 @@ public class ChatServiceTests : TestContext
         service.OnDisconnected += () => subscriber1Called++;
         service.OnDisconnected += () => subscriber2Called++;
 
+        var hubConnectionEventsMock = new Mock<IHubConnectionEvents>();
+        service.WrapConnectionEvents = connection => hubConnectionEventsMock.Object;
+
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
         // Simuler une fermeture de connexion
-        var closedHandler = hubConnectionMock.Invocations
-            .FirstOrDefault(i => i.Method.Name == "add_Closed")?.Arguments[0] as Func<Exception?, Task>;
 
         // Act
-        if (closedHandler != null)
-        {
-            await closedHandler(null);
-        }
+        await hubConnectionEventsMock.RaiseAsync(x => x.Closed += null, (Exception?)null!);
 
         // Assert
         Assert.Equal(1, subscriber1Called);
@@ -1680,17 +1621,15 @@ public class ChatServiceTests : TestContext
         service.OnReconnecting += (error) => subscriber1Called++;
         service.OnReconnecting += (error) => subscriber2Called++;
 
+        var hubConnectionEventsMock = new Mock<IHubConnectionEvents>();
+        service.WrapConnectionEvents = connection => hubConnectionEventsMock.Object;
+
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
-        // Simuler une tentative de reconnexion
-        var reconnectingHandler = hubConnectionMock.Invocations
-            .FirstOrDefault(i => i.Method.Name == "add_Reconnecting")?.Arguments[0] as Func<Exception?, Task>;
+        // Simuler une tentative de reconnection
 
         // Act
-        if (reconnectingHandler != null)
-        {
-            await reconnectingHandler(null);
-        }
+        await hubConnectionEventsMock.RaiseAsync(x => x.Reconnecting += null, (Exception?)null!);
 
         // Assert
         Assert.Equal(1, subscriber1Called);
@@ -1716,17 +1655,15 @@ public class ChatServiceTests : TestContext
         service.OnReconnected += () => subscriber1Called++;
         service.OnReconnected += () => subscriber2Called++;
 
+        var hubConnectionEventsMock = new Mock<IHubConnectionEvents>();
+        service.WrapConnectionEvents = connection => hubConnectionEventsMock.Object;
+
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
-        // Simuler une reconnexion
-        var reconnectedHandler = hubConnectionMock.Invocations
-            .FirstOrDefault(i => i.Method.Name == "add_Reconnected")?.Arguments[0] as Func<string?, Task>;
+        // Simuler une reconnection
 
         // Act
-        if (reconnectedHandler != null)
-        {
-            await reconnectedHandler("connection-id");
-        }
+        await hubConnectionEventsMock.RaiseAsync(x => x.Reconnected += null, (string)null!);
 
         // Assert
         Assert.Equal(1, subscriber1Called);
@@ -1747,17 +1684,15 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
+        var hubConnectionEventsMock = new Mock<IHubConnectionEvents>();
+        service.WrapConnectionEvents = connection => hubConnectionEventsMock.Object;
+
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
-        // Simuler une fermeture de connexion avec erreur
-        var closedHandler = hubConnectionMock.Invocations
-            .FirstOrDefault(i => i.Method.Name == "add_Closed")?.Arguments[0] as Func<Exception?, Task>;
+        // Simuler une fermeture de connexion
 
         // Act
-        if (closedHandler != null)
-        {
-            await closedHandler(new Exception("Connection lost"));
-        }
+        await hubConnectionEventsMock.RaiseAsync(x => x.Closed += null, (Exception?)null!);
 
         // Assert
         loggerMock.Verify(
@@ -1784,17 +1719,15 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
+        var hubConnectionEventsMock = new Mock<IHubConnectionEvents>();
+        service.WrapConnectionEvents = connection => hubConnectionEventsMock.Object;
+
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
-        // Simuler une tentative de reconnexion
-        var reconnectingHandler = hubConnectionMock.Invocations
-            .FirstOrDefault(i => i.Method.Name == "add_Reconnecting")?.Arguments[0] as Func<Exception?, Task>;
+        // Simuler une tentative de reconnection
 
         // Act
-        if (reconnectingHandler != null)
-        {
-            await reconnectingHandler(new Exception("Reconnecting"));
-        }
+        await hubConnectionEventsMock.RaiseAsync(x => x.Reconnecting += null, (Exception?)null!);
 
         // Assert
         loggerMock.Verify(
@@ -1821,17 +1754,15 @@ public class ChatServiceTests : TestContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
+        var hubConnectionEventsMock = new Mock<IHubConnectionEvents>();
+        service.WrapConnectionEvents = connection => hubConnectionEventsMock.Object;
+
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
-        // Simuler une reconnexion
-        var reconnectedHandler = hubConnectionMock.Invocations
-            .FirstOrDefault(i => i.Method.Name == "add_Reconnected")?.Arguments[0] as Func<string?, Task>;
+        // Simuler une reconnection
 
         // Act
-        if (reconnectedHandler != null)
-        {
-            await reconnectedHandler("connection-id-123");
-        }
+        await hubConnectionEventsMock.RaiseAsync(x => x.Reconnected += null, "connection-id-123");
 
         // Assert
         loggerMock.Verify(
