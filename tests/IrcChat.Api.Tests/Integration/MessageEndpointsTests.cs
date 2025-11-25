@@ -1,4 +1,3 @@
-// tests/IrcChat.Api.Tests/Integration/MessageEndpointsTests.cs
 using System.Net;
 using System.Net.Http.Json;
 using IrcChat.Api.Data;
@@ -14,22 +13,27 @@ public class MessageEndpointsTests(ApiWebApplicationFactory factory)
     private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
-    public async Task GetMessages_ShouldReturnMessagesForChannel()
+    public async Task GetMessages_ShouldReturnNonDeletedMessagesForChannel()
     {
         // Arrange
         var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
 
         var channel = Guid.NewGuid().ToString();
+        var userId = Guid.NewGuid().ToString();
+
         db.Messages.Add(new Message
         {
+            UserId = userId,
             Username = "testuser",
             Content = "Test message 1",
             Channel = channel,
+            IsDeleted = true,
             Timestamp = DateTime.UtcNow
         });
         db.Messages.Add(new Message
         {
+            UserId = userId,
             Username = "testuser",
             Content = "Test message 2",
             Channel = channel,
@@ -38,12 +42,12 @@ public class MessageEndpointsTests(ApiWebApplicationFactory factory)
         await db.SaveChangesAsync();
 
         // Act
-        var response = await _client.GetAsync($"/api/messages/{channel}?userId=test");
+        var response = await _client.GetAsync($"/api/messages/{channel}?userId={userId}");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var messages = await response.Content.ReadFromJsonAsync<List<Message>>();
         Assert.NotNull(messages);
-        Assert.Equal(2, messages.Count);
+        Assert.Single(messages);
     }
 }

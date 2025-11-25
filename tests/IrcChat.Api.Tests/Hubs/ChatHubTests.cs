@@ -680,6 +680,82 @@ public class ChatHubTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task SendPrivateMessage_WithGlobalyMutedUser_ShouldOnlyNotifySender()
+    {
+        // Arrange
+        var recipientUser = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            Username = "recipient",
+            UserId = Guid.NewGuid().ToString(),
+            Channel = "general",
+            ConnectionId = "recipient-connection-id",
+            ConnectedAt = DateTime.UtcNow,
+            LastPing = DateTime.UtcNow,
+            ServerInstanceId = "test-instance"
+        };
+
+        _db.ConnectedUsers.Add(recipientUser);
+
+        var user = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
+            Username = "sender",
+            Channel = "general",
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
+            LastPing = DateTime.UtcNow.AddMinutes(-5),
+            LastActivity = DateTime.UtcNow.AddMinutes(-10),
+            ServerInstanceId = "test-instance"
+        };
+
+        _db.ConnectedUsers.Add(user);
+
+        var mutedUser = new MutedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.UserId,
+            MutedAt = DateTime.UtcNow,
+            MutedByUserId = "admin",
+            Reason = "Spamming"
+        };
+
+        _db.MutedUsers.Add(mutedUser);
+
+        await _db.SaveChangesAsync();
+
+        var messageRequest = new SendPrivateMessageRequest
+        {
+            RecipientUserId = recipientUser.UserId,
+            RecipientUsername = "recipient",
+            Content = "Private message"
+        };
+
+        // Act
+        await _hub.SendPrivateMessage(messageRequest);
+
+        // Assert
+        var message = await _db.PrivateMessages
+            .FirstOrDefaultAsync(m =>
+                m.SenderUserId == user.UserId &&
+                m.RecipientUserId == messageRequest.RecipientUserId);
+
+        Assert.NotNull(message);
+        Assert.Equal(messageRequest.Content, message!.Content);
+        Assert.False(message.IsRead);
+        Assert.True(message.IsDeletedByRecipient);
+
+        _singleClientMock.Verify(
+            c => c.SendCoreAsync("ReceivePrivateMessage", It.Is<object[]>(args => args.Length == 1), default),
+            Times.Never);
+
+        _callerMock.Verify(
+            c => c.SendCoreAsync("PrivateMessageSent", It.Is<object[]>(args => args.Length == 1), default),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task MarkPrivateMessagesAsRead_ShouldMarkMessagesAndNotifySender()
     {
         // Arrange
@@ -1119,7 +1195,77 @@ public class ChatHubTests : IAsyncDisposable
 
         Assert.NotNull(message);
         Assert.Equal(messageRequest.Channel, message!.Channel);
-        Assert.False(message.IsDeleted);
+        Assert.True(message.IsDeleted);
+
+        // Vérifier qu'AUCUN message n'a été envoyé au groupe
+        _groupMock.Verify(
+            g => g.SendCoreAsync("ReceiveMessage", It.IsAny<object[]>(), default),
+            Times.Never);
+
+        // Vérifier qu'UN message a été envoyé à l'appelant
+        _callerMock.Verify(
+            c => c.SendCoreAsync("ReceiveMessage", It.IsAny<object[]>(), default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendMessage_WithGlobalyMutedUser_ShouldSaveButNotBroadcastOnlyToCaller()
+    {
+        // Arrange
+        var channel = "general";
+
+        var channelEntity = new Channel
+        {
+            Id = Guid.NewGuid(),
+            Name = channel,
+            CreatedBy = "admin",
+            CreatedAt = DateTime.UtcNow,
+            IsMuted = false
+        };
+        _db.Channels.Add(channelEntity);
+
+        var connectedUser = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
+            Username = "muteduser",
+            Channel = channel,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastPing = DateTime.UtcNow,
+            ServerInstanceId = "test-instance"
+        };
+        _db.ConnectedUsers.Add(connectedUser);
+
+        // Muter l'utilisateur
+        var mute = new MutedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = connectedUser.UserId,
+            MutedByUserId = "admin-id",
+            MutedAt = DateTime.UtcNow,
+            Reason = "Spam"
+        };
+        _db.MutedUsers.Add(mute);
+        await _db.SaveChangesAsync();
+
+        var messageRequest = new SendMessageRequest
+        {
+            Content = "This message should be saved but not broadcast",
+            Channel = channel
+        };
+
+        // Act
+        await _hub.SendMessage(messageRequest);
+
+        // Assert
+        // Vérifier que le message est bien sauvegardé en BDD
+        var message = await _db.Messages
+            .FirstOrDefaultAsync(m => m.UserId == connectedUser.UserId && m.Content == messageRequest.Content);
+
+        Assert.NotNull(message);
+        Assert.Equal(messageRequest.Channel, message!.Channel);
+        Assert.True(message.IsDeleted);
 
         // Vérifier qu'AUCUN message n'a été envoyé au groupe
         _groupMock.Verify(

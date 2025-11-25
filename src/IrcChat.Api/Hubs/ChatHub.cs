@@ -115,7 +115,7 @@ public class ChatHub(
 
         // Vérifier si l'utilisateur est mute dans ce salon
         var isMuted = await db.MutedUsers
-            .AnyAsync(m => m.ChannelName.ToLower() == request.Channel.ToLower()
+            .AnyAsync(m => m.ChannelName == null || m.ChannelName.ToLower() == request.Channel.ToLower()
                         && m.UserId == connectedUser.UserId);
 
         // Créer le message (sauvegardé dans tous les cas pour audit)
@@ -127,7 +127,7 @@ public class ChatHub(
             Content = request.Content,
             Channel = request.Channel,
             Timestamp = DateTime.UtcNow,
-            IsDeleted = false
+            IsDeleted = isMuted // Marquer comme supprimé si l'utilisateur est mute pour eviter qu'il soit retourné par les historiques
         };
 
         db.Messages.Add(message);
@@ -135,7 +135,7 @@ public class ChatHub(
 
         if (isMuted)
         {
-            // L'utilisateur mute ne reçoit AUCUNE notification
+            // Seul l'utilisateur mute reçoit la notification
             // Son message est sauvegardé en BDD mais pas diffusé
             logger.LogInformation(
                 "Message de l'utilisateur mute {UserId} sauvegardé mais non diffusé dans {Channel}",
@@ -160,6 +160,11 @@ public class ChatHub(
             return;
         }
 
+        var isGlobalyMute = await db.MutedUsers
+            .Where(m => m.ChannelName == null
+                && (m.UserId == sender.UserId || m.UserId == request.RecipientUserId))
+            .AnyAsync();
+
         var privateMessage = new PrivateMessage
         {
             Id = Guid.NewGuid(),
@@ -169,7 +174,7 @@ public class ChatHub(
             RecipientUserId = request.RecipientUserId,
             Content = request.Content,
             Timestamp = DateTime.UtcNow,
-            IsRead = false
+            IsDeletedByRecipient = isGlobalyMute // Si l'expediteur ou le destinataure est muté globalement, on considère que le destinataire a "supprimé" le message pour qu'il ne le voie pas
         };
 
         db.PrivateMessages.Add(privateMessage);
@@ -184,8 +189,9 @@ public class ChatHub(
             .OrderByDescending(u => u.LastPing)
             .FirstOrDefaultAsync();
 
-        if (recipient?.ConnectionId != null)
+        if (recipient?.ConnectionId != null && !isGlobalyMute)
         {
+            // Si ni le destinataire ni l'expéditeur ne sont globalement mutés, on envoie le message au recipient
             await Clients.Client(recipient.ConnectionId).SendAsync("ReceivePrivateMessage", privateMessage);
         }
 

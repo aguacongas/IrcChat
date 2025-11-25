@@ -63,6 +63,7 @@ public static class WebApplicationExtensions
            .MapPrivateMessageEndpoints()
            .MapAdminManagementEndpoints()
            .MapMutedUsersEndpoints()
+           .MapGlobalMuteEndpoints()
            .MapSignalRHub();
 
     private static WebApplication MapSignalRHub(this WebApplication app)
