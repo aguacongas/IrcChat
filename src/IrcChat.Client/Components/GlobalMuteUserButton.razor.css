@@ -250,12 +250,12 @@
 }
 
 .error-tooltip {
-  background: rgba(252, 129, 129, 0.95);
+  background: rgba(180, 4, 4, 0.95);
   color: #fff;
 }
 
 .success-tooltip {
-  background: rgba(104, 211, 145, 0.95);
+  background: rgba(28, 95, 53, 0.95);
   color: #fff;
 }
 
