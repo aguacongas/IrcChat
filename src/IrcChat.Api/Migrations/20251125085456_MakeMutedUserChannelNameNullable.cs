@@ -1,36 +1,35 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace IrcChat.Api.Migrations
+namespace IrcChat.Api.Migrations;
+
+/// <inheritdoc />
+public partial class MakeMutedUserChannelNameNullable : Migration
 {
     /// <inheritdoc />
-    public partial class MakeMutedUserChannelNameNullable : Migration
+    protected override void Up(MigrationBuilder migrationBuilder)
     {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.AlterColumn<string>(
-                name: "ChannelName",
-                table: "MutedUsers",
-                type: "text",
-                nullable: true,
-                oldClrType: typeof(string),
-                oldType: "text");
-        }
+        migrationBuilder.AlterColumn<string>(
+            name: "ChannelName",
+            table: "MutedUsers",
+            type: "text",
+            nullable: true,
+            oldClrType: typeof(string),
+            oldType: "text");
+    }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.AlterColumn<string>(
-                name: "ChannelName",
-                table: "MutedUsers",
-                type: "text",
-                nullable: false,
-                defaultValue: "",
-                oldClrType: typeof(string),
-                oldType: "text",
-                oldNullable: true);
-        }
+    /// <inheritdoc />
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.AlterColumn<string>(
+            name: "ChannelName",
+            table: "MutedUsers",
+            type: "text",
+            nullable: false,
+            defaultValue: "",
+            oldClrType: typeof(string),
+            oldType: "text",
+            oldNullable: true);
     }
 }
