@@ -1,11 +1,8 @@
-using System.Diagnostics.CodeAnalysis;
 using IrcChat.Api.Data;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace IrcChat.Api.Endpoints;
 
-[SuppressMessage("Performance", "CA1862", Justification = "Not needed in SQL")]
 public static class MessageEndpoints
 {
     public static WebApplication MapMessageEndpoints(this WebApplication app)
@@ -21,28 +18,17 @@ public static class MessageEndpoints
 
     private static async Task<IResult> GetMessagesAsync(
         string channel,
-        [FromQuery] string userId,
         ChatDbContext db)
     {
-        // Récupérer tous les messages non supprimés du salon
+        // Récupérer tous les messages non supprimés du salon des utilisateurs non mutés
         var messages = await db.Messages
-            .Where(m => m.Channel == channel && !m.IsDeleted)
+            .Where(m => m.Channel == channel
+                && !m.IsDeleted)
             .OrderByDescending(m => m.Timestamp)
             .Take(100)
             .OrderBy(m => m.Timestamp)
             .ToListAsync();
 
-        // Récupérer la liste des utilisateurs mutés dans ce salon
-        var mutedUsernames = await db.MutedUsers
-            .Where(m => m.ChannelName.ToLower() == channel.ToLower() && m.UserId != userId)
-            .Select(m => m.UserId)
-            .ToListAsync();
-
-        // Filtrer les messages des utilisateurs mutés
-        var filteredMessages = messages
-            .Where(m => !mutedUsernames.Contains(m.UserId))
-            .ToList();
-
-        return Results.Ok(filteredMessages);
+        return Results.Ok(messages);
     }
 }

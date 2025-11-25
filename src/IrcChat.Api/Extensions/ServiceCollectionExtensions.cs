@@ -98,30 +98,36 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddIrcChatAuthorization(this IServiceCollection services)
     =>  // Ajoute les Authorization Handlers et Policies personnalisés
         services.AddAuthorization(configure =>
-            // Policy pour modification de canal
-            // Cette policy extrait dynamiquement le channelName depuis les route values
-            configure.AddPolicy(AuthorizationPolicies.CanModifyChannel, builder =>
-                builder.RequireAssertion(async context =>
-                {
-                    // Récupérer le HttpContext depuis la ressource
-                    var httpContext = context.Resource as HttpContext;
-                    // Extraire le channelName depuis les route values
-                    // IMPORTANT: Le paramètre de route DOIT s'appeler "channelName"
-                    if (httpContext?.Request.RouteValues.TryGetValue("channelName", out var channelNameObj) == true &&
-                        channelNameObj is string channelName)
+            {
+                // Policy pour modification de canal
+                // Cette policy extrait dynamiquement le channelName depuis les route values
+                configure.AddPolicy(AuthorizationPolicies.CanModifyChannel, builder =>
+                    builder.RequireAssertion(async context =>
                     {
-                        // Créer le requirement avec le channelName extrait
-                        var requirement = new ChannelModificationRequirement(channelName);
-                        // Obtenir l'authorization service et exécuter le handler
-                        var authorizationService = httpContext.RequestServices.GetRequiredService<IAuthorizationService>();
-                        var result = await authorizationService.AuthorizeAsync(context.User, httpContext, requirement);
-                        return result.Succeeded;
-                    }
-                    // Pas de channelName dans la route = échec
-                    return false;
-                })))
+                        // Récupérer le HttpContext depuis la ressource
+                        var httpContext = context.Resource as HttpContext;
+                        // Extraire le channelName depuis les route values
+                        // IMPORTANT: Le paramètre de route DOIT s'appeler "channelName"
+                        if (httpContext?.Request.RouteValues.TryGetValue("channelName", out var channelNameObj) == true &&
+                            channelNameObj is string channelName)
+                        {
+                            // Créer le requirement avec le channelName extrait
+                            var requirement = new ChannelModificationRequirement(channelName);
+                            // Obtenir l'authorization service et exécuter le handler
+                            var authorizationService = httpContext.RequestServices.GetRequiredService<IAuthorizationService>();
+                            var result = await authorizationService.AuthorizeAsync(context.User, httpContext, requirement);
+                            return result.Succeeded;
+                        }
+                        // Pas de channelName dans la route = échec
+                        return false;
+                    }));
+                // Policy pour l'administration
+                configure.AddPolicy(AuthorizationPolicies.IsAdmin, builder =>
+                    builder.AddRequirements(new IsAdminRequirement()));
+            })
             // Enregistrer le handler
-            .AddScoped<IAuthorizationHandler, ChannelModificationHandler>();
+            .AddScoped<IAuthorizationHandler, ChannelModificationHandler>()
+            .AddScoped<IAuthorizationHandler, IsAdminHandler>();
 
 
     public static IServiceCollection AddCorsConfiguration(

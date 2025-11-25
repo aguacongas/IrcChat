@@ -43,7 +43,7 @@ public static class MutedUsersEndpoints
         ChatDbContext db)
     {
         var mutedUsers = await db.MutedUsers
-            .Where(m => m.ChannelName.ToLower() == channelName.ToLower())
+            .Where(m => m.ChannelName == null || m.ChannelName.ToLower() == channelName.ToLower())
             .OrderBy(m => m.MutedAt)
             .ToListAsync();
 
@@ -105,7 +105,7 @@ public static class MutedUsersEndpoints
 
         // Vérifier si l'utilisateur est déjà mute
         var existingMute = await db.MutedUsers
-            .FirstOrDefaultAsync(m => m.ChannelName.ToLower() == channelName.ToLower()
+            .FirstOrDefaultAsync(m => m.ChannelName == null || m.ChannelName.ToLower() == channelName.ToLower()
                                    && m.UserId == userId);
 
         if (existingMute != null)
@@ -171,7 +171,7 @@ public static class MutedUsersEndpoints
         }
 
         var mutedUser = await db.MutedUsers
-            .FirstOrDefaultAsync(m => m.ChannelName.ToLower() == channelName.ToLower()
+            .FirstOrDefaultAsync(m => m.ChannelName != null && m.ChannelName.ToLower() == channelName.ToLower()
                                    && m.UserId == userId);
 
         if (mutedUser == null)
@@ -219,7 +219,7 @@ public static class MutedUsersEndpoints
         ChatDbContext db)
     {
         var isMuted = await db.MutedUsers
-            .AnyAsync(m => m.ChannelName.ToLower() == channelName.ToLower()
+            .AnyAsync(m => m.ChannelName == null || m.ChannelName.ToLower() == channelName.ToLower()
                         && m.UserId == userId);
 
         return Results.Ok(new { userId, channelName, isMuted });

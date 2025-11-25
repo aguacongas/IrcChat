@@ -35,4 +35,9 @@ public static class AuthorizationPolicies
     /// </code>
     /// </example>
     public const string CanModifyChannel = "CanModifyChannel";
+
+    /// <summary>
+    /// Policy pour vérifier qu'un utilisateur est admin.
+    /// </summary>
+    public const string IsAdmin = "IsAdmin";
 }
