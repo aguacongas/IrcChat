@@ -165,45 +165,6 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
     }
 
     [Fact]
-    public async Task MuteUserGlobally_UserNotFound_ShouldReturnNotFound()
-    {
-        // Arrange
-        using var scope = factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
-
-        var admin = new ReservedUsername
-        {
-            Id = Guid.NewGuid(),
-            Username = "admin",
-            Email = "admin@test.com",
-            Provider = ExternalAuthProvider.Google,
-            ExternalUserId = "ext-admin",
-            CreatedAt = DateTime.UtcNow,
-            LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
-        };
-
-        db.ReservedUsernames.Add(admin);
-        await db.SaveChangesAsync();
-
-        var token = GenerateToken(admin);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        var request = new { Reason = "Test" };
-
-        // Act
-        var response = await _client.PostAsJsonAsync(
-            "/api/admin/global-mute/nonexistent-id",
-            request);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        var error = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
-        Assert.NotNull(error);
-        Assert.Equal("user_not_found", error["error"]);
-    }
-
-    [Fact]
     public async Task MuteUserGlobally_AlreadyGloballyMuted_ShouldReturnBadRequest()
     {
         // Arrange

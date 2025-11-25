@@ -1,0 +1,274 @@
+@* src/IrcChat.Client/Components/GlobalMuteUserButton.razor *@
+@using System.Net.Http.Headers
+@using IrcChat.Client.Services
+@using IrcChat.Shared.Models
+@inject HttpClient Http
+@inject IUnifiedAuthService Auth
+@inject ILogger<GlobalMuteUserButton> Logger
+
+@if (Auth.IsAdmin && !string.IsNullOrEmpty(UserId))
+{
+    <button class="global-mute-btn @(isGloballyMuted ? "unmute" : "mute")" 
+            @onclick="OpenDialog" 
+            disabled="@isLoading"
+            title="@(isGloballyMuted ? "Annuler le mute global" : "Muter globalement")">
+        @if (isLoading)
+        {
+            <span class="spinner-icon"></span>
+        }
+        else if (isGloballyMuted)
+        {
+            <span>🔊</span>
+        }
+        else
+        {
+            <span>🔇</span>
+        }
+        <span class="btn-text">@(isGloballyMuted ? "Unmute" : "Mute")</span>
+    </button>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="error-tooltip">@errorMessage</div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="success-tooltip">@successMessage</div>
+    }
+
+    @* Dialog pour muter avec raison *@
+    @if (showMuteDialog)
+    {
+        <div class="dialog-overlay" @onclick="CloseDialog">
+            <div class="dialog-container" @onclick:stopPropagation="true">
+                <div class="dialog-header">
+                    <h3>Muter l'utilisateur globalement</h3>
+                    <button class="dialog-close" @onclick="CloseDialog">✕</button>
+                </div>
+                <div class="dialog-body">
+                    <label for="mute-reason">Raison du mute (optionnel) :</label>
+                    <textarea id="mute-reason" 
+                              class="mute-reason-input" 
+                              @bind="muteReason" 
+                              placeholder="Entrez la raison du mute..."
+                              rows="4"
+                              maxlength="500"></textarea>
+                    <div class="char-count">@muteReason.Length / 500</div>
+                </div>
+                <div class="dialog-footer">
+                    <button class="dialog-btn cancel-btn" @onclick="CloseDialog">Annuler</button>
+                    <button class="dialog-btn confirm-btn" @onclick="ConfirmMute">Muter</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* Dialog pour unmuter *@
+    @if (showUnmuteDialog)
+    {
+        <div class="dialog-overlay" @onclick="CloseDialog">
+            <div class="dialog-container" @onclick:stopPropagation="true">
+                <div class="dialog-header">
+                    <h3>Unmuter l'utilisateur</h3>
+                    <button class="dialog-close" @onclick="CloseDialog">✕</button>
+                </div>
+                <div class="dialog-body">
+                    <p>Êtes-vous sûr de vouloir réactiver cet utilisateur ?</p>
+                </div>
+                <div class="dialog-footer">
+                    <button class="dialog-btn cancel-btn" @onclick="CloseDialog">Annuler</button>
+                    <button class="dialog-btn confirm-btn" @onclick="ConfirmUnmute">Confirmer</button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    public string UserId { get; set; } = string.Empty;
+
+    private bool isGloballyMuted = false;
+    private bool isLoading = false;
+    private string errorMessage = "";
+    private string successMessage = "";
+    private bool showMuteDialog = false;
+    private bool showUnmuteDialog = false;
+    private string muteReason = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckGlobalMuteStatus();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await CheckGlobalMuteStatus();
+    }
+
+    private async Task CheckGlobalMuteStatus()
+    {
+        if (string.IsNullOrEmpty(UserId) || !Auth.IsAdmin)
+        {
+            return;
+        }
+
+        try
+        {
+            SetAuthHeader();
+            var response = await Http.GetFromJsonAsync<MuteStatusResponse>($"/api/admin/global-mute/{UserId}/is-muted");
+            if (response != null)
+            {
+                isGloballyMuted = response.IsGloballyMuted;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de la vérification du statut de mute global pour {UserId}", UserId);
+        }
+    }
+
+    private void OpenDialog()
+    {
+        if (isGloballyMuted)
+        {
+            showUnmuteDialog = true;
+        }
+        else
+        {
+            muteReason = "";
+            showMuteDialog = true;
+        }
+    }
+
+    private void CloseDialog()
+    {
+        showMuteDialog = false;
+        showUnmuteDialog = false;
+        muteReason = "";
+    }
+
+    private async Task ConfirmMute()
+    {
+        if (string.IsNullOrEmpty(UserId) || isLoading)
+        {
+            return;
+        }
+
+        isLoading = true;
+        errorMessage = "";
+        successMessage = "";
+
+        try
+        {
+            SetAuthHeader();
+
+            var request = new MuteUserRequest
+            {
+                Reason = string.IsNullOrWhiteSpace(muteReason) ? "Muté globalement par un administrateur" : muteReason.Trim()
+            };
+
+            var response = await Http.PostAsJsonAsync($"/api/admin/global-mute/{UserId}", request);
+            if (response.IsSuccessStatusCode)
+            {
+                isGloballyMuted = true;
+                ShowSuccessMessage("Utilisateur muté globalement");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                ShowErrorMessage($"Erreur lors du mute: {response.StatusCode}");
+                Logger.LogWarning("Échec du mute global: {Error}", errorContent);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors du mute global pour {UserId}", UserId);
+            ShowErrorMessage("Une erreur est survenue");
+        }
+        finally
+        {
+            isLoading = false;
+            CloseDialog();
+            StateHasChanged();
+        }
+    }
+
+    private async Task ConfirmUnmute()
+    {
+        if (string.IsNullOrEmpty(UserId) || isLoading)
+        {
+            return;
+        }
+
+        isLoading = true;
+        errorMessage = "";
+        successMessage = "";
+
+        try
+        {
+            SetAuthHeader();
+
+            var response = await Http.DeleteAsync($"/api/admin/global-mute/{UserId}");
+            if (response.IsSuccessStatusCode)
+            {
+                isGloballyMuted = false;
+                ShowSuccessMessage("Utilisateur réactivé");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                ShowErrorMessage($"Erreur lors du unmute: {response.StatusCode}");
+                Logger.LogWarning("Échec du unmute global: {Error}", errorContent);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors du unmute global pour {UserId}", UserId);
+            ShowErrorMessage("Une erreur est survenue");
+        }
+        finally
+        {
+            isLoading = false;
+            CloseDialog();
+            StateHasChanged();
+        }
+    }
+
+    private void SetAuthHeader()
+    {
+        if (!string.IsNullOrEmpty(Auth.Token))
+        {
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Auth.Token);
+        }
+    }
+
+    private void ShowErrorMessage(string message)
+    {
+        errorMessage = message;
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(4000);
+            await InvokeAsync(() =>
+            {
+                errorMessage = "";
+                StateHasChanged();
+            });
+        });
+    }
+
+    private void ShowSuccessMessage(string message)
+    {
+        successMessage = message;
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(3000);
+            await InvokeAsync(() =>
+            {
+                successMessage = "";
+                StateHasChanged();
+            });
+        });
+    }
+}
