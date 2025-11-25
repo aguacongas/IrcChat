@@ -8,7 +8,7 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
-public class ChannelDeleteButtonTests : TestContext
+public class ChannelDeleteButtonTests : BunitContext
 {
     private readonly MockHttpMessageHandler _mockHttp;
 
@@ -24,7 +24,7 @@ public class ChannelDeleteButtonTests : TestContext
     public void ChannelDeleteButton_WhenCannotManage_ShouldNotShowButton()
     {
         // Act
-        var cut = RenderComponent<ChannelDeleteButton>(parameters => parameters
+        var cut = Render<ChannelDeleteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.CanManage, false));
 
@@ -36,7 +36,7 @@ public class ChannelDeleteButtonTests : TestContext
     public void ChannelDeleteButton_WhenCanManage_ShouldShowButton()
     {
         // Act
-        var cut = RenderComponent<ChannelDeleteButton>(parameters => parameters
+        var cut = Render<ChannelDeleteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.CanManage, true));
 
@@ -50,7 +50,7 @@ public class ChannelDeleteButtonTests : TestContext
     public async Task ChannelDeleteButton_OnClick_ShouldShowConfirmation()
     {
         // Arrange
-        var cut = RenderComponent<ChannelDeleteButton>(parameters => parameters
+        var cut = Render<ChannelDeleteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.CanManage, true));
 
@@ -68,7 +68,7 @@ public class ChannelDeleteButtonTests : TestContext
     public async Task ChannelDeleteButton_OnCancel_ShouldHideConfirmation()
     {
         // Arrange
-        var cut = RenderComponent<ChannelDeleteButton>(parameters => parameters
+        var cut = Render<ChannelDeleteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.CanManage, true));
 
@@ -91,7 +91,7 @@ public class ChannelDeleteButtonTests : TestContext
             .Respond(HttpStatusCode.OK);
 
         var eventTriggered = false;
-        var cut = RenderComponent<ChannelDeleteButton>(parameters => parameters
+        var cut = Render<ChannelDeleteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.CanManage, true)
             .Add(p => p.OnChannelDeleted, channel => eventTriggered = true));
@@ -117,7 +117,7 @@ public class ChannelDeleteButtonTests : TestContext
         _mockHttp.When(HttpMethod.Delete, "*/api/channels/general")
             .Respond(HttpStatusCode.Forbidden);
 
-        var cut = RenderComponent<ChannelDeleteButton>(parameters => parameters
+        var cut = Render<ChannelDeleteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.CanManage, true));
 
@@ -145,7 +145,7 @@ public class ChannelDeleteButtonTests : TestContext
                 return new HttpResponseMessage(HttpStatusCode.OK);
             });
 
-        var cut = RenderComponent<ChannelDeleteButton>(parameters => parameters
+        var cut = Render<ChannelDeleteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.CanManage, true));
 
@@ -164,7 +164,7 @@ public class ChannelDeleteButtonTests : TestContext
     public void ChannelDeleteButton_ModalWarning_ShouldBeVisible()
     {
         // Arrange
-        var cut = RenderComponent<ChannelDeleteButton>(parameters => parameters
+        var cut = Render<ChannelDeleteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.CanManage, true));
 
@@ -181,7 +181,7 @@ public class ChannelDeleteButtonTests : TestContext
     public async Task ChannelDeleteButton_OnModalBackdropClick_ShouldClose()
     {
         // Arrange
-        var cut = RenderComponent<ChannelDeleteButton>(parameters => parameters
+        var cut = Render<ChannelDeleteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.CanManage, true));
 
@@ -203,7 +203,7 @@ public class ChannelDeleteButtonTests : TestContext
         var mockedRequest = _mockHttp.When(HttpMethod.Delete, "*/api/channels/*")
             .Respond(HttpStatusCode.OK);
 
-        var cut = RenderComponent<ChannelDeleteButton>(parameters => parameters
+        var cut = Render<ChannelDeleteButton>(parameters => parameters
             .Add(p => p.ChannelName, "")
             .Add(p => p.CanManage, true));
 

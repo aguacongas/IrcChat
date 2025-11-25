@@ -2,10 +2,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using Bunit;
-using Bunit.TestDoubles;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using RichardSzalay.MockHttp;
@@ -13,12 +13,12 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Pages;
 
-public class SettingsTests : TestContext
+public class SettingsTests : BunitContext
 {
     private readonly Mock<IUnifiedAuthService> _authServiceMock;
     private readonly Mock<IChatService> _chatServiceMock;
     private readonly MockHttpMessageHandler _mockHttp;
-    private readonly FakeNavigationManager _navManager;
+    private readonly NavigationManager _navManager;
 
     public SettingsTests()
     {
@@ -34,7 +34,7 @@ public class SettingsTests : TestContext
         Services.AddSingleton(httpClient);
         Services.AddSingleton(JSInterop.JSRuntime);
 
-        _navManager = Services.GetRequiredService<FakeNavigationManager>();
+        _navManager = Services.GetRequiredService<NavigationManager>();
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.HasUsername).Returns(false);
 
         // Act
-        RenderComponent<Settings>();
+        Render<Settings>();
 
         // Assert
         Assert.EndsWith("/login", _navManager.Uri);
@@ -65,7 +65,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.IsAdmin).Returns(false);
 
         // Act
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Assert
         Assert.Contains("TestUser", cut.Markup);
@@ -84,7 +84,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.IsReserved).Returns(false);
 
         // Act
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Assert
         Assert.Contains("GuestUser", cut.Markup);
@@ -104,7 +104,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.Email).Returns("admin@example.com");
 
         // Act
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Assert
         Assert.Contains("Administration", cut.Markup);
@@ -133,7 +133,7 @@ public class SettingsTests : TestContext
         var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/channels")
             .Respond(HttpStatusCode.Created, JsonContent.Create(createdChannel));
 
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Act
         var input = cut.Find(".input-group input");
@@ -163,7 +163,7 @@ public class SettingsTests : TestContext
             .Respond(HttpStatusCode.BadRequest,
                 new StringContent("{\"error\":\"channel_exists\"}"));
 
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Act
         var input = cut.Find(".input-group input");
@@ -185,7 +185,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.HasUsername).Returns(true);
         _authServiceMock.Setup(x => x.Username).Returns("TestUser");
 
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Act
         var backButton = cut.Find(".back-button");
@@ -205,7 +205,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.IsReserved).Returns(false);
 
         // Act
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Assert
         Assert.Contains("réserver votre pseudo", cut.Markup);
@@ -221,7 +221,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.Username).Returns("GuestUser");
         _authServiceMock.Setup(x => x.IsReserved).Returns(false);
 
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Act
         var reserveButton = cut.Find("button:contains('Réserver mon pseudo')");
@@ -240,7 +240,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.Username).Returns("TestUser");
         _authServiceMock.Setup(x => x.LogoutAsync()).Returns(Task.CompletedTask);
 
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Act
         var logoutButton = cut.Find("button:contains('Se déconnecter')");
@@ -260,7 +260,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.Username).Returns("TestUser");
         _authServiceMock.Setup(x => x.IsReserved).Returns(true);
 
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Act
         var forgetButton = cut.Find("button:contains('Oublier mon pseudo')");
@@ -281,7 +281,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.IsReserved).Returns(true);
         _authServiceMock.Setup(x => x.ForgetUsernameAndLogoutAsync()).Returns(Task.CompletedTask);
 
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Act
         var forgetButton = cut.Find("button:contains('Oublier mon pseudo')");
@@ -304,7 +304,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.Username).Returns("TestUser");
         _authServiceMock.Setup(x => x.IsReserved).Returns(true);
 
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Act
         var forgetButton = cut.Find("button:contains('Oublier mon pseudo')");
@@ -340,7 +340,7 @@ public class SettingsTests : TestContext
         _mockHttp.When(HttpMethod.Post, "*/api/channels")
             .Respond(HttpStatusCode.Created, JsonContent.Create(createdChannel));
 
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Act
         var input = cut.Find(".input-group input");
@@ -376,7 +376,7 @@ public class SettingsTests : TestContext
         var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/channels")
             .Respond(HttpStatusCode.Created, JsonContent.Create(createdChannel));
 
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Act
         var input = cut.Find(".input-group input");
@@ -400,7 +400,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.IsAuthenticated).Returns(false);
 
         // Act
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Assert
         Assert.DoesNotContain("Gestion des salons", cut.Markup);
@@ -414,7 +414,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(taskCompletionSource.Task);
 
         // Act
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Assert
         Assert.Contains("Chargement", cut.Markup);
@@ -432,7 +432,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
         _authServiceMock.Setup(x => x.UserId).Returns(Guid.NewGuid());
 
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Act
         var adminButton = cut.Find("button:contains('panneau d\\'administration')");
@@ -457,7 +457,7 @@ public class SettingsTests : TestContext
         _mockHttp.When(HttpMethod.Post, "*/api/channels")
             .Respond(HttpStatusCode.InternalServerError);
 
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Act
         var input = cut.Find(".input-group input");
@@ -482,7 +482,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
 
         // Act
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Assert
         var createButton = cut.Find(".input-group .btn-primary");
@@ -499,7 +499,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.AvatarUrl).Returns("https://example.com/avatar.jpg");
 
         // Act
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Assert
         Assert.Contains("avatar.jpg", cut.Markup);
@@ -517,7 +517,7 @@ public class SettingsTests : TestContext
         _authServiceMock.Setup(x => x.AvatarUrl).Returns((string?)null);
 
         // Act
-        var cut = RenderComponent<Settings>();
+        var cut = Render<Settings>();
 
         // Assert
         Assert.Contains("avatar-placeholder", cut.Markup);

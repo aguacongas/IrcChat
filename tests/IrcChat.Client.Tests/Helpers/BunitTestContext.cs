@@ -1,4 +1,4 @@
-// tests/IrcChat.Client.Tests/Helpers/BunitTestContext.cs
+// tests/IrcChat.Client.Tests/Helpers/BunitBunitContext.cs
 using Bunit;
 using IrcChat.Client.Models;
 using IrcChat.Client.Services;
@@ -8,13 +8,13 @@ using Moq;
 
 namespace IrcChat.Client.Tests.Helpers;
 
-public class BunitTestContext : TestContext
+public class BunitBunitContext : BunitContext
 {
     public Mock<LocalStorageService> LocalStorageMock { get; }
     public Mock<HttpClient> HttpClientMock { get; }
     public Mock<UnifiedAuthService> AuthServiceMock { get; }
 
-    public BunitTestContext()
+    public BunitBunitContext()
     {
         LocalStorageMock = new Mock<LocalStorageService>(MockBehavior.Strict, JSInterop.JSRuntime);
         HttpClientMock = new Mock<HttpClient>(MockBehavior.Strict);

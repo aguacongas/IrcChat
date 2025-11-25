@@ -11,7 +11,7 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
-public class MessageListTests : TestContext
+public class MessageListTests : BunitContext
 {
     private readonly Mock<IJSRuntime> _jsRuntimeMock;
 
@@ -25,7 +25,7 @@ public class MessageListTests : TestContext
     public void MessageList_WithEmptyMessages_ShouldRenderEmpty()
     {
         // Arrange & Act
-        var cut = RenderComponent<MessageList>(parameters => parameters
+        var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, [])
             .Add(p => p.CurrentUsername, "testuser"));
 
@@ -58,7 +58,7 @@ public class MessageListTests : TestContext
         };
 
         // Act
-        var cut = RenderComponent<MessageList>(parameters => parameters
+        var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "user1"));
 
@@ -84,7 +84,7 @@ public class MessageListTests : TestContext
         };
 
         // Act
-        var cut = RenderComponent<MessageList>(parameters => parameters
+        var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "currentuser"));
 
@@ -117,7 +117,7 @@ public class MessageListTests : TestContext
         };
 
         // Act
-        RenderComponent<MessageList>(parameters => parameters
+        Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "user1"));
 
@@ -159,7 +159,7 @@ public class MessageListTests : TestContext
             }
         };
 
-        var cut = RenderComponent<MessageList>(parameters => parameters
+        var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "user1"));
 
@@ -175,7 +175,7 @@ public class MessageListTests : TestContext
             Timestamp = DateTime.UtcNow
         });
 
-        cut.SetParametersAndRender(parameters => parameters
+        cut.Render(parameters => parameters
             .Add(p => p.Messages, messages));
 
         await Task.Delay(100);
@@ -211,7 +211,7 @@ public class MessageListTests : TestContext
         };
 
         // Act & Assert - Ne devrait pas lancer d'exception
-        var cut = RenderComponent<MessageList>(parameters => parameters
+        var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "user1"));
 
@@ -236,7 +236,7 @@ public class MessageListTests : TestContext
 
         var messages = new List<Message>();
 
-        var cut = RenderComponent<MessageList>(parameters => parameters
+        var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "user1"));
 
@@ -269,7 +269,7 @@ public class MessageListTests : TestContext
             .ReturnsAsync((IJSVoidResult)null!);
 
         // Act
-        RenderComponent<MessageList>(parameters => parameters
+        Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, [])
             .Add(p => p.CurrentUsername, "user1"));
 
@@ -313,7 +313,7 @@ public class MessageListTests : TestContext
             }
         };
 
-        var cut = RenderComponent<MessageList>(parameters => parameters
+        var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "user1"));
 
@@ -323,7 +323,7 @@ public class MessageListTests : TestContext
         mockModule.Invocations.Clear();
 
         // Act - Re-render sans changement de count        
-        cut.SetParametersAndRender(parameters => { });
+        cut.Render(parameters => { });
 
         await Task.Delay(100);
 
@@ -366,7 +366,7 @@ public class MessageListTests : TestContext
         };
 
         // Act & Assert - Ne devrait pas lancer d'exception
-        var cut = RenderComponent<MessageList>(parameters => parameters
+        var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "user1"));
 
@@ -403,7 +403,7 @@ public class MessageListTests : TestContext
             }
         };
 
-        var cut = RenderComponent<MessageList>(parameters => parameters
+        var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "user1"));
 
@@ -432,7 +432,7 @@ public class MessageListTests : TestContext
             }
         ]);
 
-        cut.SetParametersAndRender(parameters => parameters
+        cut.Render(parameters => parameters
             .Add(p => p.Messages, messages));
 
         await Task.Delay(100);
@@ -467,7 +467,7 @@ public class MessageListTests : TestContext
 
         var messages = new List<Message>();
 
-        var cut = RenderComponent<MessageList>(parameters => parameters
+        var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "user1"));
 
@@ -515,7 +515,7 @@ public class MessageListTests : TestContext
         };
 
         // Act
-        RenderComponent<MessageList>(parameters => parameters
+        Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "user1"));
 

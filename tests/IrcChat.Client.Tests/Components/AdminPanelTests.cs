@@ -10,7 +10,7 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
-public class AdminPanelTests : TestContext
+public class AdminPanelTests : BunitContext
 {
     private readonly MockHttpMessageHandler _mockHttp;
 
@@ -56,7 +56,7 @@ public class AdminPanelTests : TestContext
             .Respond(HttpStatusCode.OK, JsonContent.Create(users));
 
         // Act
-        var cut = RenderComponent<AdminPanel>(parameters => parameters
+        var cut = Render<AdminPanel>(parameters => parameters
             .Add(p => p.CurrentUserId, Guid.NewGuid()));
 
         // Assert
@@ -81,7 +81,7 @@ public class AdminPanelTests : TestContext
             });
 
         // Act
-        var cut = RenderComponent<AdminPanel>(parameters => parameters
+        var cut = Render<AdminPanel>(parameters => parameters
             .Add(p => p.CurrentUserId, Guid.NewGuid()));
 
         // Assert
@@ -96,11 +96,11 @@ public class AdminPanelTests : TestContext
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<object>()));
 
         var closeTriggered = false;
-        var cut = RenderComponent<AdminPanel>(parameters => parameters
+        var cut = Render<AdminPanel>(parameters => parameters
             .Add(p => p.CurrentUserId, Guid.NewGuid())
             .Add(p => p.OnClose, () => closeTriggered = true));
 
-        cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+        await cut.WaitForStateAsync(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
 
         // Act
         var closeButton = cut.Find(".close-btn");
@@ -153,10 +153,10 @@ public class AdminPanelTests : TestContext
         _mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/promote")
             .Respond(HttpStatusCode.OK);
 
-        var cut = RenderComponent<AdminPanel>(parameters => parameters
+        var cut = Render<AdminPanel>(parameters => parameters
             .Add(p => p.CurrentUserId, currentUserId));
 
-        cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+        await cut.WaitForStateAsync(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
 
         // Reconfigurer pour retourner les users mis à jour
         _mockHttp.Clear();
@@ -220,10 +220,10 @@ public class AdminPanelTests : TestContext
         _mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/demote")
             .Respond(HttpStatusCode.OK);
 
-        var cut = RenderComponent<AdminPanel>(parameters => parameters
+        var cut = Render<AdminPanel>(parameters => parameters
             .Add(p => p.CurrentUserId, currentUserId));
 
-        cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+        await cut.WaitForStateAsync(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
         cut.Render();
 
         _mockHttp.Clear();
@@ -269,10 +269,10 @@ public class AdminPanelTests : TestContext
         _mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/promote")
             .Respond(HttpStatusCode.Forbidden, new StringContent("Access denied"));
 
-        var cut = RenderComponent<AdminPanel>(parameters => parameters
+        var cut = Render<AdminPanel>(parameters => parameters
             .Add(p => p.CurrentUserId, currentUserId));
 
-        cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+        await cut.WaitForStateAsync(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
         cut.Render();
 
         // Act
@@ -309,7 +309,7 @@ public class AdminPanelTests : TestContext
             .Respond(HttpStatusCode.OK, JsonContent.Create(users));
 
         // Act
-        var cut = RenderComponent<AdminPanel>(parameters => parameters
+        var cut = Render<AdminPanel>(parameters => parameters
             .Add(p => p.CurrentUserId, currentUserId));
 
         cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
@@ -327,7 +327,7 @@ public class AdminPanelTests : TestContext
             .Respond(HttpStatusCode.InternalServerError);
 
         // Act
-        var cut = RenderComponent<AdminPanel>(parameters => parameters
+        var cut = Render<AdminPanel>(parameters => parameters
             .Add(p => p.CurrentUserId, Guid.NewGuid()));
 
         cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
@@ -359,7 +359,7 @@ public class AdminPanelTests : TestContext
             .Respond(HttpStatusCode.OK, JsonContent.Create(users));
 
         // Act
-        var cut = RenderComponent<AdminPanel>(parameters => parameters
+        var cut = Render<AdminPanel>(parameters => parameters
             .Add(p => p.CurrentUserId, Guid.NewGuid()));
 
         cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
@@ -392,7 +392,7 @@ public class AdminPanelTests : TestContext
             .Respond(HttpStatusCode.OK, JsonContent.Create(users));
 
         // Act
-        var cut = RenderComponent<AdminPanel>(parameters => parameters
+        var cut = Render<AdminPanel>(parameters => parameters
             .Add(p => p.CurrentUserId, Guid.NewGuid()));
 
         cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
@@ -435,10 +435,10 @@ public class AdminPanelTests : TestContext
                 return new HttpResponseMessage(HttpStatusCode.OK);
             });
 
-        var cut = RenderComponent<AdminPanel>(parameters => parameters
+        var cut = Render<AdminPanel>(parameters => parameters
             .Add(p => p.CurrentUserId, currentUserId));
 
-        cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+        await cut.WaitForStateAsync(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
         cut.Render();
 
         // Act
@@ -457,11 +457,11 @@ public class AdminPanelTests : TestContext
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<object>()));
 
         var closeTriggered = false;
-        var cut = RenderComponent<AdminPanel>(parameters => parameters
+        var cut = Render<AdminPanel>(parameters => parameters
             .Add(p => p.CurrentUserId, Guid.NewGuid())
             .Add(p => p.OnClose, () => closeTriggered = true));
 
-        cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+        await cut.WaitForStateAsync(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
 
         // Act
         var overlay = cut.Find(".admin-panel-overlay");

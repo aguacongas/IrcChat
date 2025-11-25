@@ -10,13 +10,13 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
-public class SidebarToggleButtonTests : TestContext
+public class SidebarToggleButtonTests : BunitContext
 {
     [Fact]
     public void SidebarToggleButton_WhenIsOpenTrue_ShouldHaveOpenClass()
     {
         // Arrange & Act
-        var cut = RenderComponent<SidebarToggleButton>(parameters => parameters
+        var cut = Render<SidebarToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.UnreadCount, 0));
 
@@ -29,7 +29,7 @@ public class SidebarToggleButtonTests : TestContext
     public void SidebarToggleButton_WhenIsOpenFalse_ShouldNotHaveOpenClass()
     {
         // Arrange & Act
-        var cut = RenderComponent<SidebarToggleButton>(parameters => parameters
+        var cut = Render<SidebarToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UnreadCount, 0));
 
@@ -42,7 +42,7 @@ public class SidebarToggleButtonTests : TestContext
     public void SidebarToggleButton_WhenUnreadCountZero_ShouldNotShowBadge()
     {
         // Arrange & Act
-        var cut = RenderComponent<SidebarToggleButton>(parameters => parameters
+        var cut = Render<SidebarToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UnreadCount, 0));
 
@@ -55,7 +55,7 @@ public class SidebarToggleButtonTests : TestContext
     public void SidebarToggleButton_WhenUnreadCountPositive_ShouldShowBadge()
     {
         // Arrange & Act
-        var cut = RenderComponent<SidebarToggleButton>(parameters => parameters
+        var cut = Render<SidebarToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UnreadCount, 5));
 
@@ -68,7 +68,7 @@ public class SidebarToggleButtonTests : TestContext
     public void SidebarToggleButton_WhenUnreadCountOver99_ShouldShow99Plus()
     {
         // Arrange & Act
-        var cut = RenderComponent<SidebarToggleButton>(parameters => parameters
+        var cut = Render<SidebarToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UnreadCount, 150));
 
@@ -81,7 +81,7 @@ public class SidebarToggleButtonTests : TestContext
     public void SidebarToggleButton_WhenUnreadCountExactly99_ShouldShow99()
     {
         // Arrange & Act
-        var cut = RenderComponent<SidebarToggleButton>(parameters => parameters
+        var cut = Render<SidebarToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UnreadCount, 99));
 
@@ -94,7 +94,7 @@ public class SidebarToggleButtonTests : TestContext
     public void SidebarToggleButton_WhenUnreadCount100_ShouldShow99Plus()
     {
         // Arrange & Act
-        var cut = RenderComponent<SidebarToggleButton>(parameters => parameters
+        var cut = Render<SidebarToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UnreadCount, 100));
 
@@ -110,7 +110,7 @@ public class SidebarToggleButtonTests : TestContext
         var callbackInvoked = false;
         var newState = false;
 
-        var cut = RenderComponent<SidebarToggleButton>(parameters => parameters
+        var cut = Render<SidebarToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UnreadCount, 0)
             .Add(p => p.OnToggle, EventCallback.Factory.Create<bool>(this, state =>
@@ -135,7 +135,7 @@ public class SidebarToggleButtonTests : TestContext
         var callbackInvoked = false;
         var newState = true;
 
-        var cut = RenderComponent<SidebarToggleButton>(parameters => parameters
+        var cut = Render<SidebarToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.UnreadCount, 0)
             .Add(p => p.OnToggle, EventCallback.Factory.Create<bool>(this, state =>
@@ -157,7 +157,7 @@ public class SidebarToggleButtonTests : TestContext
     public void SidebarToggleButton_ShouldHaveMenuTitle()
     {
         // Arrange & Act
-        var cut = RenderComponent<SidebarToggleButton>(parameters => parameters
+        var cut = Render<SidebarToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UnreadCount, 0));
 
@@ -170,7 +170,7 @@ public class SidebarToggleButtonTests : TestContext
     public void SidebarToggleButton_ShouldHaveHamburgerIcon()
     {
         // Arrange & Act
-        var cut = RenderComponent<SidebarToggleButton>(parameters => parameters
+        var cut = Render<SidebarToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UnreadCount, 0));
 
@@ -191,7 +191,7 @@ public class SidebarToggleButtonTests : TestContext
     public void SidebarToggleButton_VariousUnreadCounts_ShouldDisplayCorrectly(int count, string expected)
     {
         // Arrange & Act
-        var cut = RenderComponent<SidebarToggleButton>(parameters => parameters
+        var cut = Render<SidebarToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UnreadCount, count));
 

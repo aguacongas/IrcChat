@@ -17,7 +17,7 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Services;
 
-public class ChatServiceTests : TestContext
+public class ChatServiceTests : BunitContext
 {
     private readonly Mock<IPrivateMessageService> _privateMessageServiceMock;
     private readonly Mock<IUnifiedAuthService> _unverifiedAuthServiceMock;

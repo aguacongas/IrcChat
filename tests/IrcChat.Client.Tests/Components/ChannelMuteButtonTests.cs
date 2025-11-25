@@ -9,7 +9,7 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
-public class ChannelMuteButtonTests : TestContext
+public class ChannelMuteButtonTests : BunitContext
 {
     private readonly MockHttpMessageHandler _mockHttp;
 
@@ -25,7 +25,7 @@ public class ChannelMuteButtonTests : TestContext
     public void ChannelMuteButton_WhenCannotManage_ShouldNotShowButton()
     {
         // Act
-        var cut = RenderComponent<ChannelMuteButton>(parameters => parameters
+        var cut = Render<ChannelMuteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.IsMuted, false)
             .Add(p => p.CanManage, false));
@@ -38,7 +38,7 @@ public class ChannelMuteButtonTests : TestContext
     public void ChannelMuteButton_WhenCanManage_ShouldShowButton()
     {
         // Act
-        var cut = RenderComponent<ChannelMuteButton>(parameters => parameters
+        var cut = Render<ChannelMuteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.IsMuted, false)
             .Add(p => p.CanManage, true));
@@ -53,7 +53,7 @@ public class ChannelMuteButtonTests : TestContext
     public void ChannelMuteButton_WhenMuted_ShouldShowUnmuteButton()
     {
         // Act
-        var cut = RenderComponent<ChannelMuteButton>(parameters => parameters
+        var cut = Render<ChannelMuteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.IsMuted, true)
             .Add(p => p.CanManage, true));
@@ -68,7 +68,7 @@ public class ChannelMuteButtonTests : TestContext
     public void ChannelMuteButton_WhenCannotManageButMuted_ShouldShowIndicator()
     {
         // Act
-        var cut = RenderComponent<ChannelMuteButton>(parameters => parameters
+        var cut = Render<ChannelMuteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.IsMuted, true)
             .Add(p => p.CanManage, false));
@@ -92,7 +92,7 @@ public class ChannelMuteButtonTests : TestContext
         var statusChanged = false;
         var newStatus = false;
 
-        var cut = RenderComponent<ChannelMuteButton>(parameters => parameters
+        var cut = Render<ChannelMuteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.IsMuted, false)
             .Add(p => p.CanManage, true)
@@ -119,7 +119,7 @@ public class ChannelMuteButtonTests : TestContext
         _mockHttp.When(HttpMethod.Post, "*/api/channels/general/toggle-mute")
             .Respond(HttpStatusCode.Forbidden);
 
-        var cut = RenderComponent<ChannelMuteButton>(parameters => parameters
+        var cut = Render<ChannelMuteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.IsMuted, false)
             .Add(p => p.CanManage, true));
@@ -145,7 +145,7 @@ public class ChannelMuteButtonTests : TestContext
                 return new HttpResponseMessage(HttpStatusCode.OK);
             });
 
-        var cut = RenderComponent<ChannelMuteButton>(parameters => parameters
+        var cut = Render<ChannelMuteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.IsMuted, false)
             .Add(p => p.CanManage, true));
@@ -165,7 +165,7 @@ public class ChannelMuteButtonTests : TestContext
         var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/channels/*/toggle-mute")
             .Respond(HttpStatusCode.OK);
 
-        var cut = RenderComponent<ChannelMuteButton>(parameters => parameters
+        var cut = Render<ChannelMuteButton>(parameters => parameters
             .Add(p => p.ChannelName, "")
             .Add(p => p.IsMuted, false)
             .Add(p => p.CanManage, true));
@@ -186,7 +186,7 @@ public class ChannelMuteButtonTests : TestContext
         _mockHttp.When(HttpMethod.Post, "*/api/channels/general/toggle-mute")
             .Respond(HttpStatusCode.BadRequest);
 
-        var cut = RenderComponent<ChannelMuteButton>(parameters => parameters
+        var cut = Render<ChannelMuteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.IsMuted, false)
             .Add(p => p.CanManage, true));
@@ -221,7 +221,7 @@ public class ChannelMuteButtonTests : TestContext
             };
         });
 
-        var cut = RenderComponent<ChannelMuteButton>(parameters => parameters
+        var cut = Render<ChannelMuteButton>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.IsMuted, false)
             .Add(p => p.CanManage, true));

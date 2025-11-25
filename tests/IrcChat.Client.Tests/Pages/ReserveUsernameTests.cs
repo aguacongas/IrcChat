@@ -1,6 +1,5 @@
 // tests/IrcChat.Client.Tests/Pages/ReserveUsernameTests.cs
 using Bunit;
-using Bunit.TestDoubles;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
 using Microsoft.AspNetCore.Components;
@@ -10,10 +9,10 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Pages;
 
-public class ReserveUsernameTests : TestContext
+public class ReserveUsernameTests : BunitContext
 {
     private readonly Mock<IUnifiedAuthService> _authServiceMock;
-    private readonly FakeNavigationManager _navManager;
+    private readonly NavigationManager _navManager;
 
     public ReserveUsernameTests()
     {
@@ -22,7 +21,7 @@ public class ReserveUsernameTests : TestContext
         Services.AddSingleton(_authServiceMock.Object);
         Services.AddSingleton(JSInterop.JSRuntime);
 
-        _navManager = Services.GetRequiredService<FakeNavigationManager>();
+        _navManager = Services.GetRequiredService<NavigationManager>();
     }
 
     [Fact]
@@ -33,7 +32,7 @@ public class ReserveUsernameTests : TestContext
         _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
         // Act
-        RenderComponent<ReserveUsername>();
+        Render<ReserveUsername>();
 
         // Assert
         Assert.EndsWith("/login", _navManager.Uri);
@@ -49,7 +48,7 @@ public class ReserveUsernameTests : TestContext
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         // Act
-        var cut = RenderComponent<ReserveUsername>();
+        var cut = Render<ReserveUsername>();
 
         // Assert
         Assert.Contains("TestUser", cut.Markup);
@@ -66,7 +65,7 @@ public class ReserveUsernameTests : TestContext
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         // Act
-        var cut = RenderComponent<ReserveUsername>();
+        var cut = Render<ReserveUsername>();
 
         // Assert
         Assert.Contains("Google", cut.Markup);
@@ -85,7 +84,7 @@ public class ReserveUsernameTests : TestContext
 
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
-        var cut = RenderComponent<ReserveUsername>();
+        var cut = Render<ReserveUsername>();
 
         // Act
         var googleButton = cut.Find("button.oauth-btn.google");
@@ -109,7 +108,7 @@ public class ReserveUsernameTests : TestContext
 
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
-        var cut = RenderComponent<ReserveUsername>();
+        var cut = Render<ReserveUsername>();
 
         // Act
         var microsoftButton = cut.Find("button.oauth-btn.microsoft");
@@ -133,7 +132,7 @@ public class ReserveUsernameTests : TestContext
 
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
-        var cut = RenderComponent<ReserveUsername>();
+        var cut = Render<ReserveUsername>();
 
         // Act
         var facebookButton = cut.Find("button.oauth-btn.facebook");
@@ -155,7 +154,7 @@ public class ReserveUsernameTests : TestContext
 
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
-        var cut = RenderComponent<ReserveUsername>();
+        var cut = Render<ReserveUsername>();
 
         // Act
         var backLink = await cut.InvokeAsync(() => cut.Find("a.back-link"));
@@ -175,7 +174,7 @@ public class ReserveUsernameTests : TestContext
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         // Act
-        var cut = RenderComponent<ReserveUsername>();
+        var cut = Render<ReserveUsername>();
 
         // Assert
         Assert.Contains("divider", cut.Markup);
@@ -192,7 +191,7 @@ public class ReserveUsernameTests : TestContext
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", ""));
 
         // Act
-        RenderComponent<ReserveUsername>();
+        Render<ReserveUsername>();
 
         // Assert
         Assert.EndsWith("/login", _navManager.Uri);
@@ -209,7 +208,7 @@ public class ReserveUsernameTests : TestContext
         JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "MyUsername"));
-        var cut = RenderComponent<ReserveUsername>();
+        var cut = Render<ReserveUsername>();
 
         // Act
         var googleButton = cut.Find("button.oauth-btn.google");
@@ -240,7 +239,7 @@ public class ReserveUsernameTests : TestContext
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         // Act
-        var cut = RenderComponent<ReserveUsername>();
+        var cut = Render<ReserveUsername>();
 
         // Assert
         Assert.Contains("Chargement", cut.Markup);
@@ -259,7 +258,7 @@ public class ReserveUsernameTests : TestContext
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         // Act
-        var cut = RenderComponent<ReserveUsername>();
+        Render<ReserveUsername>();
 
         await Task.Delay(100); // Attendre l'initialisation
 
@@ -278,7 +277,7 @@ public class ReserveUsernameTests : TestContext
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         // Act
-        var cut = RenderComponent<ReserveUsername>();
+        var cut = Render<ReserveUsername>();
 
         // Assert
         Assert.Contains("Impossible de récupérer votre identifiant utilisateur", cut.Markup);
@@ -295,7 +294,7 @@ public class ReserveUsernameTests : TestContext
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         // Act
-        var cut = RenderComponent<ReserveUsername>();
+        var cut = Render<ReserveUsername>();
 
         // Assert
         Assert.Contains("Impossible de récupérer votre identifiant utilisateur", cut.Markup);
@@ -313,7 +312,7 @@ public class ReserveUsernameTests : TestContext
 
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
 
-        var cut = RenderComponent<ReserveUsername>();
+        var cut = Render<ReserveUsername>();
 
         // Act - Le composant devrait afficher une erreur
         await Task.Delay(100);
@@ -334,7 +333,7 @@ public class ReserveUsernameTests : TestContext
 
         _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "MyPseudo"));
 
-        var cut = RenderComponent<ReserveUsername>();
+        var cut = Render<ReserveUsername>();
 
         // Act
         var buttons = cut.FindAll("button.oauth-btn");

@@ -5,13 +5,13 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
-public class UsersListToggleButtonTests : TestContext
+public class UsersListToggleButtonTests : BunitContext
 {
     [Fact]
     public void UsersListToggleButton_WhenRendered_ShouldShowUserCount()
     {
         // Arrange & Act
-        var cut = RenderComponent<UsersListToggleButton>(parameters => parameters
+        var cut = Render<UsersListToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UserCount, 5));
 
@@ -24,7 +24,7 @@ public class UsersListToggleButtonTests : TestContext
     public void UsersListToggleButton_WhenClosed_ShouldNotHaveOpenClass()
     {
         // Arrange & Act
-        var cut = RenderComponent<UsersListToggleButton>(parameters => parameters
+        var cut = Render<UsersListToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UserCount, 3));
 
@@ -37,7 +37,7 @@ public class UsersListToggleButtonTests : TestContext
     public void UsersListToggleButton_WhenOpen_ShouldHaveOpenClass()
     {
         // Arrange & Act
-        var cut = RenderComponent<UsersListToggleButton>(parameters => parameters
+        var cut = Render<UsersListToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.UserCount, 3));
 
@@ -51,7 +51,7 @@ public class UsersListToggleButtonTests : TestContext
     {
         // Arrange
         var toggledState = false;
-        var cut = RenderComponent<UsersListToggleButton>(parameters => parameters
+        var cut = Render<UsersListToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UserCount, 5)
             .Add(p => p.OnToggle, newState => toggledState = newState));
@@ -69,7 +69,7 @@ public class UsersListToggleButtonTests : TestContext
     {
         // Arrange
         var isOpen = false;
-        var cut = RenderComponent<UsersListToggleButton>(parameters => parameters
+        var cut = Render<UsersListToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, isOpen)
             .Add(p => p.UserCount, 5)
             .Add(p => p.OnToggle, newState => isOpen = newState));
@@ -81,7 +81,7 @@ public class UsersListToggleButtonTests : TestContext
         Assert.True(isOpen);
 
         // Act - Deuxième clic (fermer)
-        cut.SetParametersAndRender(parameters => parameters
+        cut.Render(parameters => parameters
             .Add(p => p.IsOpen, isOpen));
         await cut.InvokeAsync(() => button.Click());
 
@@ -93,7 +93,7 @@ public class UsersListToggleButtonTests : TestContext
     public void UsersListToggleButton_WithZeroUsers_ShouldShowZero()
     {
         // Arrange & Act
-        var cut = RenderComponent<UsersListToggleButton>(parameters => parameters
+        var cut = Render<UsersListToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UserCount, 0));
 
@@ -105,7 +105,7 @@ public class UsersListToggleButtonTests : TestContext
     public void UsersListToggleButton_WithLargeUserCount_ShouldDisplayCorrectly()
     {
         // Arrange & Act
-        var cut = RenderComponent<UsersListToggleButton>(parameters => parameters
+        var cut = Render<UsersListToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UserCount, 999));
 
@@ -117,7 +117,7 @@ public class UsersListToggleButtonTests : TestContext
     public void UsersListToggleButton_WhenClosed_ShouldShowClosedTitle()
     {
         // Arrange & Act
-        var cut = RenderComponent<UsersListToggleButton>(parameters => parameters
+        var cut = Render<UsersListToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UserCount, 5));
 
@@ -130,7 +130,7 @@ public class UsersListToggleButtonTests : TestContext
     public void UsersListToggleButton_WhenOpen_ShouldShowOpenTitle()
     {
         // Arrange & Act
-        var cut = RenderComponent<UsersListToggleButton>(parameters => parameters
+        var cut = Render<UsersListToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.UserCount, 5));
 
@@ -143,7 +143,7 @@ public class UsersListToggleButtonTests : TestContext
     public void UsersListToggleButton_ShouldContainUsersIcon()
     {
         // Arrange & Act
-        var cut = RenderComponent<UsersListToggleButton>(parameters => parameters
+        var cut = Render<UsersListToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UserCount, 5));
 
@@ -157,7 +157,7 @@ public class UsersListToggleButtonTests : TestContext
     {
         // Arrange
         var receivedState = false;
-        var cut = RenderComponent<UsersListToggleButton>(parameters => parameters
+        var cut = Render<UsersListToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UserCount, 5)
             .Add(p => p.OnToggle, state => receivedState = state));
@@ -173,11 +173,11 @@ public class UsersListToggleButtonTests : TestContext
     public void UsersListToggleButton_WithDifferentStates_ShouldRenderDifferently()
     {
         // Arrange & Act - État fermé
-        var cutClosed = RenderComponent<UsersListToggleButton>(parameters => parameters
+        var cutClosed = Render<UsersListToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.UserCount, 5));
 
-        var cutOpen = RenderComponent<UsersListToggleButton>(parameters => parameters
+        var cutOpen = Render<UsersListToggleButton>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.UserCount, 5));
 
