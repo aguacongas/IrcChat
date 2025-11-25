@@ -2,10 +2,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using Bunit;
-using Bunit.TestDoubles;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using RichardSzalay.MockHttp;
@@ -13,11 +13,11 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Pages;
 
-public class LoginTests : TestContext
+public class LoginTests : BunitContext
 {
     private readonly Mock<IUnifiedAuthService> _authServiceMock;
     private readonly MockHttpMessageHandler _mockHttp;
-    private readonly FakeNavigationManager _navManager;
+    private readonly NavigationManager _navManager;
 
     public LoginTests()
     {
@@ -31,7 +31,7 @@ public class LoginTests : TestContext
         Services.AddSingleton(httpClient);
         Services.AddSingleton(JSInterop.JSRuntime);
 
-        _navManager = Services.GetRequiredService<FakeNavigationManager>();
+        _navManager = Services.GetRequiredService<NavigationManager>();
     }
 
     [Fact]
@@ -42,7 +42,7 @@ public class LoginTests : TestContext
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
         // Act
-        RenderComponent<Login>();
+        Render<Login>();
 
         // Assert
         Assert.EndsWith("/chat", _navManager.Uri);
@@ -57,7 +57,7 @@ public class LoginTests : TestContext
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
         // Act
-        var cut = RenderComponent<Login>();
+        var cut = Render<Login>();
 
         // Assert
         var input = cut.Find("input[placeholder*='pseudo']");
@@ -83,7 +83,7 @@ public class LoginTests : TestContext
         _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
             .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
 
-        var cut = RenderComponent<Login>();
+        var cut = Render<Login>();
 
         // Act
         var input = cut.Find("input[placeholder*='pseudo']");
@@ -116,7 +116,7 @@ public class LoginTests : TestContext
         _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
             .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
 
-        var cut = RenderComponent<Login>();
+        var cut = Render<Login>();
 
         // Act
         var input = cut.Find("input[placeholder*='pseudo']");
@@ -145,7 +145,7 @@ public class LoginTests : TestContext
         _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
             .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
 
-        var cut = RenderComponent<Login>();
+        var cut = Render<Login>();
 
         // Act
         var input = cut.Find("input[placeholder*='pseudo']");
@@ -173,7 +173,7 @@ public class LoginTests : TestContext
         _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
             .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
 
-        var cut = RenderComponent<Login>();
+        var cut = Render<Login>();
 
         // Act
         var input = cut.Find("input[placeholder*='pseudo']");
@@ -194,7 +194,7 @@ public class LoginTests : TestContext
         var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
             .Respond(HttpStatusCode.OK);
 
-        var cut = RenderComponent<Login>();
+        var cut = Render<Login>();
 
         // Act
         var input = cut.Find("input[placeholder*='pseudo']");
@@ -225,7 +225,7 @@ public class LoginTests : TestContext
         _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
             .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
 
-        var cut = RenderComponent<Login>();
+        var cut = Render<Login>();
 
         // Act
         var input = cut.Find("input[placeholder*='pseudo']");
@@ -258,7 +258,7 @@ public class LoginTests : TestContext
 
         JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
-        var cut = RenderComponent<Login>();
+        var cut = Render<Login>();
 
         // Act
         var input = cut.Find("input[placeholder*='pseudo']");
@@ -285,7 +285,7 @@ public class LoginTests : TestContext
         _authServiceMock.Setup(x => x.ReservedProvider).Returns(ExternalAuthProvider.Google);
         _authServiceMock.Setup(x => x.ClearAllAsync()).Returns(Task.CompletedTask);
 
-        var cut = RenderComponent<Login>();
+        var cut = Render<Login>();
 
         // Act
         var anotherUsernameButton = cut.Find("button:contains('autre pseudo')");
@@ -311,7 +311,7 @@ public class LoginTests : TestContext
         _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
             .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
 
-        var cut = RenderComponent<Login>();
+        var cut = Render<Login>();
 
         // Act
         var input = cut.Find("input[placeholder*='pseudo']");
@@ -341,7 +341,7 @@ public class LoginTests : TestContext
         var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
             .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
 
-        var cut = RenderComponent<Login>();
+        var cut = Render<Login>();
         var input = cut.Find("input[placeholder*='pseudo']");
 
         // Act - Saisie rapide de plusieurs caractères
@@ -370,7 +370,7 @@ public class LoginTests : TestContext
         _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
             .Respond(HttpStatusCode.InternalServerError);
 
-        var cut = RenderComponent<Login>();
+        var cut = Render<Login>();
 
         // Act
         var input = cut.Find("input[placeholder*='pseudo']");
@@ -393,7 +393,7 @@ public class LoginTests : TestContext
         _authServiceMock.Setup(x => x.IsAuthenticated).Returns(false);
 
         // Act
-        var cut = RenderComponent<Login>();
+        var cut = Render<Login>();
 
         // Assert
         var input = cut.Find("input[placeholder*='pseudo']");
@@ -416,7 +416,7 @@ public class LoginTests : TestContext
         _mockHttp.When(HttpMethod.Post, "*/api/oauth/check-username")
             .Respond(HttpStatusCode.OK, JsonContent.Create(checkResponse));
 
-        var cut = RenderComponent<Login>();
+        var cut = Render<Login>();
 
         // Act
         var input = cut.Find("input[placeholder*='pseudo']");
@@ -439,7 +439,7 @@ public class LoginTests : TestContext
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(taskCompletionSource.Task);
 
         // Act
-        var cut = RenderComponent<Login>();
+        var cut = Render<Login>();
 
         // Assert
         Assert.Contains("Chargement", cut.Markup);

@@ -7,13 +7,13 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
-public class SidebarTests : TestContext
+public class SidebarTests : BunitContext
 {
     [Fact]
     public void Sidebar_WhenOpen_ShouldHaveOpenClass()
     {
         // Arrange & Act
-        var cut = RenderComponent<Sidebar>(parameters => parameters
+        var cut = Render<Sidebar>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.Username, "TestUser")
             .Add(p => p.Channels, []));
@@ -26,7 +26,7 @@ public class SidebarTests : TestContext
     public void Sidebar_WhenClosed_ShouldHaveClosedClass()
     {
         // Arrange & Act
-        var cut = RenderComponent<Sidebar>(parameters => parameters
+        var cut = Render<Sidebar>(parameters => parameters
             .Add(p => p.IsOpen, false)
             .Add(p => p.Username, "TestUser")
             .Add(p => p.Channels, []));
@@ -39,7 +39,7 @@ public class SidebarTests : TestContext
     public void Sidebar_ShouldDisplayUsername()
     {
         // Arrange & Act
-        var cut = RenderComponent<Sidebar>(parameters => parameters
+        var cut = Render<Sidebar>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.Username, "JohnDoe")
             .Add(p => p.Channels, []));
@@ -52,7 +52,7 @@ public class SidebarTests : TestContext
     public void Sidebar_WithAvatar_ShouldDisplayAvatar()
     {
         // Arrange & Act
-        var cut = RenderComponent<Sidebar>(parameters => parameters
+        var cut = Render<Sidebar>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.Username, "TestUser")
             .Add(p => p.AvatarUrl, "https://example.com/avatar.jpg")
@@ -67,7 +67,7 @@ public class SidebarTests : TestContext
     public void Sidebar_WithoutAvatar_ShouldDisplayPlaceholder()
     {
         // Arrange & Act
-        var cut = RenderComponent<Sidebar>(parameters => parameters
+        var cut = Render<Sidebar>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.Username, "TestUser")
             .Add(p => p.AvatarUrl, null)
@@ -81,7 +81,7 @@ public class SidebarTests : TestContext
     public void Sidebar_WhenOAuthUser_ShouldDisplayVerifiedBadge()
     {
         // Arrange & Act
-        var cut = RenderComponent<Sidebar>(parameters => parameters
+        var cut = Render<Sidebar>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.Username, "TestUser")
             .Add(p => p.IsOAuthUser, true)
@@ -95,7 +95,7 @@ public class SidebarTests : TestContext
     public void Sidebar_WhenAdmin_ShouldDisplayAdminBadge()
     {
         // Arrange & Act
-        var cut = RenderComponent<Sidebar>(parameters => parameters
+        var cut = Render<Sidebar>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.Username, "AdminUser")
             .Add(p => p.IsOAuthUser, true)
@@ -110,7 +110,7 @@ public class SidebarTests : TestContext
     public void Sidebar_WhenGuestUser_ShouldDisplayGuestBadge()
     {
         // Arrange & Act
-        var cut = RenderComponent<Sidebar>(parameters => parameters
+        var cut = Render<Sidebar>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.Username, "GuestUser")
             .Add(p => p.IsOAuthUser, false)
@@ -132,7 +132,7 @@ public class SidebarTests : TestContext
         };
 
         // Act
-        var cut = RenderComponent<Sidebar>(parameters => parameters
+        var cut = Render<Sidebar>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.Username, "TestUser")
             .Add(p => p.Channels, channels));
@@ -154,7 +154,7 @@ public class SidebarTests : TestContext
         };
 
         // Act
-        var cut = RenderComponent<Sidebar>(parameters => parameters
+        var cut = Render<Sidebar>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.Username, "TestUser")
             .Add(p => p.Channels, channels)
@@ -197,7 +197,7 @@ public class SidebarTests : TestContext
         };
 
         // Act
-        var cut = RenderComponent<Sidebar>(parameters => parameters
+        var cut = Render<Sidebar>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.Username, "TestUser")
             .Add(p => p.Channels, [])
@@ -214,7 +214,7 @@ public class SidebarTests : TestContext
         // Arrange
         var userInfoClickedInvoked = false;
 
-        var cut = RenderComponent<Sidebar>(parameters => parameters
+        var cut = Render<Sidebar>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.Username, "TestUser")
             .Add(p => p.Channels, [])
@@ -248,7 +248,7 @@ public class SidebarTests : TestContext
         };
 
         // Act
-        var cut = RenderComponent<Sidebar>(parameters => parameters
+        var cut = Render<Sidebar>(parameters => parameters
             .Add(p => p.IsOpen, true)
             .Add(p => p.Username, "TestUser")
             .Add(p => p.Channels, [])

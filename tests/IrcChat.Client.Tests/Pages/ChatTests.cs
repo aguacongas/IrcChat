@@ -3,11 +3,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
 using Bunit;
-using Bunit.TestDoubles;
 using IrcChat.Client.Models;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -16,7 +16,7 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Pages;
 
-public class ChatTests : TestContext
+public class ChatTests : BunitContext
 {
     private readonly Mock<IChatService> _chatServiceMock;
     private readonly Mock<IUnifiedAuthService> _authServiceMock;
@@ -24,7 +24,7 @@ public class ChatTests : TestContext
     private readonly Mock<IDeviceDetectorService> _deviceDetectorMock;
     private readonly Mock<IIgnoredUsersService> _ignoredUsersServiceMock;
     private readonly MockHttpMessageHandler _mockHttp;
-    private readonly FakeNavigationManager _navManager;
+    private readonly NavigationManager _navManager;
 
     public ChatTests()
     {
@@ -53,7 +53,7 @@ public class ChatTests : TestContext
             s.BaseUrl = "https://localhost:7000";
             s.SignalRHubUrl = "https://localhost:7000/chathub";
         });
-        _navManager = Services.GetRequiredService<FakeNavigationManager>();
+        _navManager = Services.GetRequiredService<NavigationManager>();
     }
 
 
@@ -63,7 +63,7 @@ public class ChatTests : TestContext
     {
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
         _authServiceMock.Setup(x => x.HasUsername).Returns(false);
-        RenderComponent<Chat>();
+        Render<Chat>();
         Assert.EndsWith("/login", _navManager.Uri);
     }
 
@@ -72,7 +72,7 @@ public class ChatTests : TestContext
     {
         SetupBasicAuth();
         SetupBasicMocks();
-        RenderComponent<Chat>();
+        Render<Chat>();
         await Task.Delay(200);
         _ignoredUsersServiceMock.Verify(x => x.InitializeAsync(), Times.Once);
     }
@@ -82,7 +82,7 @@ public class ChatTests : TestContext
     {
         SetupBasicAuth();
         SetupBasicMocks();
-        RenderComponent<Chat>();
+        Render<Chat>();
         await Task.Delay(200);
         _ignoredUsersServiceMock.VerifyAdd(x => x.OnIgnoredUsersChanged += It.IsAny<Action>());
     }
@@ -109,7 +109,7 @@ public class ChatTests : TestContext
             .ReturnsAsync([]);
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("IgnoredUser")).Returns(true);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
         await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
         await Task.Delay(200);
@@ -152,7 +152,7 @@ public class ChatTests : TestContext
             .ReturnsAsync([]);
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("NormalUser")).Returns(false);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
         await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
         await Task.Delay(200);
@@ -200,7 +200,7 @@ public class ChatTests : TestContext
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("IgnoredUser")).Returns(true);
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("NormalUser")).Returns(false);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
         await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
         await Task.Delay(200);
@@ -225,7 +225,7 @@ public class ChatTests : TestContext
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("IgnoredUser")).Returns(true);
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("NormalUser")).Returns(false);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
 
         Assert.Contains("NormalUser", cut.Markup);
@@ -252,7 +252,7 @@ public class ChatTests : TestContext
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("Friend")).Returns(false);
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("IgnoredSender")).Returns(true);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
         await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
         await Task.Delay(200);
@@ -297,7 +297,7 @@ public class ChatTests : TestContext
             .ReturnsAsync([]);
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("Friend")).Returns(false);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
         await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
         await Task.Delay(200);
@@ -314,7 +314,7 @@ public class ChatTests : TestContext
     {
         SetupBasicAuth();
         SetupBasicMocks();
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
         await cut.Instance.DisposeAsync();
         _ignoredUsersServiceMock.VerifyRemove(x => x.OnIgnoredUsersChanged -= It.IsAny<Action>());
@@ -337,7 +337,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
 
         Assert.Contains("general", cut.Markup);
@@ -349,7 +349,7 @@ public class ChatTests : TestContext
     {
         SetupBasicAuth();
         SetupBasicMocks();
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
         Assert.NotNull(cut.Find(".chat-container"));
     }
@@ -376,7 +376,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
         await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
         cut.Render();
@@ -391,7 +391,7 @@ public class ChatTests : TestContext
     {
         SetupBasicAuth();
         SetupBasicMocks();
-        RenderComponent<Chat>();
+        Render<Chat>();
         await Task.Delay(200);
 
         var newMessage = new Message
@@ -422,7 +422,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync("TestUser", "User2"))
             .ReturnsAsync([]);
 
-        RenderComponent<Chat>();
+        Render<Chat>();
         await Task.Delay(200);
 
         _privateMessageServiceMock.Verify(x => x.GetConversationsAsync("TestUser"), Times.AtLeastOnce);
@@ -434,7 +434,7 @@ public class ChatTests : TestContext
     {
         SetupBasicAuth();
         SetupBasicMocks();
-        RenderComponent<Chat>();
+        Render<Chat>();
         await Task.Delay(200);
 
         _chatServiceMock.Raise(x => x.OnChannelMuteStatusChanged += null, "general", true);
@@ -449,7 +449,7 @@ public class ChatTests : TestContext
     {
         SetupBasicAuth();
         SetupBasicMocks();
-        RenderComponent<Chat>();
+        Render<Chat>();
         await Task.Delay(200);
 
         _chatServiceMock.Raise(x => x.OnUserJoined += null, "NewUser", "NewUser", "general");
@@ -464,7 +464,7 @@ public class ChatTests : TestContext
     {
         SetupBasicAuth();
         SetupBasicMocks();
-        RenderComponent<Chat>();
+        Render<Chat>();
         await Task.Delay(200);
 
         _chatServiceMock.Raise(x => x.OnUserLeft += null, "DepartingUser", "DepartingUser", "general");
@@ -479,7 +479,7 @@ public class ChatTests : TestContext
     {
         SetupBasicAuth();
         SetupBasicMocks();
-        RenderComponent<Chat>();
+        Render<Chat>();
         await Task.Delay(200);
 
         var privateMessage = new PrivateMessage
@@ -502,7 +502,7 @@ public class ChatTests : TestContext
     {
         SetupBasicAuth();
         SetupBasicMocks();
-        RenderComponent<Chat>();
+        Render<Chat>();
         await Task.Delay(200);
 
         _privateMessageServiceMock.Raise(x => x.OnConversationDeleted += null, "DeletedUser");
@@ -516,7 +516,7 @@ public class ChatTests : TestContext
     {
         SetupBasicAuth();
         SetupBasicMocks();
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
 
         await cut.InvokeAsync(() => cut.Find(".user-info").Click());
@@ -530,7 +530,7 @@ public class ChatTests : TestContext
     {
         SetupBasicAuth();
         SetupBasicMocks();
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
 
         _chatServiceMock.Raise(x => x.OnMessageBlocked += null, "Ce salon est muet");
@@ -568,7 +568,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync("AdminUser"))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
 
         var channelItems = cut.FindAll("ul.channel-list > li[blazor\\:onclick]");
@@ -608,7 +608,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync("Creator"))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
 
         var channelItems = cut.FindAll("ul.channel-list > li[blazor\\:onclick]");
@@ -646,7 +646,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
 
         var channelItems = cut.FindAll("ul.channel-list > li[blazor\\:onclick]");
@@ -682,7 +682,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync("TestUser"))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
 
         await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
@@ -707,7 +707,7 @@ public class ChatTests : TestContext
     {
         SetupBasicAuth();
         SetupBasicMocks();
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
 
         var toggleButton = cut.Find(".sidebar-toggle-btn");
@@ -744,7 +744,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
 
         await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
@@ -767,7 +767,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
 
         Assert.NotNull(cut.Find(".chat-container"));
@@ -778,7 +778,7 @@ public class ChatTests : TestContext
     {
         SetupBasicAuth();
         SetupBasicMocks();
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
 
         Assert.DoesNotContain("channel-mute-control", cut.Markup);
@@ -789,7 +789,7 @@ public class ChatTests : TestContext
     {
         SetupBasicAuth();
         SetupBasicMocks();
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
 
         await cut.Instance.DisposeAsync();
@@ -844,7 +844,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
         await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
         await Task.Delay(200);
@@ -891,7 +891,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
         await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
         await Task.Delay(200);
@@ -928,7 +928,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
         await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
         await Task.Delay(200);
@@ -972,7 +972,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
         await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
         await Task.Delay(200);
@@ -1019,7 +1019,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
         await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
         await Task.Delay(200);
@@ -1056,7 +1056,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
         await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
         await Task.Delay(200);
@@ -1075,7 +1075,7 @@ public class ChatTests : TestContext
         // Arrange
         SetupBasicAuth();
         SetupBasicMocks();
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
 
         // Act
@@ -1099,7 +1099,7 @@ public class ChatTests : TestContext
             .ReturnsAsync([]);
 
         // Act
-        RenderComponent<Chat>();
+        Render<Chat>();
         await Task.Delay(200);
 
         // Assert
@@ -1135,7 +1135,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
         await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
         await Task.Delay(200);
@@ -1176,7 +1176,7 @@ public class ChatTests : TestContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = RenderComponent<Chat>();
+        var cut = Render<Chat>();
         await Task.Delay(200);
         await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
         await Task.Delay(200);

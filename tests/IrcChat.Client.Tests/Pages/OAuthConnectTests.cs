@@ -2,7 +2,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using Bunit;
-using Bunit.TestDoubles;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
@@ -14,12 +13,12 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Pages;
 
-public class OAuthConnectTests : TestContext
+public class OAuthConnectTests : BunitContext
 {
     private readonly Mock<IUnifiedAuthService> _authServiceMock;
     private readonly Mock<IOAuthClientService> _oauthClientServiceMock;
     private readonly MockHttpMessageHandler _mockHttp;
-    private readonly FakeNavigationManager _navManager;
+    private readonly NavigationManager _navManager;
 
     public OAuthConnectTests()
     {
@@ -36,7 +35,7 @@ public class OAuthConnectTests : TestContext
         Services.AddSingleton(httpClient);
         Services.AddSingleton(JSInterop.JSRuntime);
 
-        _navManager = Services.GetRequiredService<FakeNavigationManager>();
+        _navManager = Services.GetRequiredService<NavigationManager>();
     }
 
     [Fact]
@@ -48,7 +47,7 @@ public class OAuthConnectTests : TestContext
             ["error"] = "access_denied"
         }));
 
-        var cut = RenderComponent<OAuthConnect>();
+        var cut = Render<OAuthConnect>();
 
         // Assert
         Assert.Contains("Erreur OAuth", cut.Markup);
@@ -62,7 +61,7 @@ public class OAuthConnectTests : TestContext
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
         // Act
-        RenderComponent<OAuthConnect>();
+        Render<OAuthConnect>();
 
         // Assert
         Assert.EndsWith("/login", _navManager.Uri);
@@ -88,7 +87,7 @@ public class OAuthConnectTests : TestContext
             ["provider"] = "Google",
             ["mode"] = "reserve"
         }));
-        RenderComponent<OAuthConnect>();
+        Render<OAuthConnect>();
 
         await Task.Delay(300);
 
@@ -145,7 +144,7 @@ public class OAuthConnectTests : TestContext
             ["state"] = "random_state"
         }));
 
-        RenderComponent<OAuthConnect>();
+        Render<OAuthConnect>();
 
         await Task.Delay(500);
 
@@ -212,7 +211,7 @@ public class OAuthConnectTests : TestContext
             ["state"] = "random_state"
         }));
 
-        RenderComponent<OAuthConnect>();
+        Render<OAuthConnect>();
 
         await Task.Delay(500);
 
@@ -247,7 +246,7 @@ public class OAuthConnectTests : TestContext
             ["state"] = "random_state"
         }));
 
-        var cut = RenderComponent<OAuthConnect>();
+        var cut = Render<OAuthConnect>();
 
         await Task.Delay(300);
 
@@ -281,7 +280,7 @@ public class OAuthConnectTests : TestContext
             ["state"] = "random_state"
         }));
 
-        var cut = RenderComponent<OAuthConnect>();
+        var cut = Render<OAuthConnect>();
 
         await Task.Delay(300);
 
@@ -332,7 +331,7 @@ public class OAuthConnectTests : TestContext
             ["code"] = "auth_code_456",
             ["state"] = "xyz123"
         }));
-        RenderComponent<OAuthConnect>();
+        Render<OAuthConnect>();
 
         await Task.Delay(500);
 
@@ -366,7 +365,7 @@ public class OAuthConnectTests : TestContext
             ["mode"] = "reserve"
         }));
 
-        var cut = RenderComponent<OAuthConnect>();
+        var cut = Render<OAuthConnect>();
 
         // Assert
         Assert.Contains("Redirection vers Google...", cut.Markup);
@@ -400,7 +399,7 @@ public class OAuthConnectTests : TestContext
             ["state"] = "random_state"
         }));
 
-        var cut = RenderComponent<OAuthConnect>();
+        var cut = Render<OAuthConnect>();
 
         await Task.Delay(500);
 
@@ -431,7 +430,7 @@ public class OAuthConnectTests : TestContext
             ["code"] = "auth_code_456",
             ["state"] = "state_xyz"
         }));
-        var cut = RenderComponent<OAuthConnect>();
+        var cut = Render<OAuthConnect>();
 
         await Task.Delay(500);
 
@@ -459,7 +458,7 @@ public class OAuthConnectTests : TestContext
             ["state"] = "random_state"
         }));
 
-        var cut = RenderComponent<OAuthConnect>();
+        var cut = Render<OAuthConnect>();
 
         await Task.Delay(300);
 
@@ -516,7 +515,7 @@ public class OAuthConnectTests : TestContext
             ["state"] = "random_state"
         }));
 
-        RenderComponent<OAuthConnect>();
+        Render<OAuthConnect>();
 
         await Task.Delay(500);
 

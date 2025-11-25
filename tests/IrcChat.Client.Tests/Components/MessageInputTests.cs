@@ -6,13 +6,13 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
-public class MessageInputTests : TestContext
+public class MessageInputTests : BunitContext
 {
     [Fact]
     public void MessageInput_WhenDisconnected_ShouldDisableInput()
     {
         // Act
-        var cut = RenderComponent<MessageInput>(parameters => parameters
+        var cut = Render<MessageInput>(parameters => parameters
             .Add(p => p.IsConnected, false));
 
         // Assert
@@ -24,7 +24,7 @@ public class MessageInputTests : TestContext
     public void MessageInput_WhenConnected_ShouldEnableInput()
     {
         // Act
-        var cut = RenderComponent<MessageInput>(parameters => parameters
+        var cut = Render<MessageInput>(parameters => parameters
             .Add(p => p.IsConnected, true));
 
         // Assert
@@ -37,7 +37,7 @@ public class MessageInputTests : TestContext
     {
         // Arrange
         string? sentMessage = null;
-        var cut = RenderComponent<MessageInput>(parameters => parameters
+        var cut = Render<MessageInput>(parameters => parameters
             .Add(p => p.IsConnected, true)
             .Add(p => p.OnSendMessage, EventCallback.Factory.Create<string>(
                 this, (msg) => sentMessage = msg)));

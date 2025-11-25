@@ -7,7 +7,7 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
-public class PrivateConversationsTests : TestContext
+public class PrivateConversationsTests : BunitContext
 {
     [Fact]
     public void Component_WhenNoConversations_ShouldShowEmptyState()
@@ -16,7 +16,7 @@ public class PrivateConversationsTests : TestContext
         var conversations = new List<PrivateConversation>();
 
         // Act
-        var cut = RenderComponent<PrivateConversations>(parameters => parameters
+        var cut = Render<PrivateConversations>(parameters => parameters
             .Add(p => p.Conversations, conversations));
 
         // Assert
@@ -57,7 +57,7 @@ public class PrivateConversationsTests : TestContext
         };
 
         // Act
-        var cut = RenderComponent<PrivateConversations>(parameters => parameters
+        var cut = Render<PrivateConversations>(parameters => parameters
             .Add(p => p.Conversations, conversations));
 
         // Assert
@@ -88,7 +88,7 @@ public class PrivateConversationsTests : TestContext
         };
 
         // Act
-        var cut = RenderComponent<PrivateConversations>(parameters => parameters
+        var cut = Render<PrivateConversations>(parameters => parameters
             .Add(p => p.Conversations, conversations));
 
         // Assert
@@ -118,7 +118,7 @@ public class PrivateConversationsTests : TestContext
         };
 
         // Act
-        var cut = RenderComponent<PrivateConversations>(parameters => parameters
+        var cut = Render<PrivateConversations>(parameters => parameters
             .Add(p => p.Conversations, conversations));
 
         // Assert
@@ -148,7 +148,7 @@ public class PrivateConversationsTests : TestContext
         };
 
         // Act
-        var cut = RenderComponent<PrivateConversations>(parameters => parameters
+        var cut = Render<PrivateConversations>(parameters => parameters
             .Add(p => p.Conversations, conversations));
 
         // Assert
@@ -190,7 +190,7 @@ public class PrivateConversationsTests : TestContext
         };
 
         // Act
-        var cut = RenderComponent<PrivateConversations>(parameters => parameters
+        var cut = Render<PrivateConversations>(parameters => parameters
             .Add(p => p.Conversations, conversations));
 
         // Assert
@@ -221,7 +221,7 @@ public class PrivateConversationsTests : TestContext
 
         var selectedUsername = string.Empty;
 
-        var cut = RenderComponent<PrivateConversations>(parameters => parameters
+        var cut = Render<PrivateConversations>(parameters => parameters
             .Add(p => p.Conversations, conversations)
             .Add(p => p.OnConversationSelected, EventCallback.Factory.Create<User>(
                 this, user => selectedUsername = user.Username)));
@@ -258,7 +258,7 @@ public class PrivateConversationsTests : TestContext
 
         var deletedUsername = string.Empty;
 
-        var cut = RenderComponent<PrivateConversations>(parameters => parameters
+        var cut = Render<PrivateConversations>(parameters => parameters
             .Add(p => p.Conversations, conversations)
             .Add(p => p.OnConversationDeleted, EventCallback.Factory.Create<User>(
                 this, user => deletedUsername = user.Username)));
@@ -306,7 +306,7 @@ public class PrivateConversationsTests : TestContext
         };
 
         // Act
-        var cut = RenderComponent<PrivateConversations>(parameters => parameters
+        var cut = Render<PrivateConversations>(parameters => parameters
             .Add(p => p.Conversations, conversations)
             .Add(p => p.SelectedUser, new User
             {
@@ -343,7 +343,7 @@ public class PrivateConversationsTests : TestContext
         };
 
         // Act
-        var cut = RenderComponent<PrivateConversations>(parameters => parameters
+        var cut = Render<PrivateConversations>(parameters => parameters
             .Add(p => p.Conversations, conversations));
 
         // Assert
@@ -370,7 +370,7 @@ public class PrivateConversationsTests : TestContext
         };
 
         // Act
-        var cut = RenderComponent<PrivateConversations>(parameters => parameters
+        var cut = Render<PrivateConversations>(parameters => parameters
             .Add(p => p.Conversations, conversations));
 
         // Assert

@@ -10,7 +10,7 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
-public class ChatAreaTests : TestContext
+public class ChatAreaTests : BunitContext
 {
     private readonly MockHttpMessageHandler _mockHttp;
     private readonly Mock<IIgnoredUsersService> _ignoredUsersServiceMock;
@@ -34,7 +34,7 @@ public class ChatAreaTests : TestContext
     public void ChatArea_WhenNoChannel_ShouldShowWelcomeMessage()
     {
         // Arrange & Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "")
             .Add(p => p.IsConnected, false)
@@ -49,7 +49,7 @@ public class ChatAreaTests : TestContext
     public void ChatArea_WithChannel_ShouldShowChatHeader()
     {
         // Arrange & Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -64,7 +64,7 @@ public class ChatAreaTests : TestContext
     public void ChatArea_WhenConnected_ShouldShowConnectedStatus()
     {
         // Arrange & Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -79,7 +79,7 @@ public class ChatAreaTests : TestContext
     public void ChatArea_WhenDisconnected_ShouldShowDisconnectedStatus()
     {
         // Arrange & Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, false)
@@ -94,7 +94,7 @@ public class ChatAreaTests : TestContext
     public void ChatArea_WithUsersListOpen_ShouldShowVisibleClass()
     {
         // Arrange & Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -113,7 +113,7 @@ public class ChatAreaTests : TestContext
     public void ChatArea_WithUsersListClosed_ShouldShowHiddenClass()
     {
         // Arrange & Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -131,7 +131,7 @@ public class ChatAreaTests : TestContext
     public void ChatArea_ShouldRenderUsersListToggleButton()
     {
         // Arrange & Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -151,7 +151,7 @@ public class ChatAreaTests : TestContext
     public void ChatArea_ShouldRenderChannelMuteButton()
     {
         // Arrange & Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -166,7 +166,7 @@ public class ChatAreaTests : TestContext
     public void ChatArea_ShouldRenderChannelDeleteButton()
     {
         // Arrange & Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -181,7 +181,7 @@ public class ChatAreaTests : TestContext
     public void ChatArea_WhenCannotManage_ShouldNotShowManagementButtons()
     {
         // Arrange & Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -210,7 +210,7 @@ public class ChatAreaTests : TestContext
         };
 
         // Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -225,7 +225,7 @@ public class ChatAreaTests : TestContext
     public void ChatArea_ShouldRenderMessageInput()
     {
         // Arrange & Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -247,7 +247,7 @@ public class ChatAreaTests : TestContext
         };
 
         // Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -266,7 +266,7 @@ public class ChatAreaTests : TestContext
         var callbackInvoked = false;
         var newState = false;
 
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -296,7 +296,7 @@ public class ChatAreaTests : TestContext
         // Arrange
         var messageSent = "";
 
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -318,7 +318,7 @@ public class ChatAreaTests : TestContext
     public void ChatArea_WithMutedChannel_ShouldPassMutedState()
     {
         // Arrange & Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -335,7 +335,7 @@ public class ChatAreaTests : TestContext
     public void ChatArea_WithEmptyMessages_ShouldStillRenderMessageList()
     {
         // Arrange & Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -350,7 +350,7 @@ public class ChatAreaTests : TestContext
     public void ChatArea_WithEmptyUsers_ShouldShowZeroCount()
     {
         // Arrange & Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -370,7 +370,7 @@ public class ChatAreaTests : TestContext
 
         var deletedChannel = "";
 
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -395,7 +395,7 @@ public class ChatAreaTests : TestContext
     public void ChatArea_HeaderRight_ShouldContainAllButtons()
     {
         // Arrange & Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
@@ -418,7 +418,7 @@ public class ChatAreaTests : TestContext
     public void ChatArea_WhenNoChannel_ShouldNotRenderHeaderOrContent()
     {
         // Arrange & Act
-        var cut = RenderComponent<ChatArea>(parameters => parameters
+        var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
             .Add(p => p.CurrentChannel, "")
             .Add(p => p.IsConnected, false)

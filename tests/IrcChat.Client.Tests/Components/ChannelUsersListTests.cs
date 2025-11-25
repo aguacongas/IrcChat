@@ -11,7 +11,7 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
-public class ChannelUsersListTests : TestContext
+public class ChannelUsersListTests : BunitContext
 {
     private readonly MockHttpMessageHandler _mockHttp;
     private readonly Mock<IIgnoredUsersService> _ignoredUsersServiceMock;
@@ -50,7 +50,7 @@ public class ChannelUsersListTests : TestContext
                 JsonContent.Create(new List<dynamic>()));
 
         // Act
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
+        var cut = Render<ChannelUsersList>(parameters => parameters
             .Add(p => p.Users, users)
             .Add(p => p.ChannelName, "general")
             .Add(p => p.Username, "Alice")
@@ -77,7 +77,7 @@ public class ChannelUsersListTests : TestContext
                 JsonContent.Create(new List<dynamic>()));
 
         // Act
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
+        var cut = Render<ChannelUsersList>(parameters => parameters
             .Add(p => p.Users, users)
             .Add(p => p.ChannelName, "general")
             .Add(p => p.Username, "Alice")
@@ -107,7 +107,7 @@ public class ChannelUsersListTests : TestContext
                 JsonContent.Create(new List<dynamic>()));
 
         // Act
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
+        var cut = Render<ChannelUsersList>(parameters => parameters
             .Add(p => p.Users, users)
             .Add(p => p.ChannelName, "general")
             .Add(p => p.Username, "Bob")
@@ -139,7 +139,7 @@ public class ChannelUsersListTests : TestContext
                 JsonContent.Create(new List<dynamic>()));
 
         // Act
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
+        var cut = Render<ChannelUsersList>(parameters => parameters
             .Add(p => p.Users, users)
             .Add(p => p.ChannelName, "general")
             .Add(p => p.Username, "Charlie")
@@ -169,7 +169,7 @@ public class ChannelUsersListTests : TestContext
                 JsonContent.Create(new List<dynamic>()));
 
         // Act
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
+        var cut = Render<ChannelUsersList>(parameters => parameters
             .Add(p => p.Users, users)
             .Add(p => p.ChannelName, "general")
             .Add(p => p.Username, "Charlie")
@@ -199,7 +199,7 @@ public class ChannelUsersListTests : TestContext
                 JsonContent.Create(new List<dynamic>()));
 
         // Act
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
+        var cut = Render<ChannelUsersList>(parameters => parameters
             .Add(p => p.Users, users)
             .Add(p => p.ChannelName, "general")
             .Add(p => p.Username, "Alice")
@@ -238,7 +238,7 @@ public class ChannelUsersListTests : TestContext
                 mutedAt = DateTime.UtcNow
             }));
 
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
+        var cut = Render<ChannelUsersList>(parameters => parameters
             .Add(p => p.Users, users)
             .Add(p => p.ChannelName, "general")
             .Add(p => p.Username, "Charlie")
@@ -289,7 +289,7 @@ public class ChannelUsersListTests : TestContext
                 username = "Alice"
             }));
 
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
+        var cut = Render<ChannelUsersList>(parameters => parameters
             .Add(p => p.Users, users)
             .Add(p => p.ChannelName, channelName)
             .Add(p => p.Username, "Charlie")
@@ -332,7 +332,7 @@ public class ChannelUsersListTests : TestContext
                 error = "user_already_muted"
             }));
 
-        var cut = RenderComponent<ChannelUsersList>(parameters => parameters
+        var cut = Render<ChannelUsersList>(parameters => parameters
             .Add(p => p.Users, users)
             .Add(p => p.ChannelName, "general")
             .Add(p => p.Username, "Charlie")

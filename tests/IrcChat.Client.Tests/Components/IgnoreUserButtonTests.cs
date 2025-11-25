@@ -8,7 +8,7 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
-public class IgnoreUserButtonTests : TestContext
+public class IgnoreUserButtonTests : BunitContext
 {
     private readonly Mock<IIgnoredUsersService> _ignoredUsersServiceMock;
 
@@ -33,7 +33,7 @@ public class IgnoreUserButtonTests : TestContext
             .Returns(false);
 
         // Act
-        var cut = RenderComponent<IgnoreUserButton>(parameters => parameters
+        var cut = Render<IgnoreUserButton>(parameters => parameters
             .Add(p => p.UserId, userId));
 
         // Assert
@@ -51,7 +51,7 @@ public class IgnoreUserButtonTests : TestContext
             .Returns(true);
 
         // Act
-        var cut = RenderComponent<IgnoreUserButton>(parameters => parameters
+        var cut = Render<IgnoreUserButton>(parameters => parameters
             .Add(p => p.UserId, userId));
 
         cut.WaitForState(() => cut.Markup.Contains("Ignoré"),
@@ -76,7 +76,7 @@ public class IgnoreUserButtonTests : TestContext
             .Setup(x => x.ToggleIgnoreUserAsync(userId))
             .Verifiable();
 
-        var cut = RenderComponent<IgnoreUserButton>(parameters => parameters
+        var cut = Render<IgnoreUserButton>(parameters => parameters
             .Add(p => p.UserId, userId));
 
         var button = cut.Find("button");
@@ -100,7 +100,7 @@ public class IgnoreUserButtonTests : TestContext
             .Returns(false);
 
         // Act
-        RenderComponent<IgnoreUserButton>(parameters => parameters
+        Render<IgnoreUserButton>(parameters => parameters
             .Add(p => p.UserId, userId));
 
         // Assert - InitializeAsync should be called via type casting
@@ -124,7 +124,7 @@ public class IgnoreUserButtonTests : TestContext
             .SetupAdd(x => x.OnIgnoredUsersChanged += It.IsAny<Action>())
             .Callback<Action>(callback => onChangedCallback = callback);
 
-        var cut = RenderComponent<IgnoreUserButton>(parameters => parameters
+        var cut = Render<IgnoreUserButton>(parameters => parameters
             .Add(p => p.UserId, userId));
 
         // Act
@@ -151,7 +151,7 @@ public class IgnoreUserButtonTests : TestContext
             .Returns(false);
 
         // Act
-        var cut = RenderComponent<IgnoreUserButton>(parameters => parameters
+        var cut = Render<IgnoreUserButton>(parameters => parameters
             .Add(p => p.UserId, userId));
 
         var button = cut.Find("button");
