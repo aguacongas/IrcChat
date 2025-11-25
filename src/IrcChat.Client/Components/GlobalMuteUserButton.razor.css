@@ -15,23 +15,23 @@
 }
 
   .global-mute-btn.mute {
-    background: #fc8181;
+    background: #b40404;
     color: #fff;
   }
 
     .global-mute-btn.mute:hover:not(:disabled) {
-      background: #f56565;
+      background: #b40404;
       transform: translateY(-1px);
       box-shadow: 0 4px 8px rgba(252, 129, 129, 0.3);
     }
 
   .global-mute-btn.unmute {
-    background: #68d391;
+    background: #1c5f35;
     color: #fff;
   }
 
     .global-mute-btn.unmute:hover:not(:disabled) {
-      background: #48bb78;
+      background: #1C5F35;
       transform: translateY(-1px);
       box-shadow: 0 4px 8px rgba(104, 211, 145, 0.3);
     }
