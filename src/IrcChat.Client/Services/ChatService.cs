@@ -8,6 +8,7 @@ public class ChatService(IPrivateMessageService privateMessageService,
     ILogger<ChatService> logger) : IChatService
 {
     private HubConnection? _hubConnection;
+    private IHubConnectionEvents? _hubConnectionEvents;
     private Timer? _pingTimer;
 
     // Events pour les canaux publics
@@ -30,7 +31,14 @@ public class ChatService(IPrivateMessageService privateMessageService,
     public event Action<string, string, string, string, string>? OnUserMuted;
     public event Action<string, string, string, string, string>? OnUserUnmuted;
 
+    // Events pour l'état de la connexion SignalR
+    public event Action? OnDisconnected;
+    public event Action<string?>? OnReconnecting;
+    public event Action? OnReconnected;
+
     public bool IsInitialized => _hubConnection != null && _hubConnection.State == HubConnectionState.Connected;
+
+    public Func<HubConnection, IHubConnectionEvents> WrapConnectionEvents { get; set; } = connection => new HubConnectionEventWrapper(connection);
 
     public async Task InitializeAsync(IHubConnectionBuilder hubConnectionBuilder)
     {
@@ -77,31 +85,15 @@ public class ChatService(IPrivateMessageService privateMessageService,
             (channel, userId, username, unmutedByUserId, unmutedByUsername)
             => OnUserUnmuted?.Invoke(channel, userId, username, unmutedByUserId, unmutedByUsername));
 
+        // Handlers pour les événements de connexion
+        _hubConnectionEvents = WrapConnectionEvents(_hubConnection);
+
+        _hubConnectionEvents.Closed += OnConnectionClosed;
+        _hubConnectionEvents.Reconnecting += OnConnectionReconnecting;
+        _hubConnectionEvents.Reconnected += OnConnectionReconnected;
+
         await _hubConnection.StartAsync();
-
-        _pingTimer = new Timer(async _ =>
-        {
-            try
-            {
-                if (_hubConnection?.State == HubConnectionState.Connected)
-                {
-                    var userId = await authService.GetClientUserIdAsync();
-
-                    if (!string.IsNullOrEmpty(userId))
-                    {
-                        await _hubConnection.SendAsync("Ping", authService.Username, userId);
-                    }
-                    else
-                    {
-                        logger.LogWarning("UserId vide lors du ping pour {Username}", authService.Username);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Erreur lors de l'envoi du ping au serveur SignalR");
-            }
-        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(30));
+        CreatePingTimer();
     }
 
     // Méthodes pour les canaux publics
@@ -155,9 +147,65 @@ public class ChatService(IPrivateMessageService privateMessageService,
 
         if (_hubConnection != null)
         {
+            // Handlers pour les événements de connexion
+            _hubConnectionEvents!.Closed -= OnConnectionClosed;
+            _hubConnectionEvents!.Reconnecting -= OnConnectionReconnecting;
+            _hubConnectionEvents!.Reconnected -= OnConnectionReconnected;
+
             await _hubConnection.DisposeAsync();
         }
 
         GC.SuppressFinalize(this);
+    }
+
+    private Task OnConnectionClosed(Exception? error)
+    {
+        logger.LogWarning(error, "Connexion SignalR fermée");
+        _pingTimer?.Dispose();
+        _pingTimer = null;
+        OnDisconnected?.Invoke();
+        return Task.CompletedTask;
+    }
+
+    private Task OnConnectionReconnecting(Exception? error)
+    {
+        logger.LogInformation(error, "Tentative de reconnexion SignalR...");
+        OnReconnecting?.Invoke(error?.Message);
+        return Task.CompletedTask;
+    }
+
+    private Task OnConnectionReconnected(string? connectionId)
+    {
+        logger.LogInformation("Reconnexion SignalR réussie (ConnectionId: {ConnectionId})", connectionId);
+        CreatePingTimer();
+        OnReconnected?.Invoke();
+        return Task.CompletedTask;
+    }
+
+    private void CreatePingTimer()
+    {
+        _pingTimer = new Timer(async _ =>
+        {
+            try
+            {
+                if (_hubConnection?.State == HubConnectionState.Connected)
+                {
+                    var userId = await authService.GetClientUserIdAsync();
+
+                    if (!string.IsNullOrEmpty(userId))
+                    {
+                        await _hubConnection.SendAsync("Ping", authService.Username, userId);
+                    }
+                    else
+                    {
+                        logger.LogWarning("UserId vide lors du ping pour {Username}", authService.Username);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Erreur lors de l'envoi du ping au serveur SignalR");
+            }
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(30));
     }
 }

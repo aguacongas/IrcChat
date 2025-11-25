@@ -33,4 +33,9 @@ public interface IChatService : IAsyncDisposable
     /// Événement levé quand un utilisateur reçoit la parole dans un salon
     /// </summary>
     event Action<string, string, string, string, string> OnUserUnmuted;
+
+    // Événements pour l'état de la connexion SignalR
+    event Action? OnDisconnected;
+    event Action<string?>? OnReconnecting;
+    event Action? OnReconnected;
 }
