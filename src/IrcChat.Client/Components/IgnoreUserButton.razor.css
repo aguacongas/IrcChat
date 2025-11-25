@@ -36,8 +36,20 @@
     cursor: not-allowed;
   }
 
-@media (max-width: 1024px) {
-  .ignore-user-button span:not(.icon) {
-    display: none;
+  .ignore-user-button span:first-child {
+    font-size: 16px;
+    line-height: 1;
   }
+
+@media (max-width: 1024px) {
+  .ignore-user-button {
+      padding: 6px 10px;
+  }
+
+    .ignore-user-button span {
+        font-size: 14px;
+    }
+    .ignore-user-button span:not(.icon) {
+      display: none;
+    }
 }

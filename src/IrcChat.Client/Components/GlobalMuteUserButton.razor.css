@@ -1,0 +1,343 @@
+/* src/IrcChat.Client/Components/GlobalMuteUserButton.razor.css */
+
+.global-mute-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  position: relative;
+}
+
+  .global-mute-btn.mute {
+    background: #b40404;
+    color: #fff;
+  }
+
+    .global-mute-btn.mute:hover:not(:disabled) {
+      background: #b40404;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(252, 129, 129, 0.3);
+    }
+
+  .global-mute-btn.unmute {
+    background: #1c5f35;
+    color: #fff;
+  }
+
+    .global-mute-btn.unmute:hover:not(:disabled) {
+      background: #1C5F35;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(104, 211, 145, 0.3);
+    }
+
+  .global-mute-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .global-mute-btn span:first-child {
+    font-size: 16px;
+    line-height: 1;
+  }
+
+.btn-text {
+  font-size: 14px;
+}
+
+.spinner-icon {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Dialog styles */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.dialog-container {
+  background: #2a2a2a;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.3s ease-out;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+  .dialog-header h3 {
+    margin: 0;
+    color: #8ab4f8;
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+.dialog-close {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+  .dialog-close:hover {
+    background: #3a3a3a;
+    color: #fff;
+  }
+
+.dialog-body {
+  padding: 24px;
+}
+
+  .dialog-body label {
+    display: block;
+    color: #ddd;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+
+  .dialog-body p {
+    color: #ddd;
+    font-size: 16px;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+.mute-reason-input {
+  width: 100%;
+  padding: 12px;
+  background: #1e1e1e;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+  .mute-reason-input:focus {
+    outline: none;
+    border-color: #8ab4f8;
+  }
+
+  .mute-reason-input::placeholder {
+    color: #6e6e6e;
+  }
+
+.char-count {
+  text-align: right;
+  color: #888;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.dialog-footer {
+  display: flex;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #3a3a3a;
+  justify-content: flex-end;
+}
+
+.dialog-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-btn {
+  background: #3a3a3a;
+  color: #fff;
+}
+
+  .cancel-btn:hover {
+    background: #4a4a4a;
+  }
+
+.confirm-btn {
+  background: #8ab4f8;
+  color: #1e1e1e;
+}
+
+  .confirm-btn:hover {
+    background: #7aa3e5;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(138, 180, 248, 0.3);
+  }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tooltips */
+.error-tooltip,
+.success-tooltip {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 1000;
+  animation: slideIn 0.3s ease-out;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.error-tooltip {
+  background: rgba(180, 4, 4, 0.95);
+  color: #fff;
+}
+
+.success-tooltip {
+  background: rgba(28, 95, 53, 0.95);
+  color: #fff;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .btn-text {
+    display: none;
+  }
+
+  .global-mute-btn {
+    padding: 8px 12px;
+  }
+
+  .error-tooltip,
+  .success-tooltip {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    text-align: center;
+  }
+
+  .dialog-container {
+    width: 95%;
+    margin: 20px;
+  }
+
+  .dialog-header {
+    padding: 16px 20px;
+  }
+
+    .dialog-header h3 {
+      font-size: 18px;
+    }
+
+  .dialog-body {
+    padding: 20px;
+  }
+
+  .dialog-footer {
+    padding: 16px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .global-mute-btn {
+    padding: 6px 10px;
+  }
+
+    .global-mute-btn span:first-child {
+      font-size: 14px;
+    }
+
+  .dialog-header {
+    padding: 12px 16px;
+  }
+
+    .dialog-header h3 {
+      font-size: 16px;
+    }
+
+  .dialog-body {
+    padding: 16px;
+  }
+
+  .dialog-footer {
+    padding: 12px 16px;
+    flex-direction: column-reverse;
+  }
+
+  .dialog-btn {
+    width: 100%;
+  }
+}

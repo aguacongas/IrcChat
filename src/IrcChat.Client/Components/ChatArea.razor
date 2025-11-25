@@ -21,6 +21,7 @@
                         <span class="status-indicator-text">@(IsUserOnline ? "En ligne" : "Hors ligne")</span>
                     </span>
                     <IgnoreUserButton UserId="@CurrentContactUserId" />
+                    <GlobalMuteUserButton UserId="@CurrentContactUserId" />
                 }
                 else
                 {
