@@ -63,7 +63,7 @@ else
         <ChatArea Username="@currentUsername"
                   CurrentContactUserId="@selectedPrivateUser?.UserId"
                   CurrentChannel="@GetCurrentChannelOrUsername()"
-                  IsConnected="@isConnected"
+                  IsConnected="@IsConnected"
                   Messages="@GetCurrentMessages()"
                   Users="@(isPrivateConversation ? null : users)"
                   IsMuted="@isCurrentChannelMuted"
@@ -129,7 +129,6 @@ else
     private List<Message> messages = new();
     private List<Channel> channels = new();
     private List<User> users = new();
-    private bool isConnected = false;
     private bool isInitialized = false;
     private bool isCurrentChannelMuted = false;
     private string muteNotification = "";
@@ -150,6 +149,9 @@ else
     private User? selectedPrivateUser = null;
     private bool isPrivateConversation = false;
     private bool isSelectedUserOnline = false;
+
+    private bool IsConnected => ChatService.IsInitialized;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -291,7 +293,6 @@ else
                 })
                 .WithAutomaticReconnect();
             await ChatService.InitializeAsync(hubConnectionBuilder);
-            isConnected = true;
 
             ChatService.OnChannelMuteStatusChanged += OnChannelMuteStatusChanged;
             ChatService.OnMessageBlocked += OnMessageBlocked;
@@ -301,7 +302,6 @@ else
         catch (Exception ex)
         {
             Logger.LogError(ex, "Erreur lors de l'initialisation de SignalR");
-            isConnected = false;
             ShowConnectionNotification("Échec de connexion au serveur", ConnectionNotificationType.Disconnected);
         }
     }
@@ -311,7 +311,6 @@ else
     {
         InvokeAsync(() =>
         {
-            isConnected = false;
             ShowConnectionNotification("Connexion perdue. Tentative de reconnexion...", ConnectionNotificationType.Disconnected);
             StateHasChanged();
         });
@@ -321,7 +320,6 @@ else
     {
         InvokeAsync(() =>
         {
-            isConnected = false;
             var message = string.IsNullOrEmpty(error)
                 ? "Reconnexion en cours..."
                 : $"Reconnexion en cours... ({error})";
@@ -334,7 +332,6 @@ else
     {
         InvokeAsync(async () =>
         {
-            isConnected = true;
             ShowConnectionNotification("Reconnexion réussie !", ConnectionNotificationType.Reconnected);
 
             // Recharger les données après reconnexion
@@ -853,7 +850,7 @@ else
 
     private async Task SendPrivateMessage(string content)
     {
-        if (string.IsNullOrEmpty(selectedPrivateUser?.UserId) || !isConnected)
+        if (string.IsNullOrEmpty(selectedPrivateUser?.UserId) || !IsConnected)
         {
             return;
         }
