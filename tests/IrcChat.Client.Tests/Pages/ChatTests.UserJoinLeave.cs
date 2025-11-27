@@ -373,10 +373,7 @@ public partial class ChatTests
         await Task.Delay(200);
 
         // Assert - Devrait être ignoré (pas de liste d'utilisateurs en conversation privée)
-        var exception = await Record.ExceptionAsync(async () =>
-        {
-            await Task.Delay(100);
-        });
+        var exception = await Record.ExceptionAsync(async () => await Task.Delay(100));
 
         Assert.Null(exception);
     }
