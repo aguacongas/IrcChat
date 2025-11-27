@@ -109,10 +109,7 @@ public class ChatTests : BunitContext
             .ReturnsAsync([]);
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("IgnoredUser")).Returns(true);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
-        await Task.Delay(200);
+        var cut = await RenderChatAsync(channelName: "general");
 
         var ignoredMessage = new Message
         {
@@ -152,10 +149,7 @@ public class ChatTests : BunitContext
             .ReturnsAsync([]);
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("NormalUser")).Returns(false);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
-        await Task.Delay(200);
+        var cut = await RenderChatAsync(channelName: "general");
 
         var normalMessage = new Message
         {
@@ -200,10 +194,7 @@ public class ChatTests : BunitContext
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("IgnoredUser")).Returns(true);
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("NormalUser")).Returns(false);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
-        await Task.Delay(200);
+        var cut = await RenderChatAsync(channelName: "general");
         cut.Render();
 
         Assert.Contains("Normal message", cut.Markup);
@@ -252,10 +243,8 @@ public class ChatTests : BunitContext
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("Friend")).Returns(false);
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("IgnoredSender")).Returns(true);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-        await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
-        await Task.Delay(200);
+        var cut = await RenderChatAsync();
+        await NavigateToPrivateChatAsync(cut, "Friend", "Friend");
 
         var ignoredMsg = new PrivateMessage
         {
@@ -297,10 +286,8 @@ public class ChatTests : BunitContext
             .ReturnsAsync([]);
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("Friend")).Returns(false);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-        await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
-        await Task.Delay(200);
+        var cut = await RenderChatAsync();
+        await NavigateToPrivateChatAsync(cut, "Friend", "Friend");
 
         _privateMessageServiceMock.Invocations.Clear();
         _ignoredUsersServiceMock.Raise(x => x.OnIgnoredUsersChanged += null);
@@ -376,11 +363,8 @@ public class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
+        var cut = await RenderChatAsync(channelName: "general");
         cut.Render();
-        await Task.Delay(200);
 
         _chatServiceMock.Verify(x => x.JoinChannel(It.IsAny<string>()), Times.AtLeastOnce);
     }
@@ -568,15 +552,8 @@ public class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync("AdminUser"))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-
-        var channelItems = cut.FindAll("ul.channel-list > li[blazor\\:onclick]");
-        if (channelItems.Count > 0)
-        {
-            await cut.InvokeAsync(() => channelItems[0].Click());
-            await Task.Delay(100);
-        }
+        var cut = await RenderChatAsync(channelName: "general");
+        cut.Render();
 
         _authServiceMock.Verify(x => x.IsAdmin, Times.AtLeastOnce);
     }
@@ -608,15 +585,7 @@ public class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync("Creator"))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-
-        var channelItems = cut.FindAll("ul.channel-list > li[blazor\\:onclick]");
-        if (channelItems.Count > 0)
-        {
-            await cut.InvokeAsync(() => channelItems[0].Click());
-            await Task.Delay(100);
-        }
+        var cut = await RenderChatAsync(channelName: "my-channel");
 
         _chatServiceMock.Verify(x => x.JoinChannel("my-channel"), Times.Once);
     }
@@ -646,15 +615,10 @@ public class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-
-        var channelItems = cut.FindAll("ul.channel-list > li[blazor\\:onclick]");
-        await cut.InvokeAsync(() => channelItems[0].Click());
+        var cut = await RenderChatAsync(channelName: "general");
         cut.Render();
 
-        channelItems = await cut.InvokeAsync(() => cut.FindAll("ul.channel-list > li[blazor\\:onclick]"));
-        await cut.InvokeAsync(() => channelItems[1].Click());
+        await NavigateToChannelAsync(cut, "random");
 
         _chatServiceMock.Verify(x => x.LeaveChannel(It.IsAny<string>()), Times.AtLeastOnce);
     }
@@ -682,11 +646,7 @@ public class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync("TestUser"))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-
-        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
-        await Task.Delay(200);
+        var cut = await RenderChatAsync(channelName: "general");
 
         var input = cut.Find(".input-area input");
         var button = cut.Find(".input-area button");
@@ -744,12 +704,8 @@ public class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-
-        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
+        var cut = await RenderChatAsync(channelName: "general");
         cut.Render();
-        await Task.Delay(200);
 
         _chatServiceMock.Verify(x => x.JoinChannel(It.IsAny<string>()), Times.Once);
     }
@@ -844,10 +800,7 @@ public class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
-        await Task.Delay(200);
+        var cut = await RenderChatAsync(channelName: "general");
 
         // Act - Lever l'événement UserMuted
         _chatServiceMock.Raise(x => x.OnUserMuted += null, "general", "user1", "Alice", "admin-id", "Admin");
@@ -891,10 +844,7 @@ public class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
-        await Task.Delay(200);
+        var cut = await RenderChatAsync(channelName: "general");
 
         // Act - Lever l'événement UserMuted pour un autre canal
         _chatServiceMock.Raise(x => x.OnUserMuted += null, "random", "user1", "Alice", "admin-id", "Admin");
@@ -928,10 +878,8 @@ public class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-        await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
-        await Task.Delay(200);
+        var cut = await RenderChatAsync();
+        await NavigateToPrivateChatAsync(cut, "Friend", "Friend");
 
         // Act - Lever l'événement UserMuted (même avec channel="general")
         _chatServiceMock.Raise(x => x.OnUserMuted += null, "general", "user1", "Alice", "admin-id", "Admin");
@@ -972,10 +920,7 @@ public class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
-        await Task.Delay(200);
+        var cut = await RenderChatAsync(channelName: "general");
 
         // Act - Lever l'événement UserUnmuted
         _chatServiceMock.Raise(x => x.OnUserUnmuted += null, "general", "user1", "Alice", "admin-id", "Admin");
@@ -1019,10 +964,7 @@ public class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
-        await Task.Delay(200);
+        var cut = await RenderChatAsync(channelName: "general");
 
         // Act - Lever l'événement UserUnmuted pour un autre canal
         _chatServiceMock.Raise(x => x.OnUserUnmuted += null, "random", "user1", "Alice", "admin-id", "Admin");
@@ -1056,10 +998,8 @@ public class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-        await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
-        await Task.Delay(200);
+        var cut = await RenderChatAsync();
+        await NavigateToPrivateChatAsync(cut, "Friend", "Friend");
 
         // Act - Lever l'événement UserUnmuted
         _chatServiceMock.Raise(x => x.OnUserUnmuted += null, "general", "user1", "Alice", "admin-id", "Admin");
@@ -1135,10 +1075,7 @@ public class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
-        await Task.Delay(200);
+        var cut = await RenderChatAsync(channelName: "general");
 
         // Act - Lever l'événement avec des paramètres spécifiques
         _chatServiceMock.Raise(x => x.OnUserMuted += null, "general", "alice-id", "Alice", "admin-id", "Admin");
@@ -1176,10 +1113,7 @@ public class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
-        await Task.Delay(200);
+        var cut = await RenderChatAsync(channelName: "general");
 
         // Act - Lever l'événement avec des paramètres spécifiques
         _chatServiceMock.Raise(x => x.OnUserUnmuted += null, "general", "alice-id", "Alice", "admin-id", "Admin");
@@ -1357,10 +1291,7 @@ public class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-        await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]").Click());
-        await Task.Delay(200);
+        var cut = await RenderChatAsync(channelName: "general");
 
         // Act
         _chatServiceMock.Raise(x => x.OnReconnected += null);
@@ -1396,10 +1327,8 @@ public class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
-        await Task.Delay(200);
-        await cut.InvokeAsync(() => cut.Find(".conversation-list li").Click());
-        await Task.Delay(200);
+        var cut = await RenderChatAsync();
+        await NavigateToPrivateChatAsync(cut, "Friend", "Friend");
 
         _privateMessageServiceMock.Invocations.Clear();
 
@@ -1445,18 +1374,17 @@ public class ChatTests : BunitContext
         // Arrange
         SetupBasicAuth();
         SetupBasicMocks();
+        var isConnected = true;
+        _chatServiceMock.SetupGet(x => x.IsInitialized).Returns(() => isConnected);
 
-        var cut = Render<Chat>();
-        cut.WaitForElement("ul.channel-list > li");
-
-        var channelListItem = await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]"));
-        channelListItem.Click();
-
+        var cut = await RenderChatAsync(channelName: "general");
+        cut.Render();
         // Vérifier que isConnected est true initialement
         Assert.Contains("● Connecté", cut.Markup);
 
         // Act
         _chatServiceMock.Raise(x => x.OnDisconnected += null);
+        isConnected = false;
         await Task.Delay(200);
         cut.Render();
 
@@ -1471,19 +1399,19 @@ public class ChatTests : BunitContext
         // Arrange
         SetupBasicAuth();
         SetupBasicMocks();
-        var cut = Render<Chat>();
-        cut.WaitForElement("ul.channel-list > li");
-
-        var channelListItem = await cut.InvokeAsync(() => cut.Find("ul.channel-list > li[blazor\\:onclick]"));
-        channelListItem.Click();
+        var isConnected = true;
+        _chatServiceMock.SetupGet(x => x.IsInitialized).Returns(() => isConnected);
+        var cut = await RenderChatAsync(channelName: "general");
 
         // Simuler une déconnexion
         _chatServiceMock.Raise(x => x.OnDisconnected += null);
+        isConnected = false;
         await Task.Delay(200);
         cut.Render();
 
         // Act
         _chatServiceMock.Raise(x => x.OnReconnected += null);
+        isConnected = true;
         await Task.Delay(200);
         cut.Render();
 
@@ -1713,6 +1641,51 @@ public class ChatTests : BunitContext
 
         // Assert - Devrait avoir isConnected = false
         Assert.Contains("Échec de connexion au serveur", cut.Markup);
+    }
+
+    private async Task<IRenderedComponent<Chat>> RenderChatAsync(
+        string? channelName = null,
+        string? privateUserId = null,
+        string? privateUsername = null)
+    {
+        var cut = Render<Chat>();
+        await Task.Delay(200);
+
+        if (!string.IsNullOrEmpty(channelName) ||
+            !string.IsNullOrEmpty(privateUserId) ||
+            !string.IsNullOrEmpty(privateUsername))
+        {
+            await UpdateRouteAsync(cut, channelName, privateUserId, privateUsername);
+        }
+
+        return cut;
+    }
+
+    private Task NavigateToChannelAsync(IRenderedComponent<Chat> cut, string channelName)
+        => UpdateRouteAsync(cut, channelName, null, null);
+
+    private Task NavigateToPrivateChatAsync(
+        IRenderedComponent<Chat> cut,
+        string userId,
+        string? username = null)
+        => UpdateRouteAsync(cut, null, userId, username ?? userId);
+
+    private async Task UpdateRouteAsync(
+        IRenderedComponent<Chat> cut,
+        string? channelName,
+        string? privateUserId,
+        string? privateUsername)
+    {
+        var parameters = ParameterView.FromDictionary(new Dictionary<string, object?>
+        {
+            [nameof(Chat.ChannelName)] = channelName,
+            [nameof(Chat.PrivateUserId)] = privateUserId,
+            [nameof(Chat.PrivateUsername)] = privateUsername
+        });
+
+        await cut.InvokeAsync(() =>
+            ((IComponent)cut.Instance).SetParametersAsync(parameters));
+        await Task.Delay(100);
     }
 
     private void SetupBasicAuth(string username = "TestUser")
