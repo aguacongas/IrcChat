@@ -16,7 +16,7 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Pages;
 
-public class ChatTests : BunitContext
+public partial class ChatTests : BunitContext
 {
     private readonly Mock<IChatService> _chatServiceMock;
     private readonly Mock<IUnifiedAuthService> _authServiceMock;
