@@ -120,7 +120,7 @@ public static class GlobalMuteEndpoints
 
         if (userId.Equals(currentUserId, StringComparison.OrdinalIgnoreCase))
         {
-            return Results.BadRequest(new { error = "cannot_mute_self" });
+            return Results.BadRequest(new { error = "cannot_unmute_self" });
         }
 
         var globalMute = await db.MutedUsers
