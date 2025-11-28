@@ -1661,10 +1661,10 @@ public partial class ChatTests : BunitContext
         return cut;
     }
 
-    private Task NavigateToChannelAsync(IRenderedComponent<Chat> cut, string channelName)
+    private static Task NavigateToChannelAsync(IRenderedComponent<Chat> cut, string channelName)
         => UpdateRouteAsync(cut, channelName, null, null);
 
-    private Task NavigateToPrivateChatAsync(
+    private static Task NavigateToPrivateChatAsync(
         IRenderedComponent<Chat> cut,
         string userId,
         string? username = null)
