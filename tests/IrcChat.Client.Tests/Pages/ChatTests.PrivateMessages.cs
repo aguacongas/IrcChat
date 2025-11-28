@@ -540,6 +540,6 @@ public partial class ChatTests
     }
 
     // Méthode helper pour simuler le clic sur une conversation dans la sidebar
-    private async Task StartPrivateChatFromSidebarAsync(IRenderedComponent<Chat> cut, User user)
+    private static async Task StartPrivateChatFromSidebarAsync(IRenderedComponent<Chat> cut, User user)
     => await NavigateToPrivateChatAsync(cut, user.UserId, user.Username);
 }
