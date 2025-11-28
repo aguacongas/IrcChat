@@ -1,6 +1,7 @@
 @using IrcChat.Client.Extensions
 @using IrcChat.Shared.Models
 @using System.Diagnostics.CodeAnalysis
+@using System.Text.RegularExpressions
 @inject IJSRuntime JSRuntime
 @inject ILogger<MessageList> Logger
 @implements IAsyncDisposable
@@ -60,8 +61,7 @@
 
         // Créer un pattern regex pour trouver le pseudo (insensible à la casse)
         var pattern = $@"\b({escapedUsername})\b";
-        var regex = new System.Text.RegularExpressions.Regex(pattern,
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        var regex = new Regex(pattern, RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
 
         // Remplacer toutes les occurrences par une version mise en évidence
         var highlighted = regex.Replace(escapedContent,
