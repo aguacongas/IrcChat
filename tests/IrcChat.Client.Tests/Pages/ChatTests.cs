@@ -1670,7 +1670,7 @@ public partial class ChatTests : BunitContext
         string? username = null)
         => UpdateRouteAsync(cut, null, userId, username ?? userId);
 
-    private async Task UpdateRouteAsync(
+    private static async Task UpdateRouteAsync(
         IRenderedComponent<Chat> cut,
         string? channelName,
         string? privateUserId,

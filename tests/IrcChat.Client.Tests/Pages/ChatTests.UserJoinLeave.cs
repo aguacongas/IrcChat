@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.RegularExpressions;
 using Bunit;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -95,7 +96,7 @@ public partial class ChatTests
         cut.Render();
 
         // Assert - Ne devrait pas ajouter de doublon
-        var aliceCount = System.Text.RegularExpressions.Regex.Matches(cut.Markup, "Alice").Count;
+        var aliceCount = AliceRegex().Count(cut.Markup);
         Assert.Equal(1, aliceCount); // Devrait apparaître une seule fois dans la liste des utilisateurs
     }
 
@@ -463,7 +464,7 @@ public partial class ChatTests
 
         // Assert - user1 devrait être retiré mais pas user3 (même nom)
         // La liste devrait contenir Bob et le deuxième Alice (user3)
-        var aliceCount = System.Text.RegularExpressions.Regex.Matches(cut.Markup, "Alice").Count;
+        var aliceCount = AliceRegex().Count(cut.Markup);
         Assert.True(aliceCount >= 1); // Au moins un Alice devrait rester
         Assert.Contains("Bob", cut.Markup);
     }
@@ -825,4 +826,7 @@ public partial class ChatTests
         _chatServiceMock.Verify(x => x.LeaveChannel("general"), Times.Never);
         _chatServiceMock.Verify(x => x.JoinChannel("general"), Times.Never);
     }
+
+    [GeneratedRegex("Alice")]
+    private static partial Regex AliceRegex();
 }
