@@ -399,10 +399,7 @@ public partial class ChatTests
 
         // Act - Essayer d'envoyer sans utilisateur sélectionné (ne devrait pas être possible dans l'UI)
         // Mais on teste la robustesse de la méthode
-        var exception = await Record.ExceptionAsync(async () =>
-        {
-            await Task.Delay(100);
-        });
+        var exception = await Record.ExceptionAsync(async () => await Task.Delay(100));
 
         // Assert
         Assert.Null(exception);
