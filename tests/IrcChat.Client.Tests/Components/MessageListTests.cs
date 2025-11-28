@@ -1,4 +1,5 @@
 // tests/IrcChat.Client.Tests/Components/MessageListTests.cs
+using System.Text.RegularExpressions;
 using Bunit;
 using IrcChat.Client.Components;
 using IrcChat.Shared.Models;
@@ -11,7 +12,7 @@ using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
-public class MessageListTests : BunitContext
+public partial class MessageListTests : BunitContext
 {
     private readonly Mock<IJSRuntime> _jsRuntimeMock;
 
@@ -716,9 +717,7 @@ public class MessageListTests : BunitContext
 
         // Assert
         var content = cut.Find(".content");
-        var highlightCount = System.Text.RegularExpressions.Regex.Matches(
-            content.InnerHtml,
-            "mention-highlight").Count;
+        var highlightCount = HighlightRegex().Count(content.InnerHtml);
         Assert.Equal(2, highlightCount);
     }
 
@@ -903,4 +902,7 @@ public class MessageListTests : BunitContext
         var content = cut.Find(".content");
         Assert.Contains("mention-highlight", content.InnerHtml);
     }
+
+    [GeneratedRegex("mention-highlight")]
+    private static partial Regex HighlightRegex();
 }

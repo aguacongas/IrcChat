@@ -41,7 +41,7 @@
     [Parameter]
     public string CurrentUsername { get; set; } = string.Empty;
 
-    private bool IsMentioned(string content, string username)
+    private static bool IsMentioned(string content, string username)
     {
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(content))
             return false;
@@ -50,7 +50,7 @@
         return content.Contains(username, StringComparison.OrdinalIgnoreCase);
     }
 
-    private string HighlightMention(string content, string username)
+    private static string HighlightMention(string content, string username)
     {
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(content))
             return System.Net.WebUtility.HtmlEncode(content);
