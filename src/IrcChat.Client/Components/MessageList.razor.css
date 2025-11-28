@@ -12,12 +12,27 @@
   border-left: 3px solid #8ab4f8;
   animation: slideIn 0.2s ease-out;
   margin-bottom: 15px;
+  transition: all 0.3s ease;
 }
 
   .message.own {
     background: #2d3748;
     border-left-color: #48bb78;
   }
+
+  /* Message avec mention de l'utilisateur */
+  .message.mentioned {
+    background: #3d2a1f;
+    border-left: 3px solid #f59e0b;
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+    animation: mentionPulse 0.5s ease-out;
+  }
+
+    .message.mentioned.own {
+      background: #2d3748;
+      border-left-color: #48bb78;
+      box-shadow: none;
+    }
 
   .message .avatar {
     width: 32px;
@@ -36,6 +51,10 @@
       text-decoration: underline;
     }
 
+  .message.mentioned .username {
+    color: #fbbf24;
+  }
+
   .message .time {
     font-size: 12px;
     color: #888;
@@ -48,6 +67,51 @@
     word-wrap: break-word;
     color: #e0e0e0;
   }
+
+  /* Mise en évidence du pseudo mentionné */
+  .message ::deep .mention-highlight {
+    background: #f59e0b;
+    color: #1a1a1a;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .message.own ::deep .mention-highlight {
+    background: #48bb78;
+    color: #1a1a1a;
+  }
+
+/* Animation pour les mentions */
+@keyframes mentionPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(245, 158, 11, 0);
+  }
+
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 /* Smooth scrolling pour les conteneurs de messages */
 .messages,
