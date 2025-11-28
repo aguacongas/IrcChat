@@ -1686,6 +1686,7 @@ public partial class ChatTests : BunitContext
         await cut.InvokeAsync(() =>
             ((IComponent)cut.Instance).SetParametersAsync(parameters));
         await Task.Delay(100);
+        cut.Render();
     }
 
     private void SetupBasicAuth(string username = "TestUser")

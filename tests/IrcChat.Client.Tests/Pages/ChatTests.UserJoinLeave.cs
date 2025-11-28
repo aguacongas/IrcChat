@@ -373,7 +373,10 @@ public partial class ChatTests
         await Task.Delay(200);
 
         // Assert - Devrait être ignoré (pas de liste d'utilisateurs en conversation privée)
-        var exception = await Record.ExceptionAsync(async () => await Task.Delay(100));
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            await Task.Delay(100);
+        });
 
         Assert.Null(exception);
     }
@@ -552,5 +555,277 @@ public partial class ChatTests
 
         // Assert - La liste devrait être vide (ou afficher "Aucun utilisateur")
         Assert.DoesNotContain("Alice", cut.Markup);
+    }
+
+    // ============ TESTS POUR NavigateToCurrentChannelOrHome ============
+
+    [Fact]
+    public async Task Chat_NavigateToCurrentChannelOrHome_WhenInChannel_ShouldNavigateToChannel()
+    {
+        // Arrange
+        SetupBasicAuth();
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<User>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+        _chatServiceMock.Setup(x => x.JoinChannel("general")).Returns(Task.CompletedTask);
+        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var cut = await RenderChatAsync(channelName: "general");
+
+        // Act - Simuler la fermeture d'une conversation privée qui appellerait NavigateToCurrentChannelOrHome
+        // On va naviguer vers une conversation privée puis la fermer
+        _mockHttp.When(HttpMethod.Get, "*/api/private-messages/status/Friend")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new { Username = "Friend", IsOnline = true }));
+        _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+        _privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
+            .ReturnsAsync([]);
+
+        await NavigateToPrivateChatAsync(cut, "Friend", "Friend");
+
+        // Simuler la fermeture de la conversation privée en cliquant sur le bouton de fermeture
+        var closeButton = await cut.InvokeAsync(() => cut.Find("button.close-btn"));
+        await cut.InvokeAsync(() => closeButton.Click());
+        await Task.Delay(200);
+
+        // Assert - Devrait naviguer vers le canal actuel
+        Assert.Contains("/chat/channel/general", _navManager.Uri);
+    }
+
+    [Fact]
+    public async Task Chat_NavigateToCurrentChannelOrHome_WhenNoChannel_ShouldNavigateToChat()
+    {
+        // Arrange
+        SetupBasicAuth();
+        SetupBasicMocks();
+
+        _navManager.NavigateTo("/chat");
+        var cut = await RenderChatAsync();
+
+        // Vérifier qu'on est sur /chat (pas de canal spécifique)
+        Assert.EndsWith("/chat", _navManager.Uri);
+
+        // Act - Ouvrir puis fermer une conversation privée
+        _mockHttp.When(HttpMethod.Get, "*/api/private-messages/status/Friend")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new { Username = "Friend", IsOnline = true }));
+        _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+        _privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
+            .ReturnsAsync([]);
+
+        await NavigateToPrivateChatAsync(cut, "Friend", "Friend");
+
+        var closeButton = await cut.InvokeAsync(() => cut.Find("button.close-btn"));
+        await cut.InvokeAsync(() => closeButton.Click());
+        await Task.Delay(200);
+
+        // Assert - Devrait naviguer vers /chat
+        Assert.EndsWith("/chat", _navManager.Uri);
+    }
+
+    // ============ TESTS POUR SwitchChannel ============
+
+    [Fact]
+    public async Task Chat_SwitchChannel_ShouldNavigateToNewChannel()
+    {
+        // Arrange
+        SetupBasicAuth();
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
+            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/random")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<User>()));
+        _mockHttp.When(HttpMethod.Get, "*/api/channels/random/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<User>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>())).Returns(Task.CompletedTask);
+        _chatServiceMock.Setup(x => x.LeaveChannel(It.IsAny<string>())).Returns(Task.CompletedTask);
+        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        _navManager.NavigateTo("/chat/channel/general");
+        var cut = await RenderChatAsync(channelName: "general");
+        Assert.Contains("/chat/channel/general", _navManager.Uri);
+
+        // Act - Cliquer sur le canal "random" dans la sidebar
+        var channelLinks = await cut.InvokeAsync(() => cut.FindAll(".channel-list li"));
+        var randomChannelLink = channelLinks.First(l => l.TextContent.Contains("random"));
+        await cut.InvokeAsync(() => randomChannelLink.Click());
+        await Task.Delay(200);
+
+        // Assert - Devrait naviguer vers random
+        Assert.Contains("/chat/channel/random", _navManager.Uri);
+    }
+
+    [Fact]
+    public async Task Chat_SwitchChannel_ShouldLeaveCurrentChannel()
+    {
+        // Arrange
+        SetupBasicAuth();
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
+            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/*")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+        _mockHttp.When(HttpMethod.Get, "*/api/channels/*/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<User>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>())).Returns(Task.CompletedTask);
+        _chatServiceMock.Setup(x => x.LeaveChannel(It.IsAny<string>())).Returns(Task.CompletedTask);
+        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var cut = await RenderChatAsync(channelName: "general");
+
+        // Act
+        await NavigateToChannelAsync(cut, "random");
+
+        // Assert - Devrait avoir quitté le canal précédent
+        _chatServiceMock.Verify(x => x.LeaveChannel("general"), Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task Chat_SwitchChannel_ShouldJoinNewChannel()
+    {
+        // Arrange
+        SetupBasicAuth();
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
+            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/*")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+        _mockHttp.When(HttpMethod.Get, "*/api/channels/*/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<User>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>())).Returns(Task.CompletedTask);
+        _chatServiceMock.Setup(x => x.LeaveChannel(It.IsAny<string>())).Returns(Task.CompletedTask);
+        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var cut = await RenderChatAsync(channelName: "general");
+        _chatServiceMock.Invocations.Clear();
+
+        // Act
+        await NavigateToChannelAsync(cut, "random");
+
+        // Assert - Devrait avoir rejoint le nouveau canal
+        _chatServiceMock.Verify(x => x.JoinChannel("random"), Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task Chat_SwitchChannel_FromPrivateConversation_ShouldClearPrivateState()
+    {
+        // Arrange
+        SetupBasicAuth();
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<User>()));
+        _mockHttp.When(HttpMethod.Get, "*/api/private-messages/status/Friend")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new { Username = "Friend", IsOnline = true }));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+        _chatServiceMock.Setup(x => x.JoinChannel("general")).Returns(Task.CompletedTask);
+        _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync("TestUser"))
+            .ReturnsAsync([new() { OtherUser = new User { UserId = "Friend", Username = "Friend" }, LastMessage = "Hi", LastMessageTime = DateTime.UtcNow, UnreadCount = 0 }]);
+        _privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
+            .ReturnsAsync([]);
+
+        var cut = await RenderChatAsync();
+        await NavigateToPrivateChatAsync(cut, "Friend", "Friend");
+
+        // Vérifier qu'on est bien en conversation privée
+        Assert.Contains("Friend", cut.Markup);
+
+        // Act - Passer à un canal
+        await NavigateToChannelAsync(cut, "general");
+        await Task.Delay(200);
+        cut.Render();
+
+        // Assert - Ne devrait plus être en mode conversation privée
+        Assert.DoesNotContain("class=\"user-status", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Chat_SwitchChannel_ToSameChannel_ShouldNotLeaveAndRejoin()
+    {
+        // Arrange
+        SetupBasicAuth();
+        var channels = new List<Channel>
+        {
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+        };
+
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<User>()));
+
+        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+            .Returns(Task.CompletedTask);
+        _chatServiceMock.Setup(x => x.JoinChannel("general")).Returns(Task.CompletedTask);
+        _chatServiceMock.Setup(x => x.LeaveChannel("general")).Returns(Task.CompletedTask);
+        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+            .ReturnsAsync([]);
+
+        var cut = await RenderChatAsync(channelName: "general");
+        _chatServiceMock.Invocations.Clear();
+
+        // Act - Essayer de switcher vers le même canal
+        await NavigateToChannelAsync(cut, "general");
+        await Task.Delay(200);
+
+        // Assert - Ne devrait pas quitter le canal
+        _chatServiceMock.Verify(x => x.LeaveChannel("general"), Times.Never);
+        _chatServiceMock.Verify(x => x.JoinChannel("general"), Times.Never);
     }
 }
