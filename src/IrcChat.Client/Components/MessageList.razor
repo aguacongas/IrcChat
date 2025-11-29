@@ -1,5 +1,7 @@
+@using IrcChat.Client.Extensions
 @using IrcChat.Shared.Models
 @using System.Diagnostics.CodeAnalysis
+@using System.Text.RegularExpressions
 @inject IJSRuntime JSRuntime
 @inject ILogger<MessageList> Logger
 @implements IAsyncDisposable
@@ -7,10 +9,11 @@
 <div class="messages" @ref="messagesContainer">
     @foreach (var msg in Messages)
     {
-        <div class="message @(msg.Username == CurrentUsername ? "own" : string.Empty)">
+        var isMentioned = IsMentioned(msg.Content, CurrentUsername);
+        <div class="message @(msg.Username == CurrentUsername ? "own" : string.Empty) @(isMentioned ? "mentioned" : string.Empty)">
             <span class="username">@msg.Username</span>
-            <span class="time">@msg.Timestamp.ToLocalTime().ToString("HH:mm")</span>
-            <span class="content">@msg.Content</span>
+            <span class="time">@msg.Timestamp.ToLocalTime().ToMessageTimeString()</span>
+            <span class="content">@((MarkupString)HighlightMention(msg.Content, CurrentUsername))</span>
         </div>
     }
 </div>
@@ -37,6 +40,35 @@
 
     [Parameter]
     public string CurrentUsername { get; set; } = string.Empty;
+
+    private static bool IsMentioned(string content, string username)
+    {
+        if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(content))
+            return false;
+
+        // Vérifier si le pseudo est présent dans le contenu (insensible à la casse)
+        return content.Contains(username, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string HighlightMention(string content, string username)
+    {
+        if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(content))
+            return System.Net.WebUtility.HtmlEncode(content);
+
+        // Échapper le HTML pour éviter les injections XSS
+        var escapedContent = System.Net.WebUtility.HtmlEncode(content);
+        var escapedUsername = System.Text.RegularExpressions.Regex.Escape(username);
+
+        // Créer un pattern regex pour trouver le pseudo (insensible à la casse)
+        var pattern = $@"\b({escapedUsername})\b";
+        var regex = new Regex(pattern, RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
+
+        // Remplacer toutes les occurrences par une version mise en évidence
+        var highlighted = regex.Replace(escapedContent,
+            match => $"<span class=\"mention-highlight\">{match.Value}</span>");
+
+        return highlighted;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
