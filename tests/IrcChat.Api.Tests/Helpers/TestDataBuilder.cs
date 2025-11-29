@@ -50,7 +50,6 @@ public static class TestDataBuilder
             ConnectionId = connectionId,
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
             ServerInstanceId = "test-server"
         };
     }

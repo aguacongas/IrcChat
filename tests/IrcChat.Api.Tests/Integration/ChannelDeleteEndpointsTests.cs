@@ -1,4 +1,5 @@
 // tests/IrcChat.Api.Tests/Integration/ChannelDeleteEndpointsTests.cs
+using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
@@ -314,7 +315,6 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             ConnectionId = "conn_123",
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
             ServerInstanceId = "test"
         };
 
@@ -341,6 +341,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
         Assert.Empty(remainingUsers);
     }
 
+    [SuppressMessage("Blocker Vulnerability", "S6781:JWT secret keys should not be disclosed", Justification = "That's test")]
     private static string GenerateToken(ReservedUsername user)
     {
         var key = new SymmetricSecurityKey(

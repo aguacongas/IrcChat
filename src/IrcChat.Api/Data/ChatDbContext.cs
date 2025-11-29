@@ -30,9 +30,9 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
         modelBuilder.Entity<ConnectedUser>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.ConnectionId).IsUnique();
+            entity.HasIndex(e => e.ConnectionId);
             entity.HasIndex(e => e.Channel);
-            entity.HasIndex(e => new { e.Username, e.Channel });
+            entity.HasIndex(e => new { e.Username, e.Channel }).IsUnique();
         });
 
         modelBuilder.Entity<ReservedUsername>()

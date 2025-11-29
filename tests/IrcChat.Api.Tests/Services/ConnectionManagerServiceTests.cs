@@ -47,7 +47,7 @@ public class ConnectionManagerServiceTests : IAsyncDisposable
             ConnectionId = "conn_1",
             Channel = "test",
             ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
-            LastPing = DateTime.UtcNow.AddMinutes(-10),
+            LastActivity = DateTime.UtcNow.AddMinutes(-10),
             ServerInstanceId = "test-instance"
         };
 
@@ -58,7 +58,7 @@ public class ConnectionManagerServiceTests : IAsyncDisposable
             ConnectionId = "conn_2",
             Channel = "test",
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
 

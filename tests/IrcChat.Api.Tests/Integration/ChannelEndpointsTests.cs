@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
@@ -45,7 +46,6 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             ConnectionId = "conn1",
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
             ServerInstanceId = "test"
         };
 
@@ -57,7 +57,6 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             ConnectionId = "conn2",
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
             ServerInstanceId = "test"
         };
 
@@ -104,7 +103,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
 
         var channel = new Channel
         {
-            Name = "test-channel",
+            Name = Guid.NewGuid().ToString(),
             CreatedBy = reservedUser.Username
         };
 
@@ -115,37 +114,17 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var created = await response.Content.ReadFromJsonAsync<Channel>();
         Assert.NotNull(created);
-        Assert.Equal("test-channel", created!.Name);
+        Assert.Equal(channel.Name, created!.Name);
         Assert.Equal(reservedUser.Username, created.CreatedBy);
     }
 
     [Fact]
-    public async Task CreateChannel_WithEmptyUsername_ShouldReturnBadRequest()
+    public async Task CreateChannel_WithoutAuthentication_ShouldReturnUnauthorized()
     {
         // Arrange
         var channel = new Channel
         {
-            Name = "test-channel",
-            CreatedBy = ""
-        };
-
-        // Act
-        var response = await _client.PostAsJsonAsync("/api/channels", channel);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
-        Assert.NotNull(error);
-        Assert.Equal("missing_username", error!.Error);
-    }
-
-    [Fact]
-    public async Task CreateChannel_WithoutAuthentication_ShouldReturnForbidden()
-    {
-        // Arrange
-        var channel = new Channel
-        {
-            Name = "test-channel",
+            Name = Guid.NewGuid().ToString(),
             CreatedBy = "testuser"
         };
 
@@ -153,7 +132,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         var response = await _client.PostAsJsonAsync("/api/channels", channel);
 
         // Assert
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
@@ -263,6 +242,265 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         Assert.Empty(users);
     }
 
+    [Fact]
+    public async Task UpdateChannel_WithValidData_ShouldUpdateDescription()
+    {
+        // Arrange
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        var channel = new Channel
+        {
+            Id = Guid.NewGuid(),
+            Name = Guid.NewGuid().ToString(),
+            Description = "Ancienne description",
+            CreatedBy = "creator",
+            CreatedAt = DateTime.UtcNow,
+            IsMuted = false
+        };
+        db.Channels.Add(channel);
+
+        var user = new ReservedUsername
+        {
+            Id = Guid.NewGuid(),
+            Username = "creator",
+            Provider = ExternalAuthProvider.Google,
+            ExternalUserId = "ext-id",
+            Email = "creator@test.com",
+            IsAdmin = false,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.ReservedUsernames.Add(user);
+        await db.SaveChangesAsync();
+
+        var token = GenerateOAuthToken(user);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var request = new Channel { Description = "Nouvelle description" };
+
+        // Act
+        var response = await _client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        // Vérifier en BDD avec nouveau scope
+        using var verifyScope = factory.Services.CreateScope();
+        using var verifyDb = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        var updatedChannel = await verifyDb.Channels.FindAsync(channel.Id);
+        Assert.NotNull(updatedChannel);
+        Assert.Equal("Nouvelle description", updatedChannel.Description);
+    }
+
+    [Fact]
+    public async Task UpdateChannel_WithNonExistentChannel_ShouldReturnNotFound()
+    {
+        // Arrange
+        var user = new ReservedUsername
+        {
+            Id = Guid.NewGuid(),
+            Username = "admin",
+            Provider = ExternalAuthProvider.Google,
+            ExternalUserId = "ext-id",
+            Email = "admin@test.com",
+            IsAdmin = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+        db.ReservedUsernames.Add(user);
+        await db.SaveChangesAsync();
+
+        var token = GenerateOAuthToken(user);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var request = new Channel { Description = "Description" };
+
+        // Act
+        var response = await _client.PutAsJsonAsync("/api/channels/nonexistent", request);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateChannel_WithoutAuthorization_ShouldReturnUnauthorized()
+    {
+        // Arrange
+        var request = new Channel { Description = "Description" };
+
+        // Act
+        var response = await _client.PutAsJsonAsync("/api/channels/test-channel", request);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateChannel_ByNonCreatorNonAdmin_ShouldReturnForbidden()
+    {
+        // Arrange
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        var channel = new Channel
+        {
+            Id = Guid.NewGuid(),
+            Name = Guid.NewGuid().ToString(),
+            Description = "Description",
+            CreatedBy = "creator",
+            CreatedAt = DateTime.UtcNow,
+            IsMuted = false
+        };
+        db.Channels.Add(channel);
+
+        var creator = new ReservedUsername
+        {
+            Id = Guid.NewGuid(),
+            Username = "creator",
+            Provider = ExternalAuthProvider.Google,
+            ExternalUserId = "ext-id-1",
+            Email = "creator@test.com",
+            IsAdmin = false,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var otherUser = new ReservedUsername
+        {
+            Id = Guid.NewGuid(),
+            Username = "otheruser",
+            Provider = ExternalAuthProvider.Google,
+            ExternalUserId = "ext-id-2",
+            Email = "other@test.com",
+            IsAdmin = false,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        db.ReservedUsernames.AddRange(creator, otherUser);
+        await db.SaveChangesAsync();
+
+        var token = GenerateOAuthToken(otherUser);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var request = new Channel { Description = "Nouvelle description" };
+
+        // Act
+        var response = await _client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateChannel_ByAdmin_ShouldSucceed()
+    {
+        // Arrange
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        var channel = new Channel
+        {
+            Id = Guid.NewGuid(),
+            Name = Guid.NewGuid().ToString(),
+            Description = "Ancienne description",
+            CreatedBy = "creator",
+            CreatedAt = DateTime.UtcNow,
+            IsMuted = false
+        };
+        db.Channels.Add(channel);
+
+        var admin = new ReservedUsername
+        {
+            Id = Guid.NewGuid(),
+            Username = "admin",
+            Provider = ExternalAuthProvider.Google,
+            ExternalUserId = "ext-id",
+            Email = "admin@test.com",
+            IsAdmin = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        db.ReservedUsernames.Add(admin);
+        await db.SaveChangesAsync();
+
+        var token = GenerateOAuthToken(admin);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var request = new Channel
+        {
+            Description = "Nouvelle description par admin"
+        };
+
+        // Act
+        var response = await _client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var verifyScope = factory.Services.CreateScope();
+        using var verifyDb = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        var updatedChannel = await verifyDb.Channels.FindAsync(channel.Id);
+        Assert.NotNull(updatedChannel);
+        Assert.Equal(request.Description, updatedChannel.Description);
+    }
+
+    [Fact]
+    public async Task UpdateChannel_WithEmptyDescription_ShouldClearDescription()
+    {
+        // Arrange
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        var channel = new Channel
+        {
+            Id = Guid.NewGuid(),
+            Name = Guid.NewGuid().ToString(),
+            Description = "Description existante",
+            CreatedBy = "creator",
+            CreatedAt = DateTime.UtcNow,
+            IsMuted = false
+        };
+        db.Channels.Add(channel);
+
+        var user = new ReservedUsername
+        {
+            Id = Guid.NewGuid(),
+            Username = "creator",
+            Provider = ExternalAuthProvider.Google,
+            ExternalUserId = "ext-id",
+            Email = "creator@test.com",
+            IsAdmin = false,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.ReservedUsernames.Add(user);
+        await db.SaveChangesAsync();
+
+        var token = GenerateOAuthToken(user);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var request = new Channel
+        {
+            Description = string.Empty
+        };
+
+        // Act
+        var response = await _client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var verifyScope = factory.Services.CreateScope();
+        using var verifyDb = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
+
+        var updatedChannel = await verifyDb.Channels.FindAsync(channel.Id);
+        Assert.NotNull(updatedChannel);
+        Assert.Equal(string.Empty, updatedChannel.Description);
+    }
+
+    [SuppressMessage("Blocker Vulnerability", "S6781:JWT secret keys should not be disclosed", Justification = "That's tests")]
     private static string GenerateOAuthToken(ReservedUsername user)
     {
         var key = new SymmetricSecurityKey(

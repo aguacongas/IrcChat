@@ -585,7 +585,7 @@ public partial class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync("Creator"))
             .ReturnsAsync([]);
 
-        var cut = await RenderChatAsync(channelName: "my-channel");
+        await RenderChatAsync(channelName: "my-channel");
 
         _chatServiceMock.Verify(x => x.JoinChannel("my-channel"), Times.Once);
     }
@@ -844,7 +844,7 @@ public partial class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = await RenderChatAsync(channelName: "general");
+        await RenderChatAsync(channelName: "general");
 
         // Act - Lever l'événement UserMuted pour un autre canal
         _chatServiceMock.Raise(x => x.OnUserMuted += null, "random", "user1", "Alice", "admin-id", "Admin");
@@ -964,7 +964,7 @@ public partial class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = await RenderChatAsync(channelName: "general");
+        await RenderChatAsync(channelName: "general");
 
         // Act - Lever l'événement UserUnmuted pour un autre canal
         _chatServiceMock.Raise(x => x.OnUserUnmuted += null, "random", "user1", "Alice", "admin-id", "Admin");
@@ -1075,7 +1075,7 @@ public partial class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = await RenderChatAsync(channelName: "general");
+        await RenderChatAsync(channelName: "general");
 
         // Act - Lever l'événement avec des paramètres spécifiques
         _chatServiceMock.Raise(x => x.OnUserMuted += null, "general", "alice-id", "Alice", "admin-id", "Admin");
@@ -1113,7 +1113,7 @@ public partial class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = await RenderChatAsync(channelName: "general");
+        await RenderChatAsync(channelName: "general");
 
         // Act - Lever l'événement avec des paramètres spécifiques
         _chatServiceMock.Raise(x => x.OnUserUnmuted += null, "general", "alice-id", "Alice", "admin-id", "Admin");
@@ -1291,7 +1291,7 @@ public partial class ChatTests : BunitContext
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = await RenderChatAsync(channelName: "general");
+        await RenderChatAsync(channelName: "general");
 
         // Act
         _chatServiceMock.Raise(x => x.OnReconnected += null);

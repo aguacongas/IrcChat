@@ -75,7 +75,6 @@ public class AutoMuteServiceTests : IAsyncDisposable
             ConnectionId = "conn_1",
             Channel = inactiveChannel.Name,
             ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
-            LastPing = DateTime.UtcNow.AddMinutes(-10),
             LastActivity = DateTime.UtcNow.AddMinutes(-10),
             ServerInstanceId = "test-server"
         };
@@ -166,8 +165,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
             ConnectionId = "conn_1",
             Channel = activeChannel.Name,
             ConnectedAt = DateTime.UtcNow.AddMinutes(-2),
-            LastPing = DateTime.UtcNow.AddSeconds(-30), // Actif
-            LastActivity = DateTime.UtcNow.AddSeconds(-30),
+            LastActivity = DateTime.UtcNow.AddSeconds(-30), // Actif
             ServerInstanceId = "test-server"
         };
 
@@ -298,7 +296,6 @@ public class AutoMuteServiceTests : IAsyncDisposable
             ConnectionId = "conn_1",
             Channel = activeChannel.Name,
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-server"
         };
@@ -321,7 +318,6 @@ public class AutoMuteServiceTests : IAsyncDisposable
             ConnectionId = "conn_2",
             Channel = inactiveChannel.Name,
             ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
-            LastPing = DateTime.UtcNow.AddMinutes(-10),
             LastActivity = DateTime.UtcNow.AddMinutes(-10),
             ServerInstanceId = "test-server"
         };
@@ -379,7 +375,6 @@ public class AutoMuteServiceTests : IAsyncDisposable
             ConnectionId = "conn_1",
             Channel = channel.Name,
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-server"
         };

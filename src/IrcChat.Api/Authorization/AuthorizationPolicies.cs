@@ -40,4 +40,9 @@ public static class AuthorizationPolicies
     /// Policy pour vérifier qu'un utilisateur est admin.
     /// </summary>
     public const string IsAdmin = "IsAdmin";
+
+    /// <summary>
+    /// Policy pour vérifier qu'un utilisateur est reservé.
+    /// </summary>
+    public const string IsReserved = "IsReserved";
 }
