@@ -70,34 +70,21 @@ public static class ChannelEndpoints
     {
         try
         {
-            var channels = await db.Channels
+            var query = db.Channels
                 .GroupJoin(
                     db.ConnectedUsers,
                     c => c.Name,
                     u => u.Channel,
-                    (channel, users) => new
+                    (channel, users) => new ChannelInfo
                     {
-                        channel,
-                        connectedUsersCount = users
+                        Channel = channel,
+                        ConnectedUsersCount = users
                             .Where(u => !string.IsNullOrEmpty(u.Channel))
                             .Select(u => u.Username)
                             .Distinct()
                             .Count()
-                    })
-                .Select(x => new Channel
-                {
-                    Id = x.channel.Id,
-                    Name = x.channel.Name,
-                    Description = x.channel.Description,
-                    CreatedBy = x.channel.CreatedBy,
-                    CreatedAt = x.channel.CreatedAt,
-                    IsMuted = x.channel.IsMuted,
-                    ActiveManager = x.channel.ActiveManager,
-                    ConnectedUsersCount = x.connectedUsersCount
-                })
-                .OrderByDescending(c => c.ConnectedUsersCount)
-                .ThenBy(c => c.Name)
-                .ToListAsync();
+                    });
+            var channels = await GetChannelListAsync(query);
 
             logger.LogInformation("Récupération de tous les salons: {ChannelCount} salons trouvés", channels.Count);
             return Results.Ok(channels);
@@ -122,7 +109,7 @@ public static class ChannelEndpoints
 
         try
         {
-            var channels = await db.ConnectedUsers
+            var query = db.ConnectedUsers
                 .Where(u => u.Username == username && !string.IsNullOrEmpty(u.Channel))
                 .Select(u => u.Channel!)
                 .Distinct()
@@ -130,29 +117,16 @@ public static class ChannelEndpoints
                     db.Channels,
                     channelName => channelName,
                     channel => channel.Name,
-                    (channelName, channel) => new
+                    (channelName, channel) => new ChannelInfo
                     {
-                        channel,
-                        connectedUsersCount = db.ConnectedUsers
+                        Channel = channel,
+                        ConnectedUsersCount = db.ConnectedUsers
                             .Where(u => u.Channel == channel.Name)
                             .Select(u => u.Username)
                             .Distinct()
                             .Count()
-                    })
-                .Select(x => new Channel
-                {
-                    Id = x.channel.Id,
-                    Name = x.channel.Name,
-                    Description = x.channel.Description,
-                    CreatedBy = x.channel.CreatedBy,
-                    CreatedAt = x.channel.CreatedAt,
-                    IsMuted = x.channel.IsMuted,
-                    ActiveManager = x.channel.ActiveManager,
-                    ConnectedUsersCount = x.connectedUsersCount
-                })
-                .OrderByDescending(c => c.ConnectedUsersCount)
-                .ThenBy(c => c.Name)
-                .ToListAsync();
+                    });
+            var channels = await GetChannelListAsync(query);
 
             logger.LogInformation("Récupération des salons pour l'utilisateur {Username}: {ChannelCount} salons", username, channels.Count);
             return Results.Ok(channels);
@@ -163,7 +137,6 @@ public static class ChannelEndpoints
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
-
     private static async Task<IResult> GetConnectedUsersAsync(
         string channel,
         ChatDbContext db,
@@ -408,5 +381,30 @@ public static class ChannelEndpoints
             changedBy = username,
             message = channel.IsMuted ? "Le salon est maintenant muet" : "Le salon est de nouveau actif"
         });
+    }
+
+    private static async Task<List<Channel>> GetChannelListAsync(IQueryable<ChannelInfo> query)
+    {
+        return await query.Select(x => new Channel
+        {
+            Id = x.Channel.Id,
+            Name = x.Channel.Name,
+            Description = x.Channel.Description,
+            CreatedBy = x.Channel.CreatedBy,
+            CreatedAt = x.Channel.CreatedAt,
+            IsMuted = x.Channel.IsMuted,
+            ActiveManager = x.Channel.ActiveManager,
+            ConnectedUsersCount = x.ConnectedUsersCount
+        })
+                        .OrderByDescending(c => c.ConnectedUsersCount)
+                        .ThenBy(c => c.Name)
+                        .ToListAsync();
+    }
+
+    private sealed class ChannelInfo
+    {
+        public required Channel Channel { get; set; }
+
+        public int ConnectedUsersCount { get; set; }
     }
 }
