@@ -93,7 +93,6 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
             ConnectionId = "conn-123",
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
             ServerInstanceId = "test"
         };
 
@@ -319,7 +318,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
             ConnectionId = "conn-123",
             Channel = "general",
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test"
         };
 
@@ -355,7 +354,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
             ConnectionId = "conn-456",
             Channel = "general",
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test"
         };
 

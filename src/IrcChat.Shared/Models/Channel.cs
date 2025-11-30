@@ -1,4 +1,6 @@
 // Dans IrcChat.Shared/Models/Channel.cs
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace IrcChat.Shared.Models;
 
 public class Channel
@@ -14,4 +16,8 @@ public class Channel
     /// Par défaut, c'est le créateur. Un admin peut prendre le relais en démutant.
     /// </summary>
     public string? ActiveManager { get; set; }
+    public string? Description { get; set; }
+
+    [NotMapped]
+    public int ConnectedUsersCount { get; set; }
 }

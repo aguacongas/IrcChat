@@ -79,7 +79,6 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
             ConnectionId = "conn-123",
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
             ServerInstanceId = "server-1"
         };
 
@@ -167,7 +166,6 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
             ConnectionId = "conn-456",
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
             ServerInstanceId = "server-1"
         };
 
@@ -254,7 +252,6 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
             ConnectionId = "conn-789",
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
             ServerInstanceId = "server-1"
         });
 

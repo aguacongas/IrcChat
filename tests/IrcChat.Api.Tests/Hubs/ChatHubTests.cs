@@ -100,7 +100,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = null,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
-            LastPing = oldPing,
+            LastActivity = oldPing,
             ServerInstanceId = "test-instance"
         };
 
@@ -116,7 +116,7 @@ public class ChatHubTests : IAsyncDisposable
             .FirstOrDefaultAsync(u => u.Username == username && u.ConnectionId == _testConnectionId);
 
         Assert.NotNull(updatedUser);
-        Assert.True(updatedUser!.LastPing > oldPing);
+        Assert.True(updatedUser!.LastActivity > oldPing);
     }
 
     [Fact]
@@ -186,57 +186,6 @@ public class ChatHubTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task JoinChannel_SwitchingChannels_ShouldNotifyBothChannels()
-    {
-        // Arrange
-        var username = "testuser";
-        var channel1 = "general";
-        var channel2 = "random";
-
-        _db.Channels.AddRange(
-            new Channel { Id = Guid.NewGuid(), Name = channel1, CreatedBy = "admin", CreatedAt = DateTime.UtcNow },
-            new Channel { Id = Guid.NewGuid(), Name = channel2, CreatedBy = "admin", CreatedAt = DateTime.UtcNow }
-        );
-
-        var user = new ConnectedUser
-        {
-            Id = Guid.NewGuid(),
-            UserId = Guid.NewGuid().ToString(),
-            Username = username,
-            Channel = channel1,
-            ConnectionId = _testConnectionId,
-            ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
-            ServerInstanceId = "test-instance"
-        };
-
-        _db.ConnectedUsers.Add(user);
-        await _db.SaveChangesAsync();
-
-        // Act
-        await _hub.JoinChannel(channel2);
-
-        // Assert
-        var updatedUser = await _db.ConnectedUsers
-            .FirstOrDefaultAsync(u => u.Username == username);
-
-        Assert.NotNull(updatedUser);
-        Assert.Equal(channel2, updatedUser!.Channel);
-
-        _groupManagerMock.Verify(
-            g => g.RemoveFromGroupAsync(_testConnectionId, channel1, default),
-            Times.Once);
-
-        _groupMock.Verify(
-            g => g.SendCoreAsync("UserLeft", It.Is<object[]>(args => (string)args[2] == channel1), default),
-            Times.Once);
-
-        _groupMock.Verify(
-            g => g.SendCoreAsync("UserJoined", It.Is<object[]>(args => (string)args[2] == channel2), default),
-            Times.Once);
-    }
-
-    [Fact]
     public async Task JoinChannel_SameChannel_ShouldNotNotifyLeave()
     {
         // Arrange
@@ -259,7 +208,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = channel,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
 
@@ -280,7 +229,7 @@ public class ChatHubTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task LeaveChannel_ShouldSetChannelToNull()
+    public async Task LeaveChannel_ShouldRemoveConnectedUser()
     {
         // Arrange
         var username = "testuser";
@@ -294,7 +243,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = channel,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
 
@@ -308,8 +257,7 @@ public class ChatHubTests : IAsyncDisposable
         var updatedUser = await _db.ConnectedUsers
             .FirstOrDefaultAsync(u => u.Username == username && u.ConnectionId == _testConnectionId);
 
-        Assert.NotNull(updatedUser);
-        Assert.Null(updatedUser!.Channel);
+        Assert.Null(updatedUser);
 
         _groupManagerMock.Verify(
             g => g.RemoveFromGroupAsync(_testConnectionId, channel, default),
@@ -336,7 +284,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = actualChannel,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
 
@@ -382,7 +330,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = channel,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
         _db.ConnectedUsers.Add(connectorUser);
@@ -434,8 +382,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = channel,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
-            LastPing = DateTime.UtcNow.AddMinutes(-5),
-            LastActivity = DateTime.UtcNow.AddMinutes(-10),
+            LastActivity = DateTime.UtcNow.AddMinutes(-5),
             ServerInstanceId = "test-instance"
         };
 
@@ -485,8 +432,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = channel,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
-            LastPing = DateTime.UtcNow.AddMinutes(-5),
-            LastActivity = DateTime.UtcNow.AddMinutes(-10),
+            LastActivity = DateTime.UtcNow.AddMinutes(-5),
             ServerInstanceId = "test-instance"
         };
 
@@ -539,8 +485,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = channel,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
-            LastPing = DateTime.UtcNow.AddMinutes(-5),
-            LastActivity = DateTime.UtcNow.AddMinutes(-10),
+            LastActivity = DateTime.UtcNow.AddMinutes(-5),
             ServerInstanceId = "test-instance"
         };
 
@@ -582,7 +527,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = "general",
             ConnectionId = "recipient-connection-id",
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
 
@@ -596,8 +541,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = "general",
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
-            LastPing = DateTime.UtcNow.AddMinutes(-5),
-            LastActivity = DateTime.UtcNow.AddMinutes(-10),
+            LastActivity = DateTime.UtcNow.AddMinutes(-5),
             ServerInstanceId = "test-instance"
         };
 
@@ -646,8 +590,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = "general",
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
-            LastPing = DateTime.UtcNow.AddMinutes(-5),
-            LastActivity = DateTime.UtcNow.AddMinutes(-10),
+            LastActivity = DateTime.UtcNow.AddMinutes(-5),
             ServerInstanceId = "test-instance"
         };
 
@@ -691,7 +634,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = "general",
             ConnectionId = "recipient-connection-id",
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
 
@@ -705,8 +648,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = "general",
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
-            LastPing = DateTime.UtcNow.AddMinutes(-5),
-            LastActivity = DateTime.UtcNow.AddMinutes(-10),
+            LastActivity = DateTime.UtcNow.AddMinutes(-5),
             ServerInstanceId = "test-instance"
         };
 
@@ -770,7 +712,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = "general",
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
 
@@ -782,7 +724,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = "general",
             ConnectionId = "sender-connection-id",
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
 
@@ -833,7 +775,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = channel,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
 
@@ -864,7 +806,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = channel,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
 
@@ -893,7 +835,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = null,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
 
@@ -922,7 +864,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = null,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
 
@@ -965,7 +907,6 @@ public class ChatHubTests : IAsyncDisposable
             Channel = channel,
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
             ServerInstanceId = "server-1"
         };
 
@@ -1026,7 +967,6 @@ public class ChatHubTests : IAsyncDisposable
                 Channel = "general",
                 ConnectedAt = DateTime.UtcNow,
                 LastActivity = DateTime.UtcNow,
-                LastPing = DateTime.UtcNow,
                 ServerInstanceId = "server-1"
             },
             new ConnectedUser
@@ -1037,7 +977,6 @@ public class ChatHubTests : IAsyncDisposable
                 Channel = "random",
                 ConnectedAt = DateTime.UtcNow,
                 LastActivity = DateTime.UtcNow,
-                LastPing = DateTime.UtcNow,
                 ServerInstanceId = "server-1"
             });
 
@@ -1088,7 +1027,6 @@ public class ChatHubTests : IAsyncDisposable
             Channel = null, // Pas de canal
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
             ServerInstanceId = "server-1"
         };
 
@@ -1161,7 +1099,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = channel,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
         _db.ConnectedUsers.Add(connectedUser);
@@ -1232,7 +1170,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = channel,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
         _db.ConnectedUsers.Add(connectedUser);
@@ -1302,7 +1240,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = channel,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
         _db.ConnectedUsers.Add(connectedUser);
@@ -1353,7 +1291,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = channel,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
         _db.ConnectedUsers.Add(connectedUser);
@@ -1445,7 +1383,7 @@ public class ChatHubTests : IAsyncDisposable
             Channel = channel,
             ConnectionId = _testConnectionId,
             ConnectedAt = DateTime.UtcNow,
-            LastPing = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance"
         };
         _db.ConnectedUsers.Add(connectedUser);

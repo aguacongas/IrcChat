@@ -8,7 +8,6 @@ public class ConnectedUser
     public string? Channel { get; set; }
     public DateTime ConnectedAt { get; set; }
     public DateTime LastActivity { get; set; }
-    public DateTime LastPing { get; set; }
     public string ServerInstanceId { get; set; } = string.Empty;
     public string UserId { get; set; } = string.Empty;
 }

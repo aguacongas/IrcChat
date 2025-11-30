@@ -124,10 +124,14 @@ public static class ServiceCollectionExtensions
                 // Policy pour l'administration
                 configure.AddPolicy(AuthorizationPolicies.IsAdmin, builder =>
                     builder.AddRequirements(new IsAdminRequirement()));
+                // Policy pour les utilisateur resever
+                configure.AddPolicy(AuthorizationPolicies.IsReserved, builder =>
+                    builder.AddRequirements(new IsReservedRequirement()));
             })
             // Enregistrer le handler
             .AddScoped<IAuthorizationHandler, ChannelModificationHandler>()
-            .AddScoped<IAuthorizationHandler, IsAdminHandler>();
+            .AddScoped<IAuthorizationHandler, IsAdminHandler>()
+            .AddScoped<IAuthorizationHandler, IsReservedHandler>();
 
 
     public static IServiceCollection AddCorsConfiguration(

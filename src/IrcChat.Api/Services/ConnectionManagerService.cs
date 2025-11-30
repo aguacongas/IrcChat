@@ -43,12 +43,22 @@ public class ConnectionManagerService(
 
         var timeout = DateTime.UtcNow.AddSeconds(-_options.UserTimeoutSeconds);
         var staleConnections = await db.ConnectedUsers
-            .Where(u => u.LastPing < timeout)
+            .GroupBy(u => u.ConnectionId)
+            .Select(g => new
+            {
+                ConnectionId = g.Key,
+                LastActivity = g.Max(u => u.LastActivity)
+            })
+            .Where(u => u.LastActivity < timeout)
+            .Select(g => g.ConnectionId)
             .ToListAsync(stoppingToken);
 
         if (staleConnections.Count != 0)
         {
-            db.ConnectedUsers.RemoveRange(staleConnections);
+            var connectionsToRemove = await db.ConnectedUsers
+                .Where(u => staleConnections.Contains(u.ConnectionId))
+                .ToListAsync(stoppingToken);
+            db.ConnectedUsers.RemoveRange(connectionsToRemove);
             await db.SaveChangesAsync(stoppingToken);
             logger.LogInformation(
                 "Nettoyage des connexions inactives: {Count} utilisateurs supprimés",

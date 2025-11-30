@@ -57,7 +57,7 @@ public class AutoMuteService(
             // Vérifier si le manager est connecté et actif
             var managerConnection = await db.ConnectedUsers
                 .Where(u => u.Username.ToLower() == managerUsername.ToLower())
-                .OrderByDescending(u => u.LastPing)
+                .OrderByDescending(u => u.LastActivity)
                 .FirstOrDefaultAsync();
 
             var shouldMute = false;
@@ -71,7 +71,7 @@ public class AutoMuteService(
             {
                 // Vérifier l'inactivité du manager
                 var inactiveThreshold = DateTime.UtcNow.AddMinutes(-_options.InactivityMinutes);
-                if (managerConnection.LastPing < inactiveThreshold)
+                if (managerConnection.LastActivity < inactiveThreshold)
                 {
                     shouldMute = true;
                 }
