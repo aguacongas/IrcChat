@@ -32,7 +32,9 @@ public partial class ChatTests
         };
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
+        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
         _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
@@ -78,7 +80,9 @@ public partial class ChatTests
         };
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
+        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
         _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
@@ -118,11 +122,15 @@ public partial class ChatTests
         };
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
-        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
+        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
+        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/muted-users")
+            .Respond(HttpStatusCode.Forbidden);
         _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
             .Respond(HttpStatusCode.OK, JsonContent.Create(users));
+        _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
         _mockHttp.When(HttpMethod.Get, "*/api/private-messages/status/Alice")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new { Username = "Alice", IsOnline = true }));
 
@@ -395,7 +403,7 @@ public partial class ChatTests
         _chatServiceMock.Setup(x => x.SendPrivateMessage(It.IsAny<SendPrivateMessageRequest>()))
             .Returns(Task.CompletedTask);
 
-        var cut = await RenderChatAsync();
+        await RenderChatAsync();
 
         // Act - Essayer d'envoyer sans utilisateur sélectionné (ne devrait pas être possible dans l'UI)
         // Mais on teste la robustesse de la méthode

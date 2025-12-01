@@ -1,0 +1,160 @@
+@using IrcChat.Shared.Models
+@inject HttpClient Http
+@inject ILogger<ChannelList> Logger
+
+<div class="channel-list-container">
+    <div class="channel-list-header">
+        <h2>Salons Disponibles</h2>
+        <div class="channel-list-search">
+            <input type="text"
+                   class="search-input"
+                   placeholder="Rechercher un salon..."
+                   @bind="searchQuery"
+                   @bind:event="oninput"
+                   @onkeyup="FilterChannels" />
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Chargement des salons...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="error-state">
+            <span class="error-icon">⚠️</span>
+            <p>@errorMessage</p>
+            <button class="btn-retry" @onclick="LoadChannelsAsync">Réessayer</button>
+        </div>
+    }
+    else if (!filteredChannels.Any())
+    {
+        <div class="empty-state">
+            @if (string.IsNullOrEmpty(searchQuery))
+            {
+                <span class="empty-icon">💬</span>
+                <p>Aucun salon disponible</p>
+                <p class="empty-subtitle">Les salons créés apparaîtront ici</p>
+            }
+            else
+            {
+                <span class="empty-icon">🔍</span>
+                <p>Aucun résultat pour "@searchQuery"</p>
+                <button class="btn-clear-search" @onclick="ClearSearch">Effacer la recherche</button>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="channel-grid">
+            @foreach (var channel in filteredChannels)
+            {
+                <div class="channel-card" @onclick="() => OnChannelSelected.InvokeAsync(channel.Name)">
+                    <div class="channel-card-header">
+                        <h3 class="channel-name">
+                            <span class="channel-hash">#</span>@channel.Name
+                        </h3>
+                        <span class="channel-users-count" title="Utilisateurs connectés">
+                            <span class="users-icon">👥</span>
+                            @channel.ConnectedUsersCount
+                        </span>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(channel.Description))
+                    {
+                        <p class="channel-description">@channel.Description</p>
+                    }
+                    else
+                    {
+                        <p class="channel-description empty">Aucune description</p>
+                    }
+
+                    <div class="channel-card-footer">
+                        <span class="channel-creator">
+                            <span class="creator-icon">👤</span>
+                            Créé par @channel.CreatedBy
+                        </span>
+                        @if (channel.IsMuted)
+                        {
+                            <span class="channel-badge muted" title="Salon en mode muet">
+                                🔇 Muet
+                            </span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<string> OnChannelSelected { get; set; }
+
+    private List<Channel> channels = new();
+    private List<Channel> filteredChannels = new();
+    private string searchQuery = string.Empty;
+    private bool isLoading = true;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadChannelsAsync();
+    }
+
+    private async Task LoadChannelsAsync()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            var result = await Http.GetFromJsonAsync<List<Channel>>("/api/channels");
+            if (result != null)
+            {
+                channels = result;
+                filteredChannels = channels;
+                Logger.LogInformation("Chargement de {ChannelCount} salons réussi", channels.Count);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors du chargement des salons");
+            errorMessage = "Impossible de charger les salons. Veuillez réessayer.";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void FilterChannels()
+    {
+        if (string.IsNullOrWhiteSpace(searchQuery))
+        {
+            filteredChannels = channels;
+        }
+        else
+        {
+            var query = searchQuery.ToLower();
+            filteredChannels = channels
+                .Where(c => c.Name.ToLower().Contains(query) ||
+                           (c.Description != null && c.Description.ToLower().Contains(query)) ||
+                           c.CreatedBy.ToLower().Contains(query))
+                .ToList();
+        }
+
+        StateHasChanged();
+    }
+
+    private void ClearSearch()
+    {
+        searchQuery = string.Empty;
+        filteredChannels = channels;
+        StateHasChanged();
+    }
+}

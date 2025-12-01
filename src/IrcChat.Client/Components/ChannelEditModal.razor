@@ -1,0 +1,145 @@
+@* src/IrcChat.Client/Components/ChannelEditModal.razor *@
+@using IrcChat.Shared.Models
+@using System.Net
+@inject HttpClient Http
+@inject ILogger<ChannelEditModal> Logger
+
+<div class="modal-overlay" @onclick="Close">
+    <div class="modal-box" @onclick:stopPropagation="true">
+        <div class="modal-header">
+            <h2>✏️ Modifier le salon</h2>
+            <button class="close-button" @onclick="Close">✕</button>
+        </div>
+
+        <div class="modal-content">
+            <div class="channel-info">
+                <strong>#@ChannelName</strong>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description"
+                          @bind="editedDescription"
+                          @bind:event="oninput"
+                          placeholder="Décrivez le sujet de ce salon..."
+                          maxlength="200"
+                          rows="4"
+                          class="input-textarea"></textarea>
+                <div class="char-counter">@(editedDescription?.Length ?? 0) / 200</div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-error">
+                    @errorMessage
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div class="alert alert-success">
+                    @successMessage
+                </div>
+            }
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn btn-secondary" @onclick="Close">
+                Annuler
+            </button>
+            <button class="btn btn-primary" @onclick="SaveChanges" disabled="@isSaving">
+                @if (isSaving)
+                {
+                    <span class="spinner-small"></span>
+                }
+                else
+                {
+                    <span>Enregistrer</span>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public required string ChannelName { get; set; }
+
+    [Parameter]
+    public string? CurrentDescription { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback OnSaved { get; set; }
+
+    private string? editedDescription;
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+    private bool isSaving = false;
+
+    protected override void OnParametersSet()
+    {
+        editedDescription = CurrentDescription;
+    }
+
+    private async Task Close()
+    {
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task SaveChanges()
+    {
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+        isSaving = true;
+
+        try
+        {
+            var request = new Channel
+            {
+                Description = string.IsNullOrWhiteSpace(editedDescription)
+                    ? null
+                    : editedDescription.Trim()
+            };
+
+            var response = await Http.PutAsJsonAsync($"/api/channels/{Uri.EscapeDataString(ChannelName)}", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = "✓ Description mise à jour avec succès !";
+                StateHasChanged();
+                await Task.Delay(1000);
+                await OnSaved.InvokeAsync();
+                await Close();
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                if (errorContent.Contains("channel_not_found"))
+                {
+                    errorMessage = "✗ Ce salon n'existe plus";
+                }
+                else if (response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    errorMessage = "✗ Vous n'avez pas la permission de modifier ce salon";
+                }
+                else
+                {
+                    errorMessage = "✗ Erreur lors de la mise à jour";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de la mise à jour de la description du salon {ChannelName}", ChannelName);
+            errorMessage = "✗ Erreur de connexion";
+        }
+        finally
+        {
+            isSaving = false;
+            StateHasChanged();
+        }
+    }
+}

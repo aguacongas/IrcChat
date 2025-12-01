@@ -58,25 +58,38 @@ else
                  OnPrivateConversationSelected="StartPrivateChat"
                  OnConversationDeleted="DeleteConversation"
                  OnUserInfoClicked="GoToSettings"
-                 OnChannelDeleted="HandleChannelDeleted" />
+                 OnChannelDeleted="HandleChannelDeleted"
+                 OnBrowseChannelsClicked="HandleBrowseChannels"
+                 OnChannelLeave="HandleLeaveChannel" />
 
-        <ChatArea Username="@currentUsername"
-                  CurrentContactUserId="@selectedPrivateUser?.UserId"
-                  CurrentChannel="@GetCurrentChannelOrUsername()"
-                  IsConnected="@IsConnected"
-                  Messages="@GetCurrentMessages()"
-                  Users="@(isPrivateConversation ? null : users)"
-                  IsMuted="@isCurrentChannelMuted"
-                  CanManage="@CanManageCurrentChannel()"
-                  UsersListOpen="@usersListOpen"
-                  IsPrivateConversation="@isPrivateConversation"
-                  IsUserOnline="@isSelectedUserOnline"
-                  OnMessageSent="@(isPrivateConversation ? SendPrivateMessage : SendMessage)"
-                  OnUserClicked="HandleUserClicked"
-                  OnMuteStatusChanged="HandleMuteStatusChanged"
-                  OnClosePrivateConversation="ClosePrivateChat"
-                  OnChannelDeleted="HandleChannelDeleted"
-                  OnUsersListToggle="HandleUsersListToggle" />
+        @* Afficher ChannelList si aucun salon ni conversation privée active *@
+        @if (string.IsNullOrEmpty(currentChannel) && !isPrivateConversation)
+        {
+            <ChannelList OnChannelSelected="HandleChannelListSelection" />
+        }
+        else
+        {
+            <ChatArea @key="@GetChatAreaKey()"
+                      Username="@currentUsername"
+                      CurrentContactUserId="@selectedPrivateUser?.UserId"
+                      CurrentChannel="@GetCurrentChannelOrUsername()"
+                      ChannelDescription="@currentChannelDescription"
+                      IsConnected="@IsConnected"
+                      Messages="@GetCurrentMessages()"
+                      Users="@(isPrivateConversation ? null : users)"
+                      IsMuted="@isCurrentChannelMuted"
+                      CanManage="@CanManageCurrentChannel()"
+                      UsersListOpen="@usersListOpen"
+                      IsPrivateConversation="@isPrivateConversation"
+                      IsUserOnline="@isSelectedUserOnline"
+                      OnMessageSent="@(isPrivateConversation ? SendPrivateMessage : SendMessage)"
+                      OnUserClicked="HandleUserClicked"
+                      OnMuteStatusChanged="HandleMuteStatusChanged"
+                      OnClosePrivateConversation="ClosePrivateChat"
+                      OnChannelDeleted="HandleChannelDeleted"
+                      OnUsersListToggle="HandleUsersListToggle"
+                      OnChannelUpdated="HandleChannelUpdated" />
+        }
     </div>
 
     @* Notification de mute *@
@@ -122,7 +135,8 @@ else
     [Parameter]
     public string? PrivateUsername { get; set; }
 
-    private string currentChannel = "";
+    private string? currentChannel = null;
+    private string? currentChannelDescription = null;
     private string currentUsername = "";
     private string currentUserId = "";
     private string? avatarUrl = null;
@@ -183,7 +197,7 @@ else
             try
             {
                 await InitializeSignalR();
-                await LoadChannels();
+                await LoadMyChannels();
                 await LoadPrivateConversations();
             }
             finally
@@ -335,7 +349,7 @@ else
             ShowConnectionNotification("Reconnexion réussie !", ConnectionNotificationType.Reconnected);
 
             // Recharger les données après reconnexion
-            await LoadChannels();
+            await LoadMyChannels();
             if (!isPrivateConversation && !string.IsNullOrEmpty(currentChannel))
             {
                 await LoadMessages();
@@ -474,7 +488,8 @@ else
 
         if (currentChannel == channelName && !isPrivateConversation)
         {
-            currentChannel = "";
+            currentChannel = null;
+            currentChannelDescription = null;
             messages.Clear();
             NavigateToRelativeIfNeeded("chat");
         }
@@ -484,7 +499,7 @@ else
 
     private void OnChannelNotFound(string channelName)
     {
-        muteNotification = $"Le canal #{channelName} n'existe plus";
+        muteNotification = $"Le salon #{channelName} n'existe plus";
         InvokeAsync(async () =>
         {
             StateHasChanged();
@@ -496,7 +511,7 @@ else
 
     private async void OnChannelListUpdated()
     {
-        await LoadChannels();
+        await LoadMyChannels();
         await InvokeAsync(StateHasChanged);
     }
 
@@ -522,6 +537,84 @@ else
     {
         OnChannelDeleted(channelName);
         return Task.CompletedTask;
+    }
+
+    private async Task HandleChannelListSelection(string channelName)
+    {
+        NavigateToChannelRoute(channelName);
+        await Task.CompletedTask;
+    }
+
+    private void HandleBrowseChannels()
+    {
+        // Fermer toute conversation privée
+        if (isPrivateConversation)
+        {
+            ClosePrivateChatState();
+        }
+
+        // Quitter le salon actuel (visuellement, pas via SignalR)
+        currentChannel = string.Empty;
+        messages.Clear();
+        users.Clear();
+
+        // Fermer la sidebar sur mobile
+        sidebarOpen = false;
+
+        // Naviguer vers la route de base /chat pour afficher ChannelList
+        NavigateToRelativeIfNeeded("chat");
+
+        StateHasChanged();
+    }
+
+    private async Task HandleLeaveChannel(string channelName)
+    {
+        if (string.IsNullOrWhiteSpace(channelName))
+        {
+            return;
+        }
+
+        try
+        {
+            Logger.LogInformation("Quitter le salon {Channel}", channelName);
+
+            // Appeler SignalR pour quitter le salon
+            await ChatService.LeaveChannel(channelName);
+
+            // Recharger la liste des salons connectés
+            channels = channels.Where(c => c.Name != channelName).ToList();
+
+            // Si c'est le salon actuel, basculer vers un autre ou afficher ChannelList
+            if (currentChannel == channelName && !isPrivateConversation)
+            {
+                var otherChannel = channels.FirstOrDefault(c => c.Name != channelName);
+                if (otherChannel != null)
+                {
+                    // Basculer vers un autre salon
+                    NavigateToChannelRoute(otherChannel.Name);
+                }
+                else
+                {
+                    // Plus de salons connectés, afficher ChannelList
+                    currentChannel = null;
+                    currentChannelDescription = null;
+                    messages.Clear();
+                    users.Clear();
+                    NavigateToRelativeIfNeeded("chat");
+                }
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de la sortie du salon {Channel}", channelName);
+            muteNotification = $"Impossible de quitter le salon {channelName}";
+            StateHasChanged();
+            await Task.Delay(4000);
+            muteNotification = "";
+            StateHasChanged();
+        }
     }
 
     // Handlers pour messages privés
@@ -615,41 +708,41 @@ else
             return;
         }
 
-        if (!string.IsNullOrEmpty(currentChannel) &&
-            !string.Equals(channel, currentChannel, StringComparison.OrdinalIgnoreCase))
+        // Vérifier si déjà connecté
+        var alreadyConnected = channels.Any(c => c.Name.Equals(channel, StringComparison.OrdinalIgnoreCase));
+
+        if (!alreadyConnected)
         {
-            await ChatService.LeaveChannel(currentChannel);
+            // Joindre le salon via SignalR
+            await ChatService.JoinChannel(channel);
         }
 
+        // Charger les données du salon
         isPrivateConversation = false;
         selectedPrivateUser = null;
         privateMessages.Clear();
         isSelectedUserOnline = false;
 
-        if (!string.Equals(channel, currentChannel, StringComparison.OrdinalIgnoreCase))
-        {
-            await ChatService.JoinChannel(channel);
-        }
+        currentChannel = channel;
+        await LoadMessages();
+        await LoadUsers();
+        await LoadMyChannels();
 
-        await LoadChannels();
+        var channelInfo = channels.FirstOrDefault(c => c.Name.Equals(channel, StringComparison.OrdinalIgnoreCase));
 
-        var channelInfo = channels.FirstOrDefault(c =>
-            c.Name.Equals(channel, StringComparison.OrdinalIgnoreCase));
         if (channelInfo == null)
         {
-            muteNotification = $"Le canal #{channel} n'existe plus";
-            currentChannel = "";
+            muteNotification = $"Le salon #{channel} n'existe plus";
+            currentChannel = null;
+            currentChannelDescription = null;
             isCurrentChannelMuted = false;
             NavigateToRelativeIfNeeded("chat");
             StateHasChanged();
             return;
         }
 
-        currentChannel = channelInfo.Name;
-        await LoadMessages();
-        await LoadUsers();
-
         isCurrentChannelMuted = channelInfo.IsMuted;
+        currentChannelDescription = channelInfo.Description;
 
         // Fermer la sidebar sur mobile
         sidebarOpen = false;
@@ -660,19 +753,31 @@ else
         StateHasChanged();
     }
 
-    private async Task LoadChannels()
+    private async Task LoadMyChannels()
     {
         try
         {
-            var result = await Http.GetFromJsonAsync<List<Channel>>("/api/channels");
+            // Charger UNIQUEMENT les salons sur lesquels l'utilisateur est connecté
+            var result = await Http.GetFromJsonAsync<List<Channel>>(
+                $"/api/my-channels?username={Uri.EscapeDataString(currentUsername)}");
+
             if (result != null)
             {
                 channels = result;
+                Logger.LogInformation(
+                    "Chargement des salons connectés pour {Username}: {ChannelCount} salons",
+                    currentUsername,
+                    channels.Count);
+            }
+            else
+            {
+                channels = new List<Channel>();
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Erreur lors du chargement des canaux");
+            Logger.LogError(ex, "Erreur lors du chargement des salons connectés pour {Username}", currentUsername);
+            channels = new List<Channel>();
         }
     }
 
@@ -721,7 +826,7 @@ else
         var req = new SendMessageRequest
         {
             Content = content,
-            Channel = currentChannel
+            Channel = currentChannel!
         };
 
         try
@@ -774,6 +879,7 @@ else
 
         isPrivateConversation = true;
         selectedPrivateUser = user;
+        currentChannelDescription = null;
 
         await LoadPrivateMessages(user.UserId);
 
@@ -845,6 +951,7 @@ else
         selectedPrivateUser = null;
         privateMessages.Clear();
         isSelectedUserOnline = false;
+        currentChannelDescription = null;
         StateHasChanged();
     }
 
@@ -891,7 +998,7 @@ else
     private async Task HandleMuteStatusChanged(bool isMuted)
     {
         isCurrentChannelMuted = isMuted;
-        await LoadChannels();
+        await LoadMyChannels();
         StateHasChanged();
     }
 
@@ -923,7 +1030,25 @@ else
         StateHasChanged();
     }
 
-    private string GetCurrentChannelOrUsername()
+    private async Task HandleChannelUpdated()
+    {
+        await LoadMyChannels();
+
+        // Mettre à jour la description du canal actuel
+        if (!string.IsNullOrEmpty(currentChannel) && !isPrivateConversation)
+        {
+            var channelInfo = channels.FirstOrDefault(c =>
+                c.Name.Equals(currentChannel, StringComparison.OrdinalIgnoreCase));
+            if (channelInfo != null)
+            {
+                currentChannelDescription = channelInfo.Description;
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private string? GetCurrentChannelOrUsername()
     {
         return isPrivateConversation ? selectedPrivateUser?.Username ?? "" : currentChannel;
     }
@@ -972,6 +1097,8 @@ else
             : string.Empty;
 
         ChannelName = null;
+        currentChannel = null;
+        currentChannelDescription = null;
         PrivateUserId = user.UserId;
         PrivateUsername = user.Username;
         NavigateToRelativeIfNeeded($"chat/private/{encodedUserId}{usernameSegment}");
@@ -1024,6 +1151,21 @@ else
         }
 
         return user;
+    }
+
+    private string GetChatAreaKey()
+    {
+        if (isPrivateConversation && selectedPrivateUser != null)
+        {
+            return $"private-{selectedPrivateUser.UserId}";
+        }
+
+        if (!string.IsNullOrEmpty(currentChannel))
+        {
+            return $"channel-{currentChannel}";
+        }
+
+        return "chat-area-default";
     }
 
     public ValueTask DisposeAsync()

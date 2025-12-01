@@ -25,10 +25,41 @@
                 }
                 else
                 {
-                    <h2>#@CurrentChannel</h2>
-                    <span class="status @(IsConnected ? "connected" : "disconnected")">
-                        @(IsConnected ? "● Connecté" : "○ Déconnecté")
-                    </span>
+                    <div class="channel-title-section">
+                        <h2 class="channel-title">
+                            <span class="channel-hash">#@CurrentChannel</span>
+                        </h2>
+                        <span class="status @(IsConnected ? "connected" : "disconnected")">
+                            @(IsConnected ? "●" : "○")
+                        </span>
+                        <span class="status-text @(IsConnected ? "connected" : "disconnected")">
+                            @(IsConnected ? "Connecté" : "Déconnecté")
+                        </span>
+                        @if (CanManage && !string.IsNullOrEmpty(CurrentChannel))
+                        {
+                            <button class="edit-channel-btn" @onclick="OpenEditModal" title="Modifier la description">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                            </button>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(ChannelDescription))
+                    {
+                        <div class="channel-description-container">
+                          <p class="channel-description @(isDescriptionExpanded ? "expanded" : "")" 
+                             title="@ChannelDescription">
+                              @ChannelDescription
+                          </p>
+                          @if (ChannelDescription.Length > 80)
+                          {
+                              <button class="description-toggle" @onclick="ToggleDescription">
+                                  @(isDescriptionExpanded ? "Moins" : "Plus")
+                              </button>
+                          }
+                      </div>
+                    }                    
                 }
             </div>
             <div class="header-right">
@@ -79,6 +110,15 @@
             }
         </div>
     }
+
+    @if (showEditModal && !IsPrivateConversation && CanManage && !string.IsNullOrEmpty(CurrentChannel))
+    {
+        <ChannelEditModal ChannelName="@CurrentChannel"
+                          CurrentDescription="@ChannelDescription"
+                          OnClose="CloseEditModal"
+                          OnSaved="HandleChannelSaved" />
+    }
+
 </div>
 
 @code {
@@ -89,7 +129,7 @@
     public string CurrentContactUserId { get; set; } = string.Empty;
 
     [Parameter]
-    public string CurrentChannel { get; set; } = string.Empty;
+    public string? CurrentChannel { get; set; }
 
     [Parameter]
     public bool IsConnected { get; set; }
@@ -116,6 +156,9 @@
     public bool IsUserOnline { get; set; }
 
     [Parameter]
+    public string? ChannelDescription { get; set; }
+
+    [Parameter]
     public EventCallback<string> OnMessageSent { get; set; }
 
     [Parameter]
@@ -132,4 +175,31 @@
 
     [Parameter]
     public EventCallback OnClosePrivateConversation { get; set; }
+
+    [Parameter]
+    public EventCallback OnChannelUpdated { get; set; }
+
+    private bool showEditModal = false;
+    private bool isDescriptionExpanded = false;
+
+    private void OpenEditModal()
+    {
+        showEditModal = true;
+    }
+
+    private void CloseEditModal()
+    {
+        showEditModal = false;
+    }
+
+    private async Task HandleChannelSaved()
+    {
+        await OnChannelUpdated.InvokeAsync();
+        CloseEditModal();
+    }
+
+    private void ToggleDescription()
+    {
+        isDescriptionExpanded = !isDescriptionExpanded;
+    }
 }

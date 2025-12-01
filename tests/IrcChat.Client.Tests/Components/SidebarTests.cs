@@ -1,5 +1,4 @@
 // tests/IrcChat.Client.Tests/Components/SidebarTests.cs
-using System.Threading.Tasks;
 using Bunit;
 using IrcChat.Client.Components;
 using IrcChat.Shared.Models;
@@ -257,5 +256,147 @@ public class SidebarTests : BunitContext
         // Assert
         Assert.Contains("5", cut.Markup);
         Assert.NotNull(cut.Find(".unread-count"));
+    }
+
+    [Fact]
+    public async Task Sidebar_WithChannelsConnectedUsersCount_ShouldDisplayCount()
+    {
+        // Arrange
+        var channels = new List<Channel>
+    {
+        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 10 },
+        new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 }
+    };
+
+        // Act
+        var cut = Render<Sidebar>(parameters => parameters
+            .Add(p => p.IsOpen, true)
+            .Add(p => p.Username, "TestUser")
+            .Add(p => p.Channels, channels));
+
+        // Assert
+        Assert.Contains("10", cut.Markup);
+        Assert.Contains("5", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Sidebar_BrowseChannelsButton_ShouldBeVisible()
+    {
+        // Arrange & Act
+        var cut = Render<Sidebar>(parameters => parameters
+            .Add(p => p.IsOpen, true)
+            .Add(p => p.Username, "TestUser")
+            .Add(p => p.Channels, []));
+
+        // Assert
+        Assert.NotNull(cut.Find(".btn-browse-channels"));
+        Assert.Contains("Parcourir", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Sidebar_OnBrowseChannelsClick_ShouldInvokeCallback()
+    {
+        // Arrange
+        var browseClicked = false;
+
+        var cut = Render<Sidebar>(parameters => parameters
+            .Add(p => p.IsOpen, true)
+            .Add(p => p.Username, "TestUser")
+            .Add(p => p.Channels, [])
+            .Add(p => p.OnBrowseChannelsClicked, () => { browseClicked = true; return Task.CompletedTask; }));
+
+        // Act
+        var browseButton = cut.Find(".btn-browse-channels");
+        await cut.InvokeAsync(() => browseButton.Click());
+
+        // Assert
+        Assert.True(browseClicked);
+    }
+
+    [Fact]
+    public async Task Sidebar_WhenNoChannels_ShouldShowEmptyState()
+    {
+        // Arrange & Act
+        var cut = Render<Sidebar>(parameters => parameters
+            .Add(p => p.IsOpen, true)
+            .Add(p => p.Username, "TestUser")
+            .Add(p => p.Channels, []));
+
+        // Assert
+        Assert.Contains("Aucun salon rejoint", cut.Markup);
+    }
+
+    [Fact]
+    public void Sidebar_WithChannels_ShouldDisplayLeaveButtons()
+    {
+        // Arrange
+        var channels = new List<Channel>
+    {
+        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 },
+        new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 3 }
+    };
+
+        // Act
+        var cut = Render<Sidebar>(parameters => parameters
+            .Add(p => p.IsOpen, true)
+            .Add(p => p.Username, "TestUser")
+            .Add(p => p.Channels, channels));
+
+        // Assert
+        var leaveButtons = cut.FindAll(".btn-leave-channel");
+        Assert.Equal(2, leaveButtons.Count);
+    }
+
+    [Fact]
+    public async Task Sidebar_OnLeaveButtonClick_ShouldInvokeCallback()
+    {
+        // Arrange
+        var channels = new List<Channel>
+    {
+        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 }
+    };
+
+        var leftChannel = string.Empty;
+
+        var cut = Render<Sidebar>(parameters => parameters
+            .Add(p => p.IsOpen, true)
+            .Add(p => p.Username, "TestUser")
+            .Add(p => p.Channels, channels)
+            .Add(p => p.OnChannelLeave, (channelName) => { leftChannel = channelName; return Task.CompletedTask; }));
+
+        // Act
+        var leaveButton = cut.Find(".btn-leave-channel");
+        await cut.InvokeAsync(() => leaveButton.Click());
+
+        // Assert
+        Assert.Equal("general", leftChannel);
+    }
+
+    [Fact]
+    public async Task Sidebar_LeaveButton_ShouldNotTriggerChannelSelection()
+    {
+        // Arrange
+        var channels = new List<Channel>
+    {
+        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 }
+    };
+
+        var channelSelected = false;
+        var channelLeft = false;
+
+        var cut = Render<Sidebar>(parameters => parameters
+            .Add(p => p.IsOpen, true)
+            .Add(p => p.Username, "TestUser")
+            .Add(p => p.Channels, channels)
+            .Add(p => p.OnChannelSelected, (channelName) => { channelSelected = true; return Task.CompletedTask; })
+            .Add(p => p.OnChannelLeave, (channelName) => { channelLeft = true; return Task.CompletedTask; }));
+
+        // Act - Cliquer sur le bouton de fermeture
+        var leaveButton = cut.Find(".btn-leave-channel");
+        await cut.InvokeAsync(() => leaveButton.Click());
+
+        // Assert - Seulement le callback Leave doit être invoqué
+        Assert.False(channelSelected);
+        Assert.True(channelLeft);
     }
 }

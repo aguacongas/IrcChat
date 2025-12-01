@@ -26,7 +26,9 @@ public partial class ChatTests
         };
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
+        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
         _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
@@ -71,7 +73,9 @@ public partial class ChatTests
         };
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
+        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(messages));
         _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
@@ -124,7 +128,7 @@ public partial class ChatTests
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = await RenderChatAsync(channelName: "general");
+        await RenderChatAsync(channelName: "general");
         var initialUri = _navManager.Uri;
 
         // Act - Supprimer un autre canal
@@ -232,7 +236,7 @@ public partial class ChatTests
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = await RenderChatAsync(channelName: "general");
+        await RenderChatAsync(channelName: "general");
 
         // Act & Assert - Ne devrait pas lever d'exception
         var exception = await Record.ExceptionAsync(async () =>
@@ -258,7 +262,9 @@ public partial class ChatTests
         };
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
+        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
         _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
@@ -298,7 +304,9 @@ public partial class ChatTests
         };
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
+        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
 
         _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
@@ -315,6 +323,8 @@ public partial class ChatTests
 
         // Assert - Ne devrait pas naviguer
         Assert.Equal(initialUri, _navManager.Uri);
-        Assert.DoesNotContain("random", cut.Markup);
+        var channelList = await cut.InvokeAsync(() => cut.FindAll("span.channel-name"));
+
+        Assert.DoesNotContain(channelList, s => s.TextContent.Contains("random"));
     }
 }
