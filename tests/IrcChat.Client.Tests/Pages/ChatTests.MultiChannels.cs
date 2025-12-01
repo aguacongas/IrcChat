@@ -23,7 +23,7 @@ public partial class ChatTests
         };
 
         var myChannelsRequest = _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(myChannels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(myChannels));
 
         _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
@@ -31,7 +31,7 @@ public partial class ChatTests
             .ReturnsAsync([]);
 
         // Act
-        var cut = Render<Chat>();
+        var cut = await RenderChatAsync();
         await Task.Delay(200);
 
         // Assert
@@ -46,7 +46,7 @@ public partial class ChatTests
         // Arrange
         SetupBasicAuth();
         _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<Channel>()));
 
         var allChannels = new List<Channel>
         {
@@ -54,7 +54,7 @@ public partial class ChatTests
         };
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(allChannels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(allChannels));
 
         _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
@@ -62,7 +62,7 @@ public partial class ChatTests
             .ReturnsAsync([]);
 
         // Act
-        var cut = Render<Chat>();
+        var cut = await RenderChatAsync();
         await Task.Delay(200);
         cut.Render();
 
@@ -87,16 +87,16 @@ public partial class ChatTests
         };
 
         _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(emptyChannels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(emptyChannels));
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(allChannels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(allChannels));
 
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general*")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<Message>()));
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<User>()));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<User>()));
 
         _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
@@ -104,13 +104,13 @@ public partial class ChatTests
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
+        var cut = await RenderChatAsync();
         await Task.Delay(200);
 
         // Simuler le chargement des salons après le join
-        _mockHttp.ResetExpectations();
+        _mockHttp.ResetBackendDefinitions();
         _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(myChannelsAfterJoin));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(myChannelsAfterJoin));
 
         // Act - Cliquer sur un salon dans ChannelList
         await NavigateToChannelAsync(cut, "general");
@@ -131,13 +131,13 @@ public partial class ChatTests
         };
 
         _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general*")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<Message>()));
         _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<User>()));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<User>()));
 
         _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
@@ -167,13 +167,13 @@ public partial class ChatTests
         };
 
         _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general*")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<Message>()));
         _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<User>()));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<User>()));
 
         _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
@@ -198,7 +198,7 @@ public partial class ChatTests
         // Arrange
         SetupBasicAuth();
         var myChannelsRequest = _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<Channel>()));
 
         _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
@@ -206,7 +206,7 @@ public partial class ChatTests
             .ReturnsAsync([]);
 
         // Act
-        Render<Chat>();
+        await RenderChatAsync();
         await Task.Delay(200);
 
         // Assert
@@ -225,14 +225,14 @@ public partial class ChatTests
         };
 
         var myChannelsRequest = _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(initialChannels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(initialChannels));
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(afterJoinChannels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(afterJoinChannels));
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general*")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Message>()));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<Message>()));
         _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(new List<User>()));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<User>()));
 
         _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
@@ -240,13 +240,13 @@ public partial class ChatTests
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
-        var cut = Render<Chat>();
+        var cut = await RenderChatAsync();
         await Task.Delay(200);
 
         // Mettre à jour le mock pour retourner le salon après le join
         _mockHttp.ResetExpectations();
         _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
-            .Respond(HttpStatusCode.OK, JsonContent.Create(afterJoinChannels));
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(afterJoinChannels));
 
         // Act - Rejoindre un canal
         await NavigateToChannelAsync(cut, "general");
