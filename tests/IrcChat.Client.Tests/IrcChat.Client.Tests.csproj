@@ -14,13 +14,6 @@
     <NoWarn>1701;1702;CA1873</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="Pages\ChatTests.MultiChannels.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Pages\ChatTests.MultiChannels.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
