@@ -290,4 +290,3 @@ public class ChannelListTests : BunitContext
         Assert.Contains("Muet", cut.Markup);
     }
 }
-
