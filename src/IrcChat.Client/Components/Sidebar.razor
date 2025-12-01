@@ -1,4 +1,3 @@
-@* src/IrcChat.Client/Components/Sidebar.razor *@
 @using IrcChat.Shared.Models
 
 <div class="sidebar @(IsOpen ? "open" : "closed")">
@@ -35,16 +34,41 @@
     </div>
 
     <div class="channels-section">
-        <h3>Salons</h3>
-        <ul class="channel-list">
-            @foreach (var name in Channels.Select(ch => ch.Name))
-            {
-                <li class="@(name == CurrentChannel ? "active" : "")"
-                    @onclick="() => OnChannelSelected.InvokeAsync(name)">
-                    <span class="channel-hash">#</span>@name
-                </li>
-            }
-        </ul>
+        <div class="section-header">
+            <h3>Mes Salons</h3>
+            <button class="btn-browse-channels"
+                    @onclick="OnBrowseChannelsClicked"
+                    title="Parcourir tous les salons">
+                <span class="browse-icon">🔍</span>
+                Parcourir
+            </button>
+        </div>
+
+        @if (Channels.Any())
+        {
+            <ul class="channel-list">
+                @foreach (var channel in Channels)
+                {
+                    <li class="@(channel.Name == CurrentChannel ? "active" : "")">
+                        <div class="channel-content" @onclick="() => OnChannelSelected.InvokeAsync(channel.Name)">
+                            <span class="channel-hash">#</span>
+                            <span class="channel-name">@channel.Name</span>
+                        </div>
+                        <button class="btn-leave-channel"
+                                @onclick="() => OnChannelLeave.InvokeAsync(channel.Name)"
+                                title="Quitter ce salon">
+                            ×
+                        </button>
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <div class="empty-channels">
+                <p class="empty-text">Aucun salon rejoint</p>
+            </div>
+        }
     </div>
 
     <PrivateConversations Conversations="PrivateConversations"
@@ -100,5 +124,11 @@
     public EventCallback<string> OnChannelDeleted { get; set; }
 
     [Parameter]
-    public bool IsOpen { get; set; }    
+    public EventCallback OnBrowseChannelsClicked { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnChannelLeave { get; set; }
+
+    [Parameter]
+    public bool IsOpen { get; set; }
 }

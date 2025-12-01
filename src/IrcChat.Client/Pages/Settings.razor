@@ -106,26 +106,41 @@ else
                     </div>
                     <div class="card-content">
                         <p class="card-description">Créez vos propres salons de discussion</p>
-                        <div class="input-group">
-                            <input @bind="newChannelName"
-                                   @bind:event="oninput"
-                                   placeholder="Nom du nouveau salon..."
-                                   maxlength="20"
-                                   @onkeyup="HandleChannelKeyPress"
-                                   class="input-text" />
+                        <div class="channel-form">
+                            <div class="form-group">
+                                <label for="channel-name">Nom du salon</label>
+                                <input id="channel-name"
+                                       @bind="newChannelName"
+                                       @bind:event="oninput"
+                                       placeholder="general, support, random..."
+                                       maxlength="20"
+                                       @onkeyup="HandleChannelKeyPress"
+                                       class="input-text" />
+                            </div>
+                            <div class="form-group">
+                                <label for="channel-description">Description (optionnelle)</label>
+                                <textarea id="channel-description"
+                                          @bind="newChannelDescription"
+                                          @bind:event="oninput"
+                                          placeholder="Décrivez le sujet de ce salon..."
+                                          maxlength="200"
+                                          rows="3"
+                                          class="input-textarea"></textarea>
+                                <div class="char-counter">@(newChannelDescription?.Length ?? 0) / 200</div>
+                            </div>
                             <button @onclick="CreateChannel"
                                     disabled="@string.IsNullOrWhiteSpace(newChannelName)"
-                                    class="btn btn-primary">
+                                    class="btn btn-primary btn-create">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <line x1="12" y1="5" x2="12" y2="19"></line>
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
                                 </svg>
-                                Créer
+                                Créer le salon
                             </button>
                         </div>
-                        @if (channelError)
+                        @if (!string.IsNullOrEmpty(channelMessage))
                         {
-                            <div class="alert alert-error)">
+                            <div class="alert @(channelError ? "alert-error" : "alert-success")">
                                 @channelMessage
                             </div>
                         }
@@ -212,6 +227,7 @@ else
 @code {
     private bool isInitialized = false;
     private string newChannelName = string.Empty;
+    private string newChannelDescription = string.Empty;
     private string channelMessage = string.Empty;
     private bool channelError = false;
     private bool showForgetModal = false;
@@ -250,14 +266,20 @@ else
 
     private async Task CreateChannel()
     {
-        if (string.IsNullOrWhiteSpace(newChannelName)) return;
+        if (string.IsNullOrWhiteSpace(newChannelName))
+        {
+            return;
+        }
 
         channelMessage = "";
         channelError = false;
 
         var channel = new Channel
         {
-            Name = newChannelName.Trim().ToLower(),
+            Name = newChannelName.Trim(),
+            Description = string.IsNullOrWhiteSpace(newChannelDescription)
+                ? null
+                : newChannelDescription.Trim(),
             CreatedBy = Auth.Username ?? ""
         };
 
@@ -273,12 +295,16 @@ else
 
             if (response.IsSuccessStatusCode)
             {
+                var createdChannel = await response.Content.ReadFromJsonAsync<Channel>();
                 channelMessage = $"✓ Le salon #{newChannelName} a été créé avec succès !";
                 channelError = false;
-                newChannelName = string.Empty;
 
-                await Task.Delay(2000);
-                Navigation.NavigateToRelative("chat");
+                var channelToJoin = createdChannel?.Name ?? newChannelName.Trim();
+                newChannelName = string.Empty;
+                newChannelDescription = string.Empty;
+
+                await Task.Delay(500);
+                Navigation.NavigateToRelative($"chat/channel/{Uri.EscapeDataString(channelToJoin)}");
                 return;
             }
 
@@ -286,6 +312,10 @@ else
             if (errorContent.Contains("channel_exists"))
             {
                 channelMessage = "✗ Ce salon existe déjà";
+            }
+            else if (errorContent.Contains("missing_channel_name"))
+            {
+                channelMessage = "✗ Le nom du salon est requis";
             }
             else
             {
@@ -295,7 +325,7 @@ else
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Erreur lors de la création du salon");
+            Logger.LogError(ex, "Erreur lors de la création du salon {ChannelName}", newChannelName);
             channelMessage = "✗ Erreur de connexion";
             channelError = true;
         }
@@ -303,7 +333,7 @@ else
 
     private async Task HandleChannelKeyPress(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter")
+        if (e.Key == "Enter" && !e.ShiftKey)
         {
             await CreateChannel();
         }

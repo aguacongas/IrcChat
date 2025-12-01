@@ -136,10 +136,10 @@ public class SettingsTests : BunitContext
         var cut = Render<Settings>();
 
         // Act
-        var input = cut.Find(".input-group input");
+        var input = await cut.InvokeAsync(() => cut.Find(".channel-form .form-group input.input-text"));
         await cut.InvokeAsync(() => input.Input("test-channel"));
 
-        var createButton = cut.Find(".input-group .btn-primary");
+        var createButton = await cut.InvokeAsync(() => cut.Find(".channel-form .btn-primary"));
         await cut.InvokeAsync(() => createButton.Click());
         await Task.Delay(100);
 
@@ -166,10 +166,10 @@ public class SettingsTests : BunitContext
         var cut = Render<Settings>();
 
         // Act
-        var input = cut.Find(".input-group input");
+        var input = await cut.InvokeAsync(() => cut.Find(".channel-form .form-group input.input-text"));
         await cut.InvokeAsync(() => input.Input("existing-channel"));
 
-        var createButton = cut.Find(".input-group .btn-primary");
+        var createButton = await cut.InvokeAsync(() => cut.Find(".channel-form .btn-primary"));
         await cut.InvokeAsync(() => createButton.Click());
         await Task.Delay(100);
 
@@ -319,7 +319,7 @@ public class SettingsTests : BunitContext
     }
 
     [Fact]
-    public async Task Settings_CreateChannel_Success_ShouldNavigateToChat()
+    public async Task Settings_CreateChannel_Success_ShouldNavigateToChannel()
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
@@ -343,15 +343,15 @@ public class SettingsTests : BunitContext
         var cut = Render<Settings>();
 
         // Act
-        var input = cut.Find(".input-group input");
+        var input = await cut.InvokeAsync(() => cut.Find(".channel-form .form-group input.input-text"));
         await cut.InvokeAsync(() => input.Input("new-channel"));
 
-        var createButton = cut.Find(".input-group .btn-primary");
+        var createButton = await cut.InvokeAsync(() => cut.Find(".channel-form .btn-primary"));
         await cut.InvokeAsync(() => createButton.Click());
         await Task.Delay(2100); // Attendre le délai + navigation
 
         // Assert
-        Assert.EndsWith("/chat", _navManager.Uri);
+        Assert.EndsWith("/chat/channel/new-channel", _navManager.Uri);
     }
 
     [Fact]
@@ -379,7 +379,7 @@ public class SettingsTests : BunitContext
         var cut = Render<Settings>();
 
         // Act
-        var input = cut.Find(".input-group input");
+        var input = await cut.InvokeAsync(() => cut.Find(".channel-form .form-group input.input-text"));
         await cut.InvokeAsync(() => input.Input("new-channel"));
         await cut.InvokeAsync(() => input.KeyUp("Enter"));
         await Task.Delay(100);
@@ -460,10 +460,10 @@ public class SettingsTests : BunitContext
         var cut = Render<Settings>();
 
         // Act
-        var input = cut.Find(".input-group input");
+        var input = await cut.InvokeAsync(() => cut.Find(".channel-form .form-group input.input-text"));
         await cut.InvokeAsync(() => input.Input("test-channel"));
 
-        var createButton = cut.Find(".input-group .btn-primary");
+        var createButton = await cut.InvokeAsync(() => cut.Find(".channel-form .btn-primary"));
         await cut.InvokeAsync(() => createButton.Click());
         await Task.Delay(100);
 
@@ -472,7 +472,7 @@ public class SettingsTests : BunitContext
     }
 
     [Fact]
-    public void Settings_CreateChannelButton_WithEmptyInput_ShouldBeDisabled()
+    public async Task Settings_CreateChannelButton_WithEmptyInput_ShouldBeDisabled()
     {
         // Arrange
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
@@ -485,7 +485,7 @@ public class SettingsTests : BunitContext
         var cut = Render<Settings>();
 
         // Assert
-        var createButton = cut.Find(".input-group .btn-primary");
+        var createButton = await cut.InvokeAsync(() => cut.Find(".channel-form .btn-primary"));
         Assert.True(createButton.HasAttribute("disabled"));
     }
 

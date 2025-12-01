@@ -9,7 +9,8 @@ public static class DateTimeExtension
         {
             return dateTime.ToString("HH:mm");
         }
-        if (dateTime.Year == now.Year && dateTime.Month == now.Month && dateTime.Day == now.Day - 1)
+        var yesterday = now.AddDays(-1);
+        if (dateTime.Year == yesterday.Year && dateTime.Month == yesterday.Month && dateTime.Day == yesterday.Day)
         {
             return $"Hier {dateTime:HH:mm}";
         }

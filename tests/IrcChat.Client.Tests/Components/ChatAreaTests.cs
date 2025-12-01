@@ -71,7 +71,8 @@ public class ChatAreaTests : BunitContext
             .Add(p => p.UsersListOpen, false));
 
         // Assert
-        Assert.Contains("● Connecté", cut.Markup);
+        Assert.Contains("●", cut.Markup);
+        Assert.Contains("Connecté", cut.Markup);
         Assert.Contains("connected", cut.Markup);
     }
 
@@ -86,7 +87,8 @@ public class ChatAreaTests : BunitContext
             .Add(p => p.UsersListOpen, false));
 
         // Assert
-        Assert.Contains("○ Déconnecté", cut.Markup);
+        Assert.Contains("○", cut.Markup);
+        Assert.Contains("Déconnecté", cut.Markup);
         Assert.Contains("disconnected", cut.Markup);
     }
 

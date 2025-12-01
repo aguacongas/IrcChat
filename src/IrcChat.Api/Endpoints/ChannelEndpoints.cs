@@ -27,7 +27,7 @@ public static class ChannelEndpoints
             .WithName("GetChannels")
             .WithDescription("Récupère tous les salons avec le nombre d'utilisateurs connectés");
 
-        group.MapGet("/my-channels", GetMyChannelsAsync)
+        app.MapGet("/api/my-channels", GetMyChannelsAsync)
             .WithName("GetMyChannels")
             .WithDescription("Récupère les salons auxquels l'utilisateur est connecté");
 
