@@ -11,7 +11,7 @@
     {
         var isMentioned = IsMentioned(msg.Content, CurrentUsername);
         <div class="message @(msg.Username == CurrentUsername ? "own" : string.Empty) @(isMentioned ? "mentioned" : string.Empty)">
-            <span class="username">@msg.Username</span>
+            <span class="username" @onclick="() => OnUsernameClick(msg.Username)">@msg.Username</span>
             <span class="time">@msg.Timestamp.ToLocalTime().ToMessageTimeString()</span>
             <span class="content">@((MarkupString)HighlightMention(msg.Content, CurrentUsername))</span>
         </div>
@@ -40,6 +40,20 @@
 
     [Parameter]
     public string CurrentUsername { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> OnUsernameClicked { get; set; }
+
+    private async Task OnUsernameClick(string username)
+    {
+        // Ne pas mentionner son propre pseudo
+        if (username == CurrentUsername)
+        {
+            return;
+        }
+
+        await OnUsernameClicked.InvokeAsync(username);
+    }
 
     private static bool IsMentioned(string content, string username)
     {

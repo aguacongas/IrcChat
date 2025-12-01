@@ -1,20 +1,60 @@
+@using IrcChat.Shared.Models
 <div class="input-area">
-    <input @bind="messageInput"
-           @bind:event="oninput"
-           placeholder="Tapez votre message..."
-           @onkeyup="HandleKeyUp"
-           disabled="@(!IsConnected)" />
+    <div class="input-wrapper">
+        <input @ref="inputElement"
+               @bind="messageInput"
+               @bind:event="oninput"
+               placeholder="Tapez votre message... (@@ pour mentionner)"
+               @onkeydown="HandleKeyDown"
+               @onkeyup="HandleKeyUp"
+               disabled="@(!IsConnected)" />
+        
+        @if (showAutoComplete && filteredUsers.Any())
+        {
+            <div class="autocomplete-dropdown">
+                @foreach (var (user, index) in filteredUsers.Select((u, i) => (u, i)))
+                {
+                    <div class="autocomplete-item @(index == selectedUserIndex ? "selected" : "")"
+                         @onclick="() => SelectUser(user.Username)"
+                         @onmouseenter="() => selectedUserIndex = index">
+                        <span class="autocomplete-username">@user.Username</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
     <button @onclick="SendMessage" disabled="@(!IsConnected)">Envoyer</button>
 </div>
 
 @code {
     private string messageInput = string.Empty;
+    private ElementReference inputElement;
+    private bool showAutoComplete = false;
+    private List<User> filteredUsers = new();
+    private int selectedUserIndex = 0;
+    private int cursorPosition = 0;
+    private string currentMentionQuery = string.Empty;
+    private int mentionStartPosition = 0;
 
     [Parameter]
     public bool IsConnected { get; set; }
 
     [Parameter]
+    public List<User>? AvailableUsers { get; set; }
+
+    [Parameter]
     public EventCallback<string> OnSendMessage { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnInsertUsername { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && IsConnected)
+        {
+            await FocusAsync();
+        }
+    }
 
     private async Task SendMessage()
     {        
@@ -22,14 +62,198 @@
         {
             await OnSendMessage.InvokeAsync(messageInput.Trim());
             messageInput = string.Empty;
+            HideAutoComplete();
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (showAutoComplete && filteredUsers.Any())
+        {
+            switch (e.Key)
+            {
+                case "ArrowDown":
+                    selectedUserIndex = (selectedUserIndex + 1) % filteredUsers.Count;
+                    break;
+                case "ArrowUp":
+                    selectedUserIndex = selectedUserIndex <= 0 ? filteredUsers.Count - 1 : selectedUserIndex - 1;
+                    break;
+                case "Tab":
+                case "Enter":
+                    if (e.Key == "Enter" && !showAutoComplete)
+                    {
+                        await SendMessage();
+                    }
+                    else if (filteredUsers.Any())
+                    {
+                        SelectUser(filteredUsers[selectedUserIndex].Username);
+                    }
+                    break;
+                case "Escape":
+                    HideAutoComplete();
+                    break;
+                default:
+                    return;
+            }
+            // Empêcher le comportement par défaut pour ces touches
+            StateHasChanged();
+        }
+        else if (e.Key == "Enter")
+        {
+            await SendMessage();
+        }
+        else if (e.Key == "Tab")
+        {
+            // Tentative de complétion avec TAB même sans @
+            TryAutoCompleteFromCursor();
         }
     }
 
     private async Task HandleKeyUp(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter")
+        // Ne pas traiter les touches de navigation
+        if (e.Key is "ArrowDown" or "ArrowUp" or "Enter" or "Tab" or "Escape")
         {
-            await SendMessage();
+            return;
         }
+
+        // Détecter si on est en train de taper une mention
+        await CheckForMention();
+    }
+
+    private async Task CheckForMention()
+    {
+        if (string.IsNullOrEmpty(messageInput) || AvailableUsers == null || !AvailableUsers.Any())
+        {
+            HideAutoComplete();
+            return;
+        }
+
+        // Trouver la position du dernier @ avant le curseur
+        var lastAtIndex = messageInput.LastIndexOf('@');
+        
+        if (lastAtIndex == -1)
+        {
+            HideAutoComplete();
+            return;
+        }
+
+        // Vérifier que le @ est au début ou précédé d'un espace
+        if (lastAtIndex > 0 && !char.IsWhiteSpace(messageInput[lastAtIndex - 1]))
+        {
+            HideAutoComplete();
+            return;
+        }
+
+        // Extraire le texte après le @
+        currentMentionQuery = messageInput.Substring(lastAtIndex + 1);
+        mentionStartPosition = lastAtIndex;
+
+        // Vérifier qu'il n'y a pas d'espace dans la requête (sinon la mention est terminée)
+        if (currentMentionQuery.Contains(' '))
+        {
+            HideAutoComplete();
+            return;
+        }
+
+        // Filtrer les utilisateurs
+        filteredUsers = AvailableUsers
+            .Where(u => u.Username.StartsWith(currentMentionQuery, StringComparison.OrdinalIgnoreCase))
+            .Take(5)
+            .ToList();
+
+        if (filteredUsers.Any())
+        {
+            showAutoComplete = true;
+            selectedUserIndex = 0;
+            StateHasChanged();
+        }
+        else
+        {
+            HideAutoComplete();
+        }
+    }
+
+    private void TryAutoCompleteFromCursor()
+    {
+        if (string.IsNullOrEmpty(messageInput) || AvailableUsers == null || !AvailableUsers.Any())
+        {
+            return;
+        }
+
+        // Trouver le début du mot actuel (depuis la fin ou le dernier espace)
+        var words = messageInput.Split(' ');
+        if (!words.Any())
+        {
+            return;
+        }
+
+        var lastWord = words[^1];
+        if (string.IsNullOrEmpty(lastWord))
+        {
+            return;
+        }
+
+        // Chercher un utilisateur qui commence par ce mot
+        var matchingUser = AvailableUsers
+            .FirstOrDefault(u => u.Username.StartsWith(lastWord, StringComparison.OrdinalIgnoreCase));
+
+        if (matchingUser != null)
+        {
+            // Remplacer le dernier mot par le pseudo complet
+            var beforeLastWord = string.Join(" ", words.Take(words.Length - 1));
+            messageInput = string.IsNullOrEmpty(beforeLastWord) 
+                ? matchingUser.Username 
+                : $"{beforeLastWord} {matchingUser.Username}";
+            StateHasChanged();
+        }
+    }
+
+    private void SelectUser(string username)
+    {
+        if (mentionStartPosition >= 0)
+        {
+            // Remplacer @query par username (sans le @)
+            var before = messageInput.Substring(0, mentionStartPosition);
+            var after = messageInput.Length > mentionStartPosition + currentMentionQuery.Length + 1
+                ? messageInput.Substring(mentionStartPosition + currentMentionQuery.Length + 1)
+                : string.Empty;
+            
+            messageInput = $"{before}{username} {after}";
+        }
+
+        HideAutoComplete();
+        StateHasChanged();
+    }
+
+    private void HideAutoComplete()
+    {
+        showAutoComplete = false;
+        filteredUsers.Clear();
+        currentMentionQuery = string.Empty;
+        selectedUserIndex = 0;
+    }
+
+    public async Task FocusAsync()
+    {
+        await inputElement.FocusAsync();
+    }
+
+    public void InsertUsername(string username)
+    {
+        if (string.IsNullOrEmpty(messageInput))
+        {
+            messageInput = $"{username} ";
+        }
+        else if (messageInput.EndsWith(' '))
+        {
+            messageInput += $"{username} ";
+        }
+        else
+        {
+            messageInput += $" {username} ";
+        }
+        
+        StateHasChanged();
     }
 }
