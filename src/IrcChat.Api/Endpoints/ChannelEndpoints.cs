@@ -1,8 +1,3 @@
-// ============================================================================
-// src/IrcChat.Api/Endpoints/ChannelEndpoints.cs
-// ============================================================================
-// Fichier centralisé pour tous les endpoints concernant les canaux
-
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Claims;
 using IrcChat.Api.Authorization;
@@ -70,7 +65,7 @@ public static class ChannelEndpoints
     {
         try
         {
-            var query = db.Channels
+            var channels = await db.Channels
                 .GroupJoin(
                     db.ConnectedUsers,
                     c => c.Name,
@@ -83,8 +78,11 @@ public static class ChannelEndpoints
                             .Select(u => u.Username)
                             .Distinct()
                             .Count()
-                    });
-            var channels = await GetChannelListAsync(query);
+                    })
+                .Select(x => ToChannel(x))
+                .OrderByDescending(c => c.ConnectedUsersCount)
+                .ThenBy(c => c.Name)
+                .ToListAsync();
 
             logger.LogInformation("Récupération de tous les salons: {ChannelCount} salons trouvés", channels.Count);
             return Results.Ok(channels);
@@ -109,7 +107,7 @@ public static class ChannelEndpoints
 
         try
         {
-            var query = db.ConnectedUsers
+            var channels = await db.ConnectedUsers
                 .Where(u => u.Username == username && !string.IsNullOrEmpty(u.Channel))
                 .Select(u => u.Channel!)
                 .Distinct()
@@ -117,16 +115,9 @@ public static class ChannelEndpoints
                     db.Channels,
                     channelName => channelName,
                     channel => channel.Name,
-                    (channelName, channel) => new ChannelInfo
-                    {
-                        Channel = channel,
-                        ConnectedUsersCount = db.ConnectedUsers
-                            .Where(u => u.Channel == channel.Name)
-                            .Select(u => u.Username)
-                            .Distinct()
-                            .Count()
-                    });
-            var channels = await GetChannelListAsync(query);
+                    (channelName, channel) => channel)
+                .OrderBy(x => x.CreatedAt)
+                .ToListAsync();
 
             logger.LogInformation("Récupération des salons pour l'utilisateur {Username}: {ChannelCount} salons", username, channels.Count);
             return Results.Ok(channels);
@@ -383,23 +374,18 @@ public static class ChannelEndpoints
         });
     }
 
-    private static async Task<List<Channel>> GetChannelListAsync(IQueryable<ChannelInfo> query)
+    private static Channel ToChannel(ChannelInfo channelInfo)
+    => new()
     {
-        return await query.Select(x => new Channel
-        {
-            Id = x.Channel.Id,
-            Name = x.Channel.Name,
-            Description = x.Channel.Description,
-            CreatedBy = x.Channel.CreatedBy,
-            CreatedAt = x.Channel.CreatedAt,
-            IsMuted = x.Channel.IsMuted,
-            ActiveManager = x.Channel.ActiveManager,
-            ConnectedUsersCount = x.ConnectedUsersCount
-        })
-                        .OrderByDescending(c => c.ConnectedUsersCount)
-                        .ThenBy(c => c.Name)
-                        .ToListAsync();
-    }
+        Id = channelInfo.Channel.Id,
+        Name = channelInfo.Channel.Name,
+        Description = channelInfo.Channel.Description,
+        CreatedBy = channelInfo.Channel.CreatedBy,
+        CreatedAt = channelInfo.Channel.CreatedAt,
+        IsMuted = channelInfo.Channel.IsMuted,
+        ActiveManager = channelInfo.Channel.ActiveManager,
+        ConnectedUsersCount = channelInfo.ConnectedUsersCount
+    };
 
     private sealed class ChannelInfo
     {
