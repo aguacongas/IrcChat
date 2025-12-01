@@ -47,15 +47,15 @@
         @if (Channels.Any())
         {
             <ul class="channel-list">
-                @foreach (var channel in Channels)
+                @foreach (var channelName in Channels.Select(c => c.Name))
                 {
-                    <li class="@(channel.Name == CurrentChannel ? "active" : "")">
-                        <div class="channel-content" @onclick="() => OnChannelSelected.InvokeAsync(channel.Name)">
+                    <li class="@(channelName == CurrentChannel ? "active" : "")">
+                        <div class="channel-content" @onclick="() => OnChannelSelected.InvokeAsync(channelName)">
                             <span class="channel-hash">#</span>
-                            <span class="channel-name">@channel.Name</span>
+                            <span class="channel-name">@channelName</span>
                         </div>
                         <button class="btn-leave-channel"
-                                @onclick="() => OnChannelLeave.InvokeAsync(channel.Name)"
+                                @onclick="() => OnChannelLeave.InvokeAsync(channelName)"
                                 title="Quitter ce salon">
                             ×
                         </button>

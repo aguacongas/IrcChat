@@ -826,7 +826,7 @@ else
         var req = new SendMessageRequest
         {
             Content = content,
-            Channel = currentChannel
+            Channel = currentChannel!
         };
 
         try
@@ -1048,7 +1048,7 @@ else
         StateHasChanged();
     }
 
-    private string GetCurrentChannelOrUsername()
+    private string? GetCurrentChannelOrUsername()
     {
         return isPrivateConversation ? selectedPrivateUser?.Username ?? "" : currentChannel;
     }

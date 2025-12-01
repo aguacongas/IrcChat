@@ -58,18 +58,6 @@
 .user-info:hover .settings-icon {
   transform: rotate(45deg);
 }
-/* Sections */
-.channels-section {
-  margin-bottom: 20px;
-}
-
-  .channels-section h3 {
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 10px;
-    color: #8ab4f8;
-  }
 
 /* Channel list */
 .channels-section {
