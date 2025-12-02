@@ -32,7 +32,6 @@
     private bool showAutoComplete = false;
     private List<User> filteredUsers = new();
     private int selectedUserIndex = 0;
-    private int cursorPosition = 0;
     private string currentMentionQuery = string.Empty;
     private int mentionStartPosition = 0;
 
@@ -80,14 +79,7 @@
                     break;
                 case "Tab":
                 case "Enter":
-                    if (e.Key == "Enter" && !showAutoComplete)
-                    {
-                        await SendMessage();
-                    }
-                    else if (filteredUsers.Any())
-                    {
-                        SelectUser(filteredUsers[selectedUserIndex].Username);
-                    }
+                    SelectUser(filteredUsers[selectedUserIndex].Username);
                     break;
                 case "Escape":
                     HideAutoComplete();
