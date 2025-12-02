@@ -239,10 +239,7 @@ public static class ChannelEndpoints
 
         var originalDescription = channel.Description;
 
-        if (request.Description != null)
-        {
-            channel.Description = request.Description.Trim();
-        }
+        channel.Description = request.Description?.Trim();
 
         await db.SaveChangesAsync();
 

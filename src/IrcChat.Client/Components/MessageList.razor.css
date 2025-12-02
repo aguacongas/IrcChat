@@ -141,6 +141,60 @@
       background: #8e8e8e;
     }
 
+.channel-description-message {
+  background: linear-gradient(135deg, rgba(138, 180, 248, 0.1) 0%, rgba(72, 187, 120, 0.1) 100%);
+  border: 1px solid rgba(138, 180, 248, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+  .channel-description-message .message-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+.message-icon {
+  font-size: 18px;
+}
+
+.channel-info {
+  color: #8ab4f8;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.edit-description-btn {
+  margin-left: auto;
+  background: rgba(138, 180, 248, 0.2);
+  border: none;
+  color: #8ab4f8;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+  .edit-description-btn:hover {
+    background: rgba(138, 180, 248, 0.3);
+    transform: translateY(-1px);
+  }
+
+.channel-description-content {
+  color: #ddd;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .messages-container {
@@ -149,5 +203,18 @@
 
   .message .content {
     margin-left: 0;
+  }
+
+  .channel-description-message {
+    padding: 12px;
+    margin-bottom: 15px;
+  }
+
+  .channel-description-content {
+    font-size: 13px;
+  }
+
+  .message-icon {
+    font-size: 16px;
   }
 }

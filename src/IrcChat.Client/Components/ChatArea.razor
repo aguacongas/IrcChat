@@ -34,32 +34,8 @@
                         </span>
                         <span class="status-text @(IsConnected ? "connected" : "disconnected")">
                             @(IsConnected ? "Connecté" : "Déconnecté")
-                        </span>
-                        @if (CanManage && !string.IsNullOrEmpty(CurrentChannel))
-                        {
-                            <button class="edit-channel-btn" @onclick="OpenEditModal" title="Modifier la description">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                </svg>
-                            </button>
-                        }
-                    </div>
-                    @if (!string.IsNullOrEmpty(ChannelDescription))
-                    {
-                        <div class="channel-description-container">
-                          <p class="channel-description @(isDescriptionExpanded ? "expanded" : "")" 
-                             title="@ChannelDescription">
-                              @ChannelDescription
-                          </p>
-                          @if (ChannelDescription.Length > 80)
-                          {
-                              <button class="description-toggle" @onclick="ToggleDescription">
-                                  @(isDescriptionExpanded ? "Moins" : "Plus")
-                              </button>
-                          }
-                      </div>
-                    }                    
+                        </span>                        
+                    </div>                                
                 }
             </div>
             <div class="header-right">
@@ -92,7 +68,12 @@
 
         <div class="chat-content @(UsersListOpen ? "users-open" : "users-closed")">
             <div class="chat-messages">
-                <MessageList Messages="Messages" CurrentUsername="@Username" />
+                <MessageList Messages="@Messages"
+                             CurrentUsername="@Username"
+                             ChannelDescription="@ChannelDescription"
+                             CurrentChannel="@CurrentChannel"
+                             CanManage="@CanManage"
+                             OnEditDescription="OpenEditModal" />
 
                 <MessageInput IsConnected="IsConnected"
                               OnSendMessage="OnMessageSent" />
@@ -179,8 +160,7 @@
     [Parameter]
     public EventCallback OnChannelUpdated { get; set; }
 
-    private bool showEditModal = false;
-    private bool isDescriptionExpanded = false;
+    private bool showEditModal = false;    
 
     private void OpenEditModal()
     {
@@ -196,10 +176,5 @@
     {
         await OnChannelUpdated.InvokeAsync();
         CloseEditModal();
-    }
-
-    private void ToggleDescription()
-    {
-        isDescriptionExpanded = !isDescriptionExpanded;
     }
 }
