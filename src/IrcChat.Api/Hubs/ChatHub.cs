@@ -39,13 +39,16 @@ public class ChatHub(
             return;
         }
 
-        if (user.Channel == channel)
+        var userInChannel = await db.ConnectedUsers
+            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId && u.Channel == channel);
+
+        if (userInChannel != null)
         {
             logger.LogWarning("Utilisateur {Username} déjà connecté à {Channel}", user.Username, channel);
             return;
         }
 
-        var userInChannel = new ConnectedUser
+        userInChannel = new ConnectedUser
         {
             Id = Guid.NewGuid(),
             Username = user.Username,

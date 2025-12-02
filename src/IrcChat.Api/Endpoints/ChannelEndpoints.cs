@@ -79,13 +79,17 @@ public static class ChannelEndpoints
                             .Distinct()
                             .Count()
                     })
-                .Select(x => ToChannel(x))
                 .OrderByDescending(c => c.ConnectedUsersCount)
-                .ThenBy(c => c.Name)
+                .ThenBy(c => c.Channel.Name)
                 .ToListAsync();
 
             logger.LogInformation("Récupération de tous les salons: {ChannelCount} salons trouvés", channels.Count);
-            return Results.Ok(channels);
+            return Results.Ok(channels.Select(channelInfo =>
+            {
+                var channel = channelInfo.Channel;
+                channel.ConnectedUsersCount = channelInfo.ConnectedUsersCount;
+                return channel;
+            }));
         }
         catch (Exception ex)
         {
@@ -373,19 +377,6 @@ public static class ChannelEndpoints
             message = channel.IsMuted ? "Le salon est maintenant muet" : "Le salon est de nouveau actif"
         });
     }
-
-    private static Channel ToChannel(ChannelInfo channelInfo)
-    => new()
-    {
-        Id = channelInfo.Channel.Id,
-        Name = channelInfo.Channel.Name,
-        Description = channelInfo.Channel.Description,
-        CreatedBy = channelInfo.Channel.CreatedBy,
-        CreatedAt = channelInfo.Channel.CreatedAt,
-        IsMuted = channelInfo.Channel.IsMuted,
-        ActiveManager = channelInfo.Channel.ActiveManager,
-        ConnectedUsersCount = channelInfo.ConnectedUsersCount
-    };
 
     private sealed class ChannelInfo
     {

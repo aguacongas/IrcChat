@@ -17,6 +17,7 @@ public class SettingsTests : BunitContext
 {
     private readonly Mock<IUnifiedAuthService> _authServiceMock;
     private readonly Mock<IChatService> _chatServiceMock;
+    private readonly Mock<IActiveChannelsService> _activeChannelsServiceMock;
     private readonly MockHttpMessageHandler _mockHttp;
     private readonly NavigationManager _navManager;
 
@@ -24,6 +25,7 @@ public class SettingsTests : BunitContext
     {
         _authServiceMock = new Mock<IUnifiedAuthService>();
         _chatServiceMock = new Mock<IChatService>();
+        _activeChannelsServiceMock = new Mock<IActiveChannelsService>();
         _mockHttp = new MockHttpMessageHandler();
 
         var httpClient = _mockHttp.ToHttpClient();
@@ -31,6 +33,7 @@ public class SettingsTests : BunitContext
 
         Services.AddSingleton(_authServiceMock.Object);
         Services.AddSingleton(_chatServiceMock.Object);
+        Services.AddSingleton(_activeChannelsServiceMock.Object);
         Services.AddSingleton(httpClient);
         Services.AddSingleton(JSInterop.JSRuntime);
 

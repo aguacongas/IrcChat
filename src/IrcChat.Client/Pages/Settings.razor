@@ -6,6 +6,7 @@
 @inject HttpClient Http
 @inject IUnifiedAuthService Auth
 @inject IChatService ChatService
+@inject IActiveChannelsService ActiveChannels
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject ILogger<Settings> Logger
@@ -361,6 +362,7 @@ else
     {
         await Auth.LogoutAsync();
         await ChatService.DisposeAsync();
+        await ActiveChannels.ClearAsync();
         Http.DefaultRequestHeaders.Authorization = null;
         Navigation.NavigateToRelative("login");
     }
