@@ -230,6 +230,14 @@ public class MessageInputTests : BunitContext
         var items = cut.FindAll(".autocomplete-item");
         Assert.Equal(3, items.Count);
         Assert.Contains("selected", items[1].ClassList); // Le deuxième élément doit être sélectionné
+
+        // Naviguer vers le haut
+        await input.KeyDownAsync(new KeyboardEventArgs { Key = "ArrowUp" });
+
+        // Assert
+        items = cut.FindAll(".autocomplete-item");
+        Assert.Equal(3, items.Count);
+        Assert.Contains("selected", items[0].ClassList); // Le 1er élément doit être sélectionné
     }
 
     [Fact]
@@ -385,5 +393,148 @@ public class MessageInputTests : BunitContext
         // Assert
         // Pas d'exception levée = succès
         Assert.NotNull(cut.Instance);
+    }
+
+    [Fact]
+    public async Task MessageInput_WhenNoAvailableUsers_HideAutoComplete()
+    {
+        // Arrange
+        var cut = Render<MessageInput>(parameters => parameters
+            .Add(p => p.IsConnected, true)
+            .Add(p => p.AvailableUsers, []));
+
+        // Act
+        var input = await cut.InvokeAsync(() => cut.Find("input"));
+
+        // Act
+        input.Input("@User");
+        await input.KeyUpAsync(new KeyboardEventArgs { Key = "r" });
+
+        // Assert
+        var items = cut.FindAll(".autocomplete-item");
+        Assert.Empty(items);
+    }
+
+    [Fact]
+    public async Task MessageInput_WhenNullAvailableUsers_HideAutoComplete()
+    {
+        // Arrange
+        var cut = Render<MessageInput>(parameters => parameters
+            .Add(p => p.IsConnected, true)
+            .Add(p => p.AvailableUsers, null));
+
+        // Act
+        var input = await cut.InvokeAsync(() => cut.Find("input"));
+
+        // Act
+        input.Input("@User");
+        await input.KeyUpAsync(new KeyboardEventArgs { Key = "r" });
+
+        // Assert
+        var items = cut.FindAll(".autocomplete-item");
+        Assert.Empty(items);
+    }
+
+    [Fact]
+    public async Task MessageInput_WhenMessageInputEmpty_HideAutoComplete()
+    {
+        // Arrange
+        var users = new List<User>();
+        for (var i = 1; i <= 10; i++)
+        {
+            users.Add(new User { Username = $"User{i}", UserId = i.ToString() });
+        }
+
+        var cut = Render<MessageInput>(parameters => parameters
+            .Add(p => p.IsConnected, true)
+            .Add(p => p.AvailableUsers, users));
+
+        // Act
+        var input = await cut.InvokeAsync(() => cut.Find("input"));
+
+        // Act
+        await input.KeyUpAsync(new KeyboardEventArgs { Key = "r" });
+
+        // Assert
+        var items = cut.FindAll(".autocomplete-item");
+        Assert.Empty(items);
+    }
+
+    [Fact]
+    public async Task MessageInput_WhenNoAtChar_HideAutoComplete()
+    {
+        // Arrange
+        var users = new List<User>();
+        for (var i = 1; i <= 10; i++)
+        {
+            users.Add(new User { Username = $"User{i}", UserId = i.ToString() });
+        }
+
+        var cut = Render<MessageInput>(parameters => parameters
+            .Add(p => p.IsConnected, true)
+            .Add(p => p.AvailableUsers, users));
+
+        // Act
+        var input = await cut.InvokeAsync(() => cut.Find("input"));
+
+        // Act
+        input.Input("User");
+        await input.KeyUpAsync(new KeyboardEventArgs { Key = "r" });
+
+        // Assert
+        var items = cut.FindAll(".autocomplete-item");
+        Assert.Empty(items);
+    }
+
+    [Fact]
+    public async Task MessageInput_WhenAtCharNotFirst_HideAutoComplete()
+    {
+        // Arrange
+        var users = new List<User>();
+        for (var i = 1; i <= 10; i++)
+        {
+            users.Add(new User { Username = $"User{i}", UserId = i.ToString() });
+        }
+
+        var cut = Render<MessageInput>(parameters => parameters
+            .Add(p => p.IsConnected, true)
+            .Add(p => p.AvailableUsers, users));
+
+        // Act
+        var input = await cut.InvokeAsync(() => cut.Find("input"));
+
+        // Act
+        input.Input("user@exemple.com");
+        await input.KeyUpAsync(new KeyboardEventArgs { Key = "r" });
+
+        // Assert
+        var items = cut.FindAll(".autocomplete-item");
+        Assert.Empty(items);
+    }
+
+    [Fact]
+    public async Task MessageInput_WhenMentionEndWithSpace_HideAutoComplete()
+    {
+        // Arrange
+        var users = new List<User>();
+        for (var i = 1; i <= 10; i++)
+        {
+            users.Add(new User { Username = $"User{i}", UserId = i.ToString() });
+        }
+
+        var cut = Render<MessageInput>(parameters => parameters
+            .Add(p => p.IsConnected, true)
+            .Add(p => p.AvailableUsers, users));
+
+        // Act
+        var input = await cut.InvokeAsync(() => cut.Find("input"));
+
+        // Act
+        input.Input("@User ");
+        await input.KeyUpAsync(new KeyboardEventArgs { Key = "r" });
+
+        // Assert
+        var items = cut.FindAll(".autocomplete-item");
+        Assert.Empty(items);
     }
 }
