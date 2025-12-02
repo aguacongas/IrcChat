@@ -253,7 +253,7 @@
         {
             messageInput += $" {username} ";
         }
-        
-        StateHasChanged();
+
+        InvokeAsync(StateHasChanged);
     }
 }
