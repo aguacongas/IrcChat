@@ -48,18 +48,18 @@
                     @if (!string.IsNullOrEmpty(ChannelDescription))
                     {
                         <div class="channel-description-container">
-                          <p class="channel-description @(isDescriptionExpanded ? "expanded" : "")" 
-                             title="@ChannelDescription">
-                              @ChannelDescription
-                          </p>
-                          @if (ChannelDescription.Length > 80)
-                          {
-                              <button class="description-toggle" @onclick="ToggleDescription">
-                                  @(isDescriptionExpanded ? "Moins" : "Plus")
-                              </button>
-                          }
-                      </div>
-                    }                    
+                            <p class="channel-description @(isDescriptionExpanded ? "expanded" : "")"
+                               title="@ChannelDescription">
+                                @ChannelDescription
+                            </p>
+                            @if (ChannelDescription.Length > 80)
+                            {
+                                <button class="description-toggle" @onclick="ToggleDescription">
+                                    @(isDescriptionExpanded ? "Moins" : "Plus")
+                                </button>
+                            }
+                        </div>
+                    }
                 }
             </div>
             <div class="header-right">
@@ -92,9 +92,13 @@
 
         <div class="chat-content @(UsersListOpen ? "users-open" : "users-closed")">
             <div class="chat-messages">
-                <MessageList Messages="Messages" CurrentUsername="@Username" />
+                <MessageList Messages="Messages"
+                             CurrentUsername="@Username"
+                             OnUsernameClicked="HandleUsernameClicked" />
 
-                <MessageInput IsConnected="IsConnected"
+                <MessageInput @ref="messageInputRef"
+                              IsConnected="IsConnected"
+                              AvailableUsers="@Users"
                               OnSendMessage="OnMessageSent" />
             </div>
 
@@ -122,6 +126,8 @@
 </div>
 
 @code {
+    private MessageInput? messageInputRef;
+
     [Parameter]
     public string Username { get; set; } = string.Empty;
 
@@ -182,6 +188,29 @@
     private bool showEditModal = false;
     private bool isDescriptionExpanded = false;
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !string.IsNullOrEmpty(CurrentChannel) && IsConnected)
+        {
+            await FocusInputAsync();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Focus sur l'input quand on change de canal ou de conversation
+        await FocusInputAsync();
+    }
+
+    private async Task FocusInputAsync()
+    {
+        if (messageInputRef != null)
+        {
+            await Task.Delay(100); // Petit délai pour s'assurer que le composant est rendu
+            await messageInputRef.FocusAsync();
+        }
+    }
+
     private void OpenEditModal()
     {
         showEditModal = true;
@@ -201,5 +230,13 @@
     private void ToggleDescription()
     {
         isDescriptionExpanded = !isDescriptionExpanded;
+    }
+
+    private void HandleUsernameClicked(string username)
+    {
+        // Insérer le pseudo dans le champ de saisie
+        messageInputRef?.InsertUsername(username);
+        // Remettre le focus sur l'input après insertion
+        _ = FocusInputAsync();
     }
 }

@@ -1265,6 +1265,9 @@ public partial class ChatTests : BunitContext
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
 
+        _mockHttp.When(HttpMethod.Get, "*/api/my-channels")
+            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
+
         var messagesRequest = _mockHttp.When(HttpMethod.Get, "*/api/messages/general*")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(messages));
 

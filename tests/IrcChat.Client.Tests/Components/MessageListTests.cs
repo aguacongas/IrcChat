@@ -903,6 +903,60 @@ public partial class MessageListTests : BunitContext
         Assert.Contains("mention-highlight", content.InnerHtml);
     }
 
+    [Fact]
+    public void MessageList_ShouldTriggerUsernameClickedEvent()
+    {
+        // Arrange
+        var clickedUsername = string.Empty;
+        var messages = new List<Message>
+        {
+            new() {
+                Username = "Alice",
+                Content = "Hello",
+                Timestamp = DateTime.UtcNow
+            }
+        };
+
+        var cut = Render<MessageList>(parameters => parameters
+            .Add(p => p.Messages, messages)
+            .Add(p => p.CurrentUsername, "Bob")
+            .Add(p => p.OnUsernameClicked, username => clickedUsername = username));
+
+        // Act
+        var username = cut.Find(".username");
+        username.Click();
+
+        // Assert
+        Assert.Equal("Alice", clickedUsername);
+    }
+
+    [Fact]
+    public void MessageList_ShouldNotTriggerEventWhenClickingOwnUsername()
+    {
+        // Arrange
+        var eventTriggered = false;
+        var messages = new List<Message>
+        {
+            new() {
+                Username = "Alice",
+                Content = "Hello",
+                Timestamp = DateTime.UtcNow
+            }
+        };
+
+        var cut = Render<MessageList>(parameters => parameters
+            .Add(p => p.Messages, messages)
+            .Add(p => p.CurrentUsername, "Alice")
+            .Add(p => p.OnUsernameClicked, username => eventTriggered = true));
+
+        // Act
+        var username = cut.Find(".username");
+        username.Click();
+
+        // Assert
+        Assert.False(eventTriggered);
+    }
+
     [GeneratedRegex("mention-highlight")]
     private static partial Regex HighlightRegex();
 }
