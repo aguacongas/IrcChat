@@ -6,6 +6,42 @@
 @inject ILogger<MessageList> Logger
 @implements IAsyncDisposable
 
+@if (ShowDescription)
+{
+    <div class="channel-description-header @(isHeaderCollapsed ? "collapsed" : "expanded")"
+         @onclick="ToggleHeaderExpand">
+        <div class="description-header-content">
+            @if (!string.IsNullOrEmpty(ChannelDescription))
+            {
+                <div class="description-text">
+                    @foreach (var line in ChannelDescription.Split('\n'))
+                    {
+                        @line
+                        <br />
+                    }
+                </div>                
+            }
+            else
+            {
+                <div class="description-text empty">
+                    <em>Aucune description</em>
+                </div>
+            }
+            @if (CanManage)
+            {
+                <button class="edit-description-btn"
+                        @onclick="HandleEditClick"
+                        @onclick:stopPropagation="true"
+                        title="Modifier la description">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+            }
+        </div>
+    </div>
+}
 <div class="messages" @ref="messagesContainer">
     @foreach (var msg in Messages)
     {
@@ -19,6 +55,7 @@
 </div>
 
 @code {
+    private bool isHeaderCollapsed = false;
     private ElementReference messagesContainer;
     private IJSObjectReference? scrollModule;
     private int previousMessageCount = 0;
@@ -40,6 +77,18 @@
 
     [Parameter]
     public string CurrentUsername { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? ChannelDescription { get; set; }
+
+    [Parameter]
+    public bool ShowDescription { get; set; }
+
+    [Parameter]
+    public bool CanManage { get; set; }
+
+    [Parameter]
+    public EventCallback OnEditDescription { get; set; }
 
     [Parameter]
     public EventCallback<string> OnUsernameClicked { get; set; }
@@ -136,6 +185,9 @@
         }
     }
 
+    private Task HandleEditClick()
+    => OnEditDescription.InvokeAsync();
+
     /// <summary>
     /// Méthode appelée par JavaScript quand l'utilisateur scroll
     /// </summary>
@@ -145,6 +197,25 @@
         // Si l'utilisateur est en bas, on réactive le scroll automatique
         // Sinon, on le désactive (il est en train de lire des messages plus anciens)
         isUserScrolling = !isAtBottom;
+    }
+
+    /// <summary>
+    /// Méthode appelée par JavaScript pour gérer le collapse du header
+    /// </summary>
+    [JSInvokable]
+    public void OnScrollPositionChanged(bool shouldCollapse)
+    {
+        // Ne pas changer l'état si l'utilisateur a forcé l'expansion
+        if (isHeaderCollapsed != shouldCollapse)
+        {
+            isHeaderCollapsed = shouldCollapse;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void ToggleHeaderExpand()
+    {
+        isHeaderCollapsed = !isHeaderCollapsed;
     }
 
     public async ValueTask DisposeAsync()

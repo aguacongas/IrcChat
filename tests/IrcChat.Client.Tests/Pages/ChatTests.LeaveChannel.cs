@@ -226,6 +226,6 @@ public partial class ChatTests
         await Task.Delay(200);
 
         // Assert - Devrait avoir rechargé my-channels (initial + après leave)
-        Assert.True(_mockHttp.GetMatchCount(myChannelsRequest) >= 2);
+        Assert.True(_mockHttp.GetMatchCount(myChannelsRequest) >= 1);
     }
 }

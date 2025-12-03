@@ -23,6 +23,7 @@ public partial class ChatTests : BunitContext
     private readonly Mock<IPrivateMessageService> _privateMessageServiceMock;
     private readonly Mock<IDeviceDetectorService> _deviceDetectorMock;
     private readonly Mock<IIgnoredUsersService> _ignoredUsersServiceMock;
+    private readonly Mock<IActiveChannelsService> _activeChannelsServiceMock;
     private readonly MockHttpMessageHandler _mockHttp;
     private readonly NavigationManager _navManager;
 
@@ -34,10 +35,12 @@ public partial class ChatTests : BunitContext
         _mockHttp = new MockHttpMessageHandler();
         _deviceDetectorMock = new Mock<IDeviceDetectorService>();
         _ignoredUsersServiceMock = new Mock<IIgnoredUsersService>();
+        _activeChannelsServiceMock = new Mock<IActiveChannelsService>();
 
         _deviceDetectorMock.Setup(x => x.IsMobileDeviceAsync()).ReturnsAsync(false);
         _ignoredUsersServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
         _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored(It.IsAny<string>())).Returns(false);
+        _activeChannelsServiceMock.Setup(x => x.GetActiveChannelsAsync()).ReturnsAsync([]);
 
         var httpClient = _mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
@@ -47,6 +50,8 @@ public partial class ChatTests : BunitContext
         Services.AddSingleton(_privateMessageServiceMock.Object);
         Services.AddSingleton(_deviceDetectorMock.Object);
         Services.AddSingleton(_ignoredUsersServiceMock.Object);
+        Services.AddSingleton(_activeChannelsServiceMock.Object);
+
         Services.AddSingleton(httpClient);
         Services.Configure<ApiSettings>(s =>
         {
@@ -595,7 +600,7 @@ public partial class ChatTests : BunitContext
 
         var cut = await RenderChatAsync(channelName: "my-channel");
 
-        _chatServiceMock.Verify(x => x.JoinChannel("my-channel"), Times.Never);
+        _chatServiceMock.Verify(x => x.JoinChannel("my-channel"), Times.Once);
         Assert.Contains("Modifier la description", cut.Markup);
     }
 
@@ -764,7 +769,7 @@ public partial class ChatTests : BunitContext
             new() { UserId = "user2", Username = "Bob" }
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/my-channels")
+        _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
         _mockHttp.When(HttpMethod.Get, "*/api/messages/general")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<Message>()));
@@ -1213,7 +1218,7 @@ public partial class ChatTests : BunitContext
 
     [Fact]
     [SuppressMessage("Major Code Smell", "S6966:Awaitable method should be used", Justification = "Raise doesn't support async")]
-    public async Task Chat_OnSignalRReconnected_ShouldReloadChannels()
+    public async Task Chat_OnSignalRReconnected_ShouldRestoreChannels()
     {
         // Arrange
         SetupBasicAuth();
@@ -1224,14 +1229,11 @@ public partial class ChatTests : BunitContext
 
         _mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        var channelsRequest = _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
-            .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-
         _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
-
+        _activeChannelsServiceMock.Setup(x => x.GetActiveChannelsAsync()).ReturnsAsync([.. channels.Select(c => c.Name)]);
         Render<Chat>();
         await Task.Delay(200);
 
@@ -1240,7 +1242,7 @@ public partial class ChatTests : BunitContext
         await Task.Delay(300);
 
         // Assert - Devrait charger les canaux 2 fois : initial + après reconnexion
-        Assert.Equal(2, _mockHttp.GetMatchCount(channelsRequest));
+        _activeChannelsServiceMock.Verify(x => x.GetActiveChannelsAsync(), Times.Exactly(2));
     }
 
     [Fact]

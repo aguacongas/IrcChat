@@ -26,6 +26,7 @@ builder.Services.AddScoped<IChatService, ChatService>()
     .AddScoped<IOAuthClientService, OAuthClientService>()
     .AddScoped<IPrivateMessageService, PrivateMessageService>()
     .AddScoped<IDeviceDetectorService, DeviceDetectorService>()
-    .AddScoped<IIgnoredUsersService, IgnoredUsersService>();
+    .AddScoped<IIgnoredUsersService, IgnoredUsersService>()
+    .AddScoped<IActiveChannelsService, ActiveChannelsService>();
 
 await builder.Build().RunAsync();

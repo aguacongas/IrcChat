@@ -601,6 +601,8 @@ public partial class ChatTests
         _chatServiceMock.Setup(x => x.JoinChannel("general")).Returns(Task.CompletedTask);
         _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
+        _activeChannelsServiceMock.Setup(x => x.GetActiveChannelsAsync())
+            .ReturnsAsync([.. channels.Select(c => c.Name)]);
 
         var cut = await RenderChatAsync(channelName: "general");
 

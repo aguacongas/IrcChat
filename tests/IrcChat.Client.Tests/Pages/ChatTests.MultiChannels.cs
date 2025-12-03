@@ -12,35 +12,6 @@ namespace IrcChat.Client.Tests.Pages;
 public partial class ChatTests
 {
     [Fact]
-    public async Task Chat_OnInitialization_ShouldLoadMyChannelsOnly()
-    {
-        // Arrange
-        SetupBasicAuth();
-        var myChannels = new List<Channel>
-        {
-            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 },
-            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 3 }
-        };
-
-        var myChannelsRequest = _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
-            .Respond(HttpStatusCode.OK, request => JsonContent.Create(myChannels));
-
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
-            .Returns(Task.CompletedTask);
-        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
-            .ReturnsAsync([]);
-
-        // Act
-        var cut = await RenderChatAsync();
-        await Task.Delay(200);
-
-        // Assert
-        Assert.Equal(1, _mockHttp.GetMatchCount(myChannelsRequest));
-        Assert.Contains("general", cut.Markup);
-        Assert.Contains("random", cut.Markup);
-    }
-
-    [Fact]
     public async Task Chat_WhenNoChannelsConnected_ShouldShowChannelList()
     {
         // Arrange
@@ -190,27 +161,6 @@ public partial class ChatTests
 
         // Assert - Ne devrait pas appeler JoinChannel car déjà connecté
         _chatServiceMock.Verify(x => x.JoinChannel("general"), Times.Never);
-    }
-
-    [Fact]
-    public async Task Chat_LoadMyChannels_ShouldCallCorrectEndpoint()
-    {
-        // Arrange
-        SetupBasicAuth();
-        var myChannelsRequest = _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
-            .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<Channel>()));
-
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
-            .Returns(Task.CompletedTask);
-        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
-            .ReturnsAsync([]);
-
-        // Act
-        await RenderChatAsync();
-        await Task.Delay(200);
-
-        // Assert
-        Assert.Equal(1, _mockHttp.GetMatchCount(myChannelsRequest));
     }
 
     [Fact]

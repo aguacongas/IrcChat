@@ -21,6 +21,7 @@
 @inject ILogger<Chat> Logger
 @inject IDeviceDetectorService DeviceDetector
 @inject IIgnoredUsersService IgnoredUsersService
+@inject IActiveChannelsService ActiveChannels
 @implements IAsyncDisposable
 
 <PageTitle>IRC Chat</PageTitle>
@@ -171,6 +172,7 @@ else
     {
         await Auth.InitializeAsync();
         await IgnoredUsersService.InitializeAsync();
+        await ActiveChannels.InitializeAsync();
         isInitialized = true;
 
         if (!Auth.HasUsername)
@@ -197,8 +199,8 @@ else
             try
             {
                 await InitializeSignalR();
-                await LoadMyChannels();
                 await LoadPrivateConversations();
+                await RestoreActiveChannels();
             }
             finally
             {
@@ -208,6 +210,7 @@ else
             await ApplyRouteStateAsync();
         }
     }
+
 
     protected override async Task OnParametersSetAsync()
     {
@@ -264,6 +267,49 @@ else
         }
     }
 
+    private async Task RestoreActiveChannels()
+    {
+        var existingChannels = await Http.GetFromJsonAsync<List<Channel>>("/api/channels");
+        if (existingChannels == null)
+        {
+            Logger.LogWarning("Impossible de récupérer la liste des salons existants");
+            return;
+        }
+
+        var activeChannels = await ActiveChannels.GetActiveChannelsAsync();
+
+        if (activeChannels.Count == 0)
+        {
+            Logger.LogInformation("Aucun salon actif à restaurer");
+            return;
+        }
+
+        channels = existingChannels
+            .Where(c => activeChannels.Any(ac => ac.Equals(c.Name, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+
+        Logger.LogInformation("Restauration de {Count} salons actifs: {Channels}",
+            activeChannels.Count, string.Join(", ", activeChannels));
+
+        // Rejoindre tous les salons actifs
+        foreach (var channelName in activeChannels)
+        {
+            // Vérifier que le salon existe encore
+            if (existingChannels.Any(c => c.Name.Equals(channelName, StringComparison.OrdinalIgnoreCase)))
+            {
+                await ChatService.JoinChannel(channelName);
+                ChannelName = channelName;
+                Logger.LogDebug("Salon {ChannelName} rejoint", channelName);
+            }
+            else
+            {
+                // Le salon n'existe plus, le retirer de la liste
+                await ActiveChannels.RemoveChannelAsync(channelName);
+                Logger.LogDebug("Salon {ChannelName} n'existe plus, retiré des actifs", channelName);
+            }
+        }
+    }
+
     private async Task InitializeSignalR()
     {
         ChatService.OnMessageReceived += OnMessageReceived;
@@ -310,8 +356,6 @@ else
 
             ChatService.OnChannelMuteStatusChanged += OnChannelMuteStatusChanged;
             ChatService.OnMessageBlocked += OnMessageBlocked;
-
-            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -349,7 +393,7 @@ else
             ShowConnectionNotification("Reconnexion réussie !", ConnectionNotificationType.Reconnected);
 
             // Recharger les données après reconnexion
-            await LoadMyChannels();
+            await RestoreActiveChannels();
             if (!isPrivateConversation && !string.IsNullOrEmpty(currentChannel))
             {
                 await LoadMessages();
@@ -486,6 +530,8 @@ else
     {
         channels = channels.Where(c => c.Name != channelName).ToList();
 
+        await ActiveChannels.RemoveChannelAsync(channelName);
+
         if (currentChannel == channelName && !isPrivateConversation)
         {
             currentChannel = null;
@@ -580,6 +626,7 @@ else
 
             // Appeler SignalR pour quitter le salon
             await ChatService.LeaveChannel(channelName);
+            await ActiveChannels.RemoveChannelAsync(channelName);
 
             // Recharger la liste des salons connectés
             channels = channels.Where(c => c.Name != channelName).ToList();
@@ -743,6 +790,8 @@ else
 
         isCurrentChannelMuted = channelInfo.IsMuted;
         currentChannelDescription = channelInfo.Description;
+
+        await ActiveChannels.AddChannelAsync(channelInfo.Name);
 
         // Fermer la sidebar sur mobile
         sidebarOpen = false;
@@ -936,7 +985,18 @@ else
 
         if (wasPrivate)
         {
-            NavigateToCurrentChannelOrHome();
+            InvokeAsync(async () =>
+            {
+                var activeChannels = await ActiveChannels.GetActiveChannelsAsync();
+                if (activeChannels.Count > 0)
+                {
+                    NavigateToChannelRoute(activeChannels[0]);
+                }
+                else
+                {
+                    NavigateToRelativeIfNeeded("chat");
+                }
+            });
         }
     }
 

@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Bunit;
 using IrcChat.Client.Components;
 using IrcChat.Shared.Models;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
@@ -903,6 +904,190 @@ public partial class MessageListTests : BunitContext
         Assert.Contains("mention-highlight", content.InnerHtml);
     }
 
+    [Fact]
+    public void MessageList_WithChannelDescription_ShouldDisplayDescriptionMessage()
+    {
+        // Arrange
+        var messages = new List<Message>();
+        var description = "Bienvenue sur le salon général !";
+
+        // Act
+        var cut = Render<MessageList>(parameters => parameters
+            .Add(p => p.Messages, messages)
+            .Add(p => p.CurrentUsername, "testuser")
+            .Add(p => p.ChannelDescription, description)
+            .Add(p => p.ShowDescription, true)
+            .Add(p => p.CanManage, false));
+
+        // Assert
+        Assert.Contains("description-text", cut.Markup);
+        Assert.Contains(description, cut.Markup);
+    }
+
+    [Fact]
+    public void MessageList_WithoutDescription_ShouldNotDisplayDescriptionMessage()
+    {
+        // Arrange
+        var messages = new List<Message>();
+
+        // Act
+        var cut = Render<MessageList>(parameters => parameters
+            .Add(p => p.Messages, messages)
+            .Add(p => p.CurrentUsername, "testuser")
+            .Add(p => p.ChannelDescription, null)
+            .Add(p => p.ShowDescription, true)
+            .Add(p => p.CanManage, false));
+
+        // Assert
+        Assert.Contains("description-text", cut.Markup);
+        Assert.Contains("Aucune description", cut.Markup);
+    }
+
+    [Fact]
+    public void MessageList_WithEmptyDescription_ShouldNotDisplayDescriptionMessage()
+    {
+        // Arrange
+        var messages = new List<Message>();
+
+        // Act
+        var cut = Render<MessageList>(parameters => parameters
+            .Add(p => p.Messages, messages)
+            .Add(p => p.CurrentUsername, "testuser")
+            .Add(p => p.ChannelDescription, string.Empty)
+            .Add(p => p.ShowDescription, true)
+            .Add(p => p.CanManage, false));
+
+        // Assert
+        Assert.Contains("description-text", cut.Markup);
+        Assert.Contains("Aucune description", cut.Markup);
+    }
+
+    [Fact]
+    public void MessageList_WithDescriptionAndCanManage_ShouldShowEditButton()
+    {
+        // Arrange
+        var messages = new List<Message>();
+        var description = "Description du salon";
+
+        // Act
+        var cut = Render<MessageList>(parameters => parameters
+            .Add(p => p.Messages, messages)
+            .Add(p => p.CurrentUsername, "testuser")
+            .Add(p => p.ChannelDescription, description)
+            .Add(p => p.ShowDescription, true)
+            .Add(p => p.CanManage, true));
+
+        // Assert
+        var editButton = cut.Find(".edit-description-btn");
+        Assert.NotNull(editButton);
+    }
+
+    [Fact]
+    public void MessageList_WithDescriptionButCannotManage_ShouldNotShowEditButton()
+    {
+        // Arrange
+        var messages = new List<Message>();
+        var description = "Description du salon";
+
+        // Act
+        var cut = Render<MessageList>(parameters => parameters
+            .Add(p => p.Messages, messages)
+            .Add(p => p.CurrentUsername, "testuser")
+            .Add(p => p.ChannelDescription, description)
+            .Add(p => p.ShowDescription, true)
+            .Add(p => p.CanManage, false));
+
+        // Assert
+        Assert.Throws<Bunit.ElementNotFoundException>(() => cut.Find(".edit-description-btn"));
+    }
+
+    [Fact]
+    public async Task MessageList_EditDescriptionButton_WhenClicked_ShouldInvokeCallback()
+    {
+        // Arrange
+        var messages = new List<Message>();
+        var description = "Description du salon";
+        var callbackInvoked = false;
+
+        var cut = Render<MessageList>(parameters => parameters
+            .Add(p => p.Messages, messages)
+            .Add(p => p.CurrentUsername, "testuser")
+            .Add(p => p.ChannelDescription, description)
+            .Add(p => p.ShowDescription, true)
+            .Add(p => p.CanManage, true)
+            .Add(p => p.OnEditDescription, EventCallback.Factory.Create(this, () => callbackInvoked = true)));
+
+        // Act
+        var editButton = cut.Find(".edit-description-btn");
+        await cut.InvokeAsync(() => editButton.Click());
+
+        // Assert
+        Assert.True(callbackInvoked);
+    }
+
+    [Fact]
+    public void MessageList_DescriptionMessage_ShouldAppearBeforeRegularMessages()
+    {
+        // Arrange
+        var messages = new List<Message>
+    {
+        new() { Id = Guid.NewGuid(), Username = "user1", Content = "Premier message", Timestamp = DateTime.UtcNow }
+    };
+        var description = "Description du salon";
+
+        // Act
+        var cut = Render<MessageList>(parameters => parameters
+            .Add(p => p.Messages, messages)
+            .Add(p => p.CurrentUsername, "testuser")
+            .Add(p => p.ChannelDescription, description)
+            .Add(p => p.ShowDescription, true)
+            .Add(p => p.CanManage, false));
+
+        var markup = cut.Markup;
+        var descriptionIndex = markup.IndexOf("description-text", StringComparison.Ordinal);
+        var messageIndex = markup.IndexOf("Premier message", StringComparison.Ordinal);
+
+        // Assert
+        Assert.True(descriptionIndex < messageIndex, "La description devrait apparaître avant les messages");
+    }
+
+    [Fact]
+    public void MessageList_LongDescription_ShouldDisplayFullText()
+    {
+        // Arrange
+        var messages = new List<Message>();
+        var longDescription = new string('a', 500); // 500 caractères
+
+        // Act
+        var cut = Render<MessageList>(parameters => parameters
+            .Add(p => p.Messages, messages)
+            .Add(p => p.CurrentUsername, "testuser")
+            .Add(p => p.ChannelDescription, longDescription)
+            .Add(p => p.ShowDescription, true)
+            .Add(p => p.CanManage, false));
+
+        // Assert
+        Assert.Contains(longDescription, cut.Markup);
+    }
+
+    [Fact]
+    public void MessageList_WithoutCurrentChannel_ShouldNotDisplayDescription()
+    {
+        // Arrange
+        var messages = new List<Message>();
+        var description = "Description";
+
+        // Act
+        var cut = Render<MessageList>(parameters => parameters
+            .Add(p => p.Messages, messages)
+            .Add(p => p.CurrentUsername, "testuser")
+            .Add(p => p.ChannelDescription, description)
+            .Add(p => p.ShowDescription, false)
+            .Add(p => p.CanManage, false));
+
+        // Assert
+        Assert.DoesNotContain("description-text", cut.Markup);
+    }
     [Fact]
     public void MessageList_ShouldTriggerUsernameClickedEvent()
     {
