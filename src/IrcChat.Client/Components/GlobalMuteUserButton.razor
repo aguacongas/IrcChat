@@ -116,7 +116,6 @@
 
         try
         {
-            SetAuthHeader();
             var response = await Http.GetFromJsonAsync<MuteStatusResponse>($"/api/admin/global-mute/{UserId}/is-muted");
             if (response != null)
             {
@@ -162,8 +161,6 @@
 
         try
         {
-            SetAuthHeader();
-
             var request = new MuteUserRequest
             {
                 Reason = string.IsNullOrWhiteSpace(muteReason) ? "Muté globalement par un administrateur" : muteReason.Trim()
@@ -208,8 +205,6 @@
 
         try
         {
-            SetAuthHeader();
-
             var response = await Http.DeleteAsync($"/api/admin/global-mute/{UserId}");
             if (response.IsSuccessStatusCode)
             {
@@ -233,14 +228,6 @@
             isLoading = false;
             CloseDialog();
             StateHasChanged();
-        }
-    }
-
-    private void SetAuthHeader()
-    {
-        if (!string.IsNullOrEmpty(Auth.Token))
-        {
-            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Auth.Token);
         }
     }
 

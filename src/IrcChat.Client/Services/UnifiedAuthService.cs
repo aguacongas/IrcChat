@@ -1,4 +1,6 @@
 // src/IrcChat.Client/Services/UnifiedAuthService.cs
+using System.Diagnostics.CodeAnalysis;
+using System.Net.Http.Json;
 using System.Text.Json;
 using IrcChat.Shared.Models;
 using Microsoft.JSInterop;
@@ -14,6 +16,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
     private bool _isInitialized = false;
     private IJSObjectReference? _userIdModule;
     private string? _clientUserId; // UserId généré côté client
+    private bool _cookieSet;
 
     public event Action? OnAuthStateChanged;
 
@@ -38,6 +41,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
         }
 
         await RestoreFromLocalStorageAsync();
+
         _isInitialized = true;
     }
 
@@ -177,6 +181,35 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
 
         return _clientUserId;
     }
+
+    [SuppressMessage("Major Code Smell", "S2139:Exceptions should be either logged or rethrown but not both", Justification = "False positive")]
+    public async Task SetClientCookieAsync()
+    {
+        if (_cookieSet)
+        {
+            return;
+        }
+
+        try
+        {
+            var clientUserId = await GetClientUserIdAsync();
+
+            var response = await httpClient.PostAsJsonAsync("/api/oauth/set-client-cookie",
+                new { ClientUserId = clientUserId });
+
+            response.EnsureSuccessStatusCode();
+
+            logger.LogInformation("Cookie client défini avec succès");
+
+            _cookieSet = true;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Erreur lors de la définition du cookie client");
+            throw;
+        }
+    }
+
 
     private async Task SaveToLocalStorageAsync()
     {

@@ -1,6 +1,5 @@
 // tests/IrcChat.Client.Tests/Services/UnifiedAuthServiceCompleteTests.cs
 using System.Net;
-using System.Net.Http.Json;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
 using Microsoft.Extensions.Logging;
@@ -27,6 +26,8 @@ public class UnifiedAuthServiceCompleteTests
         _mockHttp = new MockHttpMessageHandler();
         _httpClient = _mockHttp.ToHttpClient();
         _httpClient.BaseAddress = new Uri("https://localhost:7000");
+        _mockHttp.When("/api/oauth/set-client-cookie")
+            .Respond(HttpStatusCode.OK);
     }
 
     [Fact]

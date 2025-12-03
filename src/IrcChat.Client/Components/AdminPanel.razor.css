@@ -310,13 +310,13 @@
   .alert.alert-success {
     background: rgba(72, 187, 120, 0.35);
     border: 1px solid #48bb78;
-    color: #1a4731;
+    color: #fff;
   }
 
   .alert.alert-error {
     background: rgba(245, 101, 101, 0.35);
     border: 1px solid #f56565;
-    color: #631414;
+    color: #fff;
   }
 
 /* Responsive */

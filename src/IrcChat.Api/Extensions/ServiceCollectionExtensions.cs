@@ -44,7 +44,8 @@ public static class ServiceCollectionExtensions
             .Configure<AutoMuteOptions>(
                 configuration.GetSection(AutoMuteOptions.SectionName));
 
-        services.AddScoped<OAuthService>()
+        services.AddTransient<IClientCookieService, ClientCookieService>()
+            .AddScoped<OAuthService>()
             .AddSignalR();
 
         services.AddHostedService<ConnectionManagerService>()
@@ -127,11 +128,37 @@ public static class ServiceCollectionExtensions
                 // Policy pour les utilisateur resever
                 configure.AddPolicy(AuthorizationPolicies.IsReserved, builder =>
                     builder.AddRequirements(new IsReservedRequirement()));
+
+                configure.AddPolicy(AuthorizationPolicies.UserIdMatch, builder =>
+                    builder.RequireAssertion(async context =>
+                    {
+                        // Récupérer le HttpContext depuis la ressource
+                        var httpContext = context.Resource as HttpContext;
+                        // Extraire le userId depuis les route values
+                        // IMPORTANT: Le paramètre de route DOIT s'appeler "userId"
+                        if (httpContext?.Request.RouteValues.TryGetValue("userId", out var channelNameObj) == true &&
+                            channelNameObj is string userId)
+                        {
+                            var cookie = httpContext.Request.Cookies["ircchat_client_id"];
+                            if (string.IsNullOrEmpty(cookie))
+                            {
+                                return false;
+                            }
+                            var requirement = new UserIdMatchRequirement(userId, cookie);
+                            // Obtenir l'authorization service et exécuter le handler
+                            var authorizationService = httpContext.RequestServices.GetRequiredService<IAuthorizationService>();
+                            var result = await authorizationService.AuthorizeAsync(context.User, httpContext, requirement);
+                            return result.Succeeded;
+                        }
+                        return false;
+                    }));
+
             })
             // Enregistrer le handler
             .AddScoped<IAuthorizationHandler, ChannelModificationHandler>()
             .AddScoped<IAuthorizationHandler, IsAdminHandler>()
-            .AddScoped<IAuthorizationHandler, IsReservedHandler>();
+            .AddScoped<IAuthorizationHandler, IsReservedHandler>()
+            .AddScoped<IAuthorizationHandler, UserIdMatchHandler>();
 
 
     public static IServiceCollection AddCorsConfiguration(
