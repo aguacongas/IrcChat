@@ -948,7 +948,10 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         var parts = setCookieHeader.Split(';');
         var cookiePart = parts.FirstOrDefault(p => p.Trim().StartsWith($"{cookieName}="));
 
-        if (cookiePart == null) return null;
+        if (cookiePart == null)
+        {
+            return null;
+        }
 
         var value = cookiePart.Substring(cookiePart.IndexOf('=') + 1).Trim();
         return value;
