@@ -235,7 +235,7 @@ public class ChatAreaTests : BunitContext
 
         // Assert
         Assert.Contains("input-area", cut.Markup);
-        Assert.Contains("placeholder=\"Tapez votre message...\"", cut.Markup);
+        Assert.Contains("placeholder=\"Tapez votre message... (@ pour mentionner)\"", cut.Markup);
     }
 
     [Fact]

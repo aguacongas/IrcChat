@@ -30,11 +30,8 @@
                             <span class="channel-hash">#@CurrentChannel</span>
                         </h2>
                         <span class="status @(IsConnected ? "connected" : "disconnected")">
-                            @(IsConnected ? "●" : "○")
+                            @(IsConnected ? "● Connecté" : "○ Déconnecté")
                         </span>
-                        <span class="status-text @(IsConnected ? "connected" : "disconnected")">
-                            @(IsConnected ? "Connecté" : "Déconnecté")
-                        </span>                        
                     </div>                                
                 }
             </div>
@@ -71,11 +68,14 @@
                 <MessageList Messages="@Messages"
                              CurrentUsername="@Username"
                              ChannelDescription="@ChannelDescription"
-                             CurrentChannel="@CurrentChannel"
+                             ShowDescription="@(!IsPrivateConversation && (!string.IsNullOrWhiteSpace(ChannelDescription) || CanManage))"
                              CanManage="@CanManage"
-                             OnEditDescription="OpenEditModal" />
+                             OnEditDescription="OpenEditModal"
+                             OnUsernameClicked="HandleUsernameClicked" />
 
-                <MessageInput IsConnected="IsConnected"
+                <MessageInput @ref="messageInputRef"
+                              IsConnected="IsConnected"
+                              AvailableUsers="@Users"
                               OnSendMessage="OnMessageSent" />
             </div>
 
@@ -103,6 +103,8 @@
 </div>
 
 @code {
+    private MessageInput? messageInputRef;
+
     [Parameter]
     public string Username { get; set; } = string.Empty;
 
@@ -160,7 +162,31 @@
     [Parameter]
     public EventCallback OnChannelUpdated { get; set; }
 
-    private bool showEditModal = false;    
+    private bool showEditModal = false;
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !string.IsNullOrEmpty(CurrentChannel) && IsConnected)
+        {
+            await FocusInputAsync();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Focus sur l'input quand on change de canal ou de conversation
+        await FocusInputAsync();
+    }
+
+    private async Task FocusInputAsync()
+    {
+        if (messageInputRef != null)
+        {
+            await Task.Delay(100); // Petit délai pour s'assurer que le composant est rendu
+            await messageInputRef.FocusAsync();
+        }
+    }
 
     private void OpenEditModal()
     {
@@ -176,5 +202,13 @@
     {
         await OnChannelUpdated.InvokeAsync();
         CloseEditModal();
+    }
+
+    private void HandleUsernameClicked(string username)
+    {
+        // Insérer le pseudo dans le champ de saisie
+        messageInputRef?.InsertUsername(username);
+        // Remettre le focus sur l'input après insertion
+        _ = FocusInputAsync();
     }
 }

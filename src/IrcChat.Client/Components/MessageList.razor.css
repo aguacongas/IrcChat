@@ -141,37 +141,47 @@
       background: #8e8e8e;
     }
 
-.channel-description-message {
-  background: linear-gradient(135deg, rgba(138, 180, 248, 0.1) 0%, rgba(72, 187, 120, 0.1) 100%);
-  border: 1px solid rgba(138, 180, 248, 0.3);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 20px;
-  position: relative;
+.channel-description-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(30, 30, 30, 0.95);
+  border-bottom: 1px solid #6e6e6e;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
 }
 
-  .channel-description-message .message-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
+  .channel-description-header:hover {
+    background: rgba(35, 35, 35, 0.95);
   }
 
-.message-icon {
-  font-size: 18px;
+.description-header-content {
+  padding: 10px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.channel-info {
-  color: #8ab4f8;
-  font-weight: 600;
+.description-text {
+  color: #ddd;
   font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  line-height: 1.6;
+  flex: 1;
+  opacity: 1;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
+
+  .description-text.empty {
+    color: #888;
+    font-style: italic;
+    font-size: 12px;
+  }
 
 .edit-description-btn {
-  margin-left: auto;
-  background: rgba(138, 180, 248, 0.2);
+  background: rgba(138, 180, 248, 0.15);
   border: none;
   color: #8ab4f8;
   cursor: pointer;
@@ -180,19 +190,57 @@
   display: flex;
   align-items: center;
   transition: all 0.2s;
+  flex-shrink: 0;
+  opacity: 0;
 }
 
-  .edit-description-btn:hover {
-    background: rgba(138, 180, 248, 0.3);
-    transform: translateY(-1px);
+.channel-description-header:hover .edit-description-btn {
+  opacity: 1;
+}
+
+.edit-description-btn:hover {
+  background: rgba(138, 180, 248, 0.25);
+  transform: translateY(-1px);
+}
+
+/* État collapsed (réduit à 1 ligne) */
+.channel-description-header.collapsed .description-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.8;
+}
+
+.channel-description-header.collapsed .description-header-content {
+  padding: 6px 16px;
+}
+
+/* État expanded (forcé ouvert par click) */
+.channel-description-header.expanded {
+  cursor: default;
+}
+
+  .channel-description-header.expanded .description-text {
+    display: block;
+    opacity: 1;
   }
 
-.channel-description-content {
-  color: #ddd;
-  font-size: 14px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-word;
+  .channel-description-header.expanded .description-header-content {
+    padding: 12px 16px;
+  }
+
+.channel-description-header.collapsed {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  border-bottom-color: #8ab4f8;
+}
+
+/* Effet de focus pour accessibilité */
+.edit-description-btn:focus-visible {
+  outline: 2px solid #8ab4f8;
+  outline-offset: 2px;
+  opacity: 1;
 }
 
 /* Responsive */
@@ -205,16 +253,23 @@
     margin-left: 0;
   }
 
-  .channel-description-message {
-    padding: 12px;
-    margin-bottom: 15px;
-  }
-
-  .channel-description-content {
-    font-size: 13px;
-  }
-
   .message-icon {
     font-size: 16px;
+  }
+
+  .description-header-content {
+    padding: 8px 12px;
+  }
+
+  .channel-description-header.collapsed .description-header-content {
+    padding: 5px 12px;
+  }
+
+  .channel-description-header.expanded .description-header-content {
+    padding: 10px 12px;
+  }
+
+  .description-text {
+    font-size: 12px;
   }
 }

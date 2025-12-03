@@ -213,6 +213,7 @@
   .close-btn:hover {
     background: #8e8e8e;
   }
+
 /* Responsive */
 @media (max-width: 1024px) {
   .chat-header {

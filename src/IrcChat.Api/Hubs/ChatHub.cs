@@ -40,7 +40,7 @@ public class ChatHub(
         }
 
         var userInChannel = await db.ConnectedUsers
-            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId && u.Channel == channel);
+            .FirstOrDefaultAsync(u => u.Username == user.Username && u.Channel == channel);
 
         if (userInChannel != null)
         {

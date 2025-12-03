@@ -916,14 +916,12 @@ public partial class MessageListTests : BunitContext
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "testuser")
             .Add(p => p.ChannelDescription, description)
-            .Add(p => p.CurrentChannel, "general")
+            .Add(p => p.ShowDescription, true)
             .Add(p => p.CanManage, false));
 
         // Assert
-        Assert.Contains("channel-description-message", cut.Markup);
+        Assert.Contains("description-text", cut.Markup);
         Assert.Contains(description, cut.Markup);
-        Assert.Contains("Description du salon", cut.Markup);
-        Assert.Contains("📌", cut.Markup);
     }
 
     [Fact]
@@ -937,12 +935,12 @@ public partial class MessageListTests : BunitContext
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "testuser")
             .Add(p => p.ChannelDescription, null)
-            .Add(p => p.CurrentChannel, "general")
+            .Add(p => p.ShowDescription, true)
             .Add(p => p.CanManage, false));
 
         // Assert
-        Assert.DoesNotContain("channel-description-message", cut.Markup);
-        Assert.DoesNotContain("Description du salon", cut.Markup);
+        Assert.Contains("description-text", cut.Markup);
+        Assert.Contains("Aucune description", cut.Markup);
     }
 
     [Fact]
@@ -956,11 +954,12 @@ public partial class MessageListTests : BunitContext
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "testuser")
             .Add(p => p.ChannelDescription, string.Empty)
-            .Add(p => p.CurrentChannel, "general")
+            .Add(p => p.ShowDescription, true)
             .Add(p => p.CanManage, false));
 
         // Assert
-        Assert.DoesNotContain("channel-description-message", cut.Markup);
+        Assert.Contains("description-text", cut.Markup);
+        Assert.Contains("Aucune description", cut.Markup);
     }
 
     [Fact]
@@ -975,7 +974,7 @@ public partial class MessageListTests : BunitContext
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "testuser")
             .Add(p => p.ChannelDescription, description)
-            .Add(p => p.CurrentChannel, "general")
+            .Add(p => p.ShowDescription, true)
             .Add(p => p.CanManage, true));
 
         // Assert
@@ -995,7 +994,7 @@ public partial class MessageListTests : BunitContext
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "testuser")
             .Add(p => p.ChannelDescription, description)
-            .Add(p => p.CurrentChannel, "general")
+            .Add(p => p.ShowDescription, true)
             .Add(p => p.CanManage, false));
 
         // Assert
@@ -1014,7 +1013,7 @@ public partial class MessageListTests : BunitContext
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "testuser")
             .Add(p => p.ChannelDescription, description)
-            .Add(p => p.CurrentChannel, "general")
+            .Add(p => p.ShowDescription, true)
             .Add(p => p.CanManage, true)
             .Add(p => p.OnEditDescription, EventCallback.Factory.Create(this, () => callbackInvoked = true)));
 
@@ -1041,11 +1040,11 @@ public partial class MessageListTests : BunitContext
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "testuser")
             .Add(p => p.ChannelDescription, description)
-            .Add(p => p.CurrentChannel, "general")
+            .Add(p => p.ShowDescription, true)
             .Add(p => p.CanManage, false));
 
         var markup = cut.Markup;
-        var descriptionIndex = markup.IndexOf("channel-description-message", StringComparison.Ordinal);
+        var descriptionIndex = markup.IndexOf("description-text", StringComparison.Ordinal);
         var messageIndex = markup.IndexOf("Premier message", StringComparison.Ordinal);
 
         // Assert
@@ -1064,7 +1063,7 @@ public partial class MessageListTests : BunitContext
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "testuser")
             .Add(p => p.ChannelDescription, longDescription)
-            .Add(p => p.CurrentChannel, "general")
+            .Add(p => p.ShowDescription, true)
             .Add(p => p.CanManage, false));
 
         // Assert
@@ -1083,12 +1082,66 @@ public partial class MessageListTests : BunitContext
             .Add(p => p.Messages, messages)
             .Add(p => p.CurrentUsername, "testuser")
             .Add(p => p.ChannelDescription, description)
-            .Add(p => p.CurrentChannel, null)
+            .Add(p => p.ShowDescription, false)
             .Add(p => p.CanManage, false));
 
         // Assert
-        Assert.DoesNotContain("channel-description-message", cut.Markup);
+        Assert.DoesNotContain("description-text", cut.Markup);
     }
+    [Fact]
+    public void MessageList_ShouldTriggerUsernameClickedEvent()
+    {
+        // Arrange
+        var clickedUsername = string.Empty;
+        var messages = new List<Message>
+        {
+            new() {
+                Username = "Alice",
+                Content = "Hello",
+                Timestamp = DateTime.UtcNow
+            }
+        };
+
+        var cut = Render<MessageList>(parameters => parameters
+            .Add(p => p.Messages, messages)
+            .Add(p => p.CurrentUsername, "Bob")
+            .Add(p => p.OnUsernameClicked, username => clickedUsername = username));
+
+        // Act
+        var username = cut.Find(".username");
+        username.Click();
+
+        // Assert
+        Assert.Equal("Alice", clickedUsername);
+    }
+
+    [Fact]
+    public void MessageList_ShouldNotTriggerEventWhenClickingOwnUsername()
+    {
+        // Arrange
+        var eventTriggered = false;
+        var messages = new List<Message>
+        {
+            new() {
+                Username = "Alice",
+                Content = "Hello",
+                Timestamp = DateTime.UtcNow
+            }
+        };
+
+        var cut = Render<MessageList>(parameters => parameters
+            .Add(p => p.Messages, messages)
+            .Add(p => p.CurrentUsername, "Alice")
+            .Add(p => p.OnUsernameClicked, username => eventTriggered = true));
+
+        // Act
+        var username = cut.Find(".username");
+        username.Click();
+
+        // Assert
+        Assert.False(eventTriggered);
+    }
+
     [GeneratedRegex("mention-highlight")]
     private static partial Regex HighlightRegex();
 }
