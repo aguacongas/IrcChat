@@ -274,6 +274,33 @@ Ce projet suit une approche particulière :
 4. Les GitHub Actions valident automatiquement
 5. Merge après validation du Quality Gate
 
+## 🤖 Développement assisté par IA
+
+Ce projet utilise Claude (Anthropic) en **mode Socratic** pour la génération de code.
+
+### Configuration
+
+La configuration de Claude se trouve dans `.claude/project-config.md` et définit :
+- Les questions à poser avant de générer du code
+- Les patterns obligatoires à respecter
+- Le processus de validation en 4 étapes
+- Les standards de qualité requis
+
+### Utilisation
+
+Pour générer du code avec Claude :
+```
+Mode Socratic : [ta demande]
+```
+
+Claude posera des questions de clarification, présentera un plan, puis générera le code après validation.
+
+Voir [.claude/project-config.md](.claude/project-config.md) pour plus de détails.
+
+[![Developed with Claude](https://img.shields.io/badge/Developed%20with-Claude-5A67D8?style=flat-square&logo=anthropic)](https://www.anthropic.com/claude)
+[![Socratic Mode](https://img.shields.io/badge/Mode-Socratic-orange?style=flat-square)](.claude/project-config.md)
+
+
 ## 📜 Licence
 
 Ce projet est sous licence [Apache 2.0](LICENSE.txt).
