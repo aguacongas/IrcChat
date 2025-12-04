@@ -12,6 +12,7 @@ public class CredentialsHandlerTests
     private readonly Mock<IUnifiedAuthService> _authServiceMock;
     private readonly Mock<HttpMessageHandler> _innerHandlerMock;
     private readonly CredentialsHandler _handler;
+    private static readonly string[] _expected = ["Initialize", "SetCookie", "SendRequest"];
 
     public CredentialsHandlerTests()
     {
@@ -245,7 +246,7 @@ public class CredentialsHandlerTests
         await invoker.SendAsync(request, CancellationToken.None);
 
         // Assert
-        Assert.Equal(new[] { "Initialize", "SetCookie", "SendRequest" }, callOrder);
+        Assert.Equal(_expected, callOrder);
     }
 
     [Theory]
