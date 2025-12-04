@@ -123,7 +123,7 @@
 
         // Trouver la position du dernier @ avant le curseur
         var lastAtIndex = messageInput.LastIndexOf('@');
-        
+
         if (lastAtIndex == -1)
         {
             HideAutoComplete();
@@ -210,7 +210,7 @@
             var after = messageInput.Length > mentionStartPosition + currentMentionQuery.Length + 1
                 ? messageInput.Substring(mentionStartPosition + currentMentionQuery.Length + 1)
                 : string.Empty;
-            
+
             messageInput = $"{before}{username} {after}";
         }
 
@@ -228,7 +228,14 @@
 
     public async Task FocusAsync()
     {
-        await inputElement.FocusAsync();
+        try
+        {
+            await inputElement.FocusAsync();
+        }
+        catch
+        {
+            // Ignorer les erreurs de focus
+        }
     }
 
     public void InsertUsername(string username)

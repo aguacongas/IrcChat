@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using IrcChat.Api.Authorization;
 using IrcChat.Api.Data;
 using IrcChat.Shared.Models;
 using Microsoft.EntityFrameworkCore;
@@ -16,18 +17,22 @@ public static class PrivateMessageEndpoints
 
         // Récupérer les conversations
         group.MapGet("/conversations/{userId}", GetConversationsAsync)
+            .RequireAuthorization(AuthorizationPolicies.UserIdMatch)
             .WithName("GetConversations");
 
         // Récupérer les messages d'une conversation
         group.MapGet("/{userId}/with/{otherUserId}", GetPrivateMessagesAsync)
+            .RequireAuthorization(AuthorizationPolicies.UserIdMatch)
             .WithName("GetPrivateMessages");
 
         // Récupérer le nombre de messages non lus
         group.MapGet("/{userId}/unread-count", GetUnreadCountAsync)
+            .RequireAuthorization(AuthorizationPolicies.UserIdMatch)
             .WithName("GetUnreadCount");
 
         // Supprimer une conversation (soft delete pour l'utilisateur uniquement)
         group.MapDelete("/{userId}/conversation/{otherUserId}", DeleteConversationAsync)
+            .RequireAuthorization(AuthorizationPolicies.UserIdMatch)
             .WithName("DeleteConversation");
 
         // Vérifier le statut de connexion d'un utilisateur

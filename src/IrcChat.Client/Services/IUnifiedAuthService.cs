@@ -29,5 +29,4 @@ public interface IUnifiedAuthService
     /// Obtient le UserId client (GUID pour invités, Username pour OAuth)
     /// </summary>
     Task<string> GetClientUserIdAsync();
-
 }

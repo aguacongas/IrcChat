@@ -45,4 +45,9 @@ public static class AuthorizationPolicies
     /// Policy pour vérifier qu'un utilisateur est reservé.
     /// </summary>
     public const string IsReserved = "IsReserved";
+
+    /// <summary>
+    /// Policy pour vérifier que l'ID utilisateur dans la route correspond à l'ID utilisateur du cookie.
+    /// </summary>
+    public const string UserIdMatch = "UserIdMatch";
 }

@@ -186,9 +186,6 @@
                     provider,
                     result.IsAdmin);
 
-                Http.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.Token);
-
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "temp_username_to_reserve");
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "temp_user_id");
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_mode");
@@ -245,9 +242,6 @@
                     result.UserId,
                     provider,
                     result.IsAdmin);
-
-                Http.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.Token);
 
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_mode");
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_state");

@@ -1,6 +1,5 @@
 // tests/IrcChat.Client.Tests/Services/UnifiedAuthServiceCompleteTests.cs
 using System.Net;
-using System.Net.Http.Json;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
 using Microsoft.Extensions.Logging;
@@ -17,6 +16,7 @@ public class UnifiedAuthServiceCompleteTests
 {
     private readonly Mock<IJSRuntime> _jsRuntimeMock;
     private readonly LocalStorageService _localStorageService;
+    private readonly IRequestAuthenticationService _requestAuthenticationService;
     private readonly MockHttpMessageHandler _mockHttp;
     private readonly HttpClient _httpClient;
 
@@ -27,6 +27,9 @@ public class UnifiedAuthServiceCompleteTests
         _mockHttp = new MockHttpMessageHandler();
         _httpClient = _mockHttp.ToHttpClient();
         _httpClient.BaseAddress = new Uri("https://localhost:7000");
+        _mockHttp.When("/api/oauth/set-client-cookie")
+            .Respond(HttpStatusCode.OK);
+        _requestAuthenticationService = new RequestAuthenticationService();
     }
 
     [Fact]
@@ -45,7 +48,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         var eventTriggered = false;
@@ -92,7 +95,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         var userId = Guid.NewGuid();
@@ -152,7 +155,7 @@ public class UnifiedAuthServiceCompleteTests
         var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/oauth/forget-username");
         mockedRequest.Respond(HttpStatusCode.OK);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         await service.SetAuthStateAsync(
@@ -209,7 +212,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         await service.SetUsernameAsync("guestuser", isReserved: false);
@@ -247,7 +250,7 @@ public class UnifiedAuthServiceCompleteTests
         _mockHttp.When(HttpMethod.Post, "*/api/oauth/forget-username")
             .Respond(HttpStatusCode.InternalServerError);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         await service.SetAuthStateAsync(
@@ -284,7 +287,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
         await service.SetUsernameAsync("guestuser", isReserved: false);
 
@@ -314,7 +317,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.Is<object[]>(o => o.Length == 1 && (string)o[0] == "ircchat_unified_auth")))
             .ReturnsAsync(authData);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         // Act & Assert
@@ -337,7 +340,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         await service.SetAuthStateAsync(
@@ -363,7 +366,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.Is<object[]>(o => o.Length == 1 && (string)o[0] == "ircchat_unified_auth")))
             .ReturnsAsync("{ invalid json }");
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
 
         // Act
         await service.InitializeAsync();
@@ -389,7 +392,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         // Act
@@ -419,7 +422,7 @@ public class UnifiedAuthServiceCompleteTests
             .Callback(() => setItemCalls++)
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         await service.SetAuthStateAsync(
@@ -452,7 +455,7 @@ public class UnifiedAuthServiceCompleteTests
             .Callback(() => getItemCalls++)
             .ReturnsAsync((string?)null);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
 
         // Act
         await service.InitializeAsync();
@@ -486,7 +489,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.Is<object[]>(o => o.Length == 1 && (string)o[0] == "ircchat_unified_auth")))
             .ReturnsAsync(authData);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
 
         // Act
         await service.InitializeAsync();
@@ -526,7 +529,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.Is<object[]>(o => o.Length == 1 && (string)o[0] == "ircchat_unified_auth")))
             .ReturnsAsync(authData);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
 
         // Act
         await service.InitializeAsync();
@@ -568,7 +571,7 @@ public class UnifiedAuthServiceCompleteTests
             })
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         // Act
@@ -606,7 +609,7 @@ public class UnifiedAuthServiceCompleteTests
             })
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         var userId = Guid.NewGuid();
@@ -653,7 +656,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         // Set some data first
@@ -708,7 +711,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         var eventCount = 0;
@@ -740,7 +743,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         // Test Google
@@ -772,7 +775,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         await service.SetAuthStateAsync("token", "user", "email", null, Guid.NewGuid(), ExternalAuthProvider.Google, false);
@@ -810,7 +813,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         // Act
@@ -836,7 +839,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         // Act
@@ -856,7 +859,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((string?)null);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         // Act & Assert
@@ -873,7 +876,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((string?)null);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         // Act & Assert
@@ -896,7 +899,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         // Act
@@ -923,7 +926,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         await service.SetAuthStateAsync(
@@ -963,7 +966,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ThrowsAsync(new JSException("Storage access denied"));
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, loggerMock.Object);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, loggerMock.Object);
 
         // Act
         await service.InitializeAsync();
@@ -1007,7 +1010,7 @@ public class UnifiedAuthServiceCompleteTests
         _mockHttp.When(HttpMethod.Post, "*/api/oauth/forget-username")
             .Throw(new InvalidOperationException("Unexpected error"));
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, loggerMock.Object);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, loggerMock.Object);
         await service.InitializeAsync();
 
         await service.SetAuthStateAsync(
@@ -1061,7 +1064,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()))
             .ReturnsAsync(mockModule.Object);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         // Act - Premier appel
@@ -1100,7 +1103,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()))
             .ReturnsAsync(mockModule.Object);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         var id = Guid.NewGuid();
@@ -1139,7 +1142,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()))
             .ReturnsAsync(mockModule.Object);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         await service.SetUsernameAsync("GuestUser", isReserved: false);
@@ -1174,7 +1177,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()))
             .ThrowsAsync(new JSException("Module not found"));
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         await service.SetUsernameAsync("GuestUser", isReserved: false);
@@ -1214,7 +1217,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()))
             .ReturnsAsync(mockModule.Object);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         await service.SetUsernameAsync("GuestUser", isReserved: false);
@@ -1255,7 +1258,7 @@ public class UnifiedAuthServiceCompleteTests
             .Setup(x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()))
             .ReturnsAsync(mockModule.Object);
 
-        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, NullLogger<UnifiedAuthService>.Instance);
+        var service = new UnifiedAuthService(_localStorageService, _httpClient, _jsRuntimeMock.Object, _requestAuthenticationService, NullLogger<UnifiedAuthService>.Instance);
         await service.InitializeAsync();
 
         await service.SetUsernameAsync("GuestUser", isReserved: false);

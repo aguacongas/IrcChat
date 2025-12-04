@@ -286,12 +286,6 @@ else
 
         try
         {
-            if (Auth.IsAuthenticated && !string.IsNullOrEmpty(Auth.Token))
-            {
-                Http.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Auth.Token);
-            }
-
             var response = await Http.PostAsJsonAsync("/api/channels", channel);
 
             if (response.IsSuccessStatusCode)
@@ -354,7 +348,6 @@ else
     {
         showForgetModal = false;
         await Auth.ForgetUsernameAndLogoutAsync();
-        Http.DefaultRequestHeaders.Authorization = null;
         Navigation.NavigateToRelative("login");
     }
 
@@ -363,7 +356,6 @@ else
         await Auth.LogoutAsync();
         await ChatService.DisposeAsync();
         await ActiveChannels.ClearAsync();
-        Http.DefaultRequestHeaders.Authorization = null;
         Navigation.NavigateToRelative("login");
     }
 }

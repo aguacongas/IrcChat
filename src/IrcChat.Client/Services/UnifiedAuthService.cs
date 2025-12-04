@@ -8,13 +8,13 @@ namespace IrcChat.Client.Services;
 public class UnifiedAuthService(ILocalStorageService localStorage,
     HttpClient httpClient,
     IJSRuntime jsRuntime,
+    IRequestAuthenticationService requestAuthService,
     ILogger<UnifiedAuthService> logger) : IUnifiedAuthService
 {
     private static readonly string _authKey = "ircchat_unified_auth";
     private bool _isInitialized = false;
     private IJSObjectReference? _userIdModule;
     private string? _clientUserId; // UserId généré côté client
-
     public event Action? OnAuthStateChanged;
 
     public bool HasUsername => !string.IsNullOrEmpty(Username);
@@ -22,7 +22,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
     public bool IsAuthenticated => !string.IsNullOrEmpty(Token);
     public bool IsAdmin { get; private set; }
     public string? Username { get; private set; }
-    public string? Token { get; private set; }
+    public string? Token { get => requestAuthService.Token; private set => requestAuthService.Token = value; }
     public ExternalAuthProvider? ReservedProvider { get; private set; }
     public string? Email { get; private set; }
     public string? AvatarUrl { get; private set; }
@@ -38,6 +38,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
         }
 
         await RestoreFromLocalStorageAsync();
+
         _isInitialized = true;
     }
 

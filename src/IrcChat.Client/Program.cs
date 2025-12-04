@@ -14,19 +14,23 @@ builder.Services.Configure<ApiSettings>(apiSessing => builder.Configuration.GetS
 // Récupérer l'URL de base depuis la configuration
 var apiBaseUrl = builder.Configuration["Api:BaseUrl"];
 
-builder.Services.AddScoped(sp => new HttpClient
-{
-    BaseAddress = new Uri(apiBaseUrl!)
-});
+builder.Services.AddHttpClient("IrcChat.Api")
+    .ConfigureHttpClient(client => client.BaseAddress = new Uri(apiBaseUrl!))
+    .AddHttpMessageHandler<CredentialsHandler>();
 
-builder.Services.AddScoped<IChatService, ChatService>()
-    .AddScoped<IAuthStateService, AuthStateService>()
+builder.Services.AddScoped(sp =>
+        sp.GetRequiredService<IHttpClientFactory>().CreateClient("IrcChat.Api"))
+    .AddScoped<CredentialsHandler>()
+    .AddScoped<IChatService, ChatService>()
     .AddScoped<ILocalStorageService, LocalStorageService>()
     .AddScoped<IUnifiedAuthService, UnifiedAuthService>()
     .AddScoped<IOAuthClientService, OAuthClientService>()
     .AddScoped<IPrivateMessageService, PrivateMessageService>()
     .AddScoped<IDeviceDetectorService, DeviceDetectorService>()
     .AddScoped<IIgnoredUsersService, IgnoredUsersService>()
-    .AddScoped<IActiveChannelsService, ActiveChannelsService>();
+    .AddScoped<IActiveChannelsService, ActiveChannelsService>()
+    .AddSingleton<IRequestAuthenticationService, RequestAuthenticationService>()
+;
+
 
 await builder.Build().RunAsync();

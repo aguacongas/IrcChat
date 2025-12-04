@@ -5,6 +5,7 @@ namespace IrcChat.Client.Services;
 
 public class ChatService(IPrivateMessageService privateMessageService,
     IUnifiedAuthService authService,
+    IRequestAuthenticationService requestAuthService,
     ILogger<ChatService> logger) : IChatService
 {
     private HubConnection? _hubConnection;
@@ -93,6 +94,7 @@ public class ChatService(IPrivateMessageService privateMessageService,
         _hubConnectionEvents.Reconnected += OnConnectionReconnected;
 
         await _hubConnection.StartAsync();
+        requestAuthService.ConnectionId = _hubConnection.ConnectionId;
         CreatePingTimer();
     }
 
@@ -177,6 +179,7 @@ public class ChatService(IPrivateMessageService privateMessageService,
     private Task OnConnectionReconnected(string? connectionId)
     {
         logger.LogInformation("Reconnexion SignalR réussie (ConnectionId: {ConnectionId})", connectionId);
+        requestAuthService.ConnectionId = connectionId;
         CreatePingTimer();
         OnReconnected?.Invoke();
         return Task.CompletedTask;

@@ -190,17 +190,11 @@ else
 
         if (!string.IsNullOrEmpty(currentUsername))
         {
-            if (Auth.IsAuthenticated && !string.IsNullOrEmpty(Auth.Token))
-            {
-                Http.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", Auth.Token);
-            }
-
             try
             {
                 await InitializeSignalR();
-                await LoadPrivateConversations();
                 await RestoreActiveChannels();
+                await LoadPrivateConversations();
             }
             finally
             {
@@ -1163,18 +1157,6 @@ else
         PrivateUsername = user.Username;
         NavigateToRelativeIfNeeded($"chat/private/{encodedUserId}{usernameSegment}");
         _ = InvokeAsync(ApplyRouteStateAsync);
-    }
-
-    private void NavigateToCurrentChannelOrHome()
-    {
-        if (!string.IsNullOrEmpty(currentChannel))
-        {
-            NavigateToChannelRoute(currentChannel);
-        }
-        else
-        {
-            NavigateToRelativeIfNeeded("chat");
-        }
     }
 
     private void NavigateToRelativeIfNeeded(string relativePath)

@@ -127,11 +127,33 @@ public static class ServiceCollectionExtensions
                 // Policy pour les utilisateur resever
                 configure.AddPolicy(AuthorizationPolicies.IsReserved, builder =>
                     builder.AddRequirements(new IsReservedRequirement()));
+
+                configure.AddPolicy(AuthorizationPolicies.UserIdMatch, builder =>
+                    builder.RequireAssertion(async context =>
+                    {
+                        // Récupérer le HttpContext depuis la ressource
+                        var httpContext = context.Resource as HttpContext;
+                        // Extraire le userId depuis les route values
+                        // IMPORTANT: Le paramètre de route DOIT s'appeler "userId"
+                        if (httpContext?.Request.RouteValues.TryGetValue("userId", out var channelNameObj) == true &&
+                            channelNameObj is string userId)
+                        {
+                            var connectionId = httpContext.Request.Headers["x-ConnectionId"];
+                            var requirement = new UserIdMatchRequirement(userId, connectionId);
+                            // Obtenir l'authorization service et exécuter le handler
+                            var authorizationService = httpContext.RequestServices.GetRequiredService<IAuthorizationService>();
+                            var result = await authorizationService.AuthorizeAsync(context.User, httpContext, requirement);
+                            return result.Succeeded;
+                        }
+                        return false;
+                    }));
+
             })
             // Enregistrer le handler
             .AddScoped<IAuthorizationHandler, ChannelModificationHandler>()
             .AddScoped<IAuthorizationHandler, IsAdminHandler>()
-            .AddScoped<IAuthorizationHandler, IsReservedHandler>();
+            .AddScoped<IAuthorizationHandler, IsReservedHandler>()
+            .AddScoped<IAuthorizationHandler, UserIdMatchHandler>();
 
 
     public static IServiceCollection AddCorsConfiguration(
