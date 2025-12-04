@@ -21,6 +21,7 @@ public class ChatServiceTests : BunitContext
 {
     private readonly Mock<IPrivateMessageService> _privateMessageServiceMock;
     private readonly Mock<IUnifiedAuthService> _unverifiedAuthServiceMock;
+    private readonly IRequestAuthenticationService _requestAuthenticationService;
     private readonly IOptions<ApiSettings> _apiSettings;
     private readonly MockHttpMessageHandler _mockHttp;
 
@@ -28,6 +29,7 @@ public class ChatServiceTests : BunitContext
     {
         _privateMessageServiceMock = new Mock<IPrivateMessageService>();
         _unverifiedAuthServiceMock = new Mock<IUnifiedAuthService>();
+        _requestAuthenticationService = new RequestAuthenticationService();
 
         _apiSettings = Options.Create(new ApiSettings
         {
@@ -50,7 +52,7 @@ public class ChatServiceTests : BunitContext
     public void ChatService_ShouldInitialize()
     {
         // Act
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
 
         // Assert
         Assert.NotNull(service);
@@ -62,6 +64,7 @@ public class ChatServiceTests : BunitContext
         // Arrange
         var service = new ChatService(_privateMessageServiceMock.Object,
             _unverifiedAuthServiceMock.Object,
+            _requestAuthenticationService,
             NullLogger<ChatService>.Instance);
 
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
@@ -102,7 +105,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnMessageReceived_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -151,7 +154,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnUserJoined_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -200,7 +203,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnUserLeft_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -248,7 +251,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnChannelMuteStatusChanged_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -294,7 +297,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnMessageBlocked_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -335,7 +338,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnChannelDeleted_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -376,7 +379,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnChannelNotFound_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -416,7 +419,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnChannelListUpdated_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -457,7 +460,7 @@ public class ChatServiceTests : BunitContext
     public async Task ReceivePrivateMessage_ShouldNotifyPrivateMessageService()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -502,7 +505,7 @@ public class ChatServiceTests : BunitContext
     public async Task PrivateMessagesRead_ShouldNotifyPrivateMessageService()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -541,7 +544,7 @@ public class ChatServiceTests : BunitContext
     public async Task PrivateMessageSent_ShouldNotifyPrivateMessageService()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -587,7 +590,7 @@ public class ChatServiceTests : BunitContext
     public async Task DisposeAsync_ShouldCleanupResources()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
 
         // Act
         await service.DisposeAsync();
@@ -600,7 +603,7 @@ public class ChatServiceTests : BunitContext
     public async Task JoinChannel_WhenConnectionNull_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
 
         // Act
         await service.JoinChannel("testChannel");
@@ -613,7 +616,7 @@ public class ChatServiceTests : BunitContext
     public async Task JoinChannel_WhenConnectionExists_ShouldCallSendAsync()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -643,7 +646,7 @@ public class ChatServiceTests : BunitContext
     public async Task LeaveChannel_WhenConnectionNull_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
 
         // Act
         await service.LeaveChannel("testChannel");
@@ -656,7 +659,7 @@ public class ChatServiceTests : BunitContext
     public async Task LeaveChannel_WhenConnectionExists_ShouldCallSendAsync()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -686,7 +689,7 @@ public class ChatServiceTests : BunitContext
     public async Task SendMessage_WhenConnectionNull_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var request = new SendMessageRequest
         {
             Channel = "testChannel",
@@ -704,7 +707,7 @@ public class ChatServiceTests : BunitContext
     public async Task SendMessage_WhenConnectionExists_ShouldCallSendAsync()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -740,7 +743,7 @@ public class ChatServiceTests : BunitContext
     public async Task SendPrivateMessage_WhenConnectionNull_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var request = new SendPrivateMessageRequest
         {
             RecipientUserId = "recipient",
@@ -759,7 +762,7 @@ public class ChatServiceTests : BunitContext
     public async Task SendPrivateMessage_WhenConnectionExists_ShouldCallSendAsync()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -796,7 +799,7 @@ public class ChatServiceTests : BunitContext
     public async Task MarkPrivateMessagesAsRead_WhenConnectionNull_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
 
         // Act
         await service.MarkPrivateMessagesAsRead("sender");
@@ -809,7 +812,7 @@ public class ChatServiceTests : BunitContext
     public async Task MarkPrivateMessagesAsRead_WhenConnectionExists_ShouldCallSendAsync()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -840,7 +843,7 @@ public class ChatServiceTests : BunitContext
     public async Task DisposeAsync_AfterInitialize_ShouldDisposeConnectionAndTimer()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -865,7 +868,7 @@ public class ChatServiceTests : BunitContext
     public async Task DisposeAsync_CalledMultipleTimes_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -890,7 +893,7 @@ public class ChatServiceTests : BunitContext
     public async Task MultipleEventSubscribers_ShouldAllBeNotified()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -932,7 +935,7 @@ public class ChatServiceTests : BunitContext
     {
         // Arrange
         var loggerMock = new Mock<ILogger<ChatService>>();
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, loggerMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, loggerMock.Object);
         _unverifiedAuthServiceMock.Setup(x => x.GetClientUserIdAsync())
             .ReturnsAsync("testUserId");
         var hubConnectionMock = new Mock<HubConnectionStub>();
@@ -971,7 +974,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnUserMuted_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1027,7 +1030,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnUserUnmuted_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1083,7 +1086,7 @@ public class ChatServiceTests : BunitContext
     public async Task InitializeAsync_ShouldRegisterUserMutedHandler()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1111,7 +1114,7 @@ public class ChatServiceTests : BunitContext
     public async Task InitializeAsync_ShouldRegisterUserUnmutedHandler()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1139,7 +1142,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnUserMuted_MultipleSubscribers_ShouldNotifyAll()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1179,7 +1182,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnUserUnmuted_MultipleSubscribers_ShouldNotifyAll()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1219,7 +1222,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnUserMuted_WithEmptyChannel_ShouldStillTrigger()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1255,7 +1258,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnUserUnmuted_WithEmptyChannel_ShouldStillTrigger()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1291,7 +1294,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnUserMuted_NoSubscribers_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1322,7 +1325,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnUserUnmuted_NoSubscribers_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1368,7 +1371,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnDisconnected_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1398,7 +1401,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnReconnecting_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1428,7 +1431,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnReconnecting_WithNullException_ShouldPassNullError()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1437,7 +1440,7 @@ public class ChatServiceTests : BunitContext
 
         hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
 
-        string? receivedError = "not-null";
+        var receivedError = "not-null";
         service.OnReconnecting += (error) => receivedError = error;
 
         var hubConnectionEventsMock = new Mock<IHubConnectionEvents>();
@@ -1458,7 +1461,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnReconnected_ShouldTriggerEvent()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1488,7 +1491,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnDisconnected_NoSubscribers_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1500,11 +1503,10 @@ public class ChatServiceTests : BunitContext
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
         // Simuler une fermeture de connexion
-        var closedHandler = hubConnectionMock.Invocations
-            .FirstOrDefault(i => i.Method.Name == "add_Closed")?.Arguments[0] as Func<Exception?, Task>;
 
         // Act & Assert - Ne devrait pas lancer d'exception
-        if (closedHandler != null)
+        if (hubConnectionMock.Invocations
+            .FirstOrDefault(i => i.Method.Name == "add_Closed")?.Arguments[0] is Func<Exception?, Task> closedHandler)
         {
             await closedHandler(null);
         }
@@ -1516,7 +1518,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnReconnecting_NoSubscribers_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1528,11 +1530,10 @@ public class ChatServiceTests : BunitContext
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
         // Simuler une tentative de reconnexion
-        var reconnectingHandler = hubConnectionMock.Invocations
-            .FirstOrDefault(i => i.Method.Name == "add_Reconnecting")?.Arguments[0] as Func<Exception?, Task>;
 
         // Act & Assert - Ne devrait pas lancer d'exception
-        if (reconnectingHandler != null)
+        if (hubConnectionMock.Invocations
+            .FirstOrDefault(i => i.Method.Name == "add_Reconnecting")?.Arguments[0] is Func<Exception?, Task> reconnectingHandler)
         {
             await reconnectingHandler(null);
         }
@@ -1544,7 +1545,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnReconnected_NoSubscribers_ShouldNotThrow()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1556,11 +1557,10 @@ public class ChatServiceTests : BunitContext
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
         // Simuler une reconnexion
-        var reconnectedHandler = hubConnectionMock.Invocations
-            .FirstOrDefault(i => i.Method.Name == "add_Reconnected")?.Arguments[0] as Func<string?, Task>;
 
         // Act & Assert - Ne devrait pas lancer d'exception
-        if (reconnectedHandler != null)
+        if (hubConnectionMock.Invocations
+            .FirstOrDefault(i => i.Method.Name == "add_Reconnected")?.Arguments[0] is Func<string?, Task> reconnectedHandler)
         {
             await reconnectedHandler("connection-id");
         }
@@ -1572,7 +1572,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnDisconnected_MultipleSubscribers_ShouldNotifyAll()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1606,7 +1606,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnReconnecting_MultipleSubscribers_ShouldNotifyAll()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1640,7 +1640,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnReconnected_MultipleSubscribers_ShouldNotifyAll()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1675,7 +1675,7 @@ public class ChatServiceTests : BunitContext
     {
         // Arrange
         var loggerMock = new Mock<ILogger<ChatService>>();
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, loggerMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, loggerMock.Object);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1710,7 +1710,7 @@ public class ChatServiceTests : BunitContext
     {
         // Arrange
         var loggerMock = new Mock<ILogger<ChatService>>();
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, loggerMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, loggerMock.Object);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1745,7 +1745,7 @@ public class ChatServiceTests : BunitContext
     {
         // Arrange
         var loggerMock = new Mock<ILogger<ChatService>>();
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, loggerMock.Object);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, loggerMock.Object);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1792,7 +1792,7 @@ public class ChatServiceTests : BunitContext
     public async Task OnDisconnected_ShouldDisposePingTimer()
     {
         // Arrange
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1806,11 +1806,10 @@ public class ChatServiceTests : BunitContext
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
         // Simuler une fermeture de connexion
-        var closedHandler = hubConnectionMock.Invocations
-            .FirstOrDefault(i => i.Method.Name == "add_Closed")?.Arguments[0] as Func<Exception?, Task>;
 
         // Act
-        if (closedHandler != null)
+        if (hubConnectionMock.Invocations
+            .FirstOrDefault(i => i.Method.Name == "add_Closed")?.Arguments[0] is Func<Exception?, Task> closedHandler)
         {
             await closedHandler(null);
         }
@@ -1828,7 +1827,7 @@ public class ChatServiceTests : BunitContext
             .ReturnsAsync("testUserId");
         _unverifiedAuthServiceMock.Setup(x => x.Username).Returns("testUser");
 
-        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, NullLogger<ChatService>.Instance);
+        var service = new ChatService(_privateMessageServiceMock.Object, _unverifiedAuthServiceMock.Object, _requestAuthenticationService, NullLogger<ChatService>.Instance);
         var hubConnectionMock = new Mock<HubConnectionStub>();
         var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
 
@@ -1845,20 +1844,18 @@ public class ChatServiceTests : BunitContext
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
         // Simuler une déconnexion
-        var closedHandler = hubConnectionMock.Invocations
-            .FirstOrDefault(i => i.Method.Name == "add_Closed")?.Arguments[0] as Func<Exception?, Task>;
 
-        if (closedHandler != null)
+        if (hubConnectionMock.Invocations
+            .FirstOrDefault(i => i.Method.Name == "add_Closed")?.Arguments[0] is Func<Exception?, Task> closedHandler)
         {
             await closedHandler(null);
         }
 
         // Simuler une reconnexion
-        var reconnectedHandler = hubConnectionMock.Invocations
-            .FirstOrDefault(i => i.Method.Name == "add_Reconnected")?.Arguments[0] as Func<string?, Task>;
 
         // Act
-        if (reconnectedHandler != null)
+        if (hubConnectionMock.Invocations
+            .FirstOrDefault(i => i.Method.Name == "add_Reconnected")?.Arguments[0] is Func<string?, Task> reconnectedHandler)
         {
             await reconnectedHandler("new-connection-id");
         }

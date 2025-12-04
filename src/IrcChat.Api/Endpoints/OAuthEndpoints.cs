@@ -35,10 +35,6 @@ public static class OAuthEndpoints
             .RequireAuthorization()
             .WithName("ForgetUsername");
 
-        oauth.MapPost("/set-client-cookie", SetClientCookieAsync)
-            .WithName("SetClientCookie")
-            .AllowAnonymous();
-
         return app;
     }
 
@@ -243,44 +239,6 @@ public static class OAuthEndpoints
         return Results.Ok();
     }
 
-    private static IResult SetClientCookieAsync(
-        SetClientCookieRequest request,
-        IClientCookieService cookieService,
-        HttpContext httpContext,
-        ILogger<Program> logger)
-    {
-        if (string.IsNullOrEmpty(request.ClientUserId))
-        {
-            return Results.BadRequest(new { error = "ClientUserId manquant" });
-        }
-
-        try
-        {
-            var encryptedCookie = cookieService.CreateCookie(request.ClientUserId);
-
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true, // HTTPS uniquement
-                SameSite = SameSiteMode.None,
-                Expires = DateTimeOffset.UtcNow.AddDays(30),
-                Path = "/",
-                IsEssential = true
-            };
-
-            httpContext.Response.Cookies.Append("ircchat_client_id", encryptedCookie, cookieOptions);
-
-            logger.LogInformation("Cookie créé pour ClientUserId {UserId}", request.ClientUserId);
-
-            return Results.Ok(new { success = true });
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Erreur lors de la création du cookie");
-            return Results.Problem("Erreur lors de la création du cookie");
-        }
-    }
-
     [SuppressMessage("SonarAnalyzer", "S6781", Justification = "Use env var to configure it")]
     private static string GenerateJwtToken(ReservedUsername user, IConfiguration configuration)
     {
@@ -307,6 +265,4 @@ public static class OAuthEndpoints
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
-
-
 }

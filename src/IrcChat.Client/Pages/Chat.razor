@@ -193,8 +193,8 @@ else
             try
             {
                 await InitializeSignalR();
-                await LoadPrivateConversations();
                 await RestoreActiveChannels();
+                await LoadPrivateConversations();
             }
             finally
             {

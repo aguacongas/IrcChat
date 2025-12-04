@@ -29,11 +29,4 @@ public interface IUnifiedAuthService
     /// Obtient le UserId client (GUID pour invités, Username pour OAuth)
     /// </summary>
     Task<string> GetClientUserIdAsync();
-
-    /// <summary>
-    /// Obtient le cookie d'identification client, le crée si nécessaire
-    /// </summary>
-    /// <returns></returns>
-    Task SetClientCookieAsync();
-
 }

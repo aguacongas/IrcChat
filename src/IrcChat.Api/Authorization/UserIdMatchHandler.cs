@@ -1,29 +1,28 @@
 using System.Security.Claims;
-using IrcChat.Api.Services;
+using IrcChat.Api.Data;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 namespace IrcChat.Api.Authorization;
 
-public class UserIdMatchHandler(IClientCookieService clientCookieService) : AuthorizationHandler<UserIdMatchRequirement>
+public class UserIdMatchHandler(ChatDbContext db) : AuthorizationHandler<UserIdMatchRequirement>
 {
-    protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, UserIdMatchRequirement requirement)
+    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, UserIdMatchRequirement requirement)
     {
-        var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ??
+            await GetUserIdFromCookieAsync(requirement);
         // si c'est un utilisateur identifié, on vérifie que l'id correspond
         if (userId == requirement.UserId)
         {
             context.Succeed(requirement);
-            return Task.CompletedTask;
-        }
-
-        if (userId == null && requirement.UserId == clientCookieService.GetUserId(requirement.Cookie))
-        {
-            // l'utilisateur n'est pas identifié, mais le cookie correspond
-            context.Succeed(requirement);
-            return Task.CompletedTask;
+            return;
         }
 
         context.Fail();
-        return Task.CompletedTask;
     }
+
+    private Task<string?> GetUserIdFromCookieAsync(UserIdMatchRequirement requirement)
+    => db.ConnectedUsers.Where(u => u.ConnectionId == requirement.ConnectionId)
+            .Select(u => u.UserId)
+            .FirstOrDefaultAsync();
 }

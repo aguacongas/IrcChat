@@ -7,8 +7,6 @@ using System.Security.Claims;
 using System.Text;
 using IrcChat.Api.Data;
 using IrcChat.Shared.Models;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -837,124 +835,6 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var result = await response.Content.ReadFromJsonAsync<OAuthLoginResponse>();
         Assert.Equal("trimmed_user", result!.Username);
-    }
-
-    [Fact]
-    public async Task SetClientCookie_WithValidUserId_ReturnsCookie()
-    {
-        // Arrange
-        var client = factory.CreateClient(new WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = false,
-            HandleCookies = true
-        });
-        var userId = "test-user-123";
-
-        // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/set-client-cookie",
-            new { ClientUserId = userId });
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.True(response.Headers.Contains("Set-Cookie"), "Response should contain Set-Cookie header");
-
-        var setCookieHeader = response.Headers.GetValues("Set-Cookie").FirstOrDefault();
-        Assert.NotNull(setCookieHeader);
-        Assert.Contains("ircchat_client_id=", setCookieHeader);
-        Assert.Contains("httponly", setCookieHeader);
-        Assert.Contains("secure", setCookieHeader);
-    }
-
-    [Fact]
-    public async Task SetClientCookie_WithoutUserId_ReturnsBadRequest()
-    {
-        // Arrange
-        var client = factory.CreateClient();
-
-        // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/set-client-cookie",
-            new { ClientUserId = "" });
-
-        // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task SetClientCookie_CookieCanBeDecrypted()
-    {
-        // Arrange
-        var client = factory.CreateClient(new WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = false,
-            HandleCookies = true
-        });
-        var userId = "test-user-123";
-
-        // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/set-client-cookie",
-            new { ClientUserId = userId });
-
-        // Assert
-        var setCookieHeader = response.Headers.GetValues("Set-Cookie").FirstOrDefault();
-        Assert.NotNull(setCookieHeader);
-
-        // Extraire le cookie
-        var cookieValue = ExtractCookieValue(setCookieHeader, "ircchat_client_id");
-        Assert.NotNull(cookieValue);
-
-        // Décrypter et vérifier
-        using var scope = factory.Services.CreateScope();
-        var dataProtectionProvider = scope.ServiceProvider.GetRequiredService<IDataProtectionProvider>();
-
-        var protector = dataProtectionProvider.CreateProtector("ClientUserId");
-        var decrypted = protector.Unprotect(cookieValue);
-        Assert.Equal(userId, decrypted);
-    }
-
-
-    [Theory]
-    [InlineData("guest-user-123")]
-    [InlineData("a1b2c3d4-e5f6-7890-abcd-ef1234567890")]
-    [InlineData("oauth-user@example.com")]
-    public async Task SetClientCookie_HandlesVariousUserIdFormats(string userId)
-    {
-        // Arrange
-        var client = factory.CreateClient(new WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = false,
-            HandleCookies = true
-        });
-
-        // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/set-client-cookie",
-            new { ClientUserId = userId });
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var setCookieHeader = response.Headers.GetValues("Set-Cookie").FirstOrDefault();
-        var cookieValue = ExtractCookieValue(setCookieHeader!, "ircchat_client_id");
-
-        using var scope = factory.Services.CreateScope();
-        var dataProtectionProvider = scope.ServiceProvider.GetRequiredService<IDataProtectionProvider>();
-
-        var protector = dataProtectionProvider.CreateProtector("ClientUserId");
-        var decrypted = protector.Unprotect(cookieValue!);
-        Assert.Equal(userId, decrypted);
-    }
-
-    private static string? ExtractCookieValue(string setCookieHeader, string cookieName)
-    {
-        var parts = setCookieHeader.Split(';');
-        var cookiePart = parts.FirstOrDefault(p => p.Trim().StartsWith($"{cookieName}="));
-
-        if (cookiePart == null)
-        {
-            return null;
-        }
-
-        var value = cookiePart.Substring(cookiePart.IndexOf('=') + 1).Trim();
-        return value;
     }
 
     [SuppressMessage("Blocker Vulnerability", "S6781:JWT secret keys should not be disclosed", Justification = "It's a test")]

@@ -3,7 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
 using IrcChat.Api.Data;
-using IrcChat.Api.Services;
 using IrcChat.Shared.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -18,7 +17,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
     public async Task GetConversations_WithNoMessages_ShouldReturnEmptyList()
     {
         // Act
-        SetUserIdCookie("testuser");
+        SetConnectionId("testuser");
         var response = await _client.GetAsync("/api/private-messages/conversations/testuser");
 
         // Assert
@@ -89,7 +88,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         await db.SaveChangesAsync();
 
         // Act
-        SetUserIdCookie(sender);
+        SetConnectionId(sender);
         var response = await _client.GetAsync($"/api/private-messages/conversations/{sender}");
 
         // Assert
@@ -140,7 +139,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         await db.SaveChangesAsync();
 
         // Act
-        SetUserIdCookie(sender);
+        SetConnectionId(sender);
         var response = await _client.GetAsync($"/api/private-messages/conversations/{sender}");
 
         // Assert
@@ -178,7 +177,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         await db.SaveChangesAsync();
 
         // Act
-        SetUserIdCookie(username);
+        SetConnectionId(username);
         var response = await _client.GetAsync($"/api/private-messages/status/{username}");
 
         // Assert
@@ -264,7 +263,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         await db.SaveChangesAsync();
 
         // Act
-        SetUserIdCookie(currentUser);
+        SetConnectionId(currentUser);
         var response = await _client.GetAsync($"/api/private-messages/conversations/{currentUser}");
 
         // Assert
@@ -337,7 +336,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         await db.SaveChangesAsync();
 
         // Act
-        SetUserIdCookie(user1);
+        SetConnectionId(user1);
         var response = await _client.GetAsync($"/api/private-messages/{user1}/with/{user2}");
 
         // Assert
@@ -407,7 +406,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         await db.SaveChangesAsync();
 
         // Act
-        SetUserIdCookie(recipient);
+        SetConnectionId(recipient);
         var response = await _client.GetAsync($"/api/private-messages/{recipient}/unread-count");
 
         // Assert
@@ -463,7 +462,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         await db.SaveChangesAsync();
 
         // Act - user1 supprime la conversation
-        SetUserIdCookie(user1);
+        SetConnectionId(user1);
         var response = await _client.DeleteAsync($"/api/private-messages/{user1}/conversation/{user2}");
 
         // Assert
@@ -523,7 +522,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         await db.SaveChangesAsync();
 
         // Act - user1 supprime la conversation
-        SetUserIdCookie(user1);
+        SetConnectionId(user1);
         await _client.DeleteAsync($"/api/private-messages/{user1}/conversation/{user2}");
 
         // Assert - user1 ne voit plus la conversation
@@ -533,7 +532,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         Assert.Empty(conversations1);
 
         // Assert - user2 voit toujours la conversation
-        SetUserIdCookie(user2);
+        SetConnectionId(user2);
         var response2 = await _client.GetAsync($"/api/private-messages/conversations/{user2}");
         var conversations2 = await response2.Content.ReadFromJsonAsync<List<PrivateConversation>>();
         Assert.NotNull(conversations2);
@@ -571,21 +570,21 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         await db.SaveChangesAsync();
 
         // Act - user1 supprime sa vue
-        SetUserIdCookie(user1);
+        SetConnectionId(user1);
         await _client.DeleteAsync($"/api/private-messages/{user1}/conversation/{user2}");
 
         // Act - user2 supprime sa vue
-        SetUserIdCookie(user2);
+        SetConnectionId(user2);
         await _client.DeleteAsync($"/api/private-messages/{user2}/conversation/{user1}");
 
         // Assert - Les deux utilisateurs ne voient plus la conversation
-        SetUserIdCookie(user1);
+        SetConnectionId(user1);
         var response1 = await _client.GetAsync($"/api/private-messages/conversations/{user1}");
         var conversations1 = await response1.Content.ReadFromJsonAsync<List<PrivateConversation>>();
         Assert.NotNull(conversations1);
         Assert.Empty(conversations1);
 
-        SetUserIdCookie(user2);
+        SetConnectionId(user2);
         var response2 = await _client.GetAsync($"/api/private-messages/conversations/{user2}");
         var conversations2 = await response2.Content.ReadFromJsonAsync<List<PrivateConversation>>();
         Assert.NotNull(conversations2);
@@ -604,7 +603,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
     public async Task DeleteConversation_WithNoMessages_ShouldReturnNotFound()
     {
         // Act
-        SetUserIdCookie("user1");
+        SetConnectionId("user1");
         var response = await _client.DeleteAsync("/api/private-messages/user1/conversation/user2");
 
         // Assert
@@ -653,7 +652,7 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         await db.SaveChangesAsync();
 
         // Act
-        SetUserIdCookie(recipient);
+        SetConnectionId(recipient);
         var response = await _client.GetAsync($"/api/private-messages/{recipient}/unread-count");
 
         // Assert
@@ -663,12 +662,24 @@ public class PrivateMessageEndpointsTests(ApiWebApplicationFactory factory) : IC
         Assert.NotNull(result);
         Assert.Equal(1, result.UnreadCount); // Seulement le message non supprimé
     }
-    private void SetUserIdCookie(string userId)
+    private void SetConnectionId(string userId)
     {
         using var scope = factory.Services.CreateScope();
-        var clientCookieService = scope.ServiceProvider.GetRequiredService<IClientCookieService>();
-        var encryptedCookie = clientCookieService.CreateCookie(userId);
-        _client.DefaultRequestHeaders.Add("Cookie", $"ircchat_client_id={encryptedCookie}");
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+        var connectionId = Guid.NewGuid().ToString();
+        db.ConnectedUsers.Add(new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Username = userId,
+            ConnectionId = connectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-server"
+        });
+        db.SaveChanges();
+        _client.DefaultRequestHeaders.Remove("X-ConnectionId");
+        _client.DefaultRequestHeaders.Add("X-ConnectionId", connectionId);
     }
 
     private sealed class UserStatusResponse

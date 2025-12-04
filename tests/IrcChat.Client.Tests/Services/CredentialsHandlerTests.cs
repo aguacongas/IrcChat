@@ -9,17 +9,16 @@ namespace IrcChat.Client.Tests.Services;
 
 public class CredentialsHandlerTests
 {
-    private readonly Mock<IUnifiedAuthService> _authServiceMock;
+    private readonly Mock<IRequestAuthenticationService> _requestAuthenticationServiceMock;
     private readonly Mock<HttpMessageHandler> _innerHandlerMock;
     private readonly CredentialsHandler _handler;
-    private static readonly string[] _expected = ["Initialize", "SetCookie", "SendRequest"];
 
     public CredentialsHandlerTests()
     {
-        _authServiceMock = new Mock<IUnifiedAuthService>();
+        _requestAuthenticationServiceMock = new Mock<IRequestAuthenticationService>();
         _innerHandlerMock = new Mock<HttpMessageHandler>();
 
-        _handler = new CredentialsHandler(_authServiceMock.Object)
+        _handler = new CredentialsHandler(_requestAuthenticationServiceMock.Object)
         {
             InnerHandler = _innerHandlerMock.Object
         };
@@ -31,9 +30,7 @@ public class CredentialsHandlerTests
         // Arrange
         var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/test");
 
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.SetClientCookieAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(false);
+        _requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns((string?)null);
 
         SetupInnerHandler(HttpStatusCode.OK);
 
@@ -43,28 +40,7 @@ public class CredentialsHandlerTests
         await invoker.SendAsync(request, CancellationToken.None);
 
         // Assert
-        _authServiceMock.Verify(x => x.InitializeAsync(), Times.Once);
-    }
-
-    [Fact]
-    public async Task SendAsync_CallsSetClientCookieAsync()
-    {
-        // Arrange
-        var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/test");
-
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.SetClientCookieAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(false);
-
-        SetupInnerHandler(HttpStatusCode.OK);
-
-        var invoker = new HttpMessageInvoker(_handler);
-
-        // Act
-        await invoker.SendAsync(request, CancellationToken.None);
-
-        // Assert
-        _authServiceMock.Verify(x => x.SetClientCookieAsync(), Times.Once);
+        _requestAuthenticationServiceMock.Verify(x => x.ConnectionId, Times.Once);
     }
 
     [Fact]
@@ -74,10 +50,8 @@ public class CredentialsHandlerTests
         var token = "test-jwt-token-123";
         var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/test");
 
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.SetClientCookieAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns(token);
+        _requestAuthenticationServiceMock.Setup(x => x.Token).Returns(token);
+        _requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns((string?)null);
 
         SetupInnerHandler(HttpStatusCode.OK);
 
@@ -98,9 +72,7 @@ public class CredentialsHandlerTests
         // Arrange
         var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/test");
 
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.SetClientCookieAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(false);
+        _requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns((string?)null);
 
         SetupInnerHandler(HttpStatusCode.OK);
 
@@ -114,15 +86,14 @@ public class CredentialsHandlerTests
     }
 
     [Fact]
-    public async Task SendAsync_WhenTokenIsNull_DoesNotAddToken()
+    public async Task SendAsync_ForPrivateMessages_AddsConnectionIdHeader()
     {
         // Arrange
-        var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/test");
+        var connectionId = "test-connection-123";
+        var request = new HttpRequestMessage(HttpMethod.Get,
+            "https://api.test.com/api/private-messages/user123/unread-count");
 
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.SetClientCookieAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns((string?)null);
+        _requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns(connectionId);
 
         SetupInnerHandler(HttpStatusCode.OK);
 
@@ -132,18 +103,21 @@ public class CredentialsHandlerTests
         await invoker.SendAsync(request, CancellationToken.None);
 
         // Assert
-        Assert.Null(request.Headers.Authorization);
+        Assert.True(request.Headers.Contains("X-ConnectionId"));
+        Assert.Equal(connectionId, request.Headers.GetValues("X-ConnectionId").First());
     }
 
     [Fact]
-    public async Task SendAsync_SetsBrowserRequestCredentialsToInclude()
+    public async Task SendAsync_WithBothTokenAndConnectionId_AddsBoth()
     {
         // Arrange
-        var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/test");
+        var token = "test-token";
+        var connectionId = "test-connection";
+        var request = new HttpRequestMessage(HttpMethod.Get,
+            "https://api.test.com/api/private-messages/user123/unread-count");
 
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.SetClientCookieAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(false);
+        _requestAuthenticationServiceMock.Setup(x => x.Token).Returns(token);
+        _requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns(connectionId);
 
         SetupInnerHandler(HttpStatusCode.OK);
 
@@ -153,12 +127,10 @@ public class CredentialsHandlerTests
         await invoker.SendAsync(request, CancellationToken.None);
 
         // Assert
-        // Vérifier que l'option "credentials" est définie
-#pragma warning disable CS0252 // Possible unintended reference comparison; left hand side needs cast
-        Assert.Contains(request.Options, option => option.Key == "WebAssemblyFetchOptions"
-            && option.Value is IDictionary<string, object> values
-            && values["credentials"] == "include");
-#pragma warning restore CS0252 // Possible unintended reference comparison; left hand side needs cast
+        Assert.NotNull(request.Headers.Authorization);
+        Assert.Equal(token, request.Headers.Authorization.Parameter);
+        Assert.True(request.Headers.Contains("X-ConnectionId"));
+        Assert.Equal(connectionId, request.Headers.GetValues("X-ConnectionId").First());
     }
 
     [Fact]
@@ -167,9 +139,7 @@ public class CredentialsHandlerTests
         // Arrange
         var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/test");
 
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.SetClientCookieAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(false);
+        _requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns((string?)null);
 
         SetupInnerHandler(HttpStatusCode.OK);
 
@@ -185,92 +155,6 @@ public class CredentialsHandlerTests
             Times.Once(),
             ItExpr.IsAny<HttpRequestMessage>(),
             ItExpr.IsAny<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task SendAsync_WhenInitializeFails_PropagatesException()
-    {
-        // Arrange
-        var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/test");
-
-        _authServiceMock.Setup(x => x.InitializeAsync())
-            .ThrowsAsync(new InvalidOperationException("Init failed"));
-
-        var invoker = new HttpMessageInvoker(_handler);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => invoker.SendAsync(request, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task SendAsync_WhenSetClientCookieFails_PropagatesException()
-    {
-        // Arrange
-        var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/test");
-
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.SetClientCookieAsync())
-            .ThrowsAsync(new HttpRequestException("Cookie failed"));
-
-        var invoker = new HttpMessageInvoker(_handler);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<HttpRequestException>(
-            () => invoker.SendAsync(request, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task SendAsync_ExecutesInCorrectOrder()
-    {
-        // Arrange
-        var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/test");
-        var callOrder = new List<string>();
-
-        _authServiceMock.Setup(x => x.InitializeAsync())
-            .Callback(() => callOrder.Add("Initialize"))
-            .Returns(Task.CompletedTask);
-
-        _authServiceMock.Setup(x => x.SetClientCookieAsync())
-            .Callback(() => callOrder.Add("SetCookie"))
-            .Returns(Task.CompletedTask);
-
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("token");
-
-        SetupInnerHandler(HttpStatusCode.OK, () => callOrder.Add("SendRequest"));
-
-        var invoker = new HttpMessageInvoker(_handler);
-
-        // Act
-        await invoker.SendAsync(request, CancellationToken.None);
-
-        // Assert
-        Assert.Equal(_expected, callOrder);
-    }
-
-    [Theory]
-    [InlineData("https://api.test.com/private-messages")]
-    [InlineData("https://api.test.com/channels")]
-    [InlineData("https://api.test.com/messages")]
-    public async Task SendAsync_WorksWithDifferentUrls(string url)
-    {
-        // Arrange
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.SetClientCookieAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(false);
-
-        SetupInnerHandler(HttpStatusCode.OK);
-
-        var invoker = new HttpMessageInvoker(_handler);
-
-        // Act
-        var response = await invoker.SendAsync(request, CancellationToken.None);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     private void SetupInnerHandler(HttpStatusCode statusCode, Action? callback = null)

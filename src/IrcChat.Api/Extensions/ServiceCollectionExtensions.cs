@@ -44,8 +44,7 @@ public static class ServiceCollectionExtensions
             .Configure<AutoMuteOptions>(
                 configuration.GetSection(AutoMuteOptions.SectionName));
 
-        services.AddTransient<IClientCookieService, ClientCookieService>()
-            .AddScoped<OAuthService>()
+        services.AddScoped<OAuthService>()
             .AddSignalR();
 
         services.AddHostedService<ConnectionManagerService>()
@@ -139,12 +138,8 @@ public static class ServiceCollectionExtensions
                         if (httpContext?.Request.RouteValues.TryGetValue("userId", out var channelNameObj) == true &&
                             channelNameObj is string userId)
                         {
-                            var cookie = httpContext.Request.Cookies["ircchat_client_id"];
-                            if (string.IsNullOrEmpty(cookie))
-                            {
-                                return false;
-                            }
-                            var requirement = new UserIdMatchRequirement(userId, cookie);
+                            var connectionId = httpContext.Request.Headers["x-ConnectionId"];
+                            var requirement = new UserIdMatchRequirement(userId, connectionId);
                             // Obtenir l'authorization service et exécuter le handler
                             var authorizationService = httpContext.RequestServices.GetRequiredService<IAuthorizationService>();
                             var result = await authorizationService.AuthorizeAsync(context.User, httpContext, requirement);
