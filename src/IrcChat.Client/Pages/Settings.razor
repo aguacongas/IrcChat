@@ -252,7 +252,7 @@ else
 
     private void GoToReserve()
     {
-        Navigation.NavigateToRelative($"reserve?username={Uri.EscapeDataString(Auth.Username ?? "")}");
+        Navigation.NavigateToRelative($"reserve?username={Uri.EscapeDataString(Auth.Username ?? string.Empty)}");
     }
 
     private void OpenAdminPanel()
@@ -272,7 +272,7 @@ else
             return;
         }
 
-        channelMessage = "";
+        channelMessage = string.Empty;
         channelError = false;
 
         var channel = new Channel
@@ -281,7 +281,7 @@ else
             Description = string.IsNullOrWhiteSpace(newChannelDescription)
                 ? null
                 : newChannelDescription.Trim(),
-            CreatedBy = Auth.Username ?? ""
+            CreatedBy = Auth.Username ?? string.Empty
         };
 
         try

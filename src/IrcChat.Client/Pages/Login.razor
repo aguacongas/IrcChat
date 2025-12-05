@@ -108,8 +108,8 @@ else
 }
 
 @code {
-    private string username = "";
-    private string errorMessage = "";
+    private string username = string.Empty;
+    private string errorMessage = string.Empty;
     private bool isInitialized = false;
     private bool isChecking = false;
     private UsernameCheckResponse? usernameStatus = null;
@@ -130,16 +130,16 @@ else
         // Pré-remplir avec le pseudo mémorisé
         if (Auth.HasUsername)
         {
-            username = Auth.Username ?? "";
+            username = Auth.Username ?? string.Empty;
             await CheckUsername();
         }
     }
 
     private void OnUsernameInput(ChangeEventArgs e)
     {
-        username = e.Value?.ToString() ?? "";
+        username = e.Value?.ToString() ?? string.Empty;
         usernameStatus = null;
-        errorMessage = "";
+        errorMessage = string.Empty;
 
         if (string.IsNullOrWhiteSpace(username) || username.Length < 3)
         {
@@ -208,9 +208,9 @@ else
         // Permet de saisir un autre pseudo sans oublier le réservé
         // Nettoie juste l'affichage temporaire
         await Auth.ClearAllAsync();
-        username = "";
+        username = string.Empty;
         usernameStatus = null;
-        errorMessage = "";
+        errorMessage = string.Empty;
         StateHasChanged();
     }
     

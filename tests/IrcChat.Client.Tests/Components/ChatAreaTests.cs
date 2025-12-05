@@ -36,7 +36,7 @@ public class ChatAreaTests : BunitContext
         // Arrange & Act
         var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
-            .Add(p => p.CurrentChannel, "")
+            .Add(p => p.CurrentChannel, string.Empty)
             .Add(p => p.IsConnected, false)
             .Add(p => p.UsersListOpen, false));
 
@@ -296,7 +296,7 @@ public class ChatAreaTests : BunitContext
     public async Task ChatArea_MessageInput_WhenMessageSent_ShouldInvokeCallback()
     {
         // Arrange
-        var messageSent = "";
+        var messageSent = string.Empty;
 
         var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
@@ -370,7 +370,7 @@ public class ChatAreaTests : BunitContext
         _mockHttp.When(HttpMethod.Delete, "*/api/channels/general")
             .Respond(System.Net.HttpStatusCode.OK);
 
-        var deletedChannel = "";
+        var deletedChannel = string.Empty;
 
         var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
@@ -422,7 +422,7 @@ public class ChatAreaTests : BunitContext
         // Arrange & Act
         var cut = Render<ChatArea>(parameters => parameters
             .Add(p => p.Username, "TestUser")
-            .Add(p => p.CurrentChannel, "")
+            .Add(p => p.CurrentChannel, string.Empty)
             .Add(p => p.IsConnected, false)
             .Add(p => p.UsersListOpen, false));
 

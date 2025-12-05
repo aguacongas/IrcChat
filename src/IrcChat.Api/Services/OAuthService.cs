@@ -19,8 +19,8 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
                 AuthorizationEndpoint = "https://accounts.google.com/o/oauth2/v2/auth",
                 TokenEndpoint = "https://oauth2.googleapis.com/token",
                 UserInfoEndpoint = "https://www.googleapis.com/oauth2/v2/userinfo",
-                ClientId = configuration["OAuth:Google:ClientId"] ?? "",
-                ClientSecret = configuration["OAuth:Google:ClientSecret"] ?? "",
+                ClientId = configuration["OAuth:Google:ClientId"] ?? string.Empty,
+                ClientSecret = configuration["OAuth:Google:ClientSecret"] ?? string.Empty,
                 Scope = "openid email profile"
             },
             ExternalAuthProvider.Facebook => new OAuthConfig
@@ -28,8 +28,8 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
                 AuthorizationEndpoint = "https://www.facebook.com/v18.0/dialog/oauth",
                 TokenEndpoint = "https://graph.facebook.com/v18.0/oauth/access_token",
                 UserInfoEndpoint = "https://graph.facebook.com/me",
-                ClientId = configuration["OAuth:Facebook:AppId"] ?? "",
-                ClientSecret = configuration["OAuth:Facebook:AppSecret"] ?? "",
+                ClientId = configuration["OAuth:Facebook:AppId"] ?? string.Empty,
+                ClientSecret = configuration["OAuth:Facebook:AppSecret"] ?? string.Empty,
                 Scope = "email public_profile"
             },
             ExternalAuthProvider.Microsoft => new OAuthConfig
@@ -37,8 +37,8 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
                 AuthorizationEndpoint = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize",
                 TokenEndpoint = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
                 UserInfoEndpoint = "https://graph.microsoft.com/v1.0/me",
-                ClientId = configuration["OAuth:Microsoft:ClientId"] ?? "",
-                ClientSecret = configuration["OAuth:Microsoft:ClientSecret"] ?? "",
+                ClientId = configuration["OAuth:Microsoft:ClientId"] ?? string.Empty,
+                ClientSecret = configuration["OAuth:Microsoft:ClientSecret"] ?? string.Empty,
                 Scope = "openid email profile User.Read"
             },
             _ => throw new ArgumentException($"Provider {provider} not supported")
@@ -80,7 +80,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
 
             return new OAuthTokenResponse
             {
-                AccessToken = tokenData.GetProperty("access_token").GetString() ?? "",
+                AccessToken = tokenData.GetProperty("access_token").GetString() ?? string.Empty,
                 RefreshToken = tokenData.TryGetProperty("refresh_token", out var rt) ? rt.GetString() : null,
                 IdToken = tokenData.TryGetProperty("id_token", out var it) ? it.GetString() : null,
                 ExpiresIn = tokenData.TryGetProperty("expires_in", out var exp) ? exp.GetInt32() : 3600,
@@ -137,8 +137,8 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
 
         return new ExternalUserInfo
         {
-            Id = data.GetProperty("id").GetString() ?? "",
-            Email = data.GetProperty("email").GetString() ?? "",
+            Id = data.GetProperty("id").GetString() ?? string.Empty,
+            Email = data.GetProperty("email").GetString() ?? string.Empty,
             Name = data.TryGetProperty("name", out var name) ? name.GetString() : null,
             AvatarUrl = data.TryGetProperty("picture", out var picture) ? picture.GetString() : null
         };
@@ -159,8 +159,8 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
 
         return new ExternalUserInfo
         {
-            Id = data.GetProperty("id").GetString() ?? "",
-            Email = data.TryGetProperty("email", out var email) ? email.GetString() ?? "" : "",
+            Id = data.GetProperty("id").GetString() ?? string.Empty,
+            Email = data.TryGetProperty("email", out var email) ? email.GetString() ?? string.Empty : string.Empty,
             Name = data.TryGetProperty("name", out var name) ? name.GetString() : null,
             AvatarUrl = data.TryGetProperty("picture", out var pic)
                 ? pic.GetProperty("data").GetProperty("url").GetString()
@@ -185,10 +185,10 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
 
         return new ExternalUserInfo
         {
-            Id = data.GetProperty("id").GetString() ?? "",
+            Id = data.GetProperty("id").GetString() ?? string.Empty,
             Email = data.TryGetProperty("mail", out var mail)
-                ? mail.GetString() ?? ""
-                : data.GetProperty("userPrincipalName").GetString() ?? "",
+                ? mail.GetString() ?? string.Empty
+                : data.GetProperty("userPrincipalName").GetString() ?? string.Empty,
             Name = data.TryGetProperty("displayName", out var displayName) ? displayName.GetString() : null,
             AvatarUrl = null
         };

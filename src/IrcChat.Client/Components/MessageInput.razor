@@ -14,7 +14,7 @@
             <div class="autocomplete-dropdown">
                 @foreach (var (user, index) in filteredUsers.Select((u, i) => (u, i)))
                 {
-                    <div class="autocomplete-item @(index == selectedUserIndex ? "selected" : "")"
+                    <div class="autocomplete-item @(index == selectedUserIndex ? "selected" : string.Empty)"
                          @onclick="() => SelectUser(user.Username)"
                          @onmouseenter="() => selectedUserIndex = index">
                         <span class="autocomplete-username">@user.Username</span>

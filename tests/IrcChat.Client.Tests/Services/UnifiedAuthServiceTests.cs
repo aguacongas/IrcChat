@@ -557,7 +557,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((string?)null);
 
-        var savedData = "";
+        var savedData = string.Empty;
         _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
@@ -566,7 +566,7 @@ public class UnifiedAuthServiceCompleteTests
             {
                 if (args.Length == 2 && args[0]?.ToString() == "ircchat_unified_auth")
                 {
-                    savedData = args[1]?.ToString() ?? "";
+                    savedData = args[1]?.ToString() ?? string.Empty;
                 }
             })
             .ReturnsAsync((IJSVoidResult)null!);
@@ -595,7 +595,7 @@ public class UnifiedAuthServiceCompleteTests
                 It.IsAny<object[]>()))
             .ReturnsAsync((string?)null);
 
-        var savedData = "";
+        var savedData = string.Empty;
         _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>(
                 "localStorageHelper.setItem",
@@ -604,7 +604,7 @@ public class UnifiedAuthServiceCompleteTests
             {
                 if (args.Length == 2 && args[0]?.ToString() == "ircchat_unified_auth")
                 {
-                    savedData = args[1]?.ToString() ?? "";
+                    savedData = args[1]?.ToString() ?? string.Empty;
                 }
             })
             .ReturnsAsync((IJSVoidResult)null!);

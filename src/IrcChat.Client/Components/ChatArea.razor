@@ -36,6 +36,8 @@
                 }
             </div>
             <div class="header-right">
+                <GlobalFilterButton FilterText="@globalFilterText"
+                                    FilterTextChanged="HandleGlobalFilterChanged" />
                 @if (IsPrivateConversation)
                 {
                     <button class="close-btn" @onclick="OnClosePrivateConversation" title="Fermer la conversation">
@@ -162,8 +164,21 @@
     [Parameter]
     public EventCallback OnChannelUpdated { get; set; }
 
+    [Parameter]
+    public string GlobalFilterText { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> OnGlobalFilterChanged { get; set; }
+
     private bool showEditModal = false;
 
+    private string globalFilterText = string.Empty;
+
+    private async Task HandleGlobalFilterChanged(string filterText)
+    {
+        globalFilterText = filterText;
+        await OnGlobalFilterChanged.InvokeAsync(filterText);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -171,13 +186,7 @@
         {
             await FocusInputAsync();
         }
-    }
-
-    protected override async Task OnParametersSetAsync()
-    {
-        // Focus sur l'input quand on change de canal ou de conversation
-        await FocusInputAsync();
-    }
+    }    
 
     private async Task FocusInputAsync()
     {

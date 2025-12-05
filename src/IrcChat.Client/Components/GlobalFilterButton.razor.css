@@ -1,0 +1,115 @@
+/* src/IrcChat.Client/Components/GlobalFilterButton.razor.css */
+
+.global-filter-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.filter-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background: #6e6e6e;
+  border: 2px solid #8ab4f8;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+  .filter-toggle-btn:hover {
+    background: #8e8e8e;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(138, 180, 248, 0.3);
+  }
+
+  .filter-toggle-btn:active {
+    transform: translateY(0);
+  }
+
+  .filter-toggle-btn.active {
+    background: #8ab4f8;
+    color: #000;
+  }
+
+    .filter-toggle-btn.active:hover {
+      background: #9cc5ff;
+    }
+
+.filter-input {
+  width: 0;
+  opacity: 0;
+  padding: 10px 14px;
+  background: #1e1e1e;
+  border: 2px solid #8ab4f8;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: absolute;
+  right: 50px;
+  pointer-events: none;
+}
+
+  .filter-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.2);
+  }
+
+  .filter-input::placeholder {
+    color: #888;
+  }
+
+.global-filter-container.expanded .filter-input {
+  width: 200px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Animation pour le bouton actif */
+.filter-toggle-btn.active svg {
+  animation: pulse-search 2s ease-in-out infinite;
+}
+
+@keyframes pulse-search {
+  0%, 100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .filter-toggle-btn {
+    padding: 10px 14px;
+  }
+
+  .global-filter-container.expanded .filter-input {
+    width: 150px;
+    right: 45px;
+  }
+}
+
+@media (max-width: 480px) {
+  .filter-toggle-btn {
+    padding: 8px 12px;
+  }
+
+  .filter-input {
+    font-size: 13px;
+  }
+
+  .global-filter-container.expanded .filter-input {
+    width: 120px;
+    right: 42px;
+  }
+}

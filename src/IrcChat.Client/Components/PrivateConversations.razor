@@ -15,7 +15,7 @@
         <ul class="conversation-list">
             @foreach (var conv in Conversations)
             {
-                <li class="@(conv.OtherUser!.UserId == SelectedUser?.UserId ? "active" : "")"
+                <li class="@(conv.OtherUser!.UserId == SelectedUser?.UserId ? "active" : string.Empty)"
                     @onclick="() => OnConversationSelected.InvokeAsync(conv.OtherUser)">
                     <div class="conversation-item">
                         <div class="conversation-info">

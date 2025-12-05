@@ -15,28 +15,28 @@ public partial class AddUserIdToConnectedUsersAndPrivateMessages : Migration
             table: "PrivateMessages",
             type: "text",
             nullable: false,
-            defaultValue: "");
+            defaultValue: string.Empty);
 
         migrationBuilder.AddColumn<string>(
             name: "SenderUserId",
             table: "PrivateMessages",
             type: "text",
             nullable: false,
-            defaultValue: "");
+            defaultValue: string.Empty);
 
         migrationBuilder.AddColumn<string>(
             name: "UserId",
             table: "Messages",
             type: "text",
             nullable: false,
-            defaultValue: "");
+            defaultValue: string.Empty);
 
         migrationBuilder.AddColumn<string>(
             name: "UserId",
             table: "ConnectedUsers",
             type: "text",
             nullable: false,
-            defaultValue: "");
+            defaultValue: string.Empty);
     }
 
     /// <inheritdoc />

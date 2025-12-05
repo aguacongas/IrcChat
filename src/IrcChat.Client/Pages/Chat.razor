@@ -50,9 +50,9 @@ else
                  IsOAuthUser="@Auth.IsReserved"
                  IsAdmin="@Auth.IsAdmin"
                  CurrentChannel="@currentChannel"
-                 Channels="@channels"
-                 Users="@users"
-                 PrivateConversations="@privateConversations"
+                 Channels="@filteredChannels"
+                 Users="@filteredUsers"
+                 PrivateConversations="@filteredPrivateConversations"
                  SelectedPrivateUser="@selectedPrivateUser"
                  OnChannelSelected="SwitchChannel"
                  OnUserClicked="StartPrivateChat"
@@ -77,19 +77,21 @@ else
                       ChannelDescription="@currentChannelDescription"
                       IsConnected="@IsConnected"
                       Messages="@GetCurrentMessages()"
-                      Users="@(isPrivateConversation ? null : users)"
+                      Users="@(isPrivateConversation ? null : filteredUsers)"
                       IsMuted="@isCurrentChannelMuted"
                       CanManage="@CanManageCurrentChannel()"
                       UsersListOpen="@usersListOpen"
                       IsPrivateConversation="@isPrivateConversation"
                       IsUserOnline="@isSelectedUserOnline"
+                      GlobalFilterText="@globalFilterText"
                       OnMessageSent="@(isPrivateConversation ? SendPrivateMessage : SendMessage)"
                       OnUserClicked="HandleUserClicked"
                       OnMuteStatusChanged="HandleMuteStatusChanged"
                       OnClosePrivateConversation="ClosePrivateChat"
                       OnChannelDeleted="HandleChannelDeleted"
                       OnUsersListToggle="HandleUsersListToggle"
-                      OnChannelUpdated="HandleChannelUpdated" />
+                      OnChannelUpdated="HandleChannelUpdated"                      
+                      OnGlobalFilterChanged="HandleGlobalFilterChanged" />
         }
     </div>
 
@@ -138,15 +140,15 @@ else
 
     private string? currentChannel = null;
     private string? currentChannelDescription = null;
-    private string currentUsername = "";
-    private string currentUserId = "";
+    private string currentUsername = string.Empty;
+    private string currentUserId = string.Empty;
     private string? avatarUrl = null;
     private List<Message> messages = new();
     private List<Channel> channels = new();
     private List<User> users = new();
     private bool isInitialized = false;
     private bool isCurrentChannelMuted = false;
-    private string muteNotification = "";
+    private string muteNotification = string.Empty;
     private bool sidebarOpen = false;
     private bool usersListOpen = false;
     private int totalUnreadCount => privateConversations.Sum(c => c.UnreadCount);
@@ -154,8 +156,8 @@ else
     private bool isApplyingRoute = false;
 
     // Notifications de connexion
-    private string connectionNotification = "";
-    private string connectionNotificationClass = "";
+    private string connectionNotification = string.Empty;
+    private string connectionNotificationClass = string.Empty;
     private ConnectionNotificationType connectionNotificationType = ConnectionNotificationType.None;    
 
     // Messages privés
@@ -167,6 +169,12 @@ else
 
     private bool IsConnected => ChatService.IsInitialized;
 
+    private string globalFilterText = string.Empty;
+
+    // Listes filtrées
+    private List<Channel> filteredChannels => FilterChannels(channels);
+    private List<User> filteredUsers => FilterUsers(users);
+    private List<PrivateConversation> filteredPrivateConversations => FilterConversations(privateConversations);
 
     protected override async Task OnInitializedAsync()
     {
@@ -413,7 +421,7 @@ else
             ConnectionNotificationType.Disconnected => "error",
             ConnectionNotificationType.Reconnecting => "warning",
             ConnectionNotificationType.Reconnected => "success",
-            _ => ""
+            _ => string.Empty
         };
 
         StateHasChanged();
@@ -426,7 +434,7 @@ else
                 await Task.Delay(4000);
                 await InvokeAsync(() =>
                 {
-                    connectionNotification = "";
+                    connectionNotification = string.Empty;
                     connectionNotificationType = ConnectionNotificationType.None;
                     StateHasChanged();
                 });
@@ -483,7 +491,7 @@ else
         {
             StateHasChanged();
             await Task.Delay(4000);
-            muteNotification = "";
+            muteNotification = string.Empty;
             StateHasChanged();
         });
     }
@@ -544,7 +552,7 @@ else
         {
             StateHasChanged();
             await Task.Delay(4000);
-            muteNotification = "";
+            muteNotification = string.Empty;
             StateHasChanged();
         });
     }
@@ -653,7 +661,7 @@ else
             muteNotification = $"Impossible de quitter le salon {channelName}";
             StateHasChanged();
             await Task.Delay(4000);
-            muteNotification = "";
+            muteNotification = string.Empty;
             StateHasChanged();
         }
     }
@@ -1104,7 +1112,7 @@ else
 
     private string? GetCurrentChannelOrUsername()
     {
-        return isPrivateConversation ? selectedPrivateUser?.Username ?? "" : currentChannel;
+        return isPrivateConversation ? selectedPrivateUser?.Username ?? string.Empty : currentChannel;
     }
 
     private List<Message> GetCurrentMessages()
@@ -1208,6 +1216,56 @@ else
         }
 
         return "chat-area-default";
+    }
+
+    // Méthode de filtrage pour les salons
+    private List<Channel> FilterChannels(List<Channel> channelList)
+    {
+        if (string.IsNullOrWhiteSpace(globalFilterText))
+        {
+            return channelList;
+        }
+
+        var query = globalFilterText.ToLower();
+        return channelList
+            .Where(c => c.Name.ToLower().Contains(query))
+            .ToList();
+    }
+
+    // Méthode de filtrage pour les utilisateurs
+    private List<User> FilterUsers(List<User> userList)
+    {
+        if (string.IsNullOrWhiteSpace(globalFilterText))
+        {
+            return userList;
+        }
+
+        var query = globalFilterText.ToLower();
+        return userList
+            .Where(u => u.Username.ToLower().Contains(query))
+            .ToList();
+    }
+
+    // Méthode de filtrage pour les conversations privées
+    private List<PrivateConversation> FilterConversations(List<PrivateConversation> conversationList)
+    {
+        if (string.IsNullOrWhiteSpace(globalFilterText))
+        {
+            return conversationList;
+        }
+
+        var query = globalFilterText.ToLower();
+        return conversationList
+            .Where(c => c.OtherUser != null &&
+                       c.OtherUser.Username.ToLower().Contains(query))
+            .ToList();
+    }
+
+    // Handler pour le changement de filtre
+    private void HandleGlobalFilterChanged(string filterText)
+    {
+        globalFilterText = filterText;
+        StateHasChanged();
     }
 
     public ValueTask DisposeAsync()
