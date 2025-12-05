@@ -21,6 +21,7 @@ public partial class ChatTests : BunitContext
     private readonly Mock<IDeviceDetectorService> deviceDetectorMock;
     private readonly Mock<IIgnoredUsersService> ignoredUsersServiceMock;
     private readonly Mock<IActiveChannelsService> activeChannelsServiceMock;
+    private readonly Mock<IChannelUnreadCountService> channelUnreadCountServiceMock;
     private readonly MockHttpMessageHandler mockHttp;
     private readonly NavigationManager navManager;
 
@@ -33,6 +34,7 @@ public partial class ChatTests : BunitContext
         deviceDetectorMock = new Mock<IDeviceDetectorService>();
         ignoredUsersServiceMock = new Mock<IIgnoredUsersService>();
         activeChannelsServiceMock = new Mock<IActiveChannelsService>();
+        channelUnreadCountServiceMock = new Mock<IChannelUnreadCountService>();
 
         deviceDetectorMock.Setup(x => x.IsMobileDeviceAsync()).ReturnsAsync(false);
         ignoredUsersServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
@@ -48,6 +50,7 @@ public partial class ChatTests : BunitContext
         Services.AddSingleton(deviceDetectorMock.Object);
         Services.AddSingleton(ignoredUsersServiceMock.Object);
         Services.AddSingleton(activeChannelsServiceMock.Object);
+        Services.AddSingleton(channelUnreadCountServiceMock.Object);
 
         Services.AddSingleton(httpClient);
         Services.Configure<ApiSettings>(s =>

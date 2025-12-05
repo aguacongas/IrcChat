@@ -1,11 +1,21 @@
 // tests/IrcChat.Client.Tests/Components/SidebarTests.cs
 using IrcChat.Client.Components;
+using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace IrcChat.Client.Tests.Components;
 
 public class SidebarTests : BunitContext
 {
+    private readonly Mock<IChannelUnreadCountService> _channelUnreadCountServiceMock;
+    public SidebarTests()
+    {
+        _channelUnreadCountServiceMock = new Mock<IChannelUnreadCountService>();
+
+        Services.AddSingleton(_channelUnreadCountServiceMock.Object);
+    }
+
     [Fact]
     public void Sidebar_WhenOpen_ShouldHaveOpenClass()
     {
