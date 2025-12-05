@@ -579,6 +579,41 @@ Les ratios minimum requis sont :
 }
 ```
 
+### Inputs et Layout Flex
+
+⚠️ **CRITIQUE : Toujours appliquer les règles suivantes pour éviter les dépassements d’input dans un layout flex**
+
+- Containers : `display: flex; align-items: center; gap: 10px;`
+- Wrappers : `flex: 1 1 auto; min-width: 0;`
+- Inputs : `width: 100%; box-sizing: border-box; flex: 1 1 auto; min-width: 0;`
+- Boutons : `flex-shrink: 0;`
+- Responsive : en dessous de 600px → `flex-direction: column; width: 100%`
+
+**Exemple correct :**
+```css
+.input-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.input-wrapper {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.input-area input {
+  width: 100%;
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.input-area button {
+  flex-shrink: 0;
+}
+
+
 ## Conventions JavaScript à respecter
 
 ### Utilisation de globalThis

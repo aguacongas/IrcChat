@@ -85,9 +85,9 @@ else
 }
 
 @code {
-    private string usernameToReserve = "";
+    private string usernameToReserve = string.Empty;
     private bool isInitialized = false;
-    private string errorMessage = "";
+    private string errorMessage = string.Empty;
     private Guid? clientUserId;
 
     [SupplyParameterFromQuery(Name = "username")]
@@ -99,7 +99,7 @@ else
         {
             await Auth.InitializeAsync();
 
-            usernameToReserve = UsernameParam ?? "";
+            usernameToReserve = UsernameParam ?? string.Empty;
 
             if (string.IsNullOrEmpty(usernameToReserve))
             {

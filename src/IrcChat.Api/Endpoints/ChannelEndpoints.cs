@@ -18,7 +18,7 @@ public static class ChannelEndpoints
             .WithTags("Channels");
 
         // GET endpoints
-        group.MapGet("", GetChannelsAsync)
+        group.MapGet(string.Empty, GetChannelsAsync)
             .WithName("GetChannels")
             .WithDescription("Récupère tous les salons avec le nombre d'utilisateurs connectés");
 
@@ -31,7 +31,7 @@ public static class ChannelEndpoints
             .WithDescription("Récupère les utilisateurs connectés à un salon");
 
         // POST endpoints
-        group.MapPost("", CreateChannelAsync)
+        group.MapPost(string.Empty, CreateChannelAsync)
             .RequireAuthorization(AuthorizationPolicies.IsReserved)
             .WithName("CreateChannel")
             .WithDescription("Crée un nouveau salon (réservé aux utilisateurs réservés)");

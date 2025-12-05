@@ -15,7 +15,7 @@ public partial class ChannelCreatedByMigration : Migration
             table: "Channels",
             type: "text",
             nullable: false,
-            defaultValue: "");
+            defaultValue: string.Empty);
     }
 
     /// <inheritdoc />

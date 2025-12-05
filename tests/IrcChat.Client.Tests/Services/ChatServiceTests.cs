@@ -1248,7 +1248,7 @@ public class ChatServiceTests : BunitContext
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
         // Act
-        await onUserMuted!(["", "alice-id", "Alice", "admin-id", "Admin"], onUserMutedState!);
+        await onUserMuted!([string.Empty, "alice-id", "Alice", "admin-id", "Admin"], onUserMutedState!);
 
         // Assert
         Assert.True(eventTriggered);
@@ -1284,7 +1284,7 @@ public class ChatServiceTests : BunitContext
         await service.InitializeAsync(hubConnectionBuilderMock.Object);
 
         // Act
-        await onUserUnmuted!(["", "alice-id", "Alice", "admin-id", "Admin"], onUserUnmutedState!);
+        await onUserUnmuted!([string.Empty, "alice-id", "Alice", "admin-id", "Admin"], onUserUnmutedState!);
 
         // Assert
         Assert.True(eventTriggered);

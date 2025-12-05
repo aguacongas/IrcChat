@@ -154,7 +154,7 @@ public sealed class ActiveChannelsServiceTests
             .ReturnsAsync((string?)null);
 
         // Act
-        await _service.AddChannelAsync("");
+        await _service.AddChannelAsync(string.Empty);
         await _service.AddChannelAsync("   ");
 
         var channels = await _service.GetActiveChannelsAsync();

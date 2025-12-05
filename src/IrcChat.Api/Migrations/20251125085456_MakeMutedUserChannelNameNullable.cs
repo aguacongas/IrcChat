@@ -27,7 +27,7 @@ public partial class MakeMutedUserChannelNameNullable : Migration
             table: "MutedUsers",
             type: "text",
             nullable: false,
-            defaultValue: "",
+            defaultValue: string.Empty,
             oldClrType: typeof(string),
             oldType: "text",
             oldNullable: true);

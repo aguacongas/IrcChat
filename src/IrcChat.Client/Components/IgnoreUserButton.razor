@@ -4,7 +4,7 @@
 @inject ILogger<IgnoreUserButton> Logger
 @implements IDisposable
 
-<button class="ignore-user-button @(IsIgnored ? "ignored" : "")"
+<button class="ignore-user-button @(IsIgnored ? "ignored" : string.Empty)"
         @onclick="HandleToggleIgnore"
         title="@(IsIgnored ? "Dés-ignorer cet utilisateur" : "Ignorer cet utilisateur")"
         type="button">

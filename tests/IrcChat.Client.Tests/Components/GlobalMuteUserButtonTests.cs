@@ -55,7 +55,7 @@ public class GlobalMuteUserButtonTests : BunitContext
 
         // Act
         var cut = Render<GlobalMuteUserButton>(parameters => parameters
-            .Add(p => p.UserId, ""));
+            .Add(p => p.UserId, string.Empty));
 
         // Assert
         Assert.Empty(cut.Markup);

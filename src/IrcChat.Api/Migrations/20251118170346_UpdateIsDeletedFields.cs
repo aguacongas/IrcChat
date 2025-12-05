@@ -11,10 +11,10 @@ public partial class UpdateIsDeletedFields : Migration
     protected override void Up(MigrationBuilder migrationBuilder)
     {
         migrationBuilder.Sql(@"
-                UPDATE ""PrivateMessages"" 
-                SET ""IsDeletedBySender"" = ""IsDeleted"", 
-                    ""IsDeletedByRecipient"" = ""IsDeleted""
-                WHERE ""IsDeleted"" = TRUE;
+                UPDATE string.EmptyPrivateMessagesstring.Empty 
+                SET string.EmptyIsDeletedBySenderstring.Empty = string.EmptyIsDeletedstring.Empty, 
+                    string.EmptyIsDeletedByRecipientstring.Empty = string.EmptyIsDeletedstring.Empty
+                WHERE string.EmptyIsDeletedstring.Empty = TRUE;
             ");
     }
 
@@ -22,9 +22,9 @@ public partial class UpdateIsDeletedFields : Migration
     protected override void Down(MigrationBuilder migrationBuilder)
     {
         migrationBuilder.Sql(@"
-                UPDATE ""PrivateMessages"" 
-                SET ""IsDeleted"" = TRUE
-                WHERE ""IsDeletedBySender"" = TRUE OR ""IsDeletedByRecipient"" = TRUE;
+                UPDATE string.EmptyPrivateMessagesstring.Empty 
+                SET string.EmptyIsDeletedstring.Empty = TRUE
+                WHERE string.EmptyIsDeletedBySenderstring.Empty = TRUE OR string.EmptyIsDeletedByRecipientstring.Empty = TRUE;
             ");
     }
 }

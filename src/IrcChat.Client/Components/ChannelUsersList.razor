@@ -13,7 +13,7 @@
         <ul class="users-list">
             @foreach (var user in Users!)
             {
-                <li class="user-item @(IgnoredUsersService.IsUserIgnored(user.UserId) ? "ignored" : "") @(user.Username == Username ? "current" : "")"
+                <li class="user-item @(IgnoredUsersService.IsUserIgnored(user.UserId) ? "ignored" : string.Empty) @(user.Username == Username ? "current" : string.Empty)"
                     @onclick="() => OnUserClicked.InvokeAsync(user)">
                     <span class="user-name">@user.Username</span>
 
@@ -160,7 +160,7 @@
         {
             var response = await HttpClient.PostAsJsonAsync(
                 $"/api/channels/{Uri.EscapeDataString(channelName)}/muted-users/{Uri.EscapeDataString(user.UserId)}",
-                new { reason = "" });
+                new { reason = string.Empty });
 
             if (response.IsSuccessStatusCode)
             {

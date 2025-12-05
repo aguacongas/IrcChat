@@ -297,7 +297,7 @@ public partial class ChatTests
         var cut = await RenderChatAsync();
         var initialUri = _navManager.Uri;
 
-        var emptyUser = new User { UserId = "", Username = "NoId" };
+        var emptyUser = new User { UserId = string.Empty, Username = "NoId" };
 
         // Act
         await StartPrivateChatFromSidebarAsync(cut, emptyUser);

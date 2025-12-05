@@ -166,7 +166,7 @@ public class ChannelMuteButtonTests : BunitContext
             .Respond(HttpStatusCode.OK);
 
         var cut = Render<ChannelMuteButton>(parameters => parameters
-            .Add(p => p.ChannelName, "")
+            .Add(p => p.ChannelName, string.Empty)
             .Add(p => p.IsMuted, false)
             .Add(p => p.CanManage, true));
 

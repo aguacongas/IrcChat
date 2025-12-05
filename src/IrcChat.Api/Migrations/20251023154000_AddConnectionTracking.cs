@@ -23,7 +23,7 @@ public partial class AddConnectionTracking : Migration
             table: "ConnectedUsers",
             type: "text",
             nullable: false,
-            defaultValue: "");
+            defaultValue: string.Empty);
     }
 
     /// <inheritdoc />

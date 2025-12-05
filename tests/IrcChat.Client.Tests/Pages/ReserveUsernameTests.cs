@@ -188,7 +188,7 @@ public class ReserveUsernameTests : BunitContext
         _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
         _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", ""));
+        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", string.Empty));
 
         // Act
         Render<ReserveUsername>();

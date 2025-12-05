@@ -204,7 +204,7 @@ public class ChannelDeleteButtonTests : BunitContext
             .Respond(HttpStatusCode.OK);
 
         var cut = Render<ChannelDeleteButton>(parameters => parameters
-            .Add(p => p.ChannelName, "")
+            .Add(p => p.ChannelName, string.Empty)
             .Add(p => p.CanManage, true));
 
         var deleteButton = cut.Find(".delete-btn");

@@ -1,0 +1,59 @@
+<div class="global-filter-container @(isExpanded ? "expanded" : string.Empty)">
+    <button class="filter-toggle-btn @(isActive ? "active" : string.Empty)"
+            @onclick="ToggleFilter"
+            title="@(isExpanded ? "Fermer le filtre" : "Filtrer")">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+        </svg>
+    </button>
+
+    @if (isExpanded)
+    {
+        <input @ref="filterInput"
+               type="text"
+               class="filter-input"
+               placeholder="Filtrer..."
+               @bind="FilterText"
+               @bind:event="oninput"
+               @onkeydown="HandleKeyDown"
+               @onkeyup="HandleKeyUp" />
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string FilterText { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> FilterTextChanged { get; set; }
+
+    private bool isExpanded = false;
+    private bool isActive => !string.IsNullOrEmpty(FilterText);
+    private ElementReference filterInput;
+
+    private async Task ToggleFilter()
+    {
+        isExpanded = !isExpanded;
+
+        if (isExpanded)
+        {
+            // Focus l'input après l'animation
+            await Task.Delay(100);
+            await filterInput.FocusAsync();
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            await ToggleFilter();
+        }
+    }
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        await FilterTextChanged.InvokeAsync(FilterText);
+    }
+}

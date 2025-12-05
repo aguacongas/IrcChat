@@ -14,7 +14,7 @@ public static class GlobalMuteEndpoints
             .WithTags("Admin - Global Mute")
             .RequireAuthorization(AuthorizationPolicies.IsAdmin);
 
-        group.MapGet("", GetGloballyMutedUsersAsync)
+        group.MapGet(string.Empty, GetGloballyMutedUsersAsync)
             .WithName("GetGloballyMutedUsers");
 
         group.MapPost("/{userId}", MuteUserGloballyAsync)

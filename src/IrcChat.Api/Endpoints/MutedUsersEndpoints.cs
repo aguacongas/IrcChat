@@ -18,7 +18,7 @@ public static class MutedUsersEndpoints
             .WithTags("Muted Users");
 
         // Obtenir la liste des utilisateurs mutés dans un salon (avec leurs infos)
-        group.MapGet("", GetMutedUsersAsync)
+        group.MapGet(string.Empty, GetMutedUsersAsync)
             .WithName("GetMutedUsers");
 
         // Muter un utilisateur (nécessite d'être créateur ou admin)

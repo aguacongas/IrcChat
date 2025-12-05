@@ -49,7 +49,7 @@
             <ul class="channel-list">
                 @foreach (var channelName in Channels.Select(c => c.Name))
                 {
-                    <li class="@(channelName == CurrentChannel ? "active" : "")">
+                    <li class="@(channelName == CurrentChannel ? "active" : string.Empty)">
                         <div class="channel-content" @onclick="() => OnChannelSelected.InvokeAsync(channelName)">
                             <span class="channel-hash">#</span>
                             <span class="channel-name">@channelName</span>

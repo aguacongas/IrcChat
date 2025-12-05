@@ -1,5 +1,5 @@
 @* src/IrcChat.Client/Components/SidebarToggleButton.razor *@
-<button class="sidebar-toggle-btn @(IsOpen ? "open" : "")" @onclick="Toggle" title="Menu">
+<button class="sidebar-toggle-btn @(IsOpen ? "open" : string.Empty)" @onclick="Toggle" title="Menu">
     <div class="hamburger">
         <span></span>
         <span></span>

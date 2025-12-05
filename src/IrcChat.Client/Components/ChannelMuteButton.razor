@@ -4,7 +4,7 @@
 <div class="channel-mute-control">
     @if (CanManage)
     {
-        <button class="mute-btn @(IsMuted ? "muted" : "")"
+        <button class="mute-btn @(IsMuted ? "muted" : string.Empty)"
                 @onclick="ToggleMute"
                 disabled="@isProcessing"
                 title="@(IsMuted ? "Activer le salon" : "Muter le salon")">

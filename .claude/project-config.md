@@ -3,6 +3,7 @@
 ## 🎯 Mode de fonctionnement : Socratic Method
 
 Claude utilise la **méthode socratique** pour ce projet :
+
 - **Poser des questions** avant de générer du code
 - **Clarifier** les spécifications vagues
 - **Présenter un plan** avant l'implémentation
@@ -13,6 +14,7 @@ Claude utilise la **méthode socratique** pour ce projet :
 Avant de générer du code, Claude DOIT poser ces questions si les réponses ne sont pas claires :
 
 ### 1. Scope et Architecture
+
 ```
 - Cette fonctionnalité concerne-t-elle :
   □ Backend (API) uniquement ?
@@ -32,6 +34,7 @@ Avant de générer du code, Claude DOIT poser ces questions si les réponses ne 
 ```
 
 ### 2. Spécifications fonctionnelles
+
 ```
 - Scénarios utilisateur concrets :
   □ Qui fait quoi dans quel contexte ?
@@ -50,6 +53,7 @@ Avant de générer du code, Claude DOIT poser ces questions si les réponses ne 
 ```
 
 ### 3. Authorization et Sécurité
+
 ```
 - Qui peut exécuter cette action ?
   □ Tous les utilisateurs authentifiés ?
@@ -70,6 +74,7 @@ Avant de générer du code, Claude DOIT poser ces questions si les réponses ne 
 ```
 
 ### 4. Tests requis
+
 ```
 - Scénarios de test prioritaires :
   □ Happy path (fonctionnement normal)
@@ -91,6 +96,7 @@ Avant de générer du code, Claude DOIT poser ces questions si les réponses ne 
 ```
 
 ### 5. Contraintes techniques
+
 ```
 - Performance :
   □ Temps de réponse maximum ?
@@ -110,6 +116,7 @@ Avant de générer du code, Claude DOIT poser ces questions si les réponses ne 
 ```
 
 ### 6. SignalR et Temps Réel (si applicable)
+
 ```
 - Communication temps réel :
   □ Quels événements doivent être broadcastés ?
@@ -195,6 +202,7 @@ Claude génère :
 ```
 
 **Standards à respecter automatiquement :**
+
 - ✅ Constructeurs primaires
 - ✅ Accolades pour tous les blocs
 - ✅ ILogger au lieu de Console.WriteLine
@@ -244,35 +252,42 @@ dotnet test --collect:"XPlat Code Coverage"
 ```
 
 **Prochaines étapes suggérées :**
+
 - [ ] Tester manuellement les scénarios
 - [ ] Vérifier SonarCloud après push
 - [ ] Mettre à jour CHANGELOG.md
 - [ ] Ajouter documentation utilisateur si nécessaire
 "
+
 ```
 
 ## 🚫 Règles spécifiques IrcChat - Ne JAMAIS générer sans avoir clarifié
 
 ### Authorization
 ```
+
 Question obligatoire :
 "Qui peut exécuter cette action ?"
 
 Réponses attendues :
+
 - Tous les utilisateurs authentifiés
 - Admins uniquement
 - Owner/Créateur de la ressource
 - Combinaison (ex: admin OU owner)
 
 Si réponse vague → Demander précision
+
 ```
 
 ### Validation des données
 ```
+
 Question obligatoire :
 "Quelles validations sur les données d'entrée ?"
 
 Vérifier :
+
 - Required fields
 - String length (min/max)
 - Format (email, URL, etc.)
@@ -281,38 +296,48 @@ Vérifier :
 - Unicité (si applicable)
 
 Si aucune validation spécifiée → Proposer des validations standard
+
 ```
 
 ### Gestion des erreurs
 ```
+
 Règle absolue :
 JAMAIS de catch vide ou sans logging
 
 Toujours :
+
 - Logger l'erreur avec contexte
 - Décider si rethrow ou handling
 - Utiliser le bon niveau de log (Error, Warning, Debug)
 - Inclure les paramètres pertinents dans le log
 
 Exception acceptable :
+
 - Dispose/Cleanup (log Warning + justification)
 - JS Interop optionnel (log Warning)
+
 ```
 
 ### Impact SignalR
 ```
+
 Question obligatoire si fonctionnalité modifie des données :
 "Cette action doit-elle notifier d'autres utilisateurs en temps réel ?"
 
 Vérifier :
+
 - Qui doit être notifié ? (All, Group, Caller, Client)
 - Quel message/événement envoyer ?
 - Impact sur ConnectionManager ?
+
 ```
 
 ### Logging
 ```
+
 Règles de logging :
+
 - Information : Opérations normales importantes
 - Warning : Situations anormales mais gérables
 - Error : Erreurs qui nécessitent attention
@@ -324,6 +349,7 @@ logger.LogInformation("Message avec {Param1} et {Param2}", param1, param2);
 JAMAIS :
 logger.LogInformation($"Message avec {param1}"); // ❌ Interpolation
 Console.WriteLine("..."); // ❌ Console
+
 ```
 
 ## 🎨 Patterns obligatoires à vérifier
@@ -435,11 +461,83 @@ export function isMobileDevice() {
 }
 ```
 
+## 🎨 CSS Guidelines – Inputs et Layout Flex
+
+### Problème récurrent
+
+Les champs `input` débordent ou chevauchent les boutons dans les containers `flex`.
+
+### Directives obligatoires
+
+Claude doit **toujours** appliquer ces règles lors de la génération de CSS pour des inputs dans des layouts flex :
+
+1. **Containers flex**
+
+```css
+.input-area,
+.channel-list-search {
+  display: flex;
+  align-items: center; /* Alignement vertical */
+  gap: 10px;           /* Espacement explicite */
+}
+```
+
+2. **Wrappers**
+
+```css
+.input-wrapper,
+.channel-list-search {
+  flex: 1 1 auto;
+  min-width: 0; /* Évite les débordements */
+}
+```
+
+3. **Inputs**
+
+```cs
+input,
+.search-input {
+  width: 100%;
+  box-sizing: border-box; /* Inclut padding et border */
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+```
+
+4. **Boutons**
+
+```css
+button {
+  flex-shrink: 0; /* Empêche le bouton de se compresser */
+}
+```
+
+5. **Responsive**
+
+En dessous de 600px → forcer flex-direction: column; et width: 100% pour les inputs et boutons.
+
+```css
+@media (max-width: 600px) {
+  .input-area,
+  .channel-list-search {
+    flex-direction: column;
+  }
+
+  .input-wrapper,
+  .search-input,
+  button {
+    width: 100%;
+  }
+}
+```
+
 ## 📚 Mode verbeux - Explications automatiques
 
 Claude doit expliquer automatiquement :
 
 ### Pourquoi (Choix d'architecture)
+
 ```
 "J'ai choisi d'utiliser [pattern/approche] parce que :
 1. [Raison technique]
@@ -448,6 +546,7 @@ Claude doit expliquer automatiquement :
 ```
 
 ### Comment (Code complexe)
+
 ```
 "Ce code fonctionne en 3 étapes :
 1. [Étape 1 avec explication]
@@ -456,6 +555,7 @@ Claude doit expliquer automatiquement :
 ```
 
 ### Quels tests (Couverture)
+
 ```
 "Les tests couvrent :
 - Happy path : [Test X] vérifie [scénario]
@@ -467,6 +567,7 @@ Ces tests garantissent [comportement attendu]."
 ```
 
 ### Où (Références)
+
 ```
 "Ce pattern est similaire à :
 - [Fichier existant 1] pour [aspect]
@@ -480,11 +581,13 @@ J'ai réutilisé la même approche pour cohérence."
 Si la demande manque de détails, Claude doit :
 
 ### 1. Signaler explicitement
+
 ```
 "⚠️ Ta demande manque de précisions sur plusieurs points importants."
 ```
 
 ### 2. Identifier les points manquants
+
 ```
 "Points à clarifier :
 - [ ] Authorization : qui peut exécuter cette action ?
@@ -494,6 +597,7 @@ Si la demande manque de détails, Claude doit :
 ```
 
 ### 3. Proposer un template
+
 ```
 "Pour m'aider à générer le meilleur code, peux-tu compléter ce template ?
 
@@ -522,6 +626,7 @@ Si la demande manque de détails, Claude doit :
 ```
 
 ### 4. NE PAS générer sans réponses
+
 ```
 "Je ne génère pas de code tant que ces points ne sont pas clarifiés,
 pour éviter de faire des assumptions incorrectes."
@@ -532,6 +637,7 @@ pour éviter de faire des assumptions incorrectes."
 ### Nouvel endpoint API
 
 **Questions automatiques :**
+
 ```
 1. Méthode HTTP : GET, POST, PUT, DELETE ?
 2. Route : /api/[resource]/[action] ?
@@ -543,6 +649,7 @@ pour éviter de faire des assumptions incorrectes."
 ```
 
 **Tests requis :**
+
 ```
 - Happy path (200/201)
 - Validation (400)
@@ -554,6 +661,7 @@ pour éviter de faire des assumptions incorrectes."
 ### Nouveau service
 
 **Questions automatiques :**
+
 ```
 1. Responsabilité : Quelle logique métier ?
 2. Dépendances : Quels autres services/repos ?
@@ -563,6 +671,7 @@ pour éviter de faire des assumptions incorrectes."
 ```
 
 **Tests requis :**
+
 ```
 - Toutes les méthodes publiques
 - Gestion des exceptions
@@ -573,6 +682,7 @@ pour éviter de faire des assumptions incorrectes."
 ### Nouveau composant Blazor
 
 **Questions automatiques :**
+
 ```
 1. Responsabilité : Qu'affiche/fait le composant ?
 2. Parameters : Quels inputs ?
@@ -583,6 +693,7 @@ pour éviter de faire des assumptions incorrectes."
 ```
 
 **Tests requis :**
+
 ```
 - Rendu initial avec différents parameters
 - Interactions utilisateur (clics, inputs)
@@ -593,6 +704,7 @@ pour éviter de faire des assumptions incorrectes."
 ### Hub SignalR
 
 **Questions automatiques :**
+
 ```
 1. Méthodes : Quelles méthodes le client peut appeler ?
 2. Événements : Quels événements broadcastés ?
@@ -602,6 +714,7 @@ pour éviter de faire des assumptions incorrectes."
 ```
 
 **Tests requis :**
+
 ```
 - Connexion/Déconnexion
 - Chaque méthode hub
@@ -756,11 +869,13 @@ dotnet test
 ```
 
 **Points d'attention :**
+
 - Vérifier la performance de GetUnreadCount avec beaucoup de notifications
 - Tester le ciblage SignalR avec plusieurs utilisateurs connectés
 - Valider l'UI responsive du dropdown sur mobile
 
 **Couverture estimée : 85%**"
+
 ```
 
 ## 📖 Ressources du projet à consulter
@@ -793,13 +908,17 @@ Claude doit :
 Pour activer ce mode, l'utilisateur peut simplement dire :
 
 ```
+
 "Suis la config .claude/project-config.md"
+
 ```
 
 Ou commencer sa demande par :
 
 ```
+
 "Mode Socratic : [demande]"
+
 ```
 
 Claude adoptera alors automatiquement le comportement défini dans cette configuration.

@@ -91,11 +91,11 @@
 
     private bool isGloballyMuted = false;
     private bool isLoading = false;
-    private string errorMessage = "";
-    private string successMessage = "";
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
     private bool showMuteDialog = false;
     private bool showUnmuteDialog = false;
-    private string muteReason = "";
+    private string muteReason = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -136,7 +136,7 @@
         }
         else
         {
-            muteReason = "";
+            muteReason = string.Empty;
             showMuteDialog = true;
         }
     }
@@ -145,7 +145,7 @@
     {
         showMuteDialog = false;
         showUnmuteDialog = false;
-        muteReason = "";
+        muteReason = string.Empty;
     }
 
     private async Task ConfirmMute()
@@ -156,8 +156,8 @@
         }
 
         isLoading = true;
-        errorMessage = "";
-        successMessage = "";
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
 
         try
         {
@@ -200,8 +200,8 @@
         }
 
         isLoading = true;
-        errorMessage = "";
-        successMessage = "";
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
 
         try
         {
@@ -239,7 +239,7 @@
             await Task.Delay(4000);
             await InvokeAsync(() =>
             {
-                errorMessage = "";
+                errorMessage = string.Empty;
                 StateHasChanged();
             });
         });
@@ -253,7 +253,7 @@
             await Task.Delay(3000);
             await InvokeAsync(() =>
             {
-                successMessage = "";
+                successMessage = string.Empty;
                 StateHasChanged();
             });
         });
