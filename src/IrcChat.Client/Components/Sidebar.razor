@@ -158,7 +158,7 @@
         return UnreadCountService.GetCount(channel);
     }
 
-    private string FormatUnreadCount(int count)
+    private static string FormatUnreadCount(int count)
     {
         return count > 99 ? "99+" : count.ToString();
     }
