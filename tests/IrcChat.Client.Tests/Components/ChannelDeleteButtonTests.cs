@@ -1,21 +1,19 @@
 // tests/IrcChat.Client.Tests/Components/ChannelDeleteButtonTests.cs
 using System.Net;
-using Bunit;
 using IrcChat.Client.Components;
 using Microsoft.Extensions.DependencyInjection;
 using RichardSzalay.MockHttp;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
 public class ChannelDeleteButtonTests : BunitContext
 {
-    private readonly MockHttpMessageHandler _mockHttp;
+    private readonly MockHttpMessageHandler mockHttp;
 
     public ChannelDeleteButtonTests()
     {
-        _mockHttp = new MockHttpMessageHandler();
-        var httpClient = _mockHttp.ToHttpClient();
+        mockHttp = new MockHttpMessageHandler();
+        var httpClient = mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
         Services.AddSingleton(httpClient);
     }
@@ -87,7 +85,7 @@ public class ChannelDeleteButtonTests : BunitContext
     public async Task ChannelDeleteButton_OnConfirm_ShouldCallApi()
     {
         // Arrange
-        var mockedRequest = _mockHttp.When(HttpMethod.Delete, "*/api/channels/general")
+        var mockedRequest = mockHttp.When(HttpMethod.Delete, "*/api/channels/general")
             .Respond(HttpStatusCode.OK);
 
         var eventTriggered = false;
@@ -106,7 +104,7 @@ public class ChannelDeleteButtonTests : BunitContext
         await Task.Delay(200);
 
         // Assert
-        Assert.Equal(1, _mockHttp.GetMatchCount(mockedRequest));
+        Assert.Equal(1, mockHttp.GetMatchCount(mockedRequest));
         Assert.True(eventTriggered);
     }
 
@@ -114,7 +112,7 @@ public class ChannelDeleteButtonTests : BunitContext
     public async Task ChannelDeleteButton_OnError_ShouldShowErrorMessage()
     {
         // Arrange
-        _mockHttp.When(HttpMethod.Delete, "*/api/channels/general")
+        mockHttp.When(HttpMethod.Delete, "*/api/channels/general")
             .Respond(HttpStatusCode.Forbidden);
 
         var cut = Render<ChannelDeleteButton>(parameters => parameters
@@ -138,7 +136,7 @@ public class ChannelDeleteButtonTests : BunitContext
     public async Task ChannelDeleteButton_WhileProcessing_ShouldDisableButton()
     {
         // Arrange
-        _mockHttp.When(HttpMethod.Delete, "*/api/channels/general")
+        mockHttp.When(HttpMethod.Delete, "*/api/channels/general")
             .Respond(async () =>
             {
                 await Task.Delay(1000);
@@ -200,7 +198,7 @@ public class ChannelDeleteButtonTests : BunitContext
     public async Task ChannelDeleteButton_WithEmptyChannelName_ShouldNotCallApi()
     {
         // Arrange
-        var mockedRequest = _mockHttp.When(HttpMethod.Delete, "*/api/channels/*")
+        var mockedRequest = mockHttp.When(HttpMethod.Delete, "*/api/channels/*")
             .Respond(HttpStatusCode.OK);
 
         var cut = Render<ChannelDeleteButton>(parameters => parameters
@@ -216,6 +214,6 @@ public class ChannelDeleteButtonTests : BunitContext
         await Task.Delay(200);
 
         // Assert
-        Assert.Equal(0, _mockHttp.GetMatchCount(mockedRequest));
+        Assert.Equal(0, mockHttp.GetMatchCount(mockedRequest));
     }
 }

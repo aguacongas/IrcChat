@@ -14,14 +14,14 @@ public class AutoMuteService(
     IOptions<AutoMuteOptions> options,
     ILogger<AutoMuteService> logger) : BackgroundService
 {
-    private readonly AutoMuteOptions _options = options.Value;
+    private readonly AutoMuteOptions options = options.Value;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation(
             "AutoMuteService démarré - Inactivité: {InactivityMinutes}min, Vérification: {CheckInterval}s",
-            _options.InactivityMinutes,
-            _options.CheckIntervalSeconds);
+            options.InactivityMinutes,
+            options.CheckIntervalSeconds);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -29,7 +29,7 @@ public class AutoMuteService(
             {
                 await CheckAndApplyAutoMute();
                 await Task.Delay(
-                    TimeSpan.FromSeconds(_options.CheckIntervalSeconds),
+                    TimeSpan.FromSeconds(options.CheckIntervalSeconds),
                     stoppingToken);
             }
             catch (Exception ex)
@@ -70,7 +70,7 @@ public class AutoMuteService(
             else
             {
                 // Vérifier l'inactivité du manager
-                var inactiveThreshold = DateTime.UtcNow.AddMinutes(-_options.InactivityMinutes);
+                var inactiveThreshold = DateTime.UtcNow.AddMinutes(-options.InactivityMinutes);
                 if (managerConnection.LastActivity < inactiveThreshold)
                 {
                     shouldMute = true;
@@ -84,7 +84,9 @@ public class AutoMuteService(
 
                 logger.LogInformation(
                     "Canal #{Channel} muté automatiquement (manager {Manager} inactif depuis {Minutes}min)",
-                    channel.Name, managerUsername, _options.InactivityMinutes);
+                    channel.Name,
+                    managerUsername,
+                    options.InactivityMinutes);
 
                 // Notifier tous les utilisateurs du canal
                 await hubContext.Clients.Group(channel.Name)

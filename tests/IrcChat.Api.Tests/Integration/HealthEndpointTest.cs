@@ -9,8 +9,10 @@ public class HealthEndpointTest(ApiWebApplicationFactory factory) : IClassFixtur
     {
         // Arrange
         var client = factory.CreateClient();
+
         // Act
         var response = await client.GetAsync("/healthz");
+
         // Assert
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync();

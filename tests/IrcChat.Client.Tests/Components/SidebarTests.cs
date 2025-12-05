@@ -1,8 +1,6 @@
 // tests/IrcChat.Client.Tests/Components/SidebarTests.cs
-using Bunit;
 using IrcChat.Client.Components;
 using IrcChat.Shared.Models;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
@@ -127,7 +125,7 @@ public class SidebarTests : BunitContext
         {
             new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
             new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
-            new() { Id = Guid.NewGuid(), Name = "tech", CreatedBy = "user1", CreatedAt = DateTime.UtcNow }
+            new() { Id = Guid.NewGuid(), Name = "tech", CreatedBy = "user1", CreatedAt = DateTime.UtcNow },
         };
 
         // Act
@@ -149,7 +147,7 @@ public class SidebarTests : BunitContext
         var channels = new List<Channel>
         {
             new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
-            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
         };
 
         // Act
@@ -176,11 +174,11 @@ public class SidebarTests : BunitContext
                 OtherUser = new User
                 {
                     UserId = "Friend1",
-                    Username = "Friend1"
+                    Username = "Friend1",
                 },
                 LastMessage = "Hello",
                 LastMessageTime = DateTime.UtcNow,
-                UnreadCount = 2
+                UnreadCount = 2,
             },
             new()
             {
@@ -192,7 +190,7 @@ public class SidebarTests : BunitContext
                 LastMessage = "Hi",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0
-            }
+            },
         };
 
         // Act
@@ -243,7 +241,7 @@ public class SidebarTests : BunitContext
                 LastMessage = "Hello",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 5
-            }
+            },
         };
 
         // Act
@@ -265,7 +263,7 @@ public class SidebarTests : BunitContext
         var channels = new List<Channel>
     {
         new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 10 },
-        new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 }
+        new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 },
     };
 
         // Act
@@ -303,7 +301,11 @@ public class SidebarTests : BunitContext
             .Add(p => p.IsOpen, true)
             .Add(p => p.Username, "TestUser")
             .Add(p => p.Channels, [])
-            .Add(p => p.OnBrowseChannelsClicked, () => { browseClicked = true; return Task.CompletedTask; }));
+            .Add(p => p.OnBrowseChannelsClicked, () =>
+            {
+                browseClicked = true;
+                return Task.CompletedTask;
+            }));
 
         // Act
         var browseButton = cut.Find(".btn-browse-channels");
@@ -333,7 +335,7 @@ public class SidebarTests : BunitContext
         var channels = new List<Channel>
     {
         new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 },
-        new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 3 }
+        new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 3 },
     };
 
         // Act
@@ -353,7 +355,7 @@ public class SidebarTests : BunitContext
         // Arrange
         var channels = new List<Channel>
     {
-        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 }
+        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 },
     };
 
         var leftChannel = string.Empty;
@@ -362,7 +364,11 @@ public class SidebarTests : BunitContext
             .Add(p => p.IsOpen, true)
             .Add(p => p.Username, "TestUser")
             .Add(p => p.Channels, channels)
-            .Add(p => p.OnChannelLeave, (channelName) => { leftChannel = channelName; return Task.CompletedTask; }));
+            .Add(p => p.OnChannelLeave, (channelName) =>
+            {
+                leftChannel = channelName;
+                return Task.CompletedTask;
+            }));
 
         // Act
         var leaveButton = cut.Find(".btn-leave-channel");
@@ -378,7 +384,7 @@ public class SidebarTests : BunitContext
         // Arrange
         var channels = new List<Channel>
     {
-        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 }
+        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 },
     };
 
         var channelSelected = false;
@@ -388,8 +394,16 @@ public class SidebarTests : BunitContext
             .Add(p => p.IsOpen, true)
             .Add(p => p.Username, "TestUser")
             .Add(p => p.Channels, channels)
-            .Add(p => p.OnChannelSelected, (channelName) => { channelSelected = true; return Task.CompletedTask; })
-            .Add(p => p.OnChannelLeave, (channelName) => { channelLeft = true; return Task.CompletedTask; }));
+            .Add(p => p.OnChannelSelected, (channelName) =>
+            {
+                channelSelected = true;
+                return Task.CompletedTask;
+            })
+            .Add(p => p.OnChannelLeave, (channelName) =>
+            {
+                channelLeft = true;
+                return Task.CompletedTask;
+            }));
 
         // Act - Cliquer sur le bouton de fermeture
         var leaveButton = cut.Find(".btn-leave-channel");

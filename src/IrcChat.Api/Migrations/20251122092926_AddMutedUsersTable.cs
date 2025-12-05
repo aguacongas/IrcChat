@@ -19,7 +19,7 @@ public partial class AddMutedUsersTable : Migration
                 UserId = table.Column<string>(type: "text", nullable: false),
                 MutedByUserId = table.Column<string>(type: "text", nullable: false),
                 MutedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                Reason = table.Column<string>(type: "text", nullable: true)
+                Reason = table.Column<string>(type: "text", nullable: true),
             },
             constraints: table => table.PrimaryKey("PK_MutedUsers", x => x.Id));
 
@@ -31,7 +31,7 @@ public partial class AddMutedUsersTable : Migration
         migrationBuilder.CreateIndex(
             name: "IX_MutedUsers_ChannelName_UserId",
             table: "MutedUsers",
-            columns: new[] { "ChannelName", "UserId" },
+            columns: ["ChannelName", "UserId"],
             unique: true);
 
         migrationBuilder.CreateIndex(

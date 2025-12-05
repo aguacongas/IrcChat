@@ -1,25 +1,22 @@
-using Bunit;
 using IrcChat.Client.Components;
 using IrcChat.Client.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Moq;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
 public class IgnoreUserButtonTests : BunitContext
 {
-    private readonly Mock<IIgnoredUsersService> _ignoredUsersServiceMock;
+    private readonly Mock<IIgnoredUsersService> ignoredUsersServiceMock;
 
     public IgnoreUserButtonTests()
     {
-        _ignoredUsersServiceMock = new Mock<IIgnoredUsersService>();
-        _ignoredUsersServiceMock
+        ignoredUsersServiceMock = new Mock<IIgnoredUsersService>();
+        ignoredUsersServiceMock
             .Setup(x => x.InitializeAsync())
             .Returns(Task.CompletedTask);
 
-        Services.AddSingleton(_ignoredUsersServiceMock.Object);
+        Services.AddSingleton(ignoredUsersServiceMock.Object);
         Services.AddSingleton(new Mock<ILogger<IgnoreUserButton>>().Object);
     }
 
@@ -28,7 +25,7 @@ public class IgnoreUserButtonTests : BunitContext
     {
         // Arrange
         var userId = Guid.NewGuid().ToString();
-        _ignoredUsersServiceMock
+        ignoredUsersServiceMock
             .Setup(x => x.IsUserIgnored(userId))
             .Returns(false);
 
@@ -46,7 +43,7 @@ public class IgnoreUserButtonTests : BunitContext
     {
         // Arrange
         var userId = Guid.NewGuid().ToString();
-        _ignoredUsersServiceMock
+        ignoredUsersServiceMock
             .Setup(x => x.IsUserIgnored(userId))
             .Returns(true);
 
@@ -54,7 +51,8 @@ public class IgnoreUserButtonTests : BunitContext
         var cut = Render<IgnoreUserButton>(parameters => parameters
             .Add(p => p.UserId, userId));
 
-        cut.WaitForState(() => cut.Markup.Contains("Ignoré"),
+        cut.WaitForState(
+            () => cut.Markup.Contains("Ignoré"),
             TimeSpan.FromSeconds(2));
         cut.Render();
 
@@ -68,11 +66,11 @@ public class IgnoreUserButtonTests : BunitContext
     {
         // Arrange
         var userId = Guid.NewGuid().ToString();
-        _ignoredUsersServiceMock
+        ignoredUsersServiceMock
             .Setup(x => x.IsUserIgnored(userId))
             .Returns(false);
 
-        _ignoredUsersServiceMock
+        ignoredUsersServiceMock
             .Setup(x => x.ToggleIgnoreUserAsync(userId))
             .Verifiable();
 
@@ -85,7 +83,7 @@ public class IgnoreUserButtonTests : BunitContext
         await cut.InvokeAsync(() => button.Click());
 
         // Assert
-        _ignoredUsersServiceMock.Verify(
+        ignoredUsersServiceMock.Verify(
             x => x.ToggleIgnoreUserAsync(userId),
             Times.Once);
     }
@@ -95,7 +93,7 @@ public class IgnoreUserButtonTests : BunitContext
     {
         // Arrange
         var userId = Guid.NewGuid().ToString();
-        _ignoredUsersServiceMock
+        ignoredUsersServiceMock
             .Setup(x => x.IsUserIgnored(userId))
             .Returns(false);
 
@@ -104,7 +102,7 @@ public class IgnoreUserButtonTests : BunitContext
             .Add(p => p.UserId, userId));
 
         // Assert - InitializeAsync should be called via type casting
-        _ignoredUsersServiceMock.Verify(
+        ignoredUsersServiceMock.Verify(
             x => x.IsUserIgnored(It.IsAny<string>()),
             Times.AtLeastOnce);
     }
@@ -116,11 +114,11 @@ public class IgnoreUserButtonTests : BunitContext
         var userId = Guid.NewGuid().ToString();
         Action onChangedCallback = null!;
 
-        _ignoredUsersServiceMock
+        ignoredUsersServiceMock
             .Setup(x => x.IsUserIgnored(userId))
             .Returns(false);
 
-        _ignoredUsersServiceMock
+        ignoredUsersServiceMock
             .SetupAdd(x => x.OnIgnoredUsersChanged += It.IsAny<Action>())
             .Callback<Action>(callback => onChangedCallback = callback);
 
@@ -128,7 +126,7 @@ public class IgnoreUserButtonTests : BunitContext
             .Add(p => p.UserId, userId));
 
         // Act
-        _ignoredUsersServiceMock
+        ignoredUsersServiceMock
             .Setup(x => x.IsUserIgnored(userId))
             .Returns(true);
 
@@ -136,7 +134,7 @@ public class IgnoreUserButtonTests : BunitContext
         cut.Render();
 
         // Assert
-        _ignoredUsersServiceMock.Verify(
+        ignoredUsersServiceMock.Verify(
             x => x.IsUserIgnored(userId),
             Times.AtLeast(2));
     }
@@ -146,7 +144,7 @@ public class IgnoreUserButtonTests : BunitContext
     {
         // Arrange
         var userId = Guid.NewGuid().ToString();
-        _ignoredUsersServiceMock
+        ignoredUsersServiceMock
             .Setup(x => x.IsUserIgnored(userId))
             .Returns(false);
 

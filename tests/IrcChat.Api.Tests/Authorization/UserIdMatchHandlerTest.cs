@@ -15,12 +15,13 @@ public class UserIdMatchHandlerTest
         var requirement = new UserIdMatchRequirement(userId.ToString(), string.Empty);
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, userId)
+            new(ClaimTypes.NameIdentifier, userId),
         };
         var identity = new ClaimsIdentity(claims, "TestAuthType");
         var user = new ClaimsPrincipal(identity);
         var context = new AuthorizationHandlerContext([requirement], user, null);
         var sut = new UserIdMatchHandler(null!);
+
         // Act
         await sut.HandleAsync(context);
 
@@ -36,12 +37,13 @@ public class UserIdMatchHandlerTest
         var requirement = new UserIdMatchRequirement(string.Empty, string.Empty);
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, userId)
+            new(ClaimTypes.NameIdentifier, userId),
         };
         var identity = new ClaimsIdentity(claims, "TestAuthType");
         var user = new ClaimsPrincipal(identity);
         var context = new AuthorizationHandlerContext([requirement], user, null);
         var sut = new UserIdMatchHandler(null!);
+
         // Act
         await sut.HandleAsync(context);
 

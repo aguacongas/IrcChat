@@ -25,7 +25,7 @@ public partial class RemoveAdminsTable : Migration
                 Id = table.Column<Guid>(type: "uuid", nullable: false),
                 CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                 PasswordHash = table.Column<string>(type: "text", nullable: false),
-                Username = table.Column<string>(type: "text", nullable: false)
+                Username = table.Column<string>(type: "text", nullable: false),
             },
             constraints: table => table.PrimaryKey("PK_Admins", x => x.Id));
 

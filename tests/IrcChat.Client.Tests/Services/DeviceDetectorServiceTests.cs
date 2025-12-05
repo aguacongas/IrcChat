@@ -2,57 +2,55 @@
 using IrcChat.Client.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
-using Moq;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Services;
 
 public class DeviceDetectorServiceTests : IAsyncDisposable
 {
-    private readonly Mock<IJSRuntime> _jsRuntimeMock;
-    private readonly Mock<IJSObjectReference> _moduleMock;
-    private readonly Mock<ILogger<DeviceDetectorService>> _loggerMock;
-    private readonly DeviceDetectorService _service;
+    private readonly Mock<IJSRuntime> jsRuntimeMock;
+    private readonly Mock<IJSObjectReference> moduleMock;
+    private readonly Mock<ILogger<DeviceDetectorService>> loggerMock;
+    private readonly DeviceDetectorService service;
 
     public DeviceDetectorServiceTests()
     {
-        _jsRuntimeMock = new Mock<IJSRuntime>();
-        _moduleMock = new Mock<IJSObjectReference>();
-        _loggerMock = new Mock<ILogger<DeviceDetectorService>>();
+        jsRuntimeMock = new Mock<IJSRuntime>();
+        moduleMock = new Mock<IJSObjectReference>();
+        loggerMock = new Mock<ILogger<DeviceDetectorService>>();
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()))
-            .ReturnsAsync(_moduleMock.Object);
+            .ReturnsAsync(moduleMock.Object);
 
-        _service = new DeviceDetectorService(_jsRuntimeMock.Object, _loggerMock.Object);
+        service = new DeviceDetectorService(jsRuntimeMock.Object, loggerMock.Object);
     }
 
     [Fact]
     public async Task IsMobileDeviceAsync_WhenMobile_ShouldReturnTrue()
     {
         // Arrange
-        _moduleMock
+        moduleMock
             .Setup(x => x.InvokeAsync<bool>("isMobileDevice", It.IsAny<object[]>()))
             .ReturnsAsync(true);
 
         // Act
-        var result = await _service.IsMobileDeviceAsync();
+        var result = await service.IsMobileDeviceAsync();
 
         // Assert
         Assert.True(result);
-        _moduleMock.Verify(x => x.InvokeAsync<bool>("isMobileDevice", It.IsAny<object[]>()), Times.Once);
+        moduleMock.Verify(x => x.InvokeAsync<bool>("isMobileDevice", It.IsAny<object[]>()), Times.Once);
     }
 
     [Fact]
     public async Task IsMobileDeviceAsync_WhenDesktop_ShouldReturnFalse()
     {
         // Arrange
-        _moduleMock
+        moduleMock
             .Setup(x => x.InvokeAsync<bool>("isMobileDevice", It.IsAny<object[]>()))
             .ReturnsAsync(false);
 
         // Act
-        var result = await _service.IsMobileDeviceAsync();
+        var result = await service.IsMobileDeviceAsync();
 
         // Assert
         Assert.False(result);
@@ -62,16 +60,16 @@ public class DeviceDetectorServiceTests : IAsyncDisposable
     public async Task IsMobileDeviceAsync_WhenJSError_ShouldReturnFalseAndLogWarning()
     {
         // Arrange
-        _moduleMock
+        moduleMock
             .Setup(x => x.InvokeAsync<bool>("isMobileDevice", It.IsAny<object[]>()))
             .ThrowsAsync(new JSException("JS Error"));
 
         // Act
-        var result = await _service.IsMobileDeviceAsync();
+        var result = await service.IsMobileDeviceAsync();
 
         // Assert
         Assert.False(result);
-        _loggerMock.Verify(
+        loggerMock.Verify(
             x => x.Log(
                 LogLevel.Warning,
                 It.IsAny<EventId>(),
@@ -85,32 +83,32 @@ public class DeviceDetectorServiceTests : IAsyncDisposable
     public async Task GetScreenWidthAsync_ShouldReturnCorrectWidth()
     {
         // Arrange
-        _moduleMock
+        moduleMock
             .Setup(x => x.InvokeAsync<int>("getScreenWidth", It.IsAny<object[]>()))
             .ReturnsAsync(1920);
 
         // Act
-        var result = await _service.GetScreenWidthAsync();
+        var result = await service.GetScreenWidthAsync();
 
         // Assert
         Assert.Equal(1920, result);
-        _moduleMock.Verify(x => x.InvokeAsync<int>("getScreenWidth", It.IsAny<object[]>()), Times.Once);
+        moduleMock.Verify(x => x.InvokeAsync<int>("getScreenWidth", It.IsAny<object[]>()), Times.Once);
     }
 
     [Fact]
     public async Task GetScreenWidthAsync_WhenJSError_ShouldReturnDefaultWidth()
     {
         // Arrange
-        _moduleMock
+        moduleMock
             .Setup(x => x.InvokeAsync<int>("getScreenWidth", It.IsAny<object[]>()))
             .ThrowsAsync(new JSException("JS Error"));
 
         // Act
-        var result = await _service.GetScreenWidthAsync();
+        var result = await service.GetScreenWidthAsync();
 
         // Assert
         Assert.Equal(1024, result);
-        _loggerMock.Verify(
+        loggerMock.Verify(
             x => x.Log(
                 LogLevel.Warning,
                 It.IsAny<EventId>(),
@@ -124,20 +122,20 @@ public class DeviceDetectorServiceTests : IAsyncDisposable
     public async Task IsMobileDeviceAsync_CalledMultipleTimes_ShouldReuseModule()
     {
         // Arrange
-        _moduleMock
+        moduleMock
             .Setup(x => x.InvokeAsync<bool>("isMobileDevice", It.IsAny<object[]>()))
             .ReturnsAsync(false);
 
         // Act
-        await _service.IsMobileDeviceAsync();
-        await _service.IsMobileDeviceAsync();
-        await _service.IsMobileDeviceAsync();
+        await service.IsMobileDeviceAsync();
+        await service.IsMobileDeviceAsync();
+        await service.IsMobileDeviceAsync();
 
         // Assert
-        _jsRuntimeMock.Verify(
+        jsRuntimeMock.Verify(
             x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()),
             Times.Once); // Module importé une seule fois
-        _moduleMock.Verify(
+        moduleMock.Verify(
             x => x.InvokeAsync<bool>("isMobileDevice", It.IsAny<object[]>()),
             Times.Exactly(3)); // Fonction appelée 3 fois
     }
@@ -146,23 +144,22 @@ public class DeviceDetectorServiceTests : IAsyncDisposable
     public async Task DisposeAsync_ShouldDisposeModule()
     {
         // Arrange
-        _moduleMock
+        moduleMock
             .Setup(x => x.DisposeAsync())
             .Returns(ValueTask.CompletedTask);
 
         // Initialiser le module
-        await _service.IsMobileDeviceAsync();
+        await service.IsMobileDeviceAsync();
 
         // Act
-        await _service.DisposeAsync();
+        await service.DisposeAsync();
 
         // Assert
-        _moduleMock.Verify(x => x.DisposeAsync(), Times.Once);
+        moduleMock.Verify(x => x.DisposeAsync(), Times.Once);
     }
 
     // Tests supplémentaires pour DeviceDetectorService
     // Ajouter à tests/IrcChat.Client.Tests/Services/DeviceDetectorServiceTests.cs
-
     [Fact]
     public async Task EnsureInitializedAsync_WhenModuleLoadFails_ShouldLogErrorAndThrow()
     {
@@ -272,7 +269,7 @@ public class DeviceDetectorServiceTests : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        await _service.DisposeAsync();
+        await service.DisposeAsync();
         GC.SuppressFinalize(this);
     }
 }

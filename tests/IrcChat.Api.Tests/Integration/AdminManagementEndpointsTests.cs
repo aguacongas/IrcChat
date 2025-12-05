@@ -16,7 +16,7 @@ namespace IrcChat.Api.Tests.Integration;
 public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
     : IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient client = factory.CreateClient();
 
     [Fact]
     public async Task GetAllUsers_AsAdmin_ShouldReturnUserList()
@@ -34,7 +34,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
             Email = "admin@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         var regularUser = new ReservedUsername
@@ -46,17 +46,17 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
             Email = "user@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         db.ReservedUsernames.AddRange(adminUser, regularUser);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(adminUser);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.GetAsync("/api/admin-management/users");
+        var response = await client.GetAsync("/api/admin-management/users");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -81,17 +81,17 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
             Email = "user2@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         db.ReservedUsernames.Add(regularUser);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(regularUser);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.GetAsync("/api/admin-management/users");
+        var response = await client.GetAsync("/api/admin-management/users");
 
         // Assert
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
@@ -113,7 +113,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
             Email = "admin_promote@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         var targetUser = new ReservedUsername
@@ -125,17 +125,17 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
             Email = "promote@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         db.ReservedUsernames.AddRange(adminUser, targetUser);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(adminUser);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.PostAsync(
+        var response = await client.PostAsync(
             $"/api/admin-management/{targetUser.Id}/promote",
             null);
 
@@ -165,7 +165,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
             Email = "admin_test@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         var alreadyAdmin = new ReservedUsername
@@ -177,17 +177,17 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
             Email = "already_admin@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         db.ReservedUsernames.AddRange(adminUser, alreadyAdmin);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(adminUser);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.PostAsync(
+        var response = await client.PostAsync(
             $"/api/admin-management/{alreadyAdmin.Id}/promote",
             null);
 
@@ -211,7 +211,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
             Email = "admin_demote@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         var adminUser2 = new ReservedUsername
@@ -223,17 +223,17 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
             Email = "demote@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         db.ReservedUsernames.AddRange(adminUser1, adminUser2);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(adminUser1);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.PostAsync(
+        var response = await client.PostAsync(
             $"/api/admin-management/{adminUser2.Id}/demote",
             null);
 
@@ -263,17 +263,17 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
             Email = "admin_self@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         db.ReservedUsernames.Add(adminUser);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(adminUser);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.PostAsync(
+        var response = await client.PostAsync(
             $"/api/admin-management/{adminUser.Id}/demote",
             null);
 
@@ -297,17 +297,17 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
             Email = "check_admin@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         db.ReservedUsernames.Add(adminUser);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(adminUser);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.GetAsync("/api/admin-management/check-admin");
+        var response = await client.GetAsync("/api/admin-management/check-admin");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -332,17 +332,17 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
             Email = "check_regular@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         db.ReservedUsernames.Add(regularUser);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(regularUser);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.GetAsync("/api/admin-management/check-admin");
+        var response = await client.GetAsync("/api/admin-management/check-admin");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -364,7 +364,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim("provider", user.Provider.ToString())
+            new Claim("provider", user.Provider.ToString()),
         };
 
         var token = new JwtSecurityToken(
@@ -372,8 +372,7 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
             audience: "IrcChatClient",
             claims: claims,
             expires: DateTime.UtcNow.AddHours(1),
-            signingCredentials: credentials
-        );
+            signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
@@ -383,12 +382,19 @@ public class AdminManagementEndpointsTests(ApiWebApplicationFactory factory)
     private sealed class UserResponse
     {
         public Guid Id { get; init; }
+
         public string Username { get; init; } = string.Empty;
+
         public string Email { get; init; } = string.Empty;
+
         public ExternalAuthProvider Provider { get; init; }
+
         public bool IsAdmin { get; init; }
+
         public DateTime CreatedAt { get; init; }
+
         public DateTime LastLoginAt { get; init; }
+
         public string? AvatarUrl { get; init; }
     }
 

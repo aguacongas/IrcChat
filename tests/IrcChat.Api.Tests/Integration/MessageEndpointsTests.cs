@@ -10,7 +10,7 @@ namespace IrcChat.Api.Tests.Integration;
 public class MessageEndpointsTests(ApiWebApplicationFactory factory)
     : IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient client = factory.CreateClient();
 
     [Fact]
     public async Task GetMessages_ShouldReturnNonDeletedMessagesForChannel()
@@ -29,7 +29,7 @@ public class MessageEndpointsTests(ApiWebApplicationFactory factory)
             Content = "Test message 1",
             Channel = channel,
             IsDeleted = true,
-            Timestamp = DateTime.UtcNow
+            Timestamp = DateTime.UtcNow,
         });
         db.Messages.Add(new Message
         {
@@ -37,12 +37,12 @@ public class MessageEndpointsTests(ApiWebApplicationFactory factory)
             Username = "testuser",
             Content = "Test message 2",
             Channel = channel,
-            Timestamp = DateTime.UtcNow
+            Timestamp = DateTime.UtcNow,
         });
         await db.SaveChangesAsync();
 
         // Act
-        var response = await _client.GetAsync($"/api/messages/{channel}?userId={userId}");
+        var response = await client.GetAsync($"/api/messages/{channel}?userId={userId}");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

@@ -18,7 +18,7 @@ public partial class InitialCreate : Migration
                 Id = table.Column<Guid>(type: "uuid", nullable: false),
                 Username = table.Column<string>(type: "text", nullable: false),
                 PasswordHash = table.Column<string>(type: "text", nullable: false),
-                CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
             },
             constraints: table => table.PrimaryKey("PK_Admins", x => x.Id));
 
@@ -28,7 +28,7 @@ public partial class InitialCreate : Migration
             {
                 Id = table.Column<Guid>(type: "uuid", nullable: false),
                 Name = table.Column<string>(type: "text", nullable: false),
-                CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
             },
             constraints: table => table.PrimaryKey("PK_Channels", x => x.Id));
 
@@ -41,7 +41,7 @@ public partial class InitialCreate : Migration
                 ConnectionId = table.Column<string>(type: "text", nullable: false),
                 Channel = table.Column<string>(type: "text", nullable: false),
                 ConnectedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                LastActivity = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                LastActivity = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
             },
             constraints: table => table.PrimaryKey("PK_ConnectedUsers", x => x.Id));
 
@@ -54,7 +54,7 @@ public partial class InitialCreate : Migration
                 Content = table.Column<string>(type: "text", nullable: false),
                 Channel = table.Column<string>(type: "text", nullable: false),
                 Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
             },
             constraints: table => table.PrimaryKey("PK_Messages", x => x.Id));
 
@@ -84,7 +84,7 @@ public partial class InitialCreate : Migration
         migrationBuilder.CreateIndex(
             name: "IX_ConnectedUsers_Username_Channel",
             table: "ConnectedUsers",
-            columns: new[] { "Username", "Channel" });
+            columns: ["Username", "Channel"]);
 
         migrationBuilder.CreateIndex(
             name: "IX_Messages_Channel",

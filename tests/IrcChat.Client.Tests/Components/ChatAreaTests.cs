@@ -1,31 +1,28 @@
 // tests/IrcChat.Client.Tests/Components/ChatAreaTests.cs
-using Bunit;
 using IrcChat.Client.Components;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
 using RichardSzalay.MockHttp;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
 public class ChatAreaTests : BunitContext
 {
-    private readonly MockHttpMessageHandler _mockHttp;
-    private readonly Mock<IIgnoredUsersService> _ignoredUsersServiceMock;
+    private readonly MockHttpMessageHandler mockHttp;
+    private readonly Mock<IIgnoredUsersService> ignoredUsersServiceMock;
 
     public ChatAreaTests()
     {
-        _mockHttp = new MockHttpMessageHandler();
-        _ignoredUsersServiceMock = new Mock<IIgnoredUsersService>();
-        _ignoredUsersServiceMock.Setup(x => x.InitializeAsync())
+        mockHttp = new MockHttpMessageHandler();
+        ignoredUsersServiceMock = new Mock<IIgnoredUsersService>();
+        ignoredUsersServiceMock.Setup(x => x.InitializeAsync())
             .Returns(Task.CompletedTask);
 
-        var httpClient = _mockHttp.ToHttpClient();
+        var httpClient = mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
         Services.AddSingleton(httpClient);
-        Services.AddSingleton(_ignoredUsersServiceMock.Object);
+        Services.AddSingleton(ignoredUsersServiceMock.Object);
 
         JSInterop.Mode = JSRuntimeMode.Loose;
     }
@@ -101,10 +98,11 @@ public class ChatAreaTests : BunitContext
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
             .Add(p => p.UsersListOpen, true)
-            .Add(p => p.Users,
-            [
-                new() { Username = "User1", ConnectedAt = DateTime.UtcNow }
-            ]));
+            .Add(
+                p => p.Users,
+                [
+                    new() { Username = "User1", ConnectedAt = DateTime.UtcNow }
+                ]));
 
         // Assert
         Assert.Contains("users-open", cut.Markup);
@@ -138,11 +136,12 @@ public class ChatAreaTests : BunitContext
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
             .Add(p => p.UsersListOpen, false)
-            .Add(p => p.Users,
-            [
-                new() { Username = "User1", ConnectedAt = DateTime.UtcNow },
-                new() { Username = "User2", ConnectedAt = DateTime.UtcNow }
-            ]));
+            .Add(
+                p => p.Users,
+                [
+                    new() { Username = "User1", ConnectedAt = DateTime.UtcNow },
+                    new() { Username = "User2", ConnectedAt = DateTime.UtcNow }
+                ]));
 
         // Assert
         Assert.Contains("users-toggle-btn", cut.Markup);
@@ -208,7 +207,7 @@ public class ChatAreaTests : BunitContext
                 Content = "Test message",
                 Channel = "general",
                 Timestamp = DateTime.UtcNow
-            }
+            },
         };
 
         // Act
@@ -245,7 +244,7 @@ public class ChatAreaTests : BunitContext
         var users = new List<User>
         {
             new() { Username = "User1", ConnectedAt = DateTime.UtcNow },
-            new() { Username = "User2", ConnectedAt = DateTime.UtcNow }
+            new() { Username = "User2", ConnectedAt = DateTime.UtcNow },
         };
 
         // Act
@@ -273,10 +272,11 @@ public class ChatAreaTests : BunitContext
             .Add(p => p.CurrentChannel, "general")
             .Add(p => p.IsConnected, true)
             .Add(p => p.UsersListOpen, false)
-            .Add(p => p.Users,
-            [
-                new() { Username = "User1", ConnectedAt = DateTime.UtcNow }
-            ])
+            .Add(
+                p => p.Users,
+                [
+                    new() { Username = "User1", ConnectedAt = DateTime.UtcNow }
+                ])
             .Add(p => p.OnUsersListToggle, state =>
             {
                 callbackInvoked = true;
@@ -367,7 +367,7 @@ public class ChatAreaTests : BunitContext
     public async Task ChatArea_ChannelDeleteButton_WhenClicked_ShouldInvokeCallback()
     {
         // Arrange
-        _mockHttp.When(HttpMethod.Delete, "*/api/channels/general")
+        mockHttp.When(HttpMethod.Delete, "*/api/channels/general")
             .Respond(System.Net.HttpStatusCode.OK);
 
         var deletedChannel = string.Empty;
@@ -403,10 +403,11 @@ public class ChatAreaTests : BunitContext
             .Add(p => p.IsConnected, true)
             .Add(p => p.CanManage, true)
             .Add(p => p.UsersListOpen, false)
-            .Add(p => p.Users,
-            [
-                new() { Username = "User1", ConnectedAt = DateTime.UtcNow }
-            ]));
+            .Add(
+                p => p.Users,
+                [
+                    new() { Username = "User1", ConnectedAt = DateTime.UtcNow }
+                ]));
 
         // Assert
         var headerRight = cut.Find(".header-right");

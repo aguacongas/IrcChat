@@ -1,8 +1,6 @@
-using Bunit;
 using IrcChat.Client.Components;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.Components.Web;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
@@ -122,7 +120,7 @@ public class MessageInputTests : BunitContext
         {
             new() { Username = "Alice", UserId = "1" },
             new() { Username = "Bob", UserId = "2" },
-            new() { Username = "Charlie", UserId = "3" }
+            new() { Username = "Charlie", UserId = "3" },
         };
 
         var cut = Render<MessageInput>(parameters => parameters
@@ -152,7 +150,7 @@ public class MessageInputTests : BunitContext
         {
             new() { Username = "Alice", UserId = "1" },
             new() { Username = "Alex", UserId = "2" },
-            new() { Username = "Bob", UserId = "3" }
+            new() { Username = "Bob", UserId = "3" },
         };
 
         var cut = Render<MessageInput>(parameters => parameters
@@ -179,7 +177,7 @@ public class MessageInputTests : BunitContext
         var users = new List<User>
         {
             new() { Username = "Alice", UserId = "1" },
-            new() { Username = "Bob", UserId = "2" }
+            new() { Username = "Bob", UserId = "2" },
         };
 
         var cut = Render<MessageInput>(parameters => parameters
@@ -210,7 +208,7 @@ public class MessageInputTests : BunitContext
         {
             new() { Username = "Alice", UserId = "1" },
             new() { Username = "Alex", UserId = "2" },
-            new() { Username = "Adam", UserId = "3" }
+            new() { Username = "Adam", UserId = "3" },
         };
 
         var cut = Render<MessageInput>(parameters => parameters
@@ -246,7 +244,7 @@ public class MessageInputTests : BunitContext
         // Arrange
         var users = new List<User>
         {
-            new() { Username = "Alice", UserId = "1" }
+            new() { Username = "Alice", UserId = "1" },
         };
 
         var cut = Render<MessageInput>(parameters => parameters
@@ -275,7 +273,7 @@ public class MessageInputTests : BunitContext
         // Arrange
         var users = new List<User>
         {
-            new() { Username = "Alice", UserId = "1" }
+            new() { Username = "Alice", UserId = "1" },
         };
 
         var cut = Render<MessageInput>(parameters => parameters
@@ -299,7 +297,7 @@ public class MessageInputTests : BunitContext
         // Arrange
         var users = new List<User>
         {
-            new() { Username = "Alice", UserId = "1" }
+            new() { Username = "Alice", UserId = "1" },
         };
 
         var cut = Render<MessageInput>(parameters => parameters

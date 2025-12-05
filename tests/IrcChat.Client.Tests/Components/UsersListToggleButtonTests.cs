@@ -1,7 +1,5 @@
 // tests/IrcChat.Client.Tests/Components/UsersListToggleButtonTests.cs
-using Bunit;
 using IrcChat.Client.Components;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 

@@ -9,11 +9,13 @@ public static class DateTimeExtension
         {
             return dateTime.ToString("HH:mm");
         }
+
         var yesterday = now.AddDays(-1);
         if (dateTime.Year == yesterday.Year && dateTime.Month == yesterday.Month && dateTime.Day == yesterday.Day)
         {
             return $"Hier {dateTime:HH:mm}";
         }
+
         return dateTime.ToShortDateString();
     }
 }

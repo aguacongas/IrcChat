@@ -8,153 +8,161 @@ public class ChatService(IPrivateMessageService privateMessageService,
     IRequestAuthenticationService requestAuthService,
     ILogger<ChatService> logger) : IChatService
 {
-    private HubConnection? _hubConnection;
-    private IHubConnectionEvents? _hubConnectionEvents;
-    private Timer? _pingTimer;
+    private HubConnection? hubConnection;
+    private IHubConnectionEvents? hubConnectionEvents;
+    private Timer? pingTimer;
 
     // Events pour les canaux publics
     public event Action<Message>? OnMessageReceived;
+
     public event Action<string, string, string>? OnUserJoined;
+
     public event Action<string, string, string>? OnUserLeft;
 
     // Events pour le mute
     public event Action<string, bool>? OnChannelMuteStatusChanged;
+
     public event Action<string>? OnMessageBlocked;
 
     // Events pour la gestion des canaux
     public event Action<string>? OnChannelDeleted;
+
     public event Action<string>? OnChannelNotFound;
+
     public event Action? OnChannelListUpdated;
 
     // Event pour le statut de connexion des utilisateurs
     public event Action<string, bool>? OnUserStatusChanged;
 
     public event Action<string, string, string, string, string>? OnUserMuted;
+
     public event Action<string, string, string, string, string>? OnUserUnmuted;
 
     // Events pour l'état de la connexion SignalR
     public event Action? OnDisconnected;
+
     public event Action<string?>? OnReconnecting;
+
     public event Action? OnReconnected;
 
-    public bool IsInitialized => _hubConnection != null && _hubConnection.State == HubConnectionState.Connected;
+    public bool IsInitialized => hubConnection != null && hubConnection.State == HubConnectionState.Connected;
 
     public Func<HubConnection, IHubConnectionEvents> WrapConnectionEvents { get; set; } = connection => new HubConnectionEventWrapper(connection);
 
     public async Task InitializeAsync(IHubConnectionBuilder hubConnectionBuilder)
     {
-        _hubConnection = hubConnectionBuilder.Build();
+        hubConnection = hubConnectionBuilder.Build();
 
         // Handlers pour les canaux publics
-        _hubConnection.On<Message>("ReceiveMessage", message => OnMessageReceived?.Invoke(message));
+        hubConnection.On<Message>("ReceiveMessage", message => OnMessageReceived?.Invoke(message));
 
-        _hubConnection.On<string, string, string>("UserJoined", (username, userId, channel) => OnUserJoined?.Invoke(username, userId, channel));
+        hubConnection.On<string, string, string>("UserJoined", (username, userId, channel) => OnUserJoined?.Invoke(username, userId, channel));
 
-        _hubConnection.On<string, string, string>("UserLeft", (username, userId, channel) => OnUserLeft?.Invoke(username, userId, channel));
+        hubConnection.On<string, string, string>("UserLeft", (username, userId, channel) => OnUserLeft?.Invoke(username, userId, channel));
 
         // Handlers pour le mute
-        _hubConnection.On<string, bool>("ChannelMuteStatusChanged", (channel, isMuted) => OnChannelMuteStatusChanged?.Invoke(channel, isMuted));
+        hubConnection.On<string, bool>("ChannelMuteStatusChanged", (channel, isMuted) => OnChannelMuteStatusChanged?.Invoke(channel, isMuted));
 
-        _hubConnection.On<string>("MessageBlocked", reason => OnMessageBlocked?.Invoke(reason));
+        hubConnection.On<string>("MessageBlocked", reason => OnMessageBlocked?.Invoke(reason));
 
         // Handlers pour la gestion des canaux
-        _hubConnection.On<string>("ChannelDeleted", channelName => OnChannelDeleted?.Invoke(channelName));
+        hubConnection.On<string>("ChannelDeleted", channelName => OnChannelDeleted?.Invoke(channelName));
 
-        _hubConnection.On<string>("ChannelNotFound", channelName => OnChannelNotFound?.Invoke(channelName));
+        hubConnection.On<string>("ChannelNotFound", channelName => OnChannelNotFound?.Invoke(channelName));
 
-        _hubConnection.On("ChannelListUpdated", () => OnChannelListUpdated?.Invoke());
+        hubConnection.On("ChannelListUpdated", () => OnChannelListUpdated?.Invoke());
 
         // Handler pour le statut de connexion des utilisateurs
-        _hubConnection.On<string, bool>("UserStatusChanged", (username, isOnline) => OnUserStatusChanged?.Invoke(username, isOnline));
+        hubConnection.On<string, bool>("UserStatusChanged", (username, isOnline) => OnUserStatusChanged?.Invoke(username, isOnline));
 
         // Handlers pour les messages privés
-        _hubConnection.On<PrivateMessage>("ReceivePrivateMessage", message => privateMessageService.NotifyPrivateMessageReceived(message));
+        hubConnection.On<PrivateMessage>("ReceivePrivateMessage", message => privateMessageService.NotifyPrivateMessageReceived(message));
 
-        _hubConnection.On<PrivateMessage>("PrivateMessageSent", message => privateMessageService.NotifyPrivateMessageSent(message));
+        hubConnection.On<PrivateMessage>("PrivateMessageSent", message => privateMessageService.NotifyPrivateMessageSent(message));
 
-        _hubConnection.On<string, List<Guid>>("PrivateMessagesRead", (username, messageIds) => privateMessageService.NotifyMessagesRead(username, messageIds));
+        hubConnection.On<string, List<Guid>>("PrivateMessagesRead", (username, messageIds) => privateMessageService.NotifyMessagesRead(username, messageIds));
 
         // Handler pour le mute d'un utilisateur
-        _hubConnection.On<string, string, string, string, string>(
+        hubConnection.On<string, string, string, string, string>(
             "UserMuted",
             (channel, userId, username, mutedByUserId, mutedByUsername)
             => OnUserMuted?.Invoke(channel, userId, username, mutedByUserId, mutedByUsername));
 
         // Handler pour le unmute d'un utilisateur
-        _hubConnection.On<string, string, string, string, string>(
+        hubConnection.On<string, string, string, string, string>(
             "UserUnmuted",
             (channel, userId, username, unmutedByUserId, unmutedByUsername)
             => OnUserUnmuted?.Invoke(channel, userId, username, unmutedByUserId, unmutedByUsername));
 
         // Handlers pour les événements de connexion
-        _hubConnectionEvents = WrapConnectionEvents(_hubConnection);
+        hubConnectionEvents = WrapConnectionEvents(hubConnection);
 
-        _hubConnectionEvents.Closed += OnConnectionClosed;
-        _hubConnectionEvents.Reconnecting += OnConnectionReconnecting;
-        _hubConnectionEvents.Reconnected += OnConnectionReconnected;
+        hubConnectionEvents.Closed += OnConnectionClosed;
+        hubConnectionEvents.Reconnecting += OnConnectionReconnecting;
+        hubConnectionEvents.Reconnected += OnConnectionReconnected;
 
-        await _hubConnection.StartAsync();
-        requestAuthService.ConnectionId = _hubConnection.ConnectionId;
+        await hubConnection.StartAsync();
+        requestAuthService.ConnectionId = hubConnection.ConnectionId;
         CreatePingTimer();
     }
 
     // Méthodes pour les canaux publics
     public async Task JoinChannel(string channel)
     {
-        if (_hubConnection != null)
+        if (hubConnection != null)
         {
-            await _hubConnection.SendAsync("JoinChannel", channel);
+            await hubConnection.SendAsync("JoinChannel", channel);
         }
     }
 
     public async Task LeaveChannel(string channel)
     {
-        if (_hubConnection != null)
+        if (hubConnection != null)
         {
-            await _hubConnection.SendAsync("LeaveChannel", channel);
+            await hubConnection.SendAsync("LeaveChannel", channel);
         }
     }
 
     public async Task SendMessage(SendMessageRequest request)
     {
-        if (_hubConnection != null)
+        if (hubConnection != null)
         {
-            await _hubConnection.SendAsync("SendMessage", request);
+            await hubConnection.SendAsync("SendMessage", request);
         }
     }
 
     // Méthodes pour les messages privés
     public async Task SendPrivateMessage(SendPrivateMessageRequest request)
     {
-        if (_hubConnection != null)
+        if (hubConnection != null)
         {
-            await _hubConnection.SendAsync("SendPrivateMessage", request);
+            await hubConnection.SendAsync("SendPrivateMessage", request);
         }
     }
 
     public async Task MarkPrivateMessagesAsRead(string senderUserId)
     {
-        if (_hubConnection != null)
+        if (hubConnection != null)
         {
-            await _hubConnection.SendAsync("MarkPrivateMessagesAsRead", senderUserId);
+            await hubConnection.SendAsync("MarkPrivateMessagesAsRead", senderUserId);
         }
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (_pingTimer != null)
+        if (pingTimer != null)
         {
-            await _pingTimer.DisposeAsync();
+            await pingTimer.DisposeAsync();
         }
 
-        if (_hubConnection != null)
+        if (hubConnection != null)
         {
             // Handlers pour les événements de connexion
-            _hubConnectionEvents!.Closed -= OnConnectionClosed;
-            _hubConnectionEvents!.Reconnecting -= OnConnectionReconnecting;
-            _hubConnectionEvents!.Reconnected -= OnConnectionReconnected;
+            hubConnectionEvents!.Closed -= OnConnectionClosed;
+            hubConnectionEvents!.Reconnecting -= OnConnectionReconnecting;
+            hubConnectionEvents!.Reconnected -= OnConnectionReconnected;
 
-            await _hubConnection.DisposeAsync();
+            await hubConnection.DisposeAsync();
         }
 
         GC.SuppressFinalize(this);
@@ -163,8 +171,8 @@ public class ChatService(IPrivateMessageService privateMessageService,
     private Task OnConnectionClosed(Exception? error)
     {
         logger.LogWarning(error, "Connexion SignalR fermée");
-        _pingTimer?.Dispose();
-        _pingTimer = null;
+        pingTimer?.Dispose();
+        pingTimer = null;
         OnDisconnected?.Invoke();
         return Task.CompletedTask;
     }
@@ -187,28 +195,32 @@ public class ChatService(IPrivateMessageService privateMessageService,
 
     private void CreatePingTimer()
     {
-        _pingTimer = new Timer(async _ =>
-        {
-            try
+        pingTimer = new Timer(
+            async _ =>
             {
-                if (_hubConnection?.State == HubConnectionState.Connected)
+                try
                 {
-                    var userId = await authService.GetClientUserIdAsync();
+                    if (hubConnection?.State == HubConnectionState.Connected)
+                    {
+                        var userId = await authService.GetClientUserIdAsync();
 
-                    if (!string.IsNullOrEmpty(userId))
-                    {
-                        await _hubConnection.SendAsync("Ping", authService.Username, userId);
-                    }
-                    else
-                    {
-                        logger.LogWarning("UserId vide lors du ping pour {Username}", authService.Username);
+                        if (!string.IsNullOrEmpty(userId))
+                        {
+                            await hubConnection.SendAsync("Ping", authService.Username, userId);
+                        }
+                        else
+                        {
+                            logger.LogWarning("UserId vide lors du ping pour {Username}", authService.Username);
+                        }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Erreur lors de l'envoi du ping au serveur SignalR");
-            }
-        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(30));
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Erreur lors de l'envoi du ping au serveur SignalR");
+                }
+            },
+            null,
+            TimeSpan.Zero,
+            TimeSpan.FromSeconds(30));
     }
 }

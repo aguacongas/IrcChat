@@ -4,5 +4,5 @@ public enum ExternalAuthProvider
 {
     Google,
     Facebook,
-    Microsoft
+    Microsoft,
 }

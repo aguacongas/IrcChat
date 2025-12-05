@@ -55,7 +55,7 @@ public static class OAuthEndpoints
             Available = reservedUser == null && !currentlyUsed,
             IsReserved = reservedUser != null,
             ReservedProvider = reservedUser?.Provider,
-            IsCurrentlyUsed = currentlyUsed
+            IsCurrentlyUsed = currentlyUsed,
         });
     }
 
@@ -100,7 +100,7 @@ public static class OAuthEndpoints
             {
                 error = "already_reserved",
                 message = "Vous avez déjà un pseudo réservé",
-                username = existingUser.Username
+                username = existingUser.Username,
             });
         }
 
@@ -117,7 +117,7 @@ public static class OAuthEndpoints
             AvatarUrl = userInfo.AvatarUrl,
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = isFirstUser
+            IsAdmin = isFirstUser,
         };
 
         context.ReservedUsernames.Add(user);
@@ -133,7 +133,7 @@ public static class OAuthEndpoints
             AvatarUrl = user.AvatarUrl,
             UserId = user.Id,
             IsNewUser = true,
-            IsAdmin = user.IsAdmin
+            IsAdmin = user.IsAdmin,
         });
     }
 
@@ -183,7 +183,7 @@ public static class OAuthEndpoints
             AvatarUrl = user.AvatarUrl,
             UserId = user.Id,
             IsNewUser = false,
-            IsAdmin = user.IsAdmin
+            IsAdmin = user.IsAdmin,
         });
     }
 
@@ -199,7 +199,7 @@ public static class OAuthEndpoints
                 provider,
                 config.AuthorizationEndpoint,
                 config.ClientId,
-                config.Scope
+                config.Scope,
             });
         }
         catch
@@ -252,7 +252,7 @@ public static class OAuthEndpoints
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim("provider", user.Provider.ToString())
+            new Claim("provider", user.Provider.ToString()),
         };
 
         var token = new JwtSecurityToken(
@@ -260,8 +260,7 @@ public static class OAuthEndpoints
             audience: configuration["Jwt:Audience"],
             claims: claims,
             expires: DateTime.UtcNow.AddDays(30),
-            signingCredentials: credentials
-        );
+            signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

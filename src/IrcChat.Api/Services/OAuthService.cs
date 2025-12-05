@@ -8,7 +8,7 @@ namespace IrcChat.Api.Services;
 [SuppressMessage("Minor Code Smell", "S1075:URIs should not be hardcoded", Justification = "Static configuration")]
 public class OAuthService(HttpClient httpClient, IConfiguration configuration, ILogger<OAuthService> logger)
 {
-    private static readonly string _bearer = "Bearer";
+    private static readonly string Bearer = "Bearer";
 
     public OAuthConfig GetProviderConfig(ExternalAuthProvider provider)
     {
@@ -21,7 +21,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
                 UserInfoEndpoint = "https://www.googleapis.com/oauth2/v2/userinfo",
                 ClientId = configuration["OAuth:Google:ClientId"] ?? string.Empty,
                 ClientSecret = configuration["OAuth:Google:ClientSecret"] ?? string.Empty,
-                Scope = "openid email profile"
+                Scope = "openid email profile",
             },
             ExternalAuthProvider.Facebook => new OAuthConfig
             {
@@ -30,7 +30,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
                 UserInfoEndpoint = "https://graph.facebook.com/me",
                 ClientId = configuration["OAuth:Facebook:AppId"] ?? string.Empty,
                 ClientSecret = configuration["OAuth:Facebook:AppSecret"] ?? string.Empty,
-                Scope = "email public_profile"
+                Scope = "email public_profile",
             },
             ExternalAuthProvider.Microsoft => new OAuthConfig
             {
@@ -39,9 +39,9 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
                 UserInfoEndpoint = "https://graph.microsoft.com/v1.0/me",
                 ClientId = configuration["OAuth:Microsoft:ClientId"] ?? string.Empty,
                 ClientSecret = configuration["OAuth:Microsoft:ClientSecret"] ?? string.Empty,
-                Scope = "openid email profile User.Read"
+                Scope = "openid email profile User.Read",
             },
-            _ => throw new ArgumentException($"Provider {provider} not supported")
+            _ => throw new ArgumentException($"Provider {provider} not supported"),
         };
     }
 
@@ -59,8 +59,8 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
             { "code", code },
             { "redirect_uri", redirectUri },
             { "client_id", config.ClientId },
-            { "code_verifier", codeVerifier }, // AJOUT du code_verifier                                               
-            { "client_secret", config.ClientSecret } // Ajouter client_secret 
+            { "code_verifier", codeVerifier }, // AJOUT du code_verifier
+            { "client_secret", config.ClientSecret }, // Ajouter client_secret
         };
 
         try
@@ -84,7 +84,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
                 RefreshToken = tokenData.TryGetProperty("refresh_token", out var rt) ? rt.GetString() : null,
                 IdToken = tokenData.TryGetProperty("id_token", out var it) ? it.GetString() : null,
                 ExpiresIn = tokenData.TryGetProperty("expires_in", out var exp) ? exp.GetInt32() : 3600,
-                TokenType = tokenData.TryGetProperty("token_type", out var tt) ? tt.GetString() ?? _bearer : _bearer
+                TokenType = tokenData.TryGetProperty("token_type", out var tt) ? tt.GetString() ?? Bearer : Bearer,
             };
         }
         catch (Exception ex)
@@ -110,7 +110,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
                 ExternalAuthProvider.Google => await GetGoogleUserInfo(accessToken),
                 ExternalAuthProvider.Facebook => await GetFacebookUserInfo(accessToken),
                 ExternalAuthProvider.Microsoft => await GetMicrosoftUserInfo(accessToken),
-                _ => null
+                _ => null,
             };
         }
         catch (Exception ex)
@@ -140,7 +140,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
             Id = data.GetProperty("id").GetString() ?? string.Empty,
             Email = data.GetProperty("email").GetString() ?? string.Empty,
             Name = data.TryGetProperty("name", out var name) ? name.GetString() : null,
-            AvatarUrl = data.TryGetProperty("picture", out var picture) ? picture.GetString() : null
+            AvatarUrl = data.TryGetProperty("picture", out var picture) ? picture.GetString() : null,
         };
     }
 
@@ -164,14 +164,14 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
             Name = data.TryGetProperty("name", out var name) ? name.GetString() : null,
             AvatarUrl = data.TryGetProperty("picture", out var pic)
                 ? pic.GetProperty("data").GetProperty("url").GetString()
-                : null
+                : null,
         };
     }
 
     private async Task<ExternalUserInfo?> GetMicrosoftUserInfo(string accessToken)
     {
         httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue(_bearer, accessToken);
+            new AuthenticationHeaderValue(Bearer, accessToken);
 
         var response = await httpClient.GetAsync("https://graph.microsoft.com/v1.0/me");
 
@@ -190,15 +190,7 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
                 ? mail.GetString() ?? string.Empty
                 : data.GetProperty("userPrincipalName").GetString() ?? string.Empty,
             Name = data.TryGetProperty("displayName", out var displayName) ? displayName.GetString() : null,
-            AvatarUrl = null
+            AvatarUrl = null,
         };
     }
-}
-
-public class ExternalUserInfo
-{
-    public string Id { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string? Name { get; set; }
-    public string? AvatarUrl { get; set; }
 }

@@ -12,9 +12,9 @@ namespace IrcChat.Api.Tests.Authorization;
 
 public class ChannelModificationHandlerTests
 {
-    private readonly ChatDbContext _db;
-    private readonly Mock<ILogger<ChannelModificationHandler>> _loggerMock;
-    private readonly ChannelModificationHandler _handler;
+    private readonly ChatDbContext db;
+    private readonly Mock<ILogger<ChannelModificationHandler>> loggerMock;
+    private readonly ChannelModificationHandler handler;
 
     public ChannelModificationHandlerTests()
     {
@@ -22,9 +22,9 @@ public class ChannelModificationHandlerTests
             .UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}")
             .Options;
 
-        _db = new ChatDbContext(options);
-        _loggerMock = new Mock<ILogger<ChannelModificationHandler>>();
-        _handler = new ChannelModificationHandler(_db, _loggerMock.Object);
+        db = new ChatDbContext(options);
+        loggerMock = new Mock<ILogger<ChannelModificationHandler>>();
+        handler = new ChannelModificationHandler(db, loggerMock.Object);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class ChannelModificationHandlerTests
         var context = new AuthorizationHandlerContext([requirement], user, null);
 
         // Act
-        await _handler.HandleAsync(context);
+        await handler.HandleAsync(context);
 
         // Assert
         Assert.False(context.HasSucceeded);
@@ -54,7 +54,7 @@ public class ChannelModificationHandlerTests
         var context = new AuthorizationHandlerContext([requirement], user, null);
 
         // Act
-        await _handler.HandleAsync(context);
+        await handler.HandleAsync(context);
 
         // Assert
         Assert.True(context.HasSucceeded); // Doit réussir pour permettre NotFound dans l'endpoint
@@ -70,11 +70,11 @@ public class ChannelModificationHandlerTests
             Id = Guid.NewGuid(),
             Name = "test-channel",
             CreatedBy = "creator",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
-        _db.Channels.Add(channel);
-        await _db.SaveChangesAsync();
+        db.Channels.Add(channel);
+        await db.SaveChangesAsync();
 
         var requirement = new ChannelModificationRequirement("test-channel");
         var claims = new List<Claim> { new(ClaimTypes.Name, "creator") };
@@ -82,7 +82,7 @@ public class ChannelModificationHandlerTests
         var context = new AuthorizationHandlerContext([requirement], user, null);
 
         // Act
-        await _handler.HandleAsync(context);
+        await handler.HandleAsync(context);
 
         // Assert
         Assert.True(context.HasSucceeded);
@@ -98,7 +98,7 @@ public class ChannelModificationHandlerTests
             Id = Guid.NewGuid(),
             Name = "test-channel",
             CreatedBy = "creator",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         var admin = new ReservedUsername
@@ -109,12 +109,12 @@ public class ChannelModificationHandlerTests
             Provider = ExternalAuthProvider.Google,
             ExternalUserId = "admin123",
             IsAdmin = true,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
-        _db.Channels.Add(channel);
-        _db.ReservedUsernames.Add(admin);
-        await _db.SaveChangesAsync();
+        db.Channels.Add(channel);
+        db.ReservedUsernames.Add(admin);
+        await db.SaveChangesAsync();
 
         var requirement = new ChannelModificationRequirement("test-channel");
         var claims = new List<Claim> { new(ClaimTypes.Name, "admin") };
@@ -122,7 +122,7 @@ public class ChannelModificationHandlerTests
         var context = new AuthorizationHandlerContext([requirement], user, null);
 
         // Act
-        await _handler.HandleAsync(context);
+        await handler.HandleAsync(context);
 
         // Assert
         Assert.True(context.HasSucceeded);
@@ -138,7 +138,7 @@ public class ChannelModificationHandlerTests
             Id = Guid.NewGuid(),
             Name = "test-channel",
             CreatedBy = "creator",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         var regularUser = new ReservedUsername
@@ -149,12 +149,12 @@ public class ChannelModificationHandlerTests
             Provider = ExternalAuthProvider.Google,
             ExternalUserId = "regular123",
             IsAdmin = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
-        _db.Channels.Add(channel);
-        _db.ReservedUsernames.Add(regularUser);
-        await _db.SaveChangesAsync();
+        db.Channels.Add(channel);
+        db.ReservedUsernames.Add(regularUser);
+        await db.SaveChangesAsync();
 
         var requirement = new ChannelModificationRequirement("test-channel");
         var claims = new List<Claim> { new(ClaimTypes.Name, "regular") };
@@ -162,7 +162,7 @@ public class ChannelModificationHandlerTests
         var context = new AuthorizationHandlerContext([requirement], user, null);
 
         // Act
-        await _handler.HandleAsync(context);
+        await handler.HandleAsync(context);
 
         // Assert
         Assert.False(context.HasSucceeded);
@@ -178,11 +178,11 @@ public class ChannelModificationHandlerTests
             Id = Guid.NewGuid(),
             Name = "Test-Channel",
             CreatedBy = "creator",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
-        _db.Channels.Add(channel);
-        await _db.SaveChangesAsync();
+        db.Channels.Add(channel);
+        await db.SaveChangesAsync();
 
         var requirement = new ChannelModificationRequirement("test-channel");
         var claims = new List<Claim> { new(ClaimTypes.Name, "creator") };
@@ -190,7 +190,7 @@ public class ChannelModificationHandlerTests
         var context = new AuthorizationHandlerContext([requirement], user, null);
 
         // Act
-        await _handler.HandleAsync(context);
+        await handler.HandleAsync(context);
 
         // Assert
         Assert.True(context.HasSucceeded);
@@ -205,11 +205,11 @@ public class ChannelModificationHandlerTests
             Id = Guid.NewGuid(),
             Name = "test-channel",
             CreatedBy = "Creator",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
-        _db.Channels.Add(channel);
-        await _db.SaveChangesAsync();
+        db.Channels.Add(channel);
+        await db.SaveChangesAsync();
 
         var requirement = new ChannelModificationRequirement("test-channel");
         var claims = new List<Claim> { new(ClaimTypes.Name, "creator") };
@@ -217,7 +217,7 @@ public class ChannelModificationHandlerTests
         var context = new AuthorizationHandlerContext([requirement], user, null);
 
         // Act
-        await _handler.HandleAsync(context);
+        await handler.HandleAsync(context);
 
         // Assert
         Assert.True(context.HasSucceeded);
@@ -232,10 +232,10 @@ public class ChannelModificationHandlerTests
         var context = new AuthorizationHandlerContext([requirement], user, null);
 
         // Act
-        await _handler.HandleAsync(context);
+        await handler.HandleAsync(context);
 
         // Assert
-        _loggerMock.Verify(
+        loggerMock.Verify(
             x => x.Log(
                 LogLevel.Warning,
                 It.IsAny<EventId>(),
@@ -254,11 +254,11 @@ public class ChannelModificationHandlerTests
             Id = Guid.NewGuid(),
             Name = "test-channel",
             CreatedBy = "creator",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
-        _db.Channels.Add(channel);
-        await _db.SaveChangesAsync();
+        db.Channels.Add(channel);
+        await db.SaveChangesAsync();
 
         var requirement = new ChannelModificationRequirement("test-channel");
         var claims = new List<Claim> { new(ClaimTypes.Name, "creator") };
@@ -266,10 +266,10 @@ public class ChannelModificationHandlerTests
         var context = new AuthorizationHandlerContext([requirement], user, null);
 
         // Act
-        await _handler.HandleAsync(context);
+        await handler.HandleAsync(context);
 
         // Assert
-        _loggerMock.Verify(
+        loggerMock.Verify(
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),

@@ -1,34 +1,31 @@
 // tests/IrcChat.Client.Tests/Components/GlobalMuteUserButtonTests.cs
 using System.Net;
 using System.Net.Http.Json;
-using Bunit;
 using IrcChat.Client.Components;
 using IrcChat.Client.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Moq;
 using RichardSzalay.MockHttp;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
 public class GlobalMuteUserButtonTests : BunitContext
 {
-    private readonly MockHttpMessageHandler _mockHttp;
-    private readonly Mock<IUnifiedAuthService> _authServiceMock;
-    private readonly Mock<ILogger<GlobalMuteUserButton>> _loggerMock;
+    private readonly MockHttpMessageHandler mockHttp;
+    private readonly Mock<IUnifiedAuthService> authServiceMock;
+    private readonly Mock<ILogger<GlobalMuteUserButton>> loggerMock;
 
     public GlobalMuteUserButtonTests()
     {
-        _mockHttp = new MockHttpMessageHandler();
-        _authServiceMock = new Mock<IUnifiedAuthService>();
-        _loggerMock = new Mock<ILogger<GlobalMuteUserButton>>();
+        mockHttp = new MockHttpMessageHandler();
+        authServiceMock = new Mock<IUnifiedAuthService>();
+        loggerMock = new Mock<ILogger<GlobalMuteUserButton>>();
 
-        var httpClient = _mockHttp.ToHttpClient();
+        var httpClient = mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
         Services.AddSingleton(httpClient);
-        Services.AddSingleton(_authServiceMock.Object);
-        Services.AddSingleton(_loggerMock.Object);
+        Services.AddSingleton(authServiceMock.Object);
+        Services.AddSingleton(loggerMock.Object);
 
         JSInterop.Mode = JSRuntimeMode.Loose;
     }
@@ -37,7 +34,7 @@ public class GlobalMuteUserButtonTests : BunitContext
     public void GlobalMuteUserButton_WhenNotAdmin_ShouldNotRender()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(false);
+        authServiceMock.Setup(x => x.IsAdmin).Returns(false);
 
         // Act
         var cut = Render<GlobalMuteUserButton>(parameters => parameters
@@ -51,7 +48,7 @@ public class GlobalMuteUserButtonTests : BunitContext
     public void GlobalMuteUserButton_WhenAdminAndNoUserId_ShouldNotRender()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
 
         // Act
         var cut = Render<GlobalMuteUserButton>(parameters => parameters
@@ -65,10 +62,10 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenAdminAndUserNotMuted_ShouldShowMuteButton()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":false}");
 
         // Act
@@ -88,10 +85,10 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenAdminAndUserMuted_ShouldShowUnmuteButton()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":true}");
 
         // Act
@@ -111,10 +108,10 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenClickedOnMuteButton_ShouldShowMuteDialog()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":false}");
 
         var cut = Render<GlobalMuteUserButton>(parameters => parameters
@@ -136,10 +133,10 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenClickedOnUnmuteButton_ShouldShowUnmuteDialog()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":true}");
 
         var cut = Render<GlobalMuteUserButton>(parameters => parameters
@@ -161,10 +158,10 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenCancelDialog_ShouldCloseDialog()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":false}");
 
         var cut = Render<GlobalMuteUserButton>(parameters => parameters
@@ -187,10 +184,10 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenClickOverlay_ShouldCloseDialog()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":false}");
 
         var cut = Render<GlobalMuteUserButton>(parameters => parameters
@@ -213,10 +210,10 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenClickCloseButton_ShouldCloseDialog()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":false}");
 
         var cut = Render<GlobalMuteUserButton>(parameters => parameters
@@ -239,13 +236,13 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenConfirmMute_ShouldCallApiAndShowSuccess()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":false}");
 
-        _mockHttp.When(HttpMethod.Post, "*/api/admin/global-mute/user123")
+        mockHttp.When(HttpMethod.Post, "*/api/admin/global-mute/user123")
             .Respond(HttpStatusCode.OK, "application/json", "{\"userId\":\"user123\"}");
 
         var cut = Render<GlobalMuteUserButton>(parameters => parameters
@@ -271,20 +268,20 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenConfirmMuteWithReason_ShouldSendReasonToApi()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":false}");
 
         var capturedRequest = (HttpRequestMessage?)null;
-        _mockHttp.When(HttpMethod.Post, "*/api/admin/global-mute/user123")
+        mockHttp.When(HttpMethod.Post, "*/api/admin/global-mute/user123")
             .Respond(async request =>
             {
                 capturedRequest = request;
                 return new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = JsonContent.Create(new { userId = "user123" })
+                    Content = JsonContent.Create(new { userId = "user123" }),
                 };
             });
 
@@ -315,13 +312,13 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenConfirmUnmute_ShouldCallApiAndShowSuccess()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":true}");
 
-        _mockHttp.When(HttpMethod.Delete, "*/api/admin/global-mute/user123")
+        mockHttp.When(HttpMethod.Delete, "*/api/admin/global-mute/user123")
             .Respond(HttpStatusCode.OK);
 
         var cut = Render<GlobalMuteUserButton>(parameters => parameters
@@ -347,13 +344,13 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenMuteApiFails_ShouldShowError()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":false}");
 
-        _mockHttp.When(HttpMethod.Post, "*/api/admin/global-mute/user123")
+        mockHttp.When(HttpMethod.Post, "*/api/admin/global-mute/user123")
             .Respond(HttpStatusCode.BadRequest, "application/json", "{\"error\":\"user_already_globally_muted\"}");
 
         var cut = Render<GlobalMuteUserButton>(parameters => parameters
@@ -378,13 +375,13 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenUnmuteApiFails_ShouldShowError()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":true}");
 
-        _mockHttp.When(HttpMethod.Delete, "*/api/admin/global-mute/user123")
+        mockHttp.When(HttpMethod.Delete, "*/api/admin/global-mute/user123")
             .Respond(HttpStatusCode.NotFound);
 
         var cut = Render<GlobalMuteUserButton>(parameters => parameters
@@ -409,14 +406,14 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenLoading_ShouldShowSpinner()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":false}");
 
         var tcs = new TaskCompletionSource<HttpResponseMessage>();
-        _mockHttp.When(HttpMethod.Post, "*/api/admin/global-mute/user123")
+        mockHttp.When(HttpMethod.Post, "*/api/admin/global-mute/user123")
             .Respond(async () => await tcs.Task);
 
         var cut = Render<GlobalMuteUserButton>(parameters => parameters
@@ -438,7 +435,7 @@ public class GlobalMuteUserButtonTests : BunitContext
         // Terminer la requête
         tcs.SetResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = JsonContent.Create(new { userId = "user123" })
+            Content = JsonContent.Create(new { userId = "user123" }),
         });
     }
 
@@ -446,10 +443,10 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenCheckStatusFails_ShouldLogError()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond(HttpStatusCode.InternalServerError);
 
         // Act
@@ -459,7 +456,7 @@ public class GlobalMuteUserButtonTests : BunitContext
         await Task.Delay(100);
 
         // Assert
-        _loggerMock.Verify(
+        loggerMock.Verify(
             x => x.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
@@ -473,13 +470,13 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenMuteThrowsException_ShouldShowErrorAndLog()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":false}");
 
-        _mockHttp.When(HttpMethod.Post, "*/api/admin/global-mute/user123")
+        mockHttp.When(HttpMethod.Post, "*/api/admin/global-mute/user123")
             .Throw(new HttpRequestException("Network error"));
 
         var cut = Render<GlobalMuteUserButton>(parameters => parameters
@@ -499,7 +496,7 @@ public class GlobalMuteUserButtonTests : BunitContext
         Assert.Contains("error-tooltip", cut.Markup);
         Assert.Contains("Une erreur est survenue", cut.Markup);
 
-        _loggerMock.Verify(
+        loggerMock.Verify(
             x => x.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
@@ -513,13 +510,13 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenUserIdChanges_ShouldRecheckStatus()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":false}");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user456/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user456/is-muted")
             .Respond("application/json", "{\"userId\":\"user456\",\"isGloballyMuted\":true}");
 
         var cut = Render<GlobalMuteUserButton>(parameters => parameters
@@ -542,10 +539,10 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_MuteDialogTextarea_ShouldShowCharCount()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":false}");
 
         var cut = Render<GlobalMuteUserButton>(parameters => parameters
@@ -569,20 +566,20 @@ public class GlobalMuteUserButtonTests : BunitContext
     public async Task GlobalMuteUserButton_WhenEmptyReason_ShouldUseDefaultReason()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("fake-token");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("fake-token");
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
+        mockHttp.When(HttpMethod.Get, "*/api/admin/global-mute/user123/is-muted")
             .Respond("application/json", "{\"userId\":\"user123\",\"isGloballyMuted\":false}");
 
         var capturedRequest = (HttpRequestMessage?)null;
-        _mockHttp.When(HttpMethod.Post, "*/api/admin/global-mute/user123")
+        mockHttp.When(HttpMethod.Post, "*/api/admin/global-mute/user123")
             .Respond(async request =>
             {
                 capturedRequest = request;
                 return new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = JsonContent.Create(new { userId = "user123" })
+                    Content = JsonContent.Create(new { userId = "user123" }),
                 };
             });
 

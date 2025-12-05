@@ -8,7 +8,7 @@ public static class ConnectionManagerOptionsExtensions
     /// Récupère l'ID de l'instance en utilisant la priorité suivante:
     /// 1. ConnectionManagerOptions.InstanceId
     /// 2. Variable d'environnement "HOSTNAME"
-    /// 3. Environment.MachineName
+    /// 3. Environment.MachineName.
     /// </summary>
     /// <param name="options">Les options de configuration.</param>
     /// <returns>L'ID de l'instance.</returns>

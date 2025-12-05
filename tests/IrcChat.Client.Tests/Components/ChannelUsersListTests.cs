@@ -1,37 +1,34 @@
 using System.Net.Http.Json;
-using Bunit;
 using IrcChat.Client.Components;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Moq;
 using RichardSzalay.MockHttp;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
 public class ChannelUsersListTests : BunitContext
 {
-    private readonly MockHttpMessageHandler _mockHttp;
-    private readonly Mock<IIgnoredUsersService> _ignoredUsersServiceMock;
-    private readonly Mock<ILogger<ChannelUsersList>> _loggerMock;
+    private readonly MockHttpMessageHandler mockHttp;
+    private readonly Mock<IIgnoredUsersService> ignoredUsersServiceMock;
+    private readonly Mock<ILogger<ChannelUsersList>> loggerMock;
 
     public ChannelUsersListTests()
     {
-        _mockHttp = new MockHttpMessageHandler();
-        _ignoredUsersServiceMock = new Mock<IIgnoredUsersService>();
-        _loggerMock = new Mock<ILogger<ChannelUsersList>>();
+        mockHttp = new MockHttpMessageHandler();
+        ignoredUsersServiceMock = new Mock<IIgnoredUsersService>();
+        loggerMock = new Mock<ILogger<ChannelUsersList>>();
 
         // Configuration par défaut du service ignoré
-        _ignoredUsersServiceMock.Setup(x => x.InitializeAsync()).Verifiable();
-        _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored(It.IsAny<string>())).Returns(false);
+        ignoredUsersServiceMock.Setup(x => x.InitializeAsync()).Verifiable();
+        ignoredUsersServiceMock.Setup(x => x.IsUserIgnored(It.IsAny<string>())).Returns(false);
 
-        var httpClient = _mockHttp.ToHttpClient();
+        var httpClient = mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
         Services.AddScoped(sp => httpClient);
-        Services.AddScoped(_ => _ignoredUsersServiceMock.Object);
-        Services.AddScoped(_ => _loggerMock.Object);
+        Services.AddScoped(_ => ignoredUsersServiceMock.Object);
+        Services.AddScoped(_ => loggerMock.Object);
     }
 
     [Fact]
@@ -41,12 +38,13 @@ public class ChannelUsersListTests : BunitContext
         var users = new List<User>
         {
             new() { UserId = "user1", Username = "Alice" },
-            new() { UserId = "user2", Username = "Bob" }
+            new() { UserId = "user2", Username = "Bob" },
         };
 
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Get, "*/api/channels/general/muted-users")
-            .Respond(System.Net.HttpStatusCode.OK,
+            .Respond(
+                System.Net.HttpStatusCode.OK,
                 JsonContent.Create(new List<dynamic>()));
 
         // Act
@@ -71,9 +69,10 @@ public class ChannelUsersListTests : BunitContext
         // Arrange
         var users = new List<User>();
 
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Get, "*/api/channels/general/muted-users")
-            .Respond(System.Net.HttpStatusCode.OK,
+            .Respond(
+                System.Net.HttpStatusCode.OK,
                 JsonContent.Create(new List<dynamic>()));
 
         // Act
@@ -96,14 +95,15 @@ public class ChannelUsersListTests : BunitContext
         // Arrange
         var users = new List<User>
         {
-            new() { UserId = "user1", Username = "Alice" }
+            new() { UserId = "user1", Username = "Alice" },
         };
 
-        _ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("user1")).Returns(true);
+        ignoredUsersServiceMock.Setup(x => x.IsUserIgnored("user1")).Returns(true);
 
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Get, "*/api/channels/general/muted-users")
-            .Respond(System.Net.HttpStatusCode.OK,
+            .Respond(
+                System.Net.HttpStatusCode.OK,
                 JsonContent.Create(new List<dynamic>()));
 
         // Act
@@ -130,12 +130,13 @@ public class ChannelUsersListTests : BunitContext
         var users = new List<User>
         {
             new() { UserId = "user1", Username = "Alice" },
-            new() { UserId = "user2", Username = "Bob" }
+            new() { UserId = "user2", Username = "Bob" },
         };
 
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Get, "*/api/channels/general/muted-users")
-            .Respond(System.Net.HttpStatusCode.OK,
+            .Respond(
+                System.Net.HttpStatusCode.OK,
                 JsonContent.Create(new List<dynamic>()));
 
         // Act
@@ -160,12 +161,13 @@ public class ChannelUsersListTests : BunitContext
         var users = new List<User>
         {
             new() { UserId = "user1", Username = "Alice" },
-            new() { UserId = "user2", Username = "Bob" }
+            new() { UserId = "user2", Username = "Bob" },
         };
 
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Get, "*/api/channels/general/muted-users")
-            .Respond(System.Net.HttpStatusCode.OK,
+            .Respond(
+                System.Net.HttpStatusCode.OK,
                 JsonContent.Create(new List<dynamic>()));
 
         // Act
@@ -190,12 +192,13 @@ public class ChannelUsersListTests : BunitContext
         var users = new List<User>
         {
             new() { UserId = "user1", Username = "Alice" },
-            new() { UserId = "user2", Username = "Bob" }
+            new() { UserId = "user2", Username = "Bob" },
         };
 
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Get, "*/api/channels/general/muted-users")
-            .Respond(System.Net.HttpStatusCode.OK,
+            .Respond(
+                System.Net.HttpStatusCode.OK,
                 JsonContent.Create(new List<dynamic>()));
 
         // Act
@@ -220,22 +223,23 @@ public class ChannelUsersListTests : BunitContext
         var users = new List<User>
         {
             new() { UserId = "user1", Username = "Alice" },
-            new() { UserId = "user2", Username = "Bob" }
+            new() { UserId = "user2", Username = "Bob" },
         };
 
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Get, "*/api/channels/general/muted-users")
-            .Respond(System.Net.HttpStatusCode.OK,
+            .Respond(
+                System.Net.HttpStatusCode.OK,
                 JsonContent.Create(new List<dynamic>()));
 
-        var postMuteRequest = _mockHttp
+        var postMuteRequest = mockHttp
             .When(HttpMethod.Post, "*/api/channels/general/muted-users/user1")
             .Respond(System.Net.HttpStatusCode.OK, JsonContent.Create(new
             {
                 channelName = "general",
                 userId = "user1",
                 username = "Alice",
-                mutedAt = DateTime.UtcNow
+                mutedAt = DateTime.UtcNow,
             }));
 
         var cut = Render<ChannelUsersList>(parameters => parameters
@@ -256,7 +260,7 @@ public class ChannelUsersListTests : BunitContext
         cut.Render();
 
         // Assert
-        Assert.Equal(1, _mockHttp.GetMatchCount(postMuteRequest));
+        Assert.Equal(1, mockHttp.GetMatchCount(postMuteRequest));
         Assert.Contains("a été rendu muet", cut.Markup);
     }
 
@@ -268,25 +272,25 @@ public class ChannelUsersListTests : BunitContext
         var users = new List<User>
         {
             new() { UserId = "user3", Username = "Alice" },
-            new() { UserId = "user4", Username = "Bob" }
+            new() { UserId = "user4", Username = "Bob" },
         };
 
         var mutedUsersData = new List<dynamic>
         {
-            new { userId = "user3", username = "Alice", mutedAt = DateTime.UtcNow }
+            new { userId = "user3", username = "Alice", mutedAt = DateTime.UtcNow },
         };
 
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Get, $"*/api/channels/{channelName}/muted-users")
             .Respond(System.Net.HttpStatusCode.OK, JsonContent.Create(mutedUsersData));
 
-        var deleteUnmuteRequest = _mockHttp
+        var deleteUnmuteRequest = mockHttp
             .When(HttpMethod.Delete, $"*/api/channels/{channelName}/muted-users/user3")
             .Respond(System.Net.HttpStatusCode.OK, JsonContent.Create(new
             {
                 channelName,
                 userId = "user3",
-                username = "Alice"
+                username = "Alice",
             }));
 
         var cut = Render<ChannelUsersList>(parameters => parameters
@@ -307,7 +311,7 @@ public class ChannelUsersListTests : BunitContext
         cut.Render();
 
         // Assert
-        Assert.Equal(1, _mockHttp.GetMatchCount(deleteUnmuteRequest));
+        Assert.Equal(1, mockHttp.GetMatchCount(deleteUnmuteRequest));
         Assert.Contains("peut à nouveau parler", cut.Markup);
     }
 
@@ -317,19 +321,20 @@ public class ChannelUsersListTests : BunitContext
         // Arrange
         var users = new List<User>
         {
-            new() { UserId = "user1", Username = "Alice" }
+            new() { UserId = "user1", Username = "Alice" },
         };
 
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Get, "*/api/channels/general/muted-users")
-            .Respond(System.Net.HttpStatusCode.OK,
+            .Respond(
+                System.Net.HttpStatusCode.OK,
                 JsonContent.Create(new List<dynamic>()));
 
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Post, "*/api/channels/general/muted-users/user1")
             .Respond(System.Net.HttpStatusCode.BadRequest, JsonContent.Create(new
             {
-                error = "user_already_muted"
+                error = "user_already_muted",
             }));
 
         var cut = Render<ChannelUsersList>(parameters => parameters

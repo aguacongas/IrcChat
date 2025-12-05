@@ -44,7 +44,7 @@ public static class PrivateMessageEndpoints
 
     /// <summary>
     /// Récupère les conversations d'un utilisateur via son userId client
-    /// Filtre les messages supprimés par cet utilisateur
+    /// Filtre les messages supprimés par cet utilisateur.
     /// </summary>
     private static async Task<IResult> GetConversationsAsync(
         string userId,
@@ -62,12 +62,13 @@ public static class PrivateMessageEndpoints
             .Select(g => new
             {
                 OtherUsername = g.Key,
+
                 // Récupérer le UserId de l'autre personne depuis le dernier message
                 OtherUserId = g.OrderByDescending(m => m.Timestamp)
                     .Select(m => m.SenderUserId == userId ? m.RecipientUserId : m.SenderUserId)
                     .First(),
                 LastMessage = g.OrderByDescending(m => m.Timestamp).First(),
-                UnreadCount = g.Count(m => m.RecipientUserId == userId && !m.IsRead)
+                UnreadCount = g.Count(m => m.RecipientUserId == userId && !m.IsRead),
             })
             .ToListAsync();
 
@@ -85,18 +86,20 @@ public static class PrivateMessageEndpoints
             LastMessage = c.LastMessage.Content,
             LastMessageTime = c.LastMessage.Timestamp,
             UnreadCount = c.UnreadCount,
-            IsOnline = onlineUsers.Contains(c.OtherUsername)
+            IsOnline = onlineUsers.Contains(c.OtherUsername),
         }).OrderByDescending(c => c.LastMessageTime);
 
-        logger.LogInformation("Trouvé {Count} conversations pour UserId {UserId}",
-            conversations.Count, userId);
+        logger.LogInformation(
+            "Trouvé {Count} conversations pour UserId {UserId}",
+            conversations.Count,
+            userId);
 
         return Results.Ok(result);
     }
 
     /// <summary>
     /// Récupère les messages entre deux userId
-    /// Filtre les messages supprimés par l'utilisateur demandeur
+    /// Filtre les messages supprimés par l'utilisateur demandeur.
     /// </summary>
     private static async Task<IResult> GetPrivateMessagesAsync(
         string userId,
@@ -106,7 +109,8 @@ public static class PrivateMessageEndpoints
     {
         logger.LogInformation(
             "Récupération des messages entre UserId {UserId} et {OtherUserId}",
-            userId, otherUserId);
+            userId,
+            otherUserId);
 
         // Filtrer directement par userId et exclure les messages supprimés par cet utilisateur
         var messages = await db.PrivateMessages
@@ -124,7 +128,7 @@ public static class PrivateMessageEndpoints
 
     /// <summary>
     /// Récupère le nombre de messages non lus pour un userId
-    /// Exclut les messages supprimés par cet utilisateur
+    /// Exclut les messages supprimés par cet utilisateur.
     /// </summary>
     private static async Task<IResult> GetUnreadCountAsync(
         string userId,
@@ -137,15 +141,17 @@ public static class PrivateMessageEndpoints
                           && !m.IsRead
                           && !m.IsDeletedByRecipient);
 
-        logger.LogInformation("Nombre de messages non lus pour UserId {UserId}: {Count}",
-            userId, count);
+        logger.LogInformation(
+            "Nombre de messages non lus pour UserId {UserId}: {Count}",
+            userId,
+            count);
 
         return Results.Ok(new { UnreadCount = count });
     }
 
     /// <summary>
     /// Supprime une conversation pour l'utilisateur demandeur uniquement
-    /// L'autre utilisateur peut toujours voir ses messages
+    /// L'autre utilisateur peut toujours voir ses messages.
     /// </summary>
     private static async Task<IResult> DeleteConversationAsync(
         string userId,
@@ -163,8 +169,10 @@ public static class PrivateMessageEndpoints
 
         if (messages.Count == 0)
         {
-            logger.LogInformation("Aucun message à supprimer entre {UserId} et {OtherUserId}",
-                userId, otherUserId);
+            logger.LogInformation(
+                "Aucun message à supprimer entre {UserId} et {OtherUserId}",
+                userId,
+                otherUserId);
             return Results.NotFound();
         }
 
@@ -185,7 +193,10 @@ public static class PrivateMessageEndpoints
 
         logger.LogInformation(
             "Suppression de {Count} messages entre {UserId} et {OtherUserId} pour {CallerUserId} uniquement",
-            messages.Count, userId, otherUserId, userId);
+            messages.Count,
+            userId,
+            otherUserId,
+            userId);
 
         return Results.Ok(new { Deleted = messages.Count });
     }

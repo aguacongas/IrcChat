@@ -23,14 +23,14 @@ public partial class AddOAuthSupport : Migration
                 DisplayName = table.Column<string>(type: "text", nullable: true),
                 AvatarUrl = table.Column<string>(type: "text", nullable: true),
                 CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                LastLoginAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                LastLoginAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
             },
             constraints: table => table.PrimaryKey("PK_ReservedUsernames", x => x.Id));
 
         migrationBuilder.CreateIndex(
             name: "IX_ReservedUsernames_Provider_ExternalUserId",
             table: "ReservedUsernames",
-            columns: new[] { "Provider", "ExternalUserId" },
+            columns: ["Provider", "ExternalUserId"],
             unique: true);
 
         migrationBuilder.CreateIndex(

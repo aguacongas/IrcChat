@@ -10,16 +10,16 @@ public class ConnectionManagerService(
     IOptions<ConnectionManagerOptions> options,
     ILogger<ConnectionManagerService> logger) : BackgroundService
 {
-    private readonly ConnectionManagerOptions _options = options.Value;
-    private readonly string _instanceId = options.Value.GetInstanceId();
+    private readonly ConnectionManagerOptions options = options.Value;
+    private readonly string instanceId = options.Value.GetInstanceId();
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation(
             "ConnectionManager démarré - Instance: {InstanceId}, Cleanup: {CleanupInterval}s, Timeout: {UserTimeout}s",
-            _instanceId,
-            _options.CleanupIntervalSeconds,
-            _options.UserTimeoutSeconds);
+            instanceId,
+            options.CleanupIntervalSeconds,
+            options.UserTimeoutSeconds);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -27,7 +27,7 @@ public class ConnectionManagerService(
             {
                 await CleanupStaleConnections(stoppingToken);
                 await Task.Delay(
-                    TimeSpan.FromSeconds(_options.CleanupIntervalSeconds),
+                    TimeSpan.FromSeconds(options.CleanupIntervalSeconds),
                     stoppingToken);
             }
             catch (Exception ex)
@@ -41,13 +41,13 @@ public class ConnectionManagerService(
     {
         await using var db = await dbContextFactory.CreateDbContextAsync(stoppingToken);
 
-        var timeout = DateTime.UtcNow.AddSeconds(-_options.UserTimeoutSeconds);
+        var timeout = DateTime.UtcNow.AddSeconds(-options.UserTimeoutSeconds);
         var staleConnections = await db.ConnectedUsers
             .GroupBy(u => u.ConnectionId)
             .Select(g => new
             {
                 ConnectionId = g.Key,
-                LastActivity = g.Max(u => u.LastActivity)
+                LastActivity = g.Max(u => u.LastActivity),
             })
             .Where(u => u.LastActivity < timeout)
             .Select(g => g.ConnectionId)

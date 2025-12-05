@@ -1,20 +1,20 @@
 // tests/IrcChat.Client.Tests/Helpers/BunitBunitContext.cs
-using Bunit;
 using IrcChat.Client.Models;
 using IrcChat.Client.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Moq;
 
 namespace IrcChat.Client.Tests.Helpers;
 
-public class BunitBunitContext : BunitContext
+public class BunitTestContext : BunitContext
 {
     public Mock<LocalStorageService> LocalStorageMock { get; }
+
     public Mock<HttpClient> HttpClientMock { get; }
+
     public Mock<UnifiedAuthService> AuthServiceMock { get; }
 
-    public BunitBunitContext()
+    public BunitTestContext()
     {
         LocalStorageMock = new Mock<LocalStorageService>(MockBehavior.Strict, JSInterop.JSRuntime);
         HttpClientMock = new Mock<HttpClient>(MockBehavior.Strict);
@@ -41,7 +41,7 @@ public class BunitBunitContext : BunitContext
         Services.AddSingleton(Options.Create(new ApiSettings
         {
             BaseUrl = "https://localhost:7000",
-            SignalRHubUrl = "https://localhost:7000/chathub"
+            SignalRHubUrl = "https://localhost:7000/chathub",
         }));
     }
 }

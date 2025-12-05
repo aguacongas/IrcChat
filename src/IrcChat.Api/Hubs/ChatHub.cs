@@ -14,8 +14,8 @@ public class ChatHub(
     IOptions<ConnectionManagerOptions> options,
     ILogger<ChatHub> logger) : Hub
 {
-    private static readonly string _userStatusChangedMethod = "UserStatusChanged";
-    private readonly string _instanceId = options.Value.GetInstanceId();
+    private static readonly string UserStatusChangedMethod = "UserStatusChanged";
+    private readonly string instanceId = options.Value.GetInstanceId();
 
     public async Task JoinChannel(string channel)
     {
@@ -57,7 +57,7 @@ public class ChatHub(
             Channel = channel,
             LastActivity = DateTime.UtcNow,
             ServerInstanceId = user.ServerInstanceId,
-            ConnectedAt = DateTime.UtcNow
+            ConnectedAt = DateTime.UtcNow,
         };
 
         user.LastActivity = DateTime.UtcNow;
@@ -119,15 +119,16 @@ public class ChatHub(
 
             if (!isCreator && !isAdmin)
             {
-                await Clients.Caller.SendAsync("MessageBlocked",
+                await Clients.Caller.SendAsync(
+                    "MessageBlocked",
                     "Ce salon est actuellement muet. Seul le créateur ou un administrateur peut envoyer des messages.");
                 return;
             }
         }
 
         var isMuted = await db.MutedUsers
-            .AnyAsync(m => m.ChannelName == null || m.ChannelName.ToLower() == request.Channel.ToLower()
-                        && m.UserId == connectedUser.UserId);
+            .AnyAsync(m => m.ChannelName == null || (m.ChannelName.ToLower() == request.Channel.ToLower()
+                        && m.UserId == connectedUser.UserId));
 
         var message = new Message
         {
@@ -137,7 +138,7 @@ public class ChatHub(
             Content = request.Content,
             Channel = request.Channel,
             Timestamp = DateTime.UtcNow,
-            IsDeleted = isMuted
+            IsDeleted = isMuted,
         };
 
         db.Messages.Add(message);
@@ -147,7 +148,8 @@ public class ChatHub(
         {
             logger.LogInformation(
                 "Message de l'utilisateur mute {UserId} sauvegardé mais non diffusé dans {Channel}",
-                connectedUser.UserId, request.Channel);
+                connectedUser.UserId,
+                request.Channel);
             await Clients.Caller.SendAsync("ReceiveMessage", message);
             return;
         }
@@ -181,7 +183,7 @@ public class ChatHub(
             RecipientUserId = request.RecipientUserId,
             Content = request.Content,
             Timestamp = DateTime.UtcNow,
-            IsDeletedByRecipient = isGlobalyMute
+            IsDeletedByRecipient = isGlobalyMute,
         };
         sender.LastActivity = DateTime.UtcNow;
 
@@ -190,7 +192,10 @@ public class ChatHub(
 
         logger.LogInformation(
             "Message privé envoyé de {Sender} (UserId: {SenderUserId}) à {Recipient} (UserId: {RecipientUserId})",
-            sender.Username, sender.UserId, request.RecipientUsername, request.RecipientUserId);
+            sender.Username,
+            sender.UserId,
+            request.RecipientUsername,
+            request.RecipientUserId);
 
         var recipient = await db.ConnectedUsers
             .Where(u => u.UserId == request.RecipientUserId)
@@ -226,6 +231,7 @@ public class ChatHub(
         {
             message.IsRead = true;
         }
+
         currentUser.LastActivity = DateTime.UtcNow;
         await db.SaveChangesAsync();
 
@@ -257,11 +263,11 @@ public class ChatHub(
                 Channel = null,
                 ConnectionId = Context.ConnectionId,
                 LastActivity = DateTime.UtcNow,
-                ServerInstanceId = _instanceId,
-                ConnectedAt = DateTime.UtcNow
+                ServerInstanceId = instanceId,
+                ConnectedAt = DateTime.UtcNow,
             };
 
-            await Clients.All.SendAsync(_userStatusChangedMethod, username, userId, true);
+            await Clients.All.SendAsync(UserStatusChangedMethod, username, userId, true);
             db.ConnectedUsers.Add(user);
             logger.LogInformation("Utilisateur {Username} enregistré via Ping avec UserId {UserId}", username, userId);
         }
@@ -302,7 +308,7 @@ public class ChatHub(
 
             if (!hasOtherConnections)
             {
-                await Clients.All.SendAsync(_userStatusChangedMethod, username, userId, false);
+                await Clients.All.SendAsync(UserStatusChangedMethod, username, userId, false);
                 logger.LogInformation("Utilisateur {Username} complètement déconnecté", username);
             }
         }

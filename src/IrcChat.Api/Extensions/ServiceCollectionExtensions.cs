@@ -72,7 +72,7 @@ public static class ServiceCollectionExtensions
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = jwtIssuer,
                     ValidAudience = jwtAudience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
                 };
 
                 // Support pour SignalR avec JWT
@@ -87,8 +87,9 @@ public static class ServiceCollectionExtensions
                         {
                             context.Token = accessToken;
                         }
+
                         return Task.CompletedTask;
-                    }
+                    },
                 };
             });
 
@@ -96,7 +97,7 @@ public static class ServiceCollectionExtensions
     }
 
     public static IServiceCollection AddIrcChatAuthorization(this IServiceCollection services)
-    =>  // Ajoute les Authorization Handlers et Policies personnalisés
+    => // Ajoute les Authorization Handlers et Policies personnalisés
         services.AddAuthorization(configure =>
             {
                 // Policy pour modification de canal
@@ -106,6 +107,7 @@ public static class ServiceCollectionExtensions
                     {
                         // Récupérer le HttpContext depuis la ressource
                         var httpContext = context.Resource as HttpContext;
+
                         // Extraire le channelName depuis les route values
                         // IMPORTANT: Le paramètre de route DOIT s'appeler "channelName"
                         if (httpContext?.Request.RouteValues.TryGetValue("channelName", out var channelNameObj) == true &&
@@ -113,17 +115,21 @@ public static class ServiceCollectionExtensions
                         {
                             // Créer le requirement avec le channelName extrait
                             var requirement = new ChannelModificationRequirement(channelName);
+
                             // Obtenir l'authorization service et exécuter le handler
                             var authorizationService = httpContext.RequestServices.GetRequiredService<IAuthorizationService>();
                             var result = await authorizationService.AuthorizeAsync(context.User, httpContext, requirement);
                             return result.Succeeded;
                         }
+
                         // Pas de channelName dans la route = échec
                         return false;
                     }));
+
                 // Policy pour l'administration
                 configure.AddPolicy(AuthorizationPolicies.IsAdmin, builder =>
                     builder.AddRequirements(new IsAdminRequirement()));
+
                 // Policy pour les utilisateur resever
                 configure.AddPolicy(AuthorizationPolicies.IsReserved, builder =>
                     builder.AddRequirements(new IsReservedRequirement()));
@@ -133,6 +139,7 @@ public static class ServiceCollectionExtensions
                     {
                         // Récupérer le HttpContext depuis la ressource
                         var httpContext = context.Resource as HttpContext;
+
                         // Extraire le userId depuis les route values
                         // IMPORTANT: Le paramètre de route DOIT s'appeler "userId"
                         if (httpContext?.Request.RouteValues.TryGetValue("userId", out var channelNameObj) == true &&
@@ -140,21 +147,22 @@ public static class ServiceCollectionExtensions
                         {
                             var connectionId = httpContext.Request.Headers["x-ConnectionId"];
                             var requirement = new UserIdMatchRequirement(userId, connectionId);
+
                             // Obtenir l'authorization service et exécuter le handler
                             var authorizationService = httpContext.RequestServices.GetRequiredService<IAuthorizationService>();
                             var result = await authorizationService.AuthorizeAsync(context.User, httpContext, requirement);
                             return result.Succeeded;
                         }
+
                         return false;
                     }));
-
             })
+
             // Enregistrer le handler
             .AddScoped<IAuthorizationHandler, ChannelModificationHandler>()
             .AddScoped<IAuthorizationHandler, IsAdminHandler>()
             .AddScoped<IAuthorizationHandler, IsReservedHandler>()
             .AddScoped<IAuthorizationHandler, UserIdMatchHandler>();
-
 
     public static IServiceCollection AddCorsConfiguration(
         this IServiceCollection services,
@@ -180,7 +188,7 @@ public static class ServiceCollectionExtensions
             {
                 Title = "IRC Chat API",
                 Version = "v1",
-                Description = "API REST pour application de chat IRC avec SignalR"
+                Description = "API REST pour application de chat IRC avec SignalR",
             });
 
             // Configuration pour l'authentification JWT dans Swagger
@@ -190,12 +198,12 @@ public static class ServiceCollectionExtensions
                 Name = "Authorization",
                 In = ParameterLocation.Header,
                 Type = SecuritySchemeType.ApiKey,
-                Scheme = "Bearer"
+                Scheme = "Bearer",
             });
 
             options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
             {
-                [new OpenApiSecuritySchemeReference("bearer", document)] = []
+                [new OpenApiSecuritySchemeReference("bearer", document)] = [],
             });
         });
 

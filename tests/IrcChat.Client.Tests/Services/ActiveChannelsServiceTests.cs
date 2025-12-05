@@ -4,36 +4,33 @@ using System.Text.Json;
 using IrcChat.Client.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
-using Microsoft.JSInterop.Infrastructure;
-using Moq;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Services;
 
 public sealed class ActiveChannelsServiceTests
 {
-    private readonly Mock<IJSRuntime> _jsRuntimeMock;
-    private readonly Mock<ILogger<ActiveChannelsService>> _loggerMock;
-    private readonly ActiveChannelsService _service;
+    private readonly Mock<IJSRuntime> jsRuntimeMock;
+    private readonly Mock<ILogger<ActiveChannelsService>> loggerMock;
+    private readonly ActiveChannelsService service;
 
     public ActiveChannelsServiceTests()
     {
-        _jsRuntimeMock = new Mock<IJSRuntime>();
-        _loggerMock = new Mock<ILogger<ActiveChannelsService>>();
-        _service = new ActiveChannelsService(_jsRuntimeMock.Object, _loggerMock.Object);
+        jsRuntimeMock = new Mock<IJSRuntime>();
+        loggerMock = new Mock<ILogger<ActiveChannelsService>>();
+        service = new ActiveChannelsService(jsRuntimeMock.Object, loggerMock.Object);
     }
 
     [Fact]
     public async Task InitializeAsync_WhenNoDataInLocalStorage_ShouldInitializeEmptyList()
     {
         // Arrange
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
             .ReturnsAsync((string?)null);
 
         // Act
-        await _service.InitializeAsync();
-        var channels = await _service.GetActiveChannelsAsync();
+        await service.InitializeAsync();
+        var channels = await service.GetActiveChannelsAsync();
 
         // Assert
         Assert.Empty(channels);
@@ -46,13 +43,13 @@ public sealed class ActiveChannelsServiceTests
         var savedChannels = new List<string> { "general", "random", "support" };
         var json = JsonSerializer.Serialize(savedChannels);
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
             .ReturnsAsync(json);
 
         // Act
-        await _service.InitializeAsync();
-        var channels = await _service.GetActiveChannelsAsync();
+        await service.InitializeAsync();
+        var channels = await service.GetActiveChannelsAsync();
 
         // Assert
         Assert.Equal(3, channels.Count);
@@ -65,17 +62,17 @@ public sealed class ActiveChannelsServiceTests
     public async Task InitializeAsync_CalledMultipleTimes_ShouldInitializeOnlyOnce()
     {
         // Arrange
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
             .ReturnsAsync((string?)null);
 
         // Act
-        await _service.InitializeAsync();
-        await _service.InitializeAsync();
-        await _service.InitializeAsync();
+        await service.InitializeAsync();
+        await service.InitializeAsync();
+        await service.InitializeAsync();
 
         // Assert
-        _jsRuntimeMock.Verify(
+        jsRuntimeMock.Verify(
             x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()),
             Times.Once);
     }
@@ -84,17 +81,17 @@ public sealed class ActiveChannelsServiceTests
     public async Task AddChannelAsync_NewChannel_ShouldAddToList()
     {
         // Arrange
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
             .ReturnsAsync((string?)null);
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("localStorage.setItem", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
         // Act
-        await _service.AddChannelAsync("general");
-        var channels = await _service.GetActiveChannelsAsync();
+        await service.AddChannelAsync("general");
+        var channels = await service.GetActiveChannelsAsync();
 
         // Assert
         Assert.Single(channels);
@@ -105,20 +102,20 @@ public sealed class ActiveChannelsServiceTests
     public async Task AddChannelAsync_DuplicateChannel_ShouldNotAddTwice()
     {
         // Arrange
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
             .ReturnsAsync((string?)null);
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("localStorage.setItem", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
         // Act
-        await _service.AddChannelAsync("general");
-        await _service.AddChannelAsync("general");
-        await _service.AddChannelAsync("GENERAL");
+        await service.AddChannelAsync("general");
+        await service.AddChannelAsync("general");
+        await service.AddChannelAsync("GENERAL");
 
-        var channels = await _service.GetActiveChannelsAsync();
+        var channels = await service.GetActiveChannelsAsync();
 
         // Assert
         Assert.Single(channels);
@@ -128,17 +125,17 @@ public sealed class ActiveChannelsServiceTests
     public async Task AddChannelAsync_WithWhitespace_ShouldTrim()
     {
         // Arrange
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
             .ReturnsAsync((string?)null);
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("localStorage.setItem", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
         // Act
-        await _service.AddChannelAsync("  general  ");
-        var channels = await _service.GetActiveChannelsAsync();
+        await service.AddChannelAsync("  general  ");
+        var channels = await service.GetActiveChannelsAsync();
 
         // Assert
         Assert.Single(channels);
@@ -149,15 +146,15 @@ public sealed class ActiveChannelsServiceTests
     public async Task AddChannelAsync_EmptyString_ShouldNotAdd()
     {
         // Arrange
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
             .ReturnsAsync((string?)null);
 
         // Act
-        await _service.AddChannelAsync(string.Empty);
-        await _service.AddChannelAsync("   ");
+        await service.AddChannelAsync(string.Empty);
+        await service.AddChannelAsync("   ");
 
-        var channels = await _service.GetActiveChannelsAsync();
+        var channels = await service.GetActiveChannelsAsync();
 
         // Assert
         Assert.Empty(channels);
@@ -167,19 +164,19 @@ public sealed class ActiveChannelsServiceTests
     public async Task AddChannelAsync_ShouldSaveToLocalStorage()
     {
         // Arrange
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
             .ReturnsAsync((string?)null);
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("localStorage.setItem", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
         // Act
-        await _service.AddChannelAsync("general");
+        await service.AddChannelAsync("general");
 
         // Assert
-        _jsRuntimeMock.Verify(
+        jsRuntimeMock.Verify(
             x => x.InvokeAsync<IJSVoidResult>("localStorage.setItem", It.IsAny<object[]>()),
             Times.Once);
     }
@@ -191,17 +188,17 @@ public sealed class ActiveChannelsServiceTests
         var savedChannels = new List<string> { "general", "random", "support" };
         var json = JsonSerializer.Serialize(savedChannels);
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
             .ReturnsAsync(json);
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("localStorage.setItem", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
         // Act
-        await _service.RemoveChannelAsync("random");
-        var channels = await _service.GetActiveChannelsAsync();
+        await service.RemoveChannelAsync("random");
+        var channels = await service.GetActiveChannelsAsync();
 
         // Assert
         Assert.Equal(2, channels.Count);
@@ -217,26 +214,26 @@ public sealed class ActiveChannelsServiceTests
         var savedChannels = new List<string> { "general" };
         var json = JsonSerializer.Serialize(savedChannels);
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
             .ReturnsAsync(json);
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("localStorage.setItem", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        await _service.InitializeAsync();
+        await service.InitializeAsync();
 
         // Act
-        await _service.RemoveChannelAsync("nonexisting");
-        var channels = await _service.GetActiveChannelsAsync();
+        await service.RemoveChannelAsync("nonexisting");
+        var channels = await service.GetActiveChannelsAsync();
 
         // Assert
         Assert.Single(channels);
         Assert.Equal("general", channels[0]);
 
         // Vérifier qu'on n'a pas sauvegardé inutilement
-        _jsRuntimeMock.Verify(
+        jsRuntimeMock.Verify(
             x => x.InvokeAsync<IJSVoidResult>("localStorage.setItem", It.IsAny<object[]>()),
             Times.Never);
     }
@@ -248,17 +245,17 @@ public sealed class ActiveChannelsServiceTests
         var savedChannels = new List<string> { "General", "Random" };
         var json = JsonSerializer.Serialize(savedChannels);
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
             .ReturnsAsync(json);
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("localStorage.setItem", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
         // Act
-        await _service.RemoveChannelAsync("GENERAL");
-        var channels = await _service.GetActiveChannelsAsync();
+        await service.RemoveChannelAsync("GENERAL");
+        var channels = await service.GetActiveChannelsAsync();
 
         // Assert
         Assert.Single(channels);
@@ -272,19 +269,19 @@ public sealed class ActiveChannelsServiceTests
         var savedChannels = new List<string> { "general", "random", "support" };
         var json = JsonSerializer.Serialize(savedChannels);
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
             .ReturnsAsync(json);
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("localStorage.setItem", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        await _service.InitializeAsync();
+        await service.InitializeAsync();
 
         // Act
-        await _service.ClearAsync();
-        var channels = await _service.GetActiveChannelsAsync();
+        await service.ClearAsync();
+        var channels = await service.GetActiveChannelsAsync();
 
         // Assert
         Assert.Empty(channels);
@@ -294,20 +291,20 @@ public sealed class ActiveChannelsServiceTests
     public async Task GetActiveChannelsAsync_ShouldReturnCopyOfList()
     {
         // Arrange
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
             .ReturnsAsync((string?)null);
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("localStorage.setItem", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        await _service.AddChannelAsync("general");
+        await service.AddChannelAsync("general");
 
         // Act
-        var channels1 = await _service.GetActiveChannelsAsync();
+        var channels1 = await service.GetActiveChannelsAsync();
         channels1.Add("hacked");
-        var channels2 = await _service.GetActiveChannelsAsync();
+        var channels2 = await service.GetActiveChannelsAsync();
 
         // Assert
         Assert.Single(channels2);
@@ -318,13 +315,13 @@ public sealed class ActiveChannelsServiceTests
     public async Task InitializeAsync_WithInvalidJson_ShouldInitializeEmptyList()
     {
         // Arrange
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
             .ReturnsAsync("invalid json {{{");
 
         // Act
-        await _service.InitializeAsync();
-        var channels = await _service.GetActiveChannelsAsync();
+        await service.InitializeAsync();
+        var channels = await service.GetActiveChannelsAsync();
 
         // Assert
         Assert.Empty(channels);
@@ -334,20 +331,20 @@ public sealed class ActiveChannelsServiceTests
     public async Task AddChannelAsync_MultipleChannels_ShouldMaintainOrder()
     {
         // Arrange
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
             .ReturnsAsync((string?)null);
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("localStorage.setItem", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
         // Act
-        await _service.AddChannelAsync("general");
-        await _service.AddChannelAsync("random");
-        await _service.AddChannelAsync("support");
+        await service.AddChannelAsync("general");
+        await service.AddChannelAsync("random");
+        await service.AddChannelAsync("support");
 
-        var channels = await _service.GetActiveChannelsAsync();
+        var channels = await service.GetActiveChannelsAsync();
 
         // Assert
         Assert.Equal(3, channels.Count);

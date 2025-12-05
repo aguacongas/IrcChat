@@ -18,13 +18,13 @@ namespace IrcChat.Api.Tests.Integration;
 public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
     IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient client = factory.CreateClient();
 
     [Fact]
     public async Task MuteUserGlobally_WithoutAuthentication_ShouldReturnUnauthorized()
     {
         // Act
-        var response = await _client.PostAsJsonAsync(
+        var response = await client.PostAsJsonAsync(
             "/api/admin/global-mute/user-123",
             new { Reason = "Test" });
 
@@ -48,17 +48,17 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-nonadmin",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         db.ReservedUsernames.Add(nonAdminUser);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(nonAdminUser);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.PostAsJsonAsync(
+        var response = await client.PostAsJsonAsync(
             "/api/admin/global-mute/user-123",
             new { Reason = "Test" });
 
@@ -82,7 +82,7 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-admin",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         var targetUser = new ReservedUsername
@@ -94,19 +94,19 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-target",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         db.ReservedUsernames.AddRange(admin, targetUser);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(admin);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new { Reason = "Spam" };
 
         // Act
-        var response = await _client.PostAsJsonAsync(
+        var response = await client.PostAsJsonAsync(
             $"/api/admin/global-mute/{targetUser.Id}",
             request);
 
@@ -141,19 +141,19 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-admin",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         db.ReservedUsernames.Add(admin);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(admin);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new { Reason = "Test" };
 
         // Act
-        var response = await _client.PostAsJsonAsync(
+        var response = await client.PostAsJsonAsync(
             $"/api/admin/global-mute/{admin.Id}",
             request);
 
@@ -180,7 +180,7 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-admin",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         var targetUser = new ReservedUsername
@@ -192,7 +192,7 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-target",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         db.ReservedUsernames.AddRange(admin, targetUser);
@@ -203,18 +203,18 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             ChannelName = null,
             UserId = targetUser.Id.ToString(),
             MutedByUserId = admin.Id.ToString(),
-            MutedAt = DateTime.UtcNow
+            MutedAt = DateTime.UtcNow,
         };
         db.MutedUsers.Add(globalMute);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(admin);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new { Reason = "Already muted" };
 
         // Act
-        var response = await _client.PostAsJsonAsync(
+        var response = await client.PostAsJsonAsync(
             $"/api/admin/global-mute/{targetUser.Id}",
             request);
 
@@ -241,7 +241,7 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-admin",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         var targetUser = new ReservedUsername
@@ -253,7 +253,7 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-target",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         db.ReservedUsernames.AddRange(admin, targetUser);
@@ -264,16 +264,16 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             ChannelName = null,
             UserId = targetUser.Id.ToString(),
             MutedByUserId = admin.Id.ToString(),
-            MutedAt = DateTime.UtcNow
+            MutedAt = DateTime.UtcNow,
         };
         db.MutedUsers.Add(globalMute);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(admin);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.DeleteAsync(
+        var response = await client.DeleteAsync(
             $"/api/admin/global-mute/{targetUser.Id}");
 
         // Assert
@@ -304,17 +304,17 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-admin",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         db.ReservedUsernames.Add(admin);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(admin);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.DeleteAsync(
+        var response = await client.DeleteAsync(
             "/api/admin/global-mute/nonexistent-user");
 
         // Assert
@@ -339,7 +339,7 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             Provider = ExternalAuthProvider.Google,
             ExternalUserId = "ext-target",
             CreatedAt = DateTime.UtcNow,
-            LastLoginAt = DateTime.UtcNow
+            LastLoginAt = DateTime.UtcNow,
         };
 
         db.ReservedUsernames.Add(targetUser);
@@ -350,7 +350,7 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             ChannelName = null,
             UserId = targetUser.Id.ToString(),
             MutedByUserId = Guid.NewGuid().ToString(),
-            MutedAt = DateTime.UtcNow
+            MutedAt = DateTime.UtcNow,
         };
         db.MutedUsers.Add(globalMute);
 
@@ -363,17 +363,17 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-admin",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         db.ReservedUsernames.Add(admin);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(admin);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.GetAsync(
+        var response = await client.GetAsync(
             $"/api/admin/global-mute/{targetUser.Id}/is-muted");
 
         // Assert
@@ -399,17 +399,17 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-admin",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         db.ReservedUsernames.Add(admin);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(admin);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.GetAsync(
+        var response = await client.GetAsync(
             $"/api/admin/global-mute/{Guid.NewGuid()}/is-muted");
 
         // Assert
@@ -423,7 +423,7 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
     public async Task GetGloballyMutedUsers_WithoutAuthentication_ShouldReturnUnauthorized()
     {
         // Act
-        var response = await _client.GetAsync("/api/admin/global-mute");
+        var response = await client.GetAsync("/api/admin/global-mute");
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -445,17 +445,17 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-nonadmin",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         db.ReservedUsernames.Add(nonAdminUser);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(nonAdminUser);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.GetAsync("/api/admin/global-mute");
+        var response = await client.GetAsync("/api/admin/global-mute");
 
         // Assert
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
@@ -480,7 +480,7 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-admin",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         var mutedUser1 = new ReservedUsername
@@ -491,7 +491,7 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             Provider = ExternalAuthProvider.Google,
             ExternalUserId = "ext-muted1",
             CreatedAt = DateTime.UtcNow,
-            LastLoginAt = DateTime.UtcNow
+            LastLoginAt = DateTime.UtcNow,
         };
 
         var mutedUser2 = new ReservedUsername
@@ -502,7 +502,7 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             Provider = ExternalAuthProvider.Google,
             ExternalUserId = "ext-muted2",
             CreatedAt = DateTime.UtcNow,
-            LastLoginAt = DateTime.UtcNow
+            LastLoginAt = DateTime.UtcNow,
         };
 
         db.ReservedUsernames.AddRange(admin, mutedUser1, mutedUser2);
@@ -514,7 +514,7 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             UserId = mutedUser1.Id.ToString(),
             MutedByUserId = admin.Id.ToString(),
             MutedAt = DateTime.UtcNow,
-            Reason = "Spam"
+            Reason = "Spam",
         };
 
         var mute2 = new MutedUser
@@ -524,17 +524,17 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             UserId = mutedUser2.Id.ToString(),
             MutedByUserId = admin.Id.ToString(),
             MutedAt = DateTime.UtcNow.AddMinutes(1),
-            Reason = "Harassment"
+            Reason = "Harassment",
         };
 
         db.MutedUsers.AddRange(mute1, mute2);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(admin);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.GetAsync("/api/admin/global-mute");
+        var response = await client.GetAsync("/api/admin/global-mute");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -558,7 +558,7 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim("provider", user.Provider.ToString())
+            new Claim("provider", user.Provider.ToString()),
         };
 
         var token = new JwtSecurityToken(
@@ -566,8 +566,7 @@ public class GlobalMuteEndpointsTests(ApiWebApplicationFactory factory) :
             audience: "IrcChatClient",
             claims: claims,
             expires: DateTime.UtcNow.AddHours(1),
-            signingCredentials: credentials
-        );
+            signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

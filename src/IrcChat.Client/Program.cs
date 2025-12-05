@@ -29,8 +29,7 @@ builder.Services.AddScoped(sp =>
     .AddScoped<IDeviceDetectorService, DeviceDetectorService>()
     .AddScoped<IIgnoredUsersService, IgnoredUsersService>()
     .AddScoped<IActiveChannelsService, ActiveChannelsService>()
-    .AddSingleton<IRequestAuthenticationService, RequestAuthenticationService>()
-;
-
+    .AddScoped<IChannelUnreadCountService, ChannelUnreadCountService>()
+    .AddSingleton<IRequestAuthenticationService, RequestAuthenticationService>();
 
 await builder.Build().RunAsync();

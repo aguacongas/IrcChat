@@ -1,48 +1,45 @@
 using IrcChat.Client.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
-using Microsoft.JSInterop.Infrastructure;
-using Moq;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Services;
 
 public class IgnoredUsersServiceTests
 {
-    private readonly Mock<IJSRuntime> _jsRuntimeMock;
-    private readonly Mock<ILogger<IgnoredUsersService>> _loggerMock;
-    private readonly Mock<IJSObjectReference> _jsModuleMock;
-    private readonly IgnoredUsersService _service;
+    private readonly Mock<IJSRuntime> jsRuntimeMock;
+    private readonly Mock<ILogger<IgnoredUsersService>> loggerMock;
+    private readonly Mock<IJSObjectReference> jsModuleMock;
+    private readonly IgnoredUsersService service;
 
     public IgnoredUsersServiceTests()
     {
-        _jsRuntimeMock = new Mock<IJSRuntime>();
-        _loggerMock = new Mock<ILogger<IgnoredUsersService>>();
-        _jsModuleMock = new Mock<IJSObjectReference>();
+        jsRuntimeMock = new Mock<IJSRuntime>();
+        loggerMock = new Mock<ILogger<IgnoredUsersService>>();
+        jsModuleMock = new Mock<IJSObjectReference>();
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import", It.IsAny<object[]>()))
-            .ReturnsAsync(_jsModuleMock.Object);
-        _jsModuleMock
+            .ReturnsAsync(jsModuleMock.Object);
+        jsModuleMock
             .Setup(x => x.InvokeAsync<List<string>>(
                 "getAllIgnoredUsers", It.IsAny<object[]>()))
             .ReturnsAsync([]);
 
-        _service = new IgnoredUsersService(_jsRuntimeMock.Object, _loggerMock.Object);
+        service = new IgnoredUsersService(jsRuntimeMock.Object, loggerMock.Object);
     }
 
     [Fact]
     public async Task InitializeAsync_ShouldLoadModule()
     {
         // Act
-        await _service.InitializeAsync();
+        await service.InitializeAsync();
 
         // Assert
-        _jsRuntimeMock.Verify(
+        jsRuntimeMock.Verify(
             x => x.InvokeAsync<IJSObjectReference>("import", It.IsAny<object[]>()),
             Times.Once);
-        _jsModuleMock.Verify(
+        jsModuleMock.Verify(
             x => x.InvokeAsync<List<string>>("getAllIgnoredUsers", It.IsAny<object[]>()),
             Times.Once);
     }
@@ -51,7 +48,7 @@ public class IgnoredUsersServiceTests
     public async Task IsUserIgnored_WhenModuleNotLoaded_ShouldReturnFalse()
     {
         // Act
-        var result = _service.IsUserIgnored(Guid.NewGuid().ToString());
+        var result = service.IsUserIgnored(Guid.NewGuid().ToString());
 
         // Assert
         Assert.False(result);
@@ -63,20 +60,20 @@ public class IgnoredUsersServiceTests
         // Arrange
         var userId = Guid.NewGuid().ToString();
         var eventInvoked = false;
-        await _service.InitializeAsync();
+        await service.InitializeAsync();
 
-        _jsModuleMock
+        jsModuleMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("ignoreUser", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        _service.OnIgnoredUsersChanged += () => eventInvoked = true;
+        service.OnIgnoredUsersChanged += () => eventInvoked = true;
 
         // Act
-        await _service.IgnoreUserAsync(userId);
+        await service.IgnoreUserAsync(userId);
 
         // Assert
         Assert.True(eventInvoked);
-        _jsModuleMock.Verify(
+        jsModuleMock.Verify(
             x => x.InvokeAsync<IJSVoidResult>("ignoreUser", It.Is<object[]>(args => args[0].ToString() == userId.ToString())),
             Times.Once);
     }
@@ -87,20 +84,20 @@ public class IgnoredUsersServiceTests
         // Arrange
         var userId = Guid.NewGuid().ToString();
         var eventInvoked = false;
-        await _service.InitializeAsync();
+        await service.InitializeAsync();
 
-        _jsModuleMock
+        jsModuleMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("unignoreUser", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        _service.OnIgnoredUsersChanged += () => eventInvoked = true;
+        service.OnIgnoredUsersChanged += () => eventInvoked = true;
 
         // Act
-        await _service.UnignoreUserAsync(userId);
+        await service.UnignoreUserAsync(userId);
 
         // Assert
         Assert.True(eventInvoked);
-        _jsModuleMock.Verify(
+        jsModuleMock.Verify(
             x => x.InvokeAsync<IJSVoidResult>("unignoreUser", It.Is<object[]>(args => args[0].ToString() == userId.ToString())),
             Times.Once);
     }
@@ -110,19 +107,19 @@ public class IgnoredUsersServiceTests
     {
         // Arrange
         var userId = Guid.NewGuid().ToString();
-        await _service.InitializeAsync();
+        await service.InitializeAsync();
 
-        _jsModuleMock
+        jsModuleMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("ignoreUser", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        _service.OnIgnoredUsersChanged += () => { };
+        service.OnIgnoredUsersChanged += () => { };
 
         // Act
-        await _service.ToggleIgnoreUserAsync(userId);
+        await service.ToggleIgnoreUserAsync(userId);
 
         // Assert
-        _jsModuleMock.Verify(
+        jsModuleMock.Verify(
             x => x.InvokeAsync<IJSVoidResult>("ignoreUser", It.IsAny<object[]>()),
             Times.Once);
     }
@@ -132,23 +129,23 @@ public class IgnoredUsersServiceTests
     {
         // Arrange
         var userId = Guid.NewGuid().ToString();
-        await _service.InitializeAsync();
+        await service.InitializeAsync();
 
-        _jsModuleMock
+        jsModuleMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("ignoreUser", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
-        _jsModuleMock
+        jsModuleMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("unignoreUser", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        _service.OnIgnoredUsersChanged += () => { };
+        service.OnIgnoredUsersChanged += () => { };
 
         // Act
-        await _service.ToggleIgnoreUserAsync(userId);
-        await _service.ToggleIgnoreUserAsync(userId);
+        await service.ToggleIgnoreUserAsync(userId);
+        await service.ToggleIgnoreUserAsync(userId);
 
         // Assert
-        _jsModuleMock.Verify(
+        jsModuleMock.Verify(
             x => x.InvokeAsync<IJSVoidResult>("unignoreUser", It.IsAny<object[]>()),
             Times.Once);
     }
@@ -159,16 +156,16 @@ public class IgnoredUsersServiceTests
         // Arrange
         var userId = Guid.NewGuid().ToString();
         var eventCount = 0;
-        await _service.InitializeAsync();
+        await service.InitializeAsync();
 
-        _jsModuleMock
+        jsModuleMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("ignoreUser", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        _service.OnIgnoredUsersChanged += () => eventCount++;
+        service.OnIgnoredUsersChanged += () => eventCount++;
 
         // Act
-        await _service.IgnoreUserAsync(userId);
+        await service.IgnoreUserAsync(userId);
 
         // Assert
         Assert.Equal(1, eventCount);
@@ -180,16 +177,16 @@ public class IgnoredUsersServiceTests
         // Arrange
         var userId = Guid.NewGuid().ToString();
         var eventCount = 0;
-        await _service.InitializeAsync();
+        await service.InitializeAsync();
 
-        _jsModuleMock
+        jsModuleMock
             .Setup(x => x.InvokeAsync<IJSVoidResult>("unignoreUser", It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        _service.OnIgnoredUsersChanged += () => eventCount++;
+        service.OnIgnoredUsersChanged += () => eventCount++;
 
         // Act
-        await _service.UnignoreUserAsync(userId);
+        await service.UnignoreUserAsync(userId);
 
         // Assert
         Assert.Equal(1, eventCount);
@@ -199,16 +196,16 @@ public class IgnoredUsersServiceTests
     public async Task DisposeAsync_ShouldDisposeModule()
     {
         // Arrange
-        await _service.InitializeAsync();
+        await service.InitializeAsync();
 
-        _jsModuleMock
+        jsModuleMock
             .Setup(x => x.DisposeAsync())
             .Returns(ValueTask.CompletedTask);
 
         // Act
-        await _service.DisposeAsync();
+        await service.DisposeAsync();
 
         // Assert
-        _jsModuleMock.Verify(x => x.DisposeAsync(), Times.Once);
+        jsModuleMock.Verify(x => x.DisposeAsync(), Times.Once);
     }
 }

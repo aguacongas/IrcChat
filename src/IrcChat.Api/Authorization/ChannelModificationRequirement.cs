@@ -4,7 +4,7 @@ namespace IrcChat.Api.Authorization;
 
 /// <summary>
 /// Requirement pour vérifier qu'un utilisateur peut modifier un canal
-/// (créateur du canal ou admin)
+/// (créateur du canal ou admin).
 /// </summary>
 public class ChannelModificationRequirement(string channelName) : IAuthorizationRequirement
 {

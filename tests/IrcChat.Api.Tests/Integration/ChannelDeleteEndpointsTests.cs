@@ -17,7 +17,7 @@ namespace IrcChat.Api.Tests.Integration;
 public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
     : IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient client = factory.CreateClient();
 
     [Fact]
     public async Task DeleteChannel_AsCreator_ShouldDeleteChannel()
@@ -35,7 +35,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             Email = "creator@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         var channel = new Channel
@@ -43,7 +43,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             Id = Guid.NewGuid(),
             Name = "test-delete-channel",
             CreatedBy = creator.Username,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         db.ReservedUsernames.Add(creator);
@@ -51,11 +51,11 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
         await db.SaveChangesAsync();
 
         var token = GenerateToken(creator);
-        _client.DefaultRequestHeaders.Authorization =
+        client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.DeleteAsync($"/api/channels/{channel.Name}");
+        var response = await client.DeleteAsync($"/api/channels/{channel.Name}");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -83,7 +83,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             Email = "admin@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         var channel = new Channel
@@ -91,7 +91,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             Id = Guid.NewGuid(),
             Name = "test-admin-delete",
             CreatedBy = "someone_else",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         db.ReservedUsernames.Add(admin);
@@ -99,11 +99,11 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
         await db.SaveChangesAsync();
 
         var token = GenerateToken(admin);
-        _client.DefaultRequestHeaders.Authorization =
+        client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.DeleteAsync($"/api/channels/{channel.Name}");
+        var response = await client.DeleteAsync($"/api/channels/{channel.Name}");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -130,7 +130,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             Email = "regular@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         var channel = new Channel
@@ -138,7 +138,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             Id = Guid.NewGuid(),
             Name = "test-forbidden-delete",
             CreatedBy = "other_user",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         db.ReservedUsernames.Add(user);
@@ -146,11 +146,11 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
         await db.SaveChangesAsync();
 
         var token = GenerateToken(user);
-        _client.DefaultRequestHeaders.Authorization =
+        client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.DeleteAsync($"/api/channels/{channel.Name}");
+        var response = await client.DeleteAsync($"/api/channels/{channel.Name}");
 
         // Assert
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
@@ -174,14 +174,14 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             Id = Guid.NewGuid(),
             Name = "test-unauth-delete",
             CreatedBy = "someone",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         db.Channels.Add(channel);
         await db.SaveChangesAsync();
 
         // Act
-        var response = await _client.DeleteAsync($"/api/channels/{channel.Name}");
+        var response = await client.DeleteAsync($"/api/channels/{channel.Name}");
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -203,18 +203,18 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             Email = "test@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         db.ReservedUsernames.Add(user);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(user);
-        _client.DefaultRequestHeaders.Authorization =
+        client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.DeleteAsync("/api/channels/non-existent-channel");
+        var response = await client.DeleteAsync("/api/channels/non-existent-channel");
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -236,7 +236,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             Email = "creator@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         var channel = new Channel
@@ -244,7 +244,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             Id = Guid.NewGuid(),
             Name = "test-msg-delete",
             CreatedBy = creator.Username,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         var message = new Message
@@ -254,7 +254,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             Content = "Test message",
             Channel = channel.Name,
             Timestamp = DateTime.UtcNow,
-            IsDeleted = false
+            IsDeleted = false,
         };
 
         db.ReservedUsernames.Add(creator);
@@ -263,11 +263,11 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
         await db.SaveChangesAsync();
 
         var token = GenerateToken(creator);
-        _client.DefaultRequestHeaders.Authorization =
+        client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.DeleteAsync($"/api/channels/{channel.Name}");
+        var response = await client.DeleteAsync($"/api/channels/{channel.Name}");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -296,7 +296,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             Email = "creator@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         var channel = new Channel
@@ -304,7 +304,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             Id = Guid.NewGuid(),
             Name = "test-users-delete",
             CreatedBy = creator.Username,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         var connectedUser = new ConnectedUser
@@ -315,7 +315,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             ConnectionId = "conn_123",
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            ServerInstanceId = "test"
+            ServerInstanceId = "test",
         };
 
         db.ReservedUsernames.Add(creator);
@@ -324,11 +324,11 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
         await db.SaveChangesAsync();
 
         var token = GenerateToken(creator);
-        _client.DefaultRequestHeaders.Authorization =
+        client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.DeleteAsync($"/api/channels/{channel.Name}");
+        var response = await client.DeleteAsync($"/api/channels/{channel.Name}");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -354,7 +354,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim("provider", user.Provider.ToString())
+            new Claim("provider", user.Provider.ToString()),
         };
 
         var token = new JwtSecurityToken(
@@ -362,8 +362,7 @@ public class ChannelDeleteEndpointsTests(ApiWebApplicationFactory factory)
             audience: "IrcChatClient",
             claims: claims,
             expires: DateTime.UtcNow.AddHours(1),
-            signingCredentials: credentials
-        );
+            signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

@@ -27,12 +27,12 @@ public partial class AddPerUserDeletionToPrivateMessages : Migration
         migrationBuilder.CreateIndex(
             name: "IX_PrivateMessages_RecipientUserId_IsDeletedByRecipient",
             table: "PrivateMessages",
-            columns: new[] { "RecipientUserId", "IsDeletedByRecipient" });
+            columns: ["RecipientUserId", "IsDeletedByRecipient"]);
 
         migrationBuilder.CreateIndex(
             name: "IX_PrivateMessages_SenderUserId_IsDeletedBySender",
             table: "PrivateMessages",
-            columns: new[] { "SenderUserId", "IsDeletedBySender" });
+            columns: ["SenderUserId", "IsDeletedBySender"]);
     }
 
     /// <inheritdoc />

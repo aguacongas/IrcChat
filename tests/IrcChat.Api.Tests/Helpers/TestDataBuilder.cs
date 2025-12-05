@@ -17,7 +17,7 @@ public static class TestDataBuilder
             Content = content,
             Channel = channel,
             Timestamp = DateTime.UtcNow,
-            IsDeleted = false
+            IsDeleted = false,
         };
     }
 
@@ -33,7 +33,7 @@ public static class TestDataBuilder
             CreatedBy = createdBy,
             ActiveManager = activeManager ?? createdBy, // Par défaut, le créateur est le manager
             CreatedAt = DateTime.UtcNow,
-            IsMuted = false
+            IsMuted = false,
         };
     }
 
@@ -50,7 +50,7 @@ public static class TestDataBuilder
             ConnectionId = connectionId,
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            ServerInstanceId = "test-server"
+            ServerInstanceId = "test-server",
         };
     }
 
@@ -70,7 +70,7 @@ public static class TestDataBuilder
             AvatarUrl = $"https://example.com/avatar/{username}.jpg",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = isAdmin
+            IsAdmin = isAdmin,
         };
     }
 
@@ -86,7 +86,7 @@ public static class TestDataBuilder
             RecipientUsername = recipient,
             Content = content,
             Timestamp = DateTime.UtcNow,
-            IsRead = false
+            IsRead = false,
         };
     }
 }

@@ -7,44 +7,46 @@ namespace IrcChat.Client.Services;
 
 public sealed class ActiveChannelsService(IJSRuntime jsRuntime, ILogger<ActiveChannelsService> logger) : IActiveChannelsService
 {
-    private static readonly string _storageKey = "active-channels";
-    private List<string> _activeChannels = [];
-    private bool _isInitialized = false;
+    private static readonly string StorageKey = "active-channels";
+    private List<string> activeChannels = [];
+    private bool isInitialized = false;
 
     public async Task InitializeAsync()
     {
-        if (_isInitialized)
+        if (isInitialized)
         {
             return;
         }
 
         try
         {
-            var json = await jsRuntime.InvokeAsync<string?>("localStorage.getItem", _storageKey);
+            var json = await jsRuntime.InvokeAsync<string?>("localStorage.getItem", StorageKey);
 
             if (!string.IsNullOrEmpty(json))
             {
                 var channels = JsonSerializer.Deserialize<List<string>>(json);
                 if (channels != null)
                 {
-                    _activeChannels = channels;
-                    logger.LogInformation("Salons actifs chargés: {Count} salons - {Channels}",
-                        _activeChannels.Count, string.Join(", ", _activeChannels));
+                    activeChannels = channels;
+                    logger.LogInformation(
+                        "Salons actifs chargés: {Count} salons - {Channels}",
+                        activeChannels.Count,
+                        string.Join(", ", activeChannels));
                 }
             }
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Erreur lors du chargement des salons actifs");
-            _activeChannels = [];
+            activeChannels = [];
         }
 
-        _isInitialized = true;
+        isInitialized = true;
     }
 
     public async Task AddChannelAsync(string channelName)
     {
-        if (!_isInitialized)
+        if (!isInitialized)
         {
             await InitializeAsync();
         }
@@ -58,10 +60,10 @@ public sealed class ActiveChannelsService(IJSRuntime jsRuntime, ILogger<ActiveCh
         {
             // on supprime et ajoute le salon à la fin pour savoir quel est le dernier salon rejoint
             var normalizedName = channelName.Trim();
-            _activeChannels.RemoveAll(c =>
+            activeChannels.RemoveAll(c =>
                 c.Equals(normalizedName, StringComparison.OrdinalIgnoreCase));
 
-            _activeChannels.Add(normalizedName);
+            activeChannels.Add(normalizedName);
             await SaveAsync();
             logger.LogDebug("Salon {ChannelName} ajouté aux salons actifs", normalizedName);
         }
@@ -73,14 +75,14 @@ public sealed class ActiveChannelsService(IJSRuntime jsRuntime, ILogger<ActiveCh
 
     public async Task RemoveChannelAsync(string channelName)
     {
-        if (!_isInitialized)
+        if (!isInitialized)
         {
             await InitializeAsync();
         }
 
         try
         {
-            var removed = _activeChannels.RemoveAll(c =>
+            var removed = activeChannels.RemoveAll(c =>
                 c.Equals(channelName, StringComparison.OrdinalIgnoreCase));
 
             if (removed > 0)
@@ -97,19 +99,19 @@ public sealed class ActiveChannelsService(IJSRuntime jsRuntime, ILogger<ActiveCh
 
     public async Task<List<string>> GetActiveChannelsAsync()
     {
-        if (!_isInitialized)
+        if (!isInitialized)
         {
             await InitializeAsync();
         }
 
-        return [.. _activeChannels];
+        return [.. activeChannels];
     }
 
     public async Task ClearAsync()
     {
         try
         {
-            _activeChannels.Clear();
+            activeChannels.Clear();
             await SaveAsync();
             logger.LogInformation("Salons actifs effacés");
         }
@@ -123,8 +125,8 @@ public sealed class ActiveChannelsService(IJSRuntime jsRuntime, ILogger<ActiveCh
     {
         try
         {
-            var json = JsonSerializer.Serialize(_activeChannels);
-            await jsRuntime.InvokeVoidAsync("localStorage.setItem", _storageKey, json);
+            var json = JsonSerializer.Serialize(activeChannels);
+            await jsRuntime.InvokeVoidAsync("localStorage.setItem", StorageKey, json);
         }
         catch (Exception ex)
         {

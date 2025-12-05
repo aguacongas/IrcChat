@@ -11,6 +11,7 @@ public class UserIdMatchHandler(ChatDbContext db) : AuthorizationHandler<UserIdM
     {
         var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ??
             await GetUserIdFromCookieAsync(requirement);
+
         // si c'est un utilisateur identifié, on vérifie que l'id correspond
         if (userId == requirement.UserId)
         {
