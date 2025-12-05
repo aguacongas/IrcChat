@@ -22,6 +22,7 @@
 @inject IDeviceDetectorService DeviceDetector
 @inject IIgnoredUsersService IgnoredUsersService
 @inject IActiveChannelsService ActiveChannels
+@inject IChannelUnreadCountService UnreadCountService
 @implements IAsyncDisposable
 
 <PageTitle>IRC Chat</PageTitle>
@@ -90,7 +91,7 @@ else
                       OnClosePrivateConversation="ClosePrivateChat"
                       OnChannelDeleted="HandleChannelDeleted"
                       OnUsersListToggle="HandleUsersListToggle"
-                      OnChannelUpdated="HandleChannelUpdated"                      
+                      OnChannelUpdated="HandleChannelUpdated"
                       OnGlobalFilterChanged="HandleGlobalFilterChanged" />
         }
     </div>
@@ -158,7 +159,7 @@ else
     // Notifications de connexion
     private string connectionNotification = string.Empty;
     private string connectionNotificationClass = string.Empty;
-    private ConnectionNotificationType connectionNotificationType = ConnectionNotificationType.None;    
+    private ConnectionNotificationType connectionNotificationType = ConnectionNotificationType.None;
 
     // Messages privés
     private List<PrivateConversation> privateConversations = new();
@@ -181,6 +182,7 @@ else
         await Auth.InitializeAsync();
         await IgnoredUsersService.InitializeAsync();
         await ActiveChannels.InitializeAsync();
+        await UnreadCountService.LoadFromStorageAsync();
         isInitialized = true;
 
         if (!Auth.HasUsername)
@@ -445,8 +447,17 @@ else
     // Handlers pour canaux publics
     private void OnMessageReceived(Message message)
     {
-        InvokeAsync(() =>
+        InvokeAsync(async () =>
         {
+            // Incrémenter le compteur si le message est reçu sur un salon non-actif
+            if (!isPrivateConversation &&
+                !string.IsNullOrEmpty(message.Channel) &&
+                message.Channel != currentChannel &&
+                !IgnoredUsersService.IsUserIgnored(message.UserId))
+            {
+                await UnreadCountService.IncrementCountAsync(message.Channel);
+            }
+
             if (message.Channel == currentChannel &&
               !isPrivateConversation &&
               !IgnoredUsersService.IsUserIgnored(message.UserId))
@@ -476,7 +487,7 @@ else
     }
 
     private void OnChannelMuteStatusChanged(string channel, bool isMuted)
-    {        
+    {
         if (channel == currentChannel && !isPrivateConversation)
         {
             isCurrentChannelMuted = isMuted;
@@ -533,6 +544,7 @@ else
         channels = channels.Where(c => c.Name != channelName).ToList();
 
         await ActiveChannels.RemoveChannelAsync(channelName);
+        await UnreadCountService.ResetCountAsync(channelName);
 
         if (currentChannel == channelName && !isPrivateConversation)
         {
@@ -629,6 +641,7 @@ else
             // Appeler SignalR pour quitter le salon
             await ChatService.LeaveChannel(channelName);
             await ActiveChannels.RemoveChannelAsync(channelName);
+            await UnreadCountService.ResetCountAsync(channelName);
 
             // Recharger la liste des salons connectés
             channels = channels.Where(c => c.Name != channelName).ToList();
@@ -766,6 +779,9 @@ else
             await ChatService.JoinChannel(channel);
         }
 
+        // Réinitialiser le compteur de messages non lus pour ce salon
+        await UnreadCountService.ResetCountAsync(channel);
+
         // Charger les données du salon
         isPrivateConversation = false;
         selectedPrivateUser = null;
@@ -847,7 +863,7 @@ else
                         continue;
                     }
                     messages.Add(msg);
-                }                
+                }
             }
         }
         catch (Exception ex)
@@ -911,7 +927,7 @@ else
     {
         var conversations = await PrivateMessageService.GetConversationsAsync(currentUserId);
         privateConversations = [];
-        foreach(var conversation in conversations)
+        foreach (var conversation in conversations)
         {
             if (IgnoredUsersService.IsUserIgnored(conversation.OtherUser!.UserId))
             {

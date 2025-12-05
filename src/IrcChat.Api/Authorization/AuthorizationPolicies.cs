@@ -5,7 +5,7 @@
 namespace IrcChat.Api.Authorization;
 
 /// <summary>
-/// Constantes pour les noms de policies d'autorisation
+/// Constantes pour les noms de policies d'autorisation.
 /// </summary>
 public static class AuthorizationPolicies
 {
@@ -22,7 +22,7 @@ public static class AuthorizationPolicies
     /// </list>
     /// </para>
     /// <para>
-    /// <strong>Note :</strong> Si le canal n'existe pas, la policy réussit pour permettre à l'endpoint 
+    /// <strong>Note :</strong> Si le canal n'existe pas, la policy réussit pour permettre à l'endpoint
     /// de retourner <c>404 NotFound</c> au lieu de <c>403 Forbidden</c>.
     /// </para>
     /// </summary>

@@ -1,50 +1,47 @@
 // tests/IrcChat.Client.Tests/Pages/OAuthConnectTests.cs
 using System.Net;
 using System.Net.Http.Json;
-using Bunit;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
 using RichardSzalay.MockHttp;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Pages;
 
 public class OAuthConnectTests : BunitContext
 {
-    private readonly Mock<IUnifiedAuthService> _authServiceMock;
-    private readonly Mock<IOAuthClientService> _oauthClientServiceMock;
-    private readonly MockHttpMessageHandler _mockHttp;
-    private readonly NavigationManager _navManager;
+    private readonly Mock<IUnifiedAuthService> authServiceMock;
+    private readonly Mock<IOAuthClientService> oauthClientServiceMock;
+    private readonly MockHttpMessageHandler mockHttp;
+    private readonly NavigationManager navManager;
 
     public OAuthConnectTests()
     {
-        _mockHttp = new MockHttpMessageHandler();
+        mockHttp = new MockHttpMessageHandler();
 
-        var httpClient = _mockHttp.ToHttpClient();
+        var httpClient = mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
 
-        _authServiceMock = new Mock<IUnifiedAuthService>();
-        _oauthClientServiceMock = new Mock<IOAuthClientService>();
+        authServiceMock = new Mock<IUnifiedAuthService>();
+        oauthClientServiceMock = new Mock<IOAuthClientService>();
 
-        Services.AddSingleton(_authServiceMock.Object);
-        Services.AddSingleton(_oauthClientServiceMock.Object);
+        Services.AddSingleton(authServiceMock.Object);
+        Services.AddSingleton(oauthClientServiceMock.Object);
         Services.AddSingleton(httpClient);
         Services.AddSingleton(JSInterop.JSRuntime);
 
-        _navManager = Services.GetRequiredService<NavigationManager>();
+        navManager = Services.GetRequiredService<NavigationManager>();
     }
 
     [Fact]
     public void OAuthConnect_WithError_ShouldShowError()
     {
         // Arrange & Act
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        navManager.NavigateTo(navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
-            ["error"] = "access_denied"
+            ["error"] = "access_denied",
         }));
 
         var cut = Render<OAuthConnect>();
@@ -58,41 +55,41 @@ public class OAuthConnectTests : BunitContext
     public void OAuthConnect_WithoutParams_ShouldRedirectToLogin()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
         // Act
         Render<OAuthConnect>();
 
         // Assert
-        Assert.EndsWith("/login", _navManager.Uri);
+        Assert.EndsWith("/login", navManager.Uri);
     }
 
     [Fact]
     public async Task OAuthConnect_InitiateFlow_ShouldGenerateAuthUrl()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
         JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
-        _oauthClientServiceMock
+        oauthClientServiceMock
             .Setup(x => x.InitiateAuthorizationFlowAsync(
                 ExternalAuthProvider.Google,
                 It.IsAny<string>()))
             .ReturnsAsync("https://accounts.google.com/o/oauth2/auth?client_id=test");
 
         // Act
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        navManager.NavigateTo(navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
             ["provider"] = "Google",
-            ["mode"] = "reserve"
+            ["mode"] = "reserve",
         }));
         Render<OAuthConnect>();
 
         await Task.Delay(300);
 
         // Assert
-        Assert.Contains("google.com", _navManager.Uri);
+        Assert.Contains("google.com", navManager.Uri);
     }
 
     [Fact]
@@ -100,8 +97,8 @@ public class OAuthConnectTests : BunitContext
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.SetAuthStateAsync(
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.SetAuthStateAsync(
             It.IsAny<string>(),
             It.IsAny<string>(),
             It.IsAny<string>(),
@@ -131,17 +128,17 @@ public class OAuthConnectTests : BunitContext
             Email = "test@example.com",
             UserId = userId,
             IsNewUser = true,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
-        _mockHttp.When(HttpMethod.Post, "*/api/oauth/reserve-username")
+        mockHttp.When(HttpMethod.Post, "*/api/oauth/reserve-username")
             .Respond(HttpStatusCode.OK, JsonContent.Create(reserveResponse));
 
         // Act
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        navManager.NavigateTo(navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
             ["code"] = "auth_code_123",
-            ["state"] = "random_state"
+            ["state"] = "random_state",
         }));
 
         Render<OAuthConnect>();
@@ -149,8 +146,8 @@ public class OAuthConnectTests : BunitContext
         await Task.Delay(500);
 
         // Assert
-        Assert.EndsWith("/chat", _navManager.Uri);
-        _authServiceMock.Verify(
+        Assert.EndsWith("/chat", navManager.Uri);
+        authServiceMock.Verify(
             x => x.SetAuthStateAsync(
                 "test-token",
                 "TestUser",
@@ -167,8 +164,8 @@ public class OAuthConnectTests : BunitContext
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.SetAuthStateAsync(
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.SetAuthStateAsync(
             It.IsAny<string>(),
             It.IsAny<string>(),
             It.IsAny<string>(),
@@ -198,17 +195,17 @@ public class OAuthConnectTests : BunitContext
             Email = "new@example.com",
             UserId = userId,
             IsNewUser = true,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
-        var reserveRequest = _mockHttp.When(HttpMethod.Post, "*/api/oauth/reserve-username")
+        var reserveRequest = mockHttp.When(HttpMethod.Post, "*/api/oauth/reserve-username")
             .Respond(HttpStatusCode.OK, JsonContent.Create(reserveResponse));
 
         // Act
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        navManager.NavigateTo(navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
             ["code"] = "auth_code_123",
-            ["state"] = "random_state"
+            ["state"] = "random_state",
         }));
 
         Render<OAuthConnect>();
@@ -216,7 +213,7 @@ public class OAuthConnectTests : BunitContext
         await Task.Delay(500);
 
         // Assert
-        var request = _mockHttp.GetMatchCount(reserveRequest);
+        var request = mockHttp.GetMatchCount(reserveRequest);
         Assert.Equal(1, request);
     }
 
@@ -224,7 +221,7 @@ public class OAuthConnectTests : BunitContext
     public async Task OAuthConnect_HandleCallback_Reserve_WithMissingUserId_ShouldShowError()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
             .SetResult("reserve");
@@ -240,10 +237,10 @@ public class OAuthConnectTests : BunitContext
         JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
 
         // Act
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        navManager.NavigateTo(navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
             ["code"] = "auth_code_123",
-            ["state"] = "random_state"
+            ["state"] = "random_state",
         }));
 
         var cut = Render<OAuthConnect>();
@@ -258,7 +255,7 @@ public class OAuthConnectTests : BunitContext
     public async Task OAuthConnect_HandleCallback_Reserve_WithInvalidUserId_ShouldShowError()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
             .SetResult("reserve");
@@ -274,10 +271,10 @@ public class OAuthConnectTests : BunitContext
         JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
 
         // Act
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        navManager.NavigateTo(navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
             ["code"] = "auth_code_123",
-            ["state"] = "random_state"
+            ["state"] = "random_state",
         }));
 
         var cut = Render<OAuthConnect>();
@@ -292,8 +289,8 @@ public class OAuthConnectTests : BunitContext
     public async Task OAuthConnect_HandleCallback_Login_ShouldComplete()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.SetAuthStateAsync(
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.SetAuthStateAsync(
             It.IsAny<string>(),
             It.IsAny<string>(),
             It.IsAny<string>(),
@@ -319,25 +316,25 @@ public class OAuthConnectTests : BunitContext
             Email = "existing@example.com",
             UserId = Guid.NewGuid(),
             IsNewUser = false,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
-        _mockHttp.When(HttpMethod.Post, "*/api/oauth/login-reserved")
+        mockHttp.When(HttpMethod.Post, "*/api/oauth/login-reserved")
             .Respond(HttpStatusCode.OK, JsonContent.Create(loginResponse));
 
         // Act
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        navManager.NavigateTo(navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
             ["code"] = "auth_code_456",
-            ["state"] = "xyz123"
+            ["state"] = "xyz123",
         }));
         Render<OAuthConnect>();
 
         await Task.Delay(500);
 
         // Assert
-        Assert.EndsWith("/chat", _navManager.Uri);
-        _authServiceMock.Verify(
+        Assert.EndsWith("/chat", navManager.Uri);
+        authServiceMock.Verify(
             x => x.SetAuthStateAsync(
                 "login-token",
                 "ExistingUser",
@@ -353,16 +350,16 @@ public class OAuthConnectTests : BunitContext
     public void OAuthConnect_ShowsLoadingMessage()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _oauthClientServiceMock.Setup(x => x.InitiateAuthorizationFlowAsync(It.IsAny<ExternalAuthProvider>(), It.IsAny<string>()))
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        oauthClientServiceMock.Setup(x => x.InitiateAuthorizationFlowAsync(It.IsAny<ExternalAuthProvider>(), It.IsAny<string>()))
             .ReturnsAsync("https://example.com/auth");
         JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
         // Act
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        navManager.NavigateTo(navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
             ["provider"] = "Google",
-            ["mode"] = "reserve"
+            ["mode"] = "reserve",
         }));
 
         var cut = Render<OAuthConnect>();
@@ -375,7 +372,7 @@ public class OAuthConnectTests : BunitContext
     public async Task OAuthConnect_ReserveFailure_ShouldShowError()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
             .SetResult("reserve");
@@ -388,15 +385,16 @@ public class OAuthConnectTests : BunitContext
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
             .SetResult(Guid.NewGuid().ToString());
 
-        _mockHttp.When(HttpMethod.Post, "*/api/oauth/reserve-username")
-            .Respond(HttpStatusCode.BadRequest,
+        mockHttp.When(HttpMethod.Post, "*/api/oauth/reserve-username")
+            .Respond(
+                HttpStatusCode.BadRequest,
                 new StringContent("{\"error\":\"username_taken\"}"));
 
         // Act
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        navManager.NavigateTo(navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
             ["code"] = "auth_code_123",
-            ["state"] = "random_state"
+            ["state"] = "random_state",
         }));
 
         var cut = Render<OAuthConnect>();
@@ -411,7 +409,7 @@ public class OAuthConnectTests : BunitContext
     public async Task OAuthConnect_LoginFailure_ShouldShowError()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
             .SetResult("login");
@@ -420,15 +418,16 @@ public class OAuthConnectTests : BunitContext
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_code_verifier")
             .SetResult("test_verifier");
 
-        _mockHttp.When(HttpMethod.Post, "*/api/oauth/login-reserved")
-            .Respond(HttpStatusCode.NotFound,
+        mockHttp.When(HttpMethod.Post, "*/api/oauth/login-reserved")
+            .Respond(
+                HttpStatusCode.NotFound,
                 new StringContent("{\"error\":\"not_found\"}"));
 
         // Act
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        navManager.NavigateTo(navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
             ["code"] = "auth_code_456",
-            ["state"] = "state_xyz"
+            ["state"] = "state_xyz",
         }));
         var cut = Render<OAuthConnect>();
 
@@ -442,7 +441,7 @@ public class OAuthConnectTests : BunitContext
     public async Task OAuthConnect_MissingSessionData_ShouldShowError()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
             .SetResult("reserve");
@@ -452,10 +451,10 @@ public class OAuthConnectTests : BunitContext
             .SetResult(Guid.NewGuid().ToString());
 
         // Act
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        navManager.NavigateTo(navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
             ["code"] = "auth_code_123",
-            ["state"] = "random_state"
+            ["state"] = "random_state",
         }));
 
         var cut = Render<OAuthConnect>();
@@ -471,8 +470,8 @@ public class OAuthConnectTests : BunitContext
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.SetAuthStateAsync(
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.SetAuthStateAsync(
             It.IsAny<string>(),
             It.IsAny<string>(),
             It.IsAny<string>(),
@@ -502,17 +501,17 @@ public class OAuthConnectTests : BunitContext
             Email = "test@example.com",
             UserId = userId,
             IsNewUser = true,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
-        _mockHttp.When(HttpMethod.Post, "*/api/oauth/reserve-username")
+        mockHttp.When(HttpMethod.Post, "*/api/oauth/reserve-username")
             .Respond(HttpStatusCode.OK, JsonContent.Create(reserveResponse));
 
         // Act
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        navManager.NavigateTo(navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
             ["code"] = "auth_code_123",
-            ["state"] = "random_state"
+            ["state"] = "random_state",
         }));
 
         Render<OAuthConnect>();

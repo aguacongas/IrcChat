@@ -16,13 +16,13 @@ namespace IrcChat.Api.Tests.Integration;
 
 public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient client = factory.CreateClient();
 
     [Fact]
     public async Task GetChannels_ShouldReturnChannelList()
     {
         // Act
-        var response = await _client.GetAsync("/api/channels");
+        var response = await client.GetAsync("/api/channels");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -47,7 +47,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             ConnectionId = "conn1",
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            ServerInstanceId = "test"
+            ServerInstanceId = "test",
         };
 
         var user2 = new ConnectedUser
@@ -58,14 +58,14 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             ConnectionId = "conn2",
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            ServerInstanceId = "test"
+            ServerInstanceId = "test",
         };
 
         db.ConnectedUsers.AddRange(user1, user2);
         await db.SaveChangesAsync();
 
         // Act
-        var response = await _client.GetAsync($"/api/channels/{channel}/users");
+        var response = await client.GetAsync($"/api/channels/{channel}/users");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -92,24 +92,24 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             Email = "test@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         db.ReservedUsernames.Add(reservedUser);
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(reservedUser);
-        _client.DefaultRequestHeaders.Authorization =
+        client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
         var channel = new Channel
         {
             Name = Guid.NewGuid().ToString(),
-            CreatedBy = reservedUser.Username
+            CreatedBy = reservedUser.Username,
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/channels", channel);
+        var response = await client.PostAsJsonAsync("/api/channels", channel);
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -126,11 +126,11 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         var channel = new Channel
         {
             Name = Guid.NewGuid().ToString(),
-            CreatedBy = "testuser"
+            CreatedBy = "testuser",
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/channels", channel);
+        var response = await client.PostAsJsonAsync("/api/channels", channel);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -152,7 +152,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             Email = "dup@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         db.ReservedUsernames.Add(reservedUser);
@@ -162,24 +162,24 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             Id = Guid.NewGuid(),
             Name = "duplicate-channel",
             CreatedBy = reservedUser.Username,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         db.Channels.Add(existingChannel);
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(reservedUser);
-        _client.DefaultRequestHeaders.Authorization =
+        client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
         var channel = new Channel
         {
             Name = "duplicate-channel",
-            CreatedBy = reservedUser.Username
+            CreatedBy = reservedUser.Username,
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/channels", channel);
+        var response = await client.PostAsJsonAsync("/api/channels", channel);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -204,24 +204,24 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             Email = "trim@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         db.ReservedUsernames.Add(reservedUser);
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(reservedUser);
-        _client.DefaultRequestHeaders.Authorization =
+        client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
         var channel = new Channel
         {
             Name = "  trimmed-channel  ",
-            CreatedBy = reservedUser.Username
+            CreatedBy = reservedUser.Username,
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/channels", channel);
+        var response = await client.PostAsJsonAsync("/api/channels", channel);
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -234,7 +234,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
     public async Task GetConnectedUsers_EmptyChannel_ShouldReturnEmptyList()
     {
         // Act
-        var response = await _client.GetAsync("/api/channels/empty-channel-no-users/users");
+        var response = await client.GetAsync("/api/channels/empty-channel-no-users/users");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -257,7 +257,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             Description = "Ancienne description",
             CreatedBy = "creator",
             CreatedAt = DateTime.UtcNow,
-            IsMuted = false
+            IsMuted = false,
         };
         db.Channels.Add(channel);
 
@@ -269,18 +269,18 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             ExternalUserId = "ext-id",
             Email = "creator@test.com",
             IsAdmin = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
         db.ReservedUsernames.Add(user);
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(user);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel { Description = "Nouvelle description" };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
+        var response = await client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -306,7 +306,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             ExternalUserId = "ext-id",
             Email = "admin@test.com",
             IsAdmin = true,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         using var scope = factory.Services.CreateScope();
@@ -315,12 +315,12 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(user);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel { Description = "Description" };
 
         // Act
-        var response = await _client.PutAsJsonAsync("/api/channels/nonexistent", request);
+        var response = await client.PutAsJsonAsync("/api/channels/nonexistent", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -333,7 +333,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         var request = new Channel { Description = "Description" };
 
         // Act
-        var response = await _client.PutAsJsonAsync("/api/channels/test-channel", request);
+        var response = await client.PutAsJsonAsync("/api/channels/test-channel", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -353,7 +353,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             Description = "Description",
             CreatedBy = "creator",
             CreatedAt = DateTime.UtcNow,
-            IsMuted = false
+            IsMuted = false,
         };
         db.Channels.Add(channel);
 
@@ -365,7 +365,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             ExternalUserId = "ext-id-1",
             Email = "creator@test.com",
             IsAdmin = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         var otherUser = new ReservedUsername
@@ -376,19 +376,19 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             ExternalUserId = "ext-id-2",
             Email = "other@test.com",
             IsAdmin = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         db.ReservedUsernames.AddRange(creator, otherUser);
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(otherUser);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel { Description = "Nouvelle description" };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
+        var response = await client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
@@ -408,7 +408,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             Description = "Ancienne description",
             CreatedBy = "creator",
             CreatedAt = DateTime.UtcNow,
-            IsMuted = false
+            IsMuted = false,
         };
         db.Channels.Add(channel);
 
@@ -420,22 +420,22 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             ExternalUserId = "ext-id",
             Email = "admin@test.com",
             IsAdmin = true,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         db.ReservedUsernames.Add(admin);
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(admin);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel
         {
-            Description = "Nouvelle description par admin"
+            Description = "Nouvelle description par admin",
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
+        var response = await client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -462,7 +462,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             Description = "Description existante",
             CreatedBy = "creator",
             CreatedAt = DateTime.UtcNow,
-            IsMuted = false
+            IsMuted = false,
         };
         db.Channels.Add(channel);
 
@@ -474,21 +474,21 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             ExternalUserId = "ext-id",
             Email = "creator@test.com",
             IsAdmin = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
         db.ReservedUsernames.Add(user);
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(user);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel
         {
-            Description = string.Empty
+            Description = string.Empty,
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
+        var response = await client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -500,7 +500,6 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         Assert.NotNull(updatedChannel);
         Assert.Equal(string.Empty, updatedChannel.Description);
     }
-
 
     [Fact]
     public async Task CreateChannel_WithDescription_ShouldCreateChannelWithDescription()
@@ -518,22 +517,22 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             Email = "test@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
         db.ReservedUsernames.Add(user);
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(user);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel
         {
             Name = "gaming",
-            Description = "Canal pour discuter de jeux vidéo"
+            Description = "Canal pour discuter de jeux vidéo",
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/channels", request);
+        var response = await client.PostAsJsonAsync("/api/channels", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -572,22 +571,22 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             Email = "test@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
         db.ReservedUsernames.Add(user);
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(user);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel
         {
             Name = "random",
-            Description = null
+            Description = null,
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/channels", request);
+        var response = await client.PostAsJsonAsync("/api/channels", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -624,7 +623,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             Email = "test@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
         db.ReservedUsernames.Add(user);
 
@@ -636,21 +635,21 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             CreatedBy = "creator",
             CreatedAt = DateTime.UtcNow,
             ActiveManager = "creator",
-            IsMuted = false
+            IsMuted = false,
         };
         db.Channels.Add(channel);
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(user);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel
         {
-            Description = "Nouvelle description mise à jour"
+            Description = "Nouvelle description mise à jour",
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync("/api/channels/tech", request);
+        var response = await client.PutAsJsonAsync("/api/channels/tech", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -682,7 +681,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             Email = "test@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
         db.ReservedUsernames.Add(user);
 
@@ -694,21 +693,21 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             CreatedBy = "creator",
             CreatedAt = DateTime.UtcNow,
             ActiveManager = "creator",
-            IsMuted = false
+            IsMuted = false,
         };
         db.Channels.Add(channel);
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(user);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel
         {
-            Description = "   "
+            Description = "   ",
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync("/api/channels/music", request);
+        var response = await client.PutAsJsonAsync("/api/channels/music", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -740,7 +739,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             Email = "test@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
         db.ReservedUsernames.Add(user);
 
@@ -752,21 +751,21 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             CreatedBy = "creator",
             CreatedAt = DateTime.UtcNow,
             ActiveManager = "creator",
-            IsMuted = false
+            IsMuted = false,
         };
         db.Channels.Add(channel);
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(user);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel
         {
-            Description = "   Description avec espaces   "
+            Description = "   Description avec espaces   ",
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync("/api/channels/general", request);
+        var response = await client.PutAsJsonAsync("/api/channels/general", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -801,7 +800,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
                 CreatedBy = "user1",
                 CreatedAt = DateTime.UtcNow,
                 ActiveManager = "user1",
-                IsMuted = false
+                IsMuted = false,
             },
             new()
             {
@@ -812,14 +811,14 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
                 CreatedAt = DateTime.UtcNow,
                 ActiveManager = "user2",
                 IsMuted = false
-            }
+            },
         };
 
         db.Channels.AddRange(channels);
         await db.SaveChangesAsync();
 
         // Act
-        var response = await _client.GetAsync("/api/channels");
+        var response = await client.GetAsync("/api/channels");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -848,7 +847,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim("provider", user.Provider.ToString())
+            new Claim("provider", user.Provider.ToString()),
         };
 
         var token = new JwtSecurityToken(
@@ -856,8 +855,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
             audience: "IrcChatClient",
             claims: claims,
             expires: DateTime.UtcNow.AddHours(1),
-            signingCredentials: credentials
-        );
+            signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
@@ -865,6 +863,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
     private class ErrorResponse
     {
         public string Error { get; set; } = string.Empty;
+
         public string Message { get; set; } = string.Empty;
     }
 }

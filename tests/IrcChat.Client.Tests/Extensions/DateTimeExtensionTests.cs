@@ -1,7 +1,6 @@
 // tests/IrcChat.Client.Tests/Extensions/DateTimeExtensionTests.cs
 using System.Diagnostics.CodeAnalysis;
 using IrcChat.Client.Extensions;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Extensions;
 

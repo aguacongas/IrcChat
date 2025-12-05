@@ -1,26 +1,24 @@
 // tests/IrcChat.Client.Tests/Services/CredentialsHandlerTests.cs
 using System.Net;
 using IrcChat.Client.Services;
-using Moq;
 using Moq.Protected;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Services;
 
 public class CredentialsHandlerTests
 {
-    private readonly Mock<IRequestAuthenticationService> _requestAuthenticationServiceMock;
-    private readonly Mock<HttpMessageHandler> _innerHandlerMock;
-    private readonly CredentialsHandler _handler;
+    private readonly Mock<IRequestAuthenticationService> requestAuthenticationServiceMock;
+    private readonly Mock<HttpMessageHandler> innerHandlerMock;
+    private readonly CredentialsHandler handler;
 
     public CredentialsHandlerTests()
     {
-        _requestAuthenticationServiceMock = new Mock<IRequestAuthenticationService>();
-        _innerHandlerMock = new Mock<HttpMessageHandler>();
+        requestAuthenticationServiceMock = new Mock<IRequestAuthenticationService>();
+        innerHandlerMock = new Mock<HttpMessageHandler>();
 
-        _handler = new CredentialsHandler(_requestAuthenticationServiceMock.Object)
+        handler = new CredentialsHandler(requestAuthenticationServiceMock.Object)
         {
-            InnerHandler = _innerHandlerMock.Object
+            InnerHandler = innerHandlerMock.Object,
         };
     }
 
@@ -30,17 +28,17 @@ public class CredentialsHandlerTests
         // Arrange
         var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/test");
 
-        _requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns((string?)null);
+        requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns((string?)null);
 
         SetupInnerHandler(HttpStatusCode.OK);
 
-        var invoker = new HttpMessageInvoker(_handler);
+        var invoker = new HttpMessageInvoker(handler);
 
         // Act
         await invoker.SendAsync(request, CancellationToken.None);
 
         // Assert
-        _requestAuthenticationServiceMock.Verify(x => x.ConnectionId, Times.Once);
+        requestAuthenticationServiceMock.Verify(x => x.ConnectionId, Times.Once);
     }
 
     [Fact]
@@ -50,12 +48,12 @@ public class CredentialsHandlerTests
         var token = "test-jwt-token-123";
         var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/test");
 
-        _requestAuthenticationServiceMock.Setup(x => x.Token).Returns(token);
-        _requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns((string?)null);
+        requestAuthenticationServiceMock.Setup(x => x.Token).Returns(token);
+        requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns((string?)null);
 
         SetupInnerHandler(HttpStatusCode.OK);
 
-        var invoker = new HttpMessageInvoker(_handler);
+        var invoker = new HttpMessageInvoker(handler);
 
         // Act
         await invoker.SendAsync(request, CancellationToken.None);
@@ -72,11 +70,11 @@ public class CredentialsHandlerTests
         // Arrange
         var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/test");
 
-        _requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns((string?)null);
+        requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns((string?)null);
 
         SetupInnerHandler(HttpStatusCode.OK);
 
-        var invoker = new HttpMessageInvoker(_handler);
+        var invoker = new HttpMessageInvoker(handler);
 
         // Act
         await invoker.SendAsync(request, CancellationToken.None);
@@ -90,14 +88,15 @@ public class CredentialsHandlerTests
     {
         // Arrange
         var connectionId = "test-connection-123";
-        var request = new HttpRequestMessage(HttpMethod.Get,
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
             "https://api.test.com/api/private-messages/user123/unread-count");
 
-        _requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns(connectionId);
+        requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns(connectionId);
 
         SetupInnerHandler(HttpStatusCode.OK);
 
-        var invoker = new HttpMessageInvoker(_handler);
+        var invoker = new HttpMessageInvoker(handler);
 
         // Act
         await invoker.SendAsync(request, CancellationToken.None);
@@ -113,15 +112,16 @@ public class CredentialsHandlerTests
         // Arrange
         var token = "test-token";
         var connectionId = "test-connection";
-        var request = new HttpRequestMessage(HttpMethod.Get,
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
             "https://api.test.com/api/private-messages/user123/unread-count");
 
-        _requestAuthenticationServiceMock.Setup(x => x.Token).Returns(token);
-        _requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns(connectionId);
+        requestAuthenticationServiceMock.Setup(x => x.Token).Returns(token);
+        requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns(connectionId);
 
         SetupInnerHandler(HttpStatusCode.OK);
 
-        var invoker = new HttpMessageInvoker(_handler);
+        var invoker = new HttpMessageInvoker(handler);
 
         // Act
         await invoker.SendAsync(request, CancellationToken.None);
@@ -139,18 +139,18 @@ public class CredentialsHandlerTests
         // Arrange
         var request = new HttpRequestMessage(HttpMethod.Get, "https://api.test.com/test");
 
-        _requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns((string?)null);
+        requestAuthenticationServiceMock.Setup(x => x.ConnectionId).Returns((string?)null);
 
         SetupInnerHandler(HttpStatusCode.OK);
 
-        var invoker = new HttpMessageInvoker(_handler);
+        var invoker = new HttpMessageInvoker(handler);
 
         // Act
         var response = await invoker.SendAsync(request, CancellationToken.None);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        _innerHandlerMock.Protected().Verify(
+        innerHandlerMock.Protected().Verify(
             "SendAsync",
             Times.Once(),
             ItExpr.IsAny<HttpRequestMessage>(),
@@ -159,7 +159,7 @@ public class CredentialsHandlerTests
 
     private void SetupInnerHandler(HttpStatusCode statusCode, Action? callback = null)
     {
-        _innerHandlerMock
+        innerHandlerMock
             .Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",

@@ -13,16 +13,16 @@ namespace IrcChat.Api.Tests.Services;
 
 public class OAuthServiceTests
 {
-    private readonly Mock<HttpMessageHandler> _httpMessageHandlerMock;
-    private readonly HttpClient _httpClient;
-    private readonly IConfiguration _configuration;
-    private readonly Mock<ILogger<OAuthService>> _loggerMock;
-    private readonly OAuthService _oauthService;
+    private readonly Mock<HttpMessageHandler> httpMessageHandlerMock;
+    private readonly HttpClient httpClient;
+    private readonly IConfiguration configuration;
+    private readonly Mock<ILogger<OAuthService>> loggerMock;
+    private readonly OAuthService oauthService;
 
     public OAuthServiceTests()
     {
-        _httpMessageHandlerMock = new Mock<HttpMessageHandler>();
-        _httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+        httpMessageHandlerMock = new Mock<HttpMessageHandler>();
+        httpClient = new HttpClient(httpMessageHandlerMock.Object);
 
         var configData = new Dictionary<string, string>
         {
@@ -31,22 +31,22 @@ public class OAuthServiceTests
             { "OAuth:Microsoft:ClientId", "test-ms-client-id" },
             { "OAuth:Microsoft:ClientSecret", "test-ms-client-secret" },
             { "OAuth:Facebook:AppId", "test-fb-app-id" },
-            { "OAuth:Facebook:AppSecret", "test-fb-app-secret" }
+            { "OAuth:Facebook:AppSecret", "test-fb-app-secret" },
         };
 
-        _configuration = new ConfigurationBuilder()
+        configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(configData!)
             .Build();
 
-        _loggerMock = new Mock<ILogger<OAuthService>>();
-        _oauthService = new OAuthService(_httpClient, _configuration, _loggerMock.Object);
+        loggerMock = new Mock<ILogger<OAuthService>>();
+        oauthService = new OAuthService(httpClient, configuration, loggerMock.Object);
     }
 
     [Fact]
     public void GetProviderConfig_ForGoogle_ShouldReturnGoogleConfig()
     {
         // Act
-        var config = _oauthService.GetProviderConfig(ExternalAuthProvider.Google);
+        var config = oauthService.GetProviderConfig(ExternalAuthProvider.Google);
 
         // Assert
         Assert.NotNull(config);
@@ -60,7 +60,7 @@ public class OAuthServiceTests
     public void GetProviderConfig_ForMicrosoft_ShouldReturnMicrosoftConfig()
     {
         // Act
-        var config = _oauthService.GetProviderConfig(ExternalAuthProvider.Microsoft);
+        var config = oauthService.GetProviderConfig(ExternalAuthProvider.Microsoft);
 
         // Assert
         Assert.NotNull(config);
@@ -78,7 +78,7 @@ public class OAuthServiceTests
             access_token = "test_access_token",
             refresh_token = "test_refresh_token",
             expires_in = 3600,
-            token_type = "Bearer"
+            token_type = "Bearer",
         };
 
         var responseContent = new StringContent(
@@ -86,7 +86,7 @@ public class OAuthServiceTests
             System.Text.Encoding.UTF8,
             "application/json");
 
-        _httpMessageHandlerMock.Protected()
+        httpMessageHandlerMock.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
@@ -94,11 +94,11 @@ public class OAuthServiceTests
             .ReturnsAsync(new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.OK,
-                Content = responseContent
+                Content = responseContent,
             });
 
         // Act
-        var result = await _oauthService.ExchangeCodeForTokenAsync(
+        var result = await oauthService.ExchangeCodeForTokenAsync(
             ExternalAuthProvider.Google,
             "test_code",
             "http://localhost/callback",
@@ -115,7 +115,7 @@ public class OAuthServiceTests
     public async Task ExchangeCodeForTokenAsync_WithErrorResponse_ShouldReturnNull()
     {
         // Arrange
-        _httpMessageHandlerMock.Protected()
+        httpMessageHandlerMock.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
@@ -123,11 +123,11 @@ public class OAuthServiceTests
             .ReturnsAsync(new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.BadRequest,
-                Content = new StringContent("{\"error\": \"invalid_grant\"}")
+                Content = new StringContent("{\"error\": \"invalid_grant\"}"),
             });
 
         // Act
-        var result = await _oauthService.ExchangeCodeForTokenAsync(
+        var result = await oauthService.ExchangeCodeForTokenAsync(
             ExternalAuthProvider.Google,
             "invalid_code",
             "http://localhost/callback",

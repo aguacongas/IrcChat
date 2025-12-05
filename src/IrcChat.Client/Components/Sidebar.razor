@@ -1,4 +1,8 @@
+@* src/IrcChat.Client/Components/Sidebar.razor *@
 @using IrcChat.Shared.Models
+@using IrcChat.Client.Services
+@inject IChannelUnreadCountService UnreadCountService
+@implements IDisposable
 
 <div class="sidebar @(IsOpen ? "open" : "closed")">
     <div class="user-info" @onclick="OnUserInfoClicked">
@@ -49,11 +53,18 @@
             <ul class="channel-list">
                 @foreach (var channelName in Channels.Select(c => c.Name))
                 {
-                    <li class="@(channelName == CurrentChannel ? "active" : string.Empty)">
+                    var unreadCount = GetUnreadCount(channelName);
+                    var isActive = channelName == CurrentChannel;
+
+                    <li class="@(isActive ? "active" : string.Empty)">
                         <div class="channel-content" @onclick="() => OnChannelSelected.InvokeAsync(channelName)">
                             <span class="channel-hash">#</span>
                             <span class="channel-name">@channelName</span>
                         </div>
+                        @if (!isActive && unreadCount > 0)
+                        {
+                            <span class="unread-badge">@FormatUnreadCount(unreadCount)</span>
+                        }
                         <button class="btn-leave-channel"
                                 @onclick="() => OnChannelLeave.InvokeAsync(channelName)"
                                 title="Quitter ce salon">
@@ -131,4 +142,30 @@
 
     [Parameter]
     public bool IsOpen { get; set; }
+
+    protected override void OnInitialized()
+    {
+        UnreadCountService.OnCountsChanged += HandleCountsChanged;
+    }
+
+    private void HandleCountsChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private int GetUnreadCount(string channel)
+    {
+        return UnreadCountService.GetCount(channel);
+    }
+
+    private static string FormatUnreadCount(int count)
+    {
+        return count > 99 ? "99+" : count.ToString();
+    }
+
+    public void Dispose()
+    {
+        UnreadCountService.OnCountsChanged -= HandleCountsChanged;
+        GC.SuppressFinalize(this);
+    }
 }

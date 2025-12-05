@@ -6,8 +6,8 @@ namespace IrcChat.Client.Services;
 
 public class DeviceDetectorService(IJSRuntime jsRuntime, ILogger<DeviceDetectorService> logger) : IDeviceDetectorService, IAsyncDisposable
 {
-    private IJSObjectReference? _module;
-    private bool _isInitialized;
+    private IJSObjectReference? module;
+    private bool isInitialized;
 
     public async Task<bool> IsMobileDeviceAsync()
     {
@@ -15,7 +15,7 @@ public class DeviceDetectorService(IJSRuntime jsRuntime, ILogger<DeviceDetectorS
 
         try
         {
-            return await _module!.InvokeAsync<bool>("isMobileDevice");
+            return await module!.InvokeAsync<bool>("isMobileDevice");
         }
         catch (Exception ex)
         {
@@ -30,7 +30,7 @@ public class DeviceDetectorService(IJSRuntime jsRuntime, ILogger<DeviceDetectorS
 
         try
         {
-            return await _module!.InvokeAsync<int>("getScreenWidth");
+            return await module!.InvokeAsync<int>("getScreenWidth");
         }
         catch (Exception ex)
         {
@@ -39,34 +39,13 @@ public class DeviceDetectorService(IJSRuntime jsRuntime, ILogger<DeviceDetectorS
         }
     }
 
-    [SuppressMessage("Major Code Smell", "S2139:Exceptions should be either logged or rethrown but not both", Justification = "It's logged")]
-    private async Task EnsureInitializedAsync()
-    {
-        if (_isInitialized)
-        {
-            return;
-        }
-
-        try
-        {
-            _module = await jsRuntime.InvokeAsync<IJSObjectReference>(
-                "import", "./js/device-detector.js");
-            _isInitialized = true;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Erreur lors du chargement du module de détection d'appareil");
-            throw;
-        }
-    }
-
     public async ValueTask DisposeAsync()
     {
-        if (_module != null)
+        if (module != null)
         {
             try
             {
-                await _module.DisposeAsync();
+                await module.DisposeAsync();
             }
             catch (Exception ex)
             {
@@ -75,5 +54,26 @@ public class DeviceDetectorService(IJSRuntime jsRuntime, ILogger<DeviceDetectorS
         }
 
         GC.SuppressFinalize(this);
+    }
+
+    [SuppressMessage("Major Code Smell", "S2139:Exceptions should be either logged or rethrown but not both", Justification = "It's logged")]
+    private async Task EnsureInitializedAsync()
+    {
+        if (isInitialized)
+        {
+            return;
+        }
+
+        try
+        {
+            module = await jsRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./js/device-detector.js");
+            isInitialized = true;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Erreur lors du chargement du module de détection d'appareil");
+            throw;
+        }
     }
 }

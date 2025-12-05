@@ -1,23 +1,18 @@
 // tests/IrcChat.Client.Tests/Pages/ChatTests.FilterTests.cs
 using System.Net;
 using System.Net.Http.Json;
-using Bunit;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.SignalR.Client;
-using Moq;
 using RichardSzalay.MockHttp;
-using Xunit;
-
 
 namespace IrcChat.Client.Tests.Pages;
 
 /// <summary>
 /// Tests unitaires pour le filtre global dans Chat.razor
-/// Classe partielle qui étend ChatTests.cs
+/// Classe partielle qui étend ChatTests.cs.
 /// </summary>
 public partial class ChatTests
 {
-
     [Fact]
     public async Task Chat_GlobalFilter_WhenEmpty_ShouldShowAllChannels()
     {
@@ -27,16 +22,16 @@ public partial class ChatTests
         {
             new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
             new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
-            new() { Id = Guid.NewGuid(), Name = "gaming", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+            new() { Id = Guid.NewGuid(), Name = "gaming", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+        mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
-        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+        privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
         // Act
@@ -58,16 +53,16 @@ public partial class ChatTests
         {
             new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
             new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
-            new() { Id = Guid.NewGuid(), Name = "gaming", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+            new() { Id = Guid.NewGuid(), Name = "gaming", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+        mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
-        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+        privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
         var cut = await RenderChatAsync(channelName: "general");
@@ -98,16 +93,16 @@ public partial class ChatTests
         var channels = new List<Channel>
         {
             new() { Id = Guid.NewGuid(), Name = "General", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
-            new() { Id = Guid.NewGuid(), Name = "RANDOM", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+            new() { Id = Guid.NewGuid(), Name = "RANDOM", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+        mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
-        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+        privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
         var cut = await RenderChatAsync(channelName: "General");
@@ -135,16 +130,16 @@ public partial class ChatTests
         var channels = new List<Channel>
         {
             new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
-            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+        mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
-        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+        privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
         var cut = await RenderChatAsync(channelName: "general");
@@ -177,29 +172,29 @@ public partial class ChatTests
         SetupBasicAuth();
         var channels = new List<Channel>
         {
-            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
         };
         var users = new List<User>
         {
             new() { UserId = "1", Username = "alice" },
             new() { UserId = "2", Username = "bob" },
-            new() { UserId = "3", Username = "charlie" }
+            new() { UserId = "3", Username = "charlie" },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+        mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _mockHttp.When(HttpMethod.Get, "*/api/messages/general*")
+        mockHttp.When(HttpMethod.Get, "*/api/messages/general*")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<Message>()));
-        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+        mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(users));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
-        _chatServiceMock.Setup(x => x.JoinChannel("general"))
+        chatServiceMock.Setup(x => x.JoinChannel("general"))
             .Returns(Task.CompletedTask);
-        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+        privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
         var cut = await RenderChatAsync(channelName: "general");
@@ -235,28 +230,28 @@ public partial class ChatTests
         SetupBasicAuth();
         var channels = new List<Channel>
         {
-            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
         };
         var users = new List<User>
         {
             new() { UserId = "1", Username = "Alice" },
-            new() { UserId = "2", Username = "BOB" }
+            new() { UserId = "2", Username = "BOB" },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+        mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _mockHttp.When(HttpMethod.Get, "*/api/messages/general*")
+        mockHttp.When(HttpMethod.Get, "*/api/messages/general*")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<Message>()));
-        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+        mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(users));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
-        _chatServiceMock.Setup(x => x.JoinChannel("general"))
+        chatServiceMock.Setup(x => x.JoinChannel("general"))
             .Returns(Task.CompletedTask);
-        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+        privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
         var cut = await RenderChatAsync(channelName: "general");
@@ -293,12 +288,12 @@ public partial class ChatTests
         {
             new() { OtherUser = new User { UserId = "1", Username = "alice" }, LastMessage = "Hi", LastMessageTime = DateTime.UtcNow, UnreadCount = 1 },
             new() { OtherUser = new User { UserId = "2", Username = "bob" }, LastMessage = "Hello", LastMessageTime = DateTime.UtcNow, UnreadCount = 0 },
-            new() { OtherUser = new User { UserId = "3", Username = "charlie" }, LastMessage = "Hey", LastMessageTime = DateTime.UtcNow, UnreadCount = 2 }
+            new() { OtherUser = new User { UserId = "3", Username = "charlie" }, LastMessage = "Hey", LastMessageTime = DateTime.UtcNow, UnreadCount = 2 },
         };
 
-        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync("TestUser"))
+        privateMessageServiceMock.Setup(x => x.GetConversationsAsync("TestUser"))
             .ReturnsAsync(conversations);
-        _privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync(It.IsAny<string>(), It.IsAny<string>()))
+        privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync([]);
 
         var cut = await RenderChatAsync();
@@ -338,12 +333,12 @@ public partial class ChatTests
         var conversations = new List<PrivateConversation>
         {
             new() { OtherUser = new User { UserId = "1", Username = "ALICE" }, LastMessage = "Hi", LastMessageTime = DateTime.UtcNow, UnreadCount = 1 },
-            new() { OtherUser = new User { UserId = "2", Username = "Bob" }, LastMessage = "Hello", LastMessageTime = DateTime.UtcNow, UnreadCount = 0 }
+            new() { OtherUser = new User { UserId = "2", Username = "Bob" }, LastMessage = "Hello", LastMessageTime = DateTime.UtcNow, UnreadCount = 0 },
         };
 
-        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync("TestUser"))
+        privateMessageServiceMock.Setup(x => x.GetConversationsAsync("TestUser"))
             .ReturnsAsync(conversations);
-        _privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync(It.IsAny<string>(), It.IsAny<string>()))
+        privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync([]);
 
         var cut = await RenderChatAsync();
@@ -368,7 +363,6 @@ public partial class ChatTests
         Assert.DoesNotContain("Bob", cut.Markup);
     }
 
-
     [Fact]
     public async Task Chat_GlobalFilter_ShouldFilterAllListsSimultaneously()
     {
@@ -377,33 +371,33 @@ public partial class ChatTests
         var channels = new List<Channel>
         {
             new() { Id = Guid.NewGuid(), Name = "test-channel", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
-            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
         };
         var users = new List<User>
         {
             new() { UserId = "1", Username = "tester" },
-            new() { UserId = "2", Username = "alice" }
+            new() { UserId = "2", Username = "alice" },
         };
         var conversations = new List<PrivateConversation>
         {
             new() { OtherUser = new User { UserId = "1", Username = "test_user" }, LastMessage = "Hi", LastMessageTime = DateTime.UtcNow, UnreadCount = 1 },
-            new() { OtherUser = new User { UserId = "2", Username = "bob" }, LastMessage = "Hello", LastMessageTime = DateTime.UtcNow, UnreadCount = 0 }
+            new() { OtherUser = new User { UserId = "2", Username = "bob" }, LastMessage = "Hello", LastMessageTime = DateTime.UtcNow, UnreadCount = 0 },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+        mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _mockHttp.When(HttpMethod.Get, "*/api/messages/test-channel*")
+        mockHttp.When(HttpMethod.Get, "*/api/messages/test-channel*")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<Message>()));
-        _mockHttp.When(HttpMethod.Get, "*/api/channels/test-channel/users")
+        mockHttp.When(HttpMethod.Get, "*/api/channels/test-channel/users")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(users));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
-        _chatServiceMock.Setup(x => x.JoinChannel("test-channel"))
+        chatServiceMock.Setup(x => x.JoinChannel("test-channel"))
             .Returns(Task.CompletedTask);
-        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync("TestUser"))
+        privateMessageServiceMock.Setup(x => x.GetConversationsAsync("TestUser"))
             .ReturnsAsync(conversations);
 
         var cut = await RenderChatAsync(channelName: "test-channel");
@@ -443,16 +437,16 @@ public partial class ChatTests
         var channels = new List<Channel>
         {
             new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
-            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+        mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
-        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+        privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
         var cut = await RenderChatAsync(channelName: "general");
@@ -475,7 +469,7 @@ public partial class ChatTests
 
         // Effacer le filtre
         filterInput = await cut.InvokeAsync(() => cut.Find(".filter-input"));
-        await cut.InvokeAsync(() => filterInput.Input(""));
+        await cut.InvokeAsync(() => filterInput.Input(string.Empty));
         await cut.InvokeAsync(() => filterInput.KeyUp(" "));
         await Task.Delay(100);
         cut.Render();
@@ -493,37 +487,37 @@ public partial class ChatTests
         var channels = new List<Channel>
         {
             new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
-            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
         };
         var users1 = new List<User>
         {
             new() { UserId = "1", Username = "alice" },
-            new() { UserId = "2", Username = "bob" }
+            new() { UserId = "2", Username = "bob" },
         };
         var users2 = new List<User>
         {
             new() { UserId = "3", Username = "charlie" },
-            new() { UserId = "4", Username = "david" }
+            new() { UserId = "4", Username = "david" },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+        mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _mockHttp.When(HttpMethod.Get, "*/api/messages/general*")
+        mockHttp.When(HttpMethod.Get, "*/api/messages/general*")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<Message>()));
-        _mockHttp.When(HttpMethod.Get, "*/api/messages/random*")
+        mockHttp.When(HttpMethod.Get, "*/api/messages/random*")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<Message>()));
-        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+        mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(users1));
-        _mockHttp.When(HttpMethod.Get, "*/api/channels/random/users")
+        mockHttp.When(HttpMethod.Get, "*/api/channels/random/users")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(users2));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
-        _chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
+        chatServiceMock.Setup(x => x.JoinChannel(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
-        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+        privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
         var cut = await RenderChatAsync(channelName: "general");
@@ -563,24 +557,24 @@ public partial class ChatTests
     {
         // Arrange
         SetupBasicAuth();
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<Channel>()));
-        _mockHttp.When(HttpMethod.Get, "*/api/private-messages/status/Friend")
+        mockHttp.When(HttpMethod.Get, "*/api/private-messages/status/Friend")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(new { Username = "Friend", IsOnline = true }));
 
         var conversations = new List<PrivateConversation>
         {
             new() { OtherUser = new User { UserId = "1", Username = "alice" }, LastMessage = "Hi", LastMessageTime = DateTime.UtcNow, UnreadCount = 0 },
-            new() { OtherUser = new User { UserId = "2", Username = "Friend" }, LastMessage = "Hello", LastMessageTime = DateTime.UtcNow, UnreadCount = 0 }
+            new() { OtherUser = new User { UserId = "2", Username = "Friend" }, LastMessage = "Hello", LastMessageTime = DateTime.UtcNow, UnreadCount = 0 },
         };
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
-        _chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
+        chatServiceMock.Setup(x => x.MarkPrivateMessagesAsRead(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
-        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync("TestUser"))
+        privateMessageServiceMock.Setup(x => x.GetConversationsAsync("TestUser"))
             .ReturnsAsync(conversations);
-        _privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
+        privateMessageServiceMock.Setup(x => x.GetPrivateMessagesAsync("TestUser", "Friend"))
             .ReturnsAsync([]);
 
         var cut = await RenderChatAsync();
@@ -612,23 +606,23 @@ public partial class ChatTests
         SetupBasicAuth();
         var channels = new List<Channel>
         {
-            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow }
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
+        mockHttp.When(HttpMethod.Get, "*/api/my-channels?username=TestUser")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(channels));
-        _mockHttp.When(HttpMethod.Get, "*/api/messages/general*")
+        mockHttp.When(HttpMethod.Get, "*/api/messages/general*")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<Message>()));
-        _mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
+        mockHttp.When(HttpMethod.Get, "*/api/channels/general/users")
             .Respond(HttpStatusCode.OK, request => JsonContent.Create(new List<User>()));
 
-        _chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
+        chatServiceMock.Setup(x => x.InitializeAsync(It.IsAny<IHubConnectionBuilder>()))
             .Returns(Task.CompletedTask);
-        _chatServiceMock.Setup(x => x.JoinChannel("general"))
+        chatServiceMock.Setup(x => x.JoinChannel("general"))
             .Returns(Task.CompletedTask);
-        _privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
+        privateMessageServiceMock.Setup(x => x.GetConversationsAsync(It.IsAny<string>()))
             .ReturnsAsync([]);
 
         // Act

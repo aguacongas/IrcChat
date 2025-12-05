@@ -16,7 +16,7 @@ namespace IrcChat.Api.Tests.Integration;
 public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
     : IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient client = factory.CreateClient();
 
     [Fact]
     public async Task ToggleMute_AsChannelCreator_ShouldToggleMuteAndBecomeActiveManager()
@@ -34,7 +34,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
             Email = "creator@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         var channel = new Channel
@@ -44,7 +44,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
             CreatedBy = creator.Username,
             ActiveManager = creator.Username,
             CreatedAt = DateTime.UtcNow,
-            IsMuted = false
+            IsMuted = false,
         };
 
         db.ReservedUsernames.Add(creator);
@@ -52,10 +52,10 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
         await db.SaveChangesAsync();
 
         var token = GenerateToken(creator);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.PostAsync(
+        var response = await client.PostAsync(
             $"/api/channels/{channel.Name}/toggle-mute",
             null);
 
@@ -91,7 +91,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
             Email = "creator@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         var admin = new ReservedUsername
@@ -103,7 +103,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
             Email = "admin_mute@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         var channel = new Channel
@@ -113,7 +113,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
             CreatedBy = creator.Username,
             ActiveManager = creator.Username,
             CreatedAt = DateTime.UtcNow,
-            IsMuted = true // Commence muté
+            IsMuted = true, // Commence muté
         };
 
         db.ReservedUsernames.AddRange(creator, admin);
@@ -121,10 +121,10 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
         await db.SaveChangesAsync();
 
         var token = GenerateToken(admin);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act - L'admin démute le salon
-        var response = await _client.PostAsync(
+        var response = await client.PostAsync(
             $"/api/channels/{channel.Name}/toggle-mute",
             null);
 
@@ -159,7 +159,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
             Email = "creator@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         var admin = new ReservedUsername
@@ -171,7 +171,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
             Email = "admin@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         var channel = new Channel
@@ -181,7 +181,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
             CreatedBy = creator.Username,
             ActiveManager = admin.Username, // Un admin gère actuellement
             CreatedAt = DateTime.UtcNow,
-            IsMuted = true
+            IsMuted = true,
         };
 
         db.ReservedUsernames.AddRange(creator, admin);
@@ -189,10 +189,10 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
         await db.SaveChangesAsync();
 
         var token = GenerateToken(creator);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act - Le créateur démute son salon
-        var response = await _client.PostAsync(
+        var response = await client.PostAsync(
             $"/api/channels/{channel.Name}/toggle-mute",
             null);
 
@@ -224,7 +224,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
             Email = "creator@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         var channel = new Channel
@@ -234,7 +234,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
             CreatedBy = creator.Username,
             ActiveManager = creator.Username,
             CreatedAt = DateTime.UtcNow,
-            IsMuted = false
+            IsMuted = false,
         };
 
         db.ReservedUsernames.Add(creator);
@@ -242,10 +242,10 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
         await db.SaveChangesAsync();
 
         var token = GenerateToken(creator);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act - Muter le salon (pas démuter)
-        var response = await _client.PostAsync(
+        var response = await client.PostAsync(
             $"/api/channels/{channel.Name}/toggle-mute",
             null);
 
@@ -277,7 +277,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
             Email = "owner@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         var regularUser = new ReservedUsername
@@ -289,7 +289,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
             Email = "regular_mute@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         var channel = new Channel
@@ -299,7 +299,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
             CreatedBy = creator.Username,
             ActiveManager = creator.Username,
             CreatedAt = DateTime.UtcNow,
-            IsMuted = false
+            IsMuted = false,
         };
 
         db.ReservedUsernames.AddRange(creator, regularUser);
@@ -307,10 +307,10 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
         await db.SaveChangesAsync();
 
         var token = GenerateToken(regularUser);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.PostAsync(
+        var response = await client.PostAsync(
             $"/api/channels/{channel.Name}/toggle-mute",
             null);
 
@@ -334,17 +334,17 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
             Email = "notfound@example.com",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         db.ReservedUsernames.Add(user);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(user);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.PostAsync(
+        var response = await client.PostAsync(
             "/api/channels/non-existent-channel/toggle-mute",
             null);
 
@@ -356,7 +356,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
     public async Task ToggleMute_WithoutAuth_ShouldReturnUnauthorized()
     {
         // Act
-        var response = await _client.PostAsync(
+        var response = await client.PostAsync(
             "/api/channels/some-channel/toggle-mute",
             null);
 
@@ -377,7 +377,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim("provider", user.Provider.ToString())
+            new Claim("provider", user.Provider.ToString()),
         };
 
         var token = new JwtSecurityToken(
@@ -385,8 +385,7 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
             audience: "IrcChatClient",
             claims: claims,
             expires: DateTime.UtcNow.AddHours(1),
-            signingCredentials: credentials
-        );
+            signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
@@ -394,7 +393,9 @@ public class ChannelMuteEndpointsTests(ApiWebApplicationFactory factory)
     private sealed class MuteResponse
     {
         public string ChannelName { get; init; } = string.Empty;
+
         public bool IsMuted { get; init; } = false;
+
         public string ChangedBy { get; init; } = string.Empty;
     }
 }

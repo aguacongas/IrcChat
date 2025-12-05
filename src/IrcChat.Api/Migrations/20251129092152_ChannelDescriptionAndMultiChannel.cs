@@ -32,7 +32,7 @@ public partial class ChannelDescriptionAndMultiChannel : Migration
         migrationBuilder.CreateIndex(
             name: "IX_ConnectedUsers_Username_Channel",
             table: "ConnectedUsers",
-            columns: new[] { "Username", "Channel" },
+            columns: ["Username", "Channel"],
             unique: true);
     }
 
@@ -60,6 +60,6 @@ public partial class ChannelDescriptionAndMultiChannel : Migration
         migrationBuilder.CreateIndex(
             name: "IX_ConnectedUsers_Username_Channel",
             table: "ConnectedUsers",
-            columns: new[] { "Username", "Channel" });
+            columns: ["Username", "Channel"]);
     }
 }

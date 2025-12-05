@@ -25,7 +25,8 @@ public class IsAdminHandler(ChatDbContext db, ILogger<IsAdminHandler> logger)
             context.Fail();
         }
 
-        logger.LogInformation("Utilisateur {Username} autorisé en tant qu'admin",
+        logger.LogInformation(
+            "Utilisateur {Username} autorisé en tant qu'admin",
             username);
         context.Succeed(requirement);
     }

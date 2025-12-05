@@ -18,7 +18,7 @@ namespace IrcChat.Api.Tests.Integration;
 public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
     IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient client = factory.CreateClient();
 
     [Fact]
     public async Task GetMutedUsers_WithNoMutedUsers_ShouldReturnEmptyList()
@@ -32,13 +32,13 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Id = Guid.NewGuid(),
             Name = Guid.NewGuid().ToString(),
             CreatedBy = "admin",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
         db.Channels.Add(channel);
         await db.SaveChangesAsync();
 
         // Act
-        var response = await _client.GetAsync($"/api/channels/{channel.Name}/muted-users");
+        var response = await client.GetAsync($"/api/channels/{channel.Name}/muted-users");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -64,7 +64,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
         {
             Id = Guid.NewGuid(),
             UserId = Guid.NewGuid().ToString(),
-            Username = "muteduser"
+            Username = "muteduser",
         };
 
         db.ConnectedUsers.AddRange(mutedUser, creator);
@@ -74,10 +74,9 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Id = Guid.NewGuid(),
             Name = Guid.NewGuid().ToString(),
             CreatedBy = creator.Username,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
         db.Channels.Add(channel);
-
 
         var mute = new MutedUser
         {
@@ -86,13 +85,13 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             UserId = mutedUser.UserId,
             MutedByUserId = creator.UserId,
             MutedAt = DateTime.UtcNow,
-            Reason = "Spam"
+            Reason = "Spam",
         };
         db.MutedUsers.Add(mute);
         await db.SaveChangesAsync();
 
         // Act
-        var response = await _client.GetAsync($"/api/channels/{channel.Name}/muted-users");
+        var response = await client.GetAsync($"/api/channels/{channel.Name}/muted-users");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -120,7 +119,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Id = Guid.NewGuid(),
             Name = Guid.NewGuid().ToString(),
             CreatedBy = "admin",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
         db.Channels.Add(channel);
         await db.SaveChangesAsync();
@@ -128,7 +127,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
         var request = new { Reason = "Test" };
 
         // Act
-        var response = await _client.PostAsJsonAsync(
+        var response = await client.PostAsJsonAsync(
             "/api/channels/general/muted-users/user-123",
             request);
 
@@ -152,7 +151,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-creator",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         var targetUser = new ReservedUsername
@@ -164,7 +163,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-target",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         db.ReservedUsernames.AddRange(creator, targetUser);
@@ -174,18 +173,18 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Id = Guid.NewGuid(),
             Name = Guid.NewGuid().ToString(),
             CreatedBy = creator.Username,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
         db.Channels.Add(channel);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(creator);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new { Reason = "Spam" };
 
         // Act
-        var response = await _client.PostAsJsonAsync(
+        var response = await client.PostAsJsonAsync(
             $"/api/channels/{channel.Name}/muted-users/{targetUser.Id}",
             request);
 
@@ -220,7 +219,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-admin",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         var creator = new ReservedUsername
@@ -232,7 +231,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-creator",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         db.ReservedUsernames.AddRange(admin, creator);
@@ -242,18 +241,18 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Id = Guid.NewGuid(),
             Name = Guid.NewGuid().ToString(),
             CreatedBy = creator.Username,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
         db.Channels.Add(channel);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(admin);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new { Reason = "Violation" };
 
         // Act
-        var response = await _client.PostAsJsonAsync(
+        var response = await client.PostAsJsonAsync(
             $"/api/channels/{channel.Name}/muted-users/{creator.Id}",
             request);
 
@@ -286,7 +285,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-user",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = false
+            IsAdmin = false,
         };
 
         db.ReservedUsernames.Add(user);
@@ -296,18 +295,18 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Id = Guid.NewGuid(),
             Name = Guid.NewGuid().ToString(),
             CreatedBy = user.Username,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
         db.Channels.Add(channel);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(user);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new { Reason = "Test" };
 
         // Act
-        var response = await _client.PostAsJsonAsync(
+        var response = await client.PostAsJsonAsync(
             $"/api/channels/{channel.Name}/muted-users/{user.Id}",
             request);
 
@@ -334,7 +333,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Provider = ExternalAuthProvider.Google,
             ExternalUserId = "ext-creator",
             CreatedAt = DateTime.UtcNow,
-            LastLoginAt = DateTime.UtcNow
+            LastLoginAt = DateTime.UtcNow,
         };
 
         var targetUser = new ReservedUsername
@@ -345,7 +344,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Provider = ExternalAuthProvider.Google,
             ExternalUserId = "ext-target",
             CreatedAt = DateTime.UtcNow,
-            LastLoginAt = DateTime.UtcNow
+            LastLoginAt = DateTime.UtcNow,
         };
 
         db.ReservedUsernames.AddRange(creator, targetUser);
@@ -355,7 +354,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Id = Guid.NewGuid(),
             Name = channelName,
             CreatedBy = creator.Username,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
         db.Channels.Add(channel);
 
@@ -365,18 +364,18 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             ChannelName = channel.Name,
             UserId = targetUser.Id.ToString(),
             MutedByUserId = creator.Id.ToString(),
-            MutedAt = DateTime.UtcNow
+            MutedAt = DateTime.UtcNow,
         };
         db.MutedUsers.Add(existingMute);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(creator);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new { Reason = "Test" };
 
         // Act
-        var response = await _client.PostAsJsonAsync(
+        var response = await client.PostAsJsonAsync(
             $"/api/channels/{channelName}/muted-users/{targetUser.Id}",
             request);
 
@@ -402,7 +401,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Provider = ExternalAuthProvider.Google,
             ExternalUserId = "ext-creator",
             CreatedAt = DateTime.UtcNow,
-            LastLoginAt = DateTime.UtcNow
+            LastLoginAt = DateTime.UtcNow,
         };
 
         var targetUser = new ReservedUsername
@@ -413,7 +412,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Provider = ExternalAuthProvider.Google,
             ExternalUserId = "ext-target",
             CreatedAt = DateTime.UtcNow,
-            LastLoginAt = DateTime.UtcNow
+            LastLoginAt = DateTime.UtcNow,
         };
 
         db.ReservedUsernames.AddRange(creator, targetUser);
@@ -423,7 +422,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Id = Guid.NewGuid(),
             Name = Guid.NewGuid().ToString(),
             CreatedBy = creator.Username,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
         db.Channels.Add(channel);
 
@@ -433,16 +432,16 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             ChannelName = channel.Name,
             UserId = targetUser.Id.ToString(),
             MutedByUserId = creator.Id.ToString(),
-            MutedAt = DateTime.UtcNow
+            MutedAt = DateTime.UtcNow,
         };
         db.MutedUsers.Add(mute);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(creator);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.DeleteAsync(
+        var response = await client.DeleteAsync(
             $"/api/channels/{channel.Name}/muted-users/{targetUser.Id}");
 
         // Assert
@@ -474,7 +473,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             ExternalUserId = "ext-admin",
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
-            IsAdmin = true
+            IsAdmin = true,
         };
 
         var creator = new ReservedUsername
@@ -485,7 +484,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Provider = ExternalAuthProvider.Google,
             ExternalUserId = "ext-creator",
             CreatedAt = DateTime.UtcNow,
-            LastLoginAt = DateTime.UtcNow
+            LastLoginAt = DateTime.UtcNow,
         };
 
         db.ReservedUsernames.AddRange(admin, creator);
@@ -495,7 +494,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Id = Guid.NewGuid(),
             Name = Guid.NewGuid().ToString(),
             CreatedBy = creator.Username,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
         db.Channels.Add(channel);
 
@@ -505,16 +504,16 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             ChannelName = channel.Name,
             UserId = admin.Id.ToString(),
             MutedByUserId = creator.Id.ToString(),
-            MutedAt = DateTime.UtcNow
+            MutedAt = DateTime.UtcNow,
         };
         db.MutedUsers.Add(mute);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(admin);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.DeleteAsync(
+        var response = await client.DeleteAsync(
             $"/api/channels/{channel.Name}/muted-users/{admin.Id}");
 
         // Assert
@@ -539,7 +538,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Provider = ExternalAuthProvider.Google,
             ExternalUserId = "ext-creator",
             CreatedAt = DateTime.UtcNow,
-            LastLoginAt = DateTime.UtcNow
+            LastLoginAt = DateTime.UtcNow,
         };
 
         db.ReservedUsernames.Add(creator);
@@ -549,16 +548,16 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Id = Guid.NewGuid(),
             Name = Guid.NewGuid().ToString(),
             CreatedBy = creator.Username,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
         db.Channels.Add(channel);
         await db.SaveChangesAsync();
 
         var token = GenerateToken(creator);
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await _client.DeleteAsync(
+        var response = await client.DeleteAsync(
             "/api/channels/general/muted-users/nonexistent-user");
 
         // Assert
@@ -580,7 +579,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Provider = ExternalAuthProvider.Google,
             ExternalUserId = "ext-user",
             CreatedAt = DateTime.UtcNow,
-            LastLoginAt = DateTime.UtcNow
+            LastLoginAt = DateTime.UtcNow,
         };
 
         db.ReservedUsernames.Add(user);
@@ -590,7 +589,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Id = Guid.NewGuid(),
             Name = Guid.NewGuid().ToString(),
             CreatedBy = "admin",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
         db.Channels.Add(channel);
 
@@ -600,13 +599,13 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             ChannelName = channel.Name,
             UserId = user.Id.ToString(),
             MutedByUserId = "admin-id",
-            MutedAt = DateTime.UtcNow
+            MutedAt = DateTime.UtcNow,
         };
         db.MutedUsers.Add(mute);
         await db.SaveChangesAsync();
 
         // Act
-        var response = await _client.GetAsync(
+        var response = await client.GetAsync(
             $"/api/channels/{channel.Name}/muted-users/{user.Id}/is-muted");
 
         // Assert
@@ -628,13 +627,13 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             Id = Guid.NewGuid(),
             Name = Guid.NewGuid().ToString(),
             CreatedBy = "admin",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
         db.Channels.Add(channel);
         await db.SaveChangesAsync();
 
         // Act
-        var response = await _client.GetAsync(
+        var response = await client.GetAsync(
             "/api/channels/general/muted-users/user-123/is-muted");
 
         // Assert
@@ -657,7 +656,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim("provider", user.Provider.ToString())
+            new Claim("provider", user.Provider.ToString()),
         };
 
         var token = new JwtSecurityToken(
@@ -665,8 +664,7 @@ public class MutedUsersEndpointsTests(ApiWebApplicationFactory factory) :
             audience: "IrcChatClient",
             claims: claims,
             expires: DateTime.UtcNow.AddHours(1),
-            signingCredentials: credentials
-        );
+            signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

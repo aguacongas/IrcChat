@@ -336,3 +336,19 @@ csharp_style_implicit_object_creation_when_type_is_apparent = true:suggestion
 
 # Top-level statements for Program.cs
 csharp_style_prefer_top_level_statements = true:silent
+
+[*.cs]
+
+# IDE0300: Utiliser l'expression de collection pour le tableau
+dotnet_diagnostic.IDE0300.severity = warning
+dotnet_style_prefer_collection_expression = when_types_match
+
+# Préférer string.Empty à ""
+dotnet_style_prefer_empty_string_literal = true:warning
+
+# Règle personnalisée pour détecter "" au lieu de string.Empty
+# Note: Cette règle nécessite un analyseur personnalisé ou Roslyn Analyzers
+# Pour l'instant, utiliser un analyseur de code comme StyleCop ou SonarAnalyzer
+
+# StyleCop.Analyzers SA1122: Use string.Empty for empty strings
+dotnet_diagnostic.SA1122.severity = warning

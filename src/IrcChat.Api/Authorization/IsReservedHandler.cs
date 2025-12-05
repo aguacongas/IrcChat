@@ -25,7 +25,8 @@ public class IsReservedHandler(ChatDbContext db, ILogger<IsReservedHandler> logg
             context.Fail();
         }
 
-        logger.LogInformation("Utilisateur {Username} autorisé en tant qu'utilisateur reservé",
+        logger.LogInformation(
+            "Utilisateur {Username} autorisé en tant qu'utilisateur reservé",
             username);
         context.Succeed(requirement);
     }

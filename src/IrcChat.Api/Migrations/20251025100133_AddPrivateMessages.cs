@@ -21,7 +21,7 @@ public partial class AddPrivateMessages : Migration
                 Content = table.Column<string>(type: "text", nullable: false),
                 Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                 IsRead = table.Column<bool>(type: "boolean", nullable: false),
-                IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
             },
             constraints: table => table.PrimaryKey("PK_PrivateMessages", x => x.Id));
 

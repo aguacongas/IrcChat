@@ -66,7 +66,7 @@ public static class MutedUsersEndpoints
             MutedByUserId = m.MutedByUserId,
             MutedByUsername = userInfoDict.TryGetValue(m.MutedByUserId, out var mutedBy) ? mutedBy : "Unknown",
             MutedAt = m.MutedAt,
-            Reason = m.Reason
+            Reason = m.Reason,
         }).ToList();
 
         return Results.Ok(result);
@@ -105,8 +105,8 @@ public static class MutedUsersEndpoints
 
         // Vérifier si l'utilisateur est déjà mute
         var existingMute = await db.MutedUsers
-            .FirstOrDefaultAsync(m => m.ChannelName == null || m.ChannelName.ToLower() == channelName.ToLower()
-                                   && m.UserId == userId);
+            .FirstOrDefaultAsync(m => m.ChannelName == null || (m.ChannelName.ToLower() == channelName.ToLower()
+                                   && m.UserId == userId));
 
         if (existingMute != null)
         {
@@ -121,7 +121,7 @@ public static class MutedUsersEndpoints
             UserId = userId,
             MutedByUserId = currentUserId,
             MutedAt = DateTime.UtcNow,
-            Reason = request?.Reason
+            Reason = request?.Reason,
         };
 
         db.MutedUsers.Add(mutedUser);
@@ -151,7 +151,7 @@ public static class MutedUsersEndpoints
             mutedByUserId = currentUserId,
             mutedByUsername = currentUser,
             mutedAt = mutedUser.MutedAt,
-            reason = mutedUser.Reason
+            reason = mutedUser.Reason,
         });
     }
 
@@ -209,7 +209,7 @@ public static class MutedUsersEndpoints
             userId,
             username = targetUser,
             unmutedByUserId = currentUserId,
-            unmutedByUsername = currentUser
+            unmutedByUsername = currentUser,
         });
     }
 
@@ -219,14 +219,14 @@ public static class MutedUsersEndpoints
         ChatDbContext db)
     {
         var isMuted = await db.MutedUsers
-            .AnyAsync(m => m.ChannelName == null || m.ChannelName.ToLower() == channelName.ToLower()
-                        && m.UserId == userId);
+            .AnyAsync(m => m.ChannelName == null || (m.ChannelName.ToLower() == channelName.ToLower()
+                        && m.UserId == userId));
 
         return Results.Ok(new { userId, channelName, isMuted });
     }
 
     /// <summary>
-    /// Récupère tous les ConnectionIds d'un utilisateur (peut avoir plusieurs connexions)
+    /// Récupère tous les ConnectionIds d'un utilisateur (peut avoir plusieurs connexions).
     /// </summary>
     private static async Task<List<string>> GetUserConnectionIds(ChatDbContext db, string userId)
     {

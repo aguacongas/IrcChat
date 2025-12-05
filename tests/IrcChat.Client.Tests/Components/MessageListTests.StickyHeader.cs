@@ -1,12 +1,10 @@
 // tests/IrcChat.Client.Tests/Components/MessageListTests.cs
 // Tests à ajouter pour le header sticky collapsible
 
-using Bunit;
 using IrcChat.Client.Components;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 

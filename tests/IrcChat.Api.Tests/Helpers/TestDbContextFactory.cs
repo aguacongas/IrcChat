@@ -26,7 +26,7 @@ public static class TestDbContextFactory
             Id = Guid.NewGuid(),
             Name = "general",
             CreatedBy = "system",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         context.Channels.Add(channel);

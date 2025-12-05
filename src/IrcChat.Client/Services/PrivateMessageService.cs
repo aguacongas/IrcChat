@@ -8,9 +8,13 @@ namespace IrcChat.Client.Services;
 public class PrivateMessageService(HttpClient httpClient, ILogger<PrivateMessageService> logger) : IPrivateMessageService
 {
     public event Action<PrivateMessage>? OnPrivateMessageReceived;
+
     public event Action<PrivateMessage>? OnPrivateMessageSent;
+
     public event Action<string, List<Guid>>? OnMessagesRead;
+
     public event Action? OnUnreadCountChanged;
+
     public event Action<string>? OnConversationDeleted;
 
     public void NotifyPrivateMessageReceived(PrivateMessage message)
@@ -48,8 +52,11 @@ public class PrivateMessageService(HttpClient httpClient, ILogger<PrivateMessage
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Erreur lors de la récupération des messages entre {Username} et {OtherUsername}",
-                userId, otherUserId);
+            logger.LogError(
+                ex,
+                "Erreur lors de la récupération des messages entre {Username} et {OtherUsername}",
+                userId,
+                otherUserId);
             return [];
         }
     }
@@ -87,8 +94,11 @@ public class PrivateMessageService(HttpClient httpClient, ILogger<PrivateMessage
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Erreur lors de la suppression de la conversation entre {Username} et {OtherUsername}",
-                userId, otherUserId);
+            logger.LogError(
+                ex,
+                "Erreur lors de la suppression de la conversation entre {Username} et {OtherUsername}",
+                userId,
+                otherUserId);
             return false;
         }
     }

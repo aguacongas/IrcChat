@@ -1,9 +1,7 @@
 // tests/IrcChat.Client.Tests/Components/PrivateConversationsTests.cs
-using Bunit;
 using IrcChat.Client.Components;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.Components;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
@@ -40,7 +38,7 @@ public class PrivateConversationsTests : BunitContext
                 LastMessage = "Hello",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0,
-                IsOnline = true
+                IsOnline = true,
             },
             new()
             {
@@ -53,7 +51,7 @@ public class PrivateConversationsTests : BunitContext
                 LastMessageTime = DateTime.UtcNow.AddMinutes(-5),
                 UnreadCount = 2,
                 IsOnline = false
-            }
+            },
         };
 
         // Act
@@ -84,7 +82,7 @@ public class PrivateConversationsTests : BunitContext
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0,
                 IsOnline = true
-            }
+            },
         };
 
         // Act
@@ -114,7 +112,7 @@ public class PrivateConversationsTests : BunitContext
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0,
                 IsOnline = false
-            }
+            },
         };
 
         // Act
@@ -144,7 +142,7 @@ public class PrivateConversationsTests : BunitContext
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 3,
                 IsOnline = true
-            }
+            },
         };
 
         // Act
@@ -173,7 +171,7 @@ public class PrivateConversationsTests : BunitContext
                 LastMessage = "Test1",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 2,
-                IsOnline = true
+                IsOnline = true,
             },
             new()
             {
@@ -186,7 +184,7 @@ public class PrivateConversationsTests : BunitContext
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 3,
                 IsOnline = false
-            }
+            },
         };
 
         // Act
@@ -216,7 +214,7 @@ public class PrivateConversationsTests : BunitContext
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0,
                 IsOnline = true
-            }
+            },
         };
 
         var selectedUsername = string.Empty;
@@ -253,7 +251,7 @@ public class PrivateConversationsTests : BunitContext
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0,
                 IsOnline = false
-            }
+            },
         };
 
         var deletedUsername = string.Empty;
@@ -289,7 +287,7 @@ public class PrivateConversationsTests : BunitContext
                 LastMessage = "Test",
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0,
-                IsOnline = true
+                IsOnline = true,
             },
             new()
             {
@@ -302,7 +300,7 @@ public class PrivateConversationsTests : BunitContext
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0,
                 IsOnline = false
-            }
+            },
         };
 
         // Act
@@ -339,7 +337,7 @@ public class PrivateConversationsTests : BunitContext
                 LastMessageTime = DateTime.UtcNow,
                 UnreadCount = 0,
                 IsOnline = true
-            }
+            },
         };
 
         // Act
@@ -366,7 +364,7 @@ public class PrivateConversationsTests : BunitContext
                 LastMessageTime = DateTime.UtcNow.AddMinutes(-30),
                 UnreadCount = 0,
                 IsOnline = true
-            }
+            },
         };
 
         // Act

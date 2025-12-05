@@ -1,12 +1,10 @@
 // Tests supplémentaires pour SidebarToggleButton.razor
 // Ajouter à tests/IrcChat.Client.Tests/Components/SidebarToggleButtonTests.cs
 
-using Bunit;
 using IrcChat.Client.Components;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 

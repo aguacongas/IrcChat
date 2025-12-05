@@ -12,7 +12,7 @@ public class ExtensionsTests
         // Arrange
         var options = new ConnectionManagerOptions
         {
-            InstanceId = "custom-instance-id"
+            InstanceId = "custom-instance-id",
         };
 
         // Act
@@ -28,7 +28,7 @@ public class ExtensionsTests
         // Arrange
         var options = new ConnectionManagerOptions
         {
-            InstanceId = null
+            InstanceId = null,
         };
 
         // Act
@@ -36,6 +36,7 @@ public class ExtensionsTests
 
         // Assert
         Assert.NotEmpty(result);
+
         // Soit HOSTNAME env var, soit Environment.MachineName
         Assert.True(result == Environment.GetEnvironmentVariable("HOSTNAME") ||
             result == Environment.MachineName);
@@ -47,7 +48,7 @@ public class ExtensionsTests
         // Arrange
         var options = new ConnectionManagerOptions
         {
-            InstanceId = null
+            InstanceId = null,
         };
 
         // Act

@@ -2,24 +2,22 @@
 
 using System.Net;
 using System.Net.Http.Json;
-using Bunit;
 using IrcChat.Client.Components;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using RichardSzalay.MockHttp;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
 public sealed class ChannelEditModalTests : BunitContext
 {
-    private readonly MockHttpMessageHandler _mockHttp;
+    private readonly MockHttpMessageHandler mockHttp;
 
     public ChannelEditModalTests()
     {
-        _mockHttp = new MockHttpMessageHandler();
-        var httpClient = _mockHttp.ToHttpClient();
+        mockHttp = new MockHttpMessageHandler();
+        var httpClient = mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
         Services.AddSingleton(httpClient);
         Services.AddLogging();
@@ -32,6 +30,7 @@ public sealed class ChannelEditModalTests : BunitContext
         var cut = Render<ChannelEditModal>(parameters => parameters
             .Add(p => p.ChannelName, "general")
             .Add(p => p.CurrentDescription, "Description actuelle"));
+
         // Assert
         Assert.Contains("#general", cut.Markup);
     }
@@ -127,7 +126,7 @@ public sealed class ChannelEditModalTests : BunitContext
         var channelName = "general";
         var newDescription = "Nouvelle description";
 
-        var putRequest = _mockHttp
+        var putRequest = mockHttp
             .When(HttpMethod.Put, $"*/api/channels/{Uri.EscapeDataString(channelName)}")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new { message = "Success" }));
 
@@ -145,7 +144,7 @@ public sealed class ChannelEditModalTests : BunitContext
         await Task.Delay(100);
 
         // Assert
-        var count = _mockHttp.GetMatchCount(putRequest);
+        var count = mockHttp.GetMatchCount(putRequest);
         Assert.Equal(1, count);
     }
 
@@ -157,14 +156,14 @@ public sealed class ChannelEditModalTests : BunitContext
         var descriptionWithSpaces = "   Description avec espaces   ";
         Channel? sentChannel = null;
 
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Put, $"*/api/channels/{Uri.EscapeDataString(channelName)}")
             .Respond(async request =>
             {
                 sentChannel = await request.Content!.ReadFromJsonAsync<Channel>();
                 return new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = JsonContent.Create(new { message = "Success" })
+                    Content = JsonContent.Create(new { message = "Success" }),
                 };
             });
 
@@ -193,14 +192,14 @@ public sealed class ChannelEditModalTests : BunitContext
         var channelName = "general";
         Channel? sentChannel = null;
 
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Put, $"*/api/channels/{Uri.EscapeDataString(channelName)}")
             .Respond(async request =>
             {
                 sentChannel = await request.Content!.ReadFromJsonAsync<Channel>();
                 return new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = JsonContent.Create(new { message = "Success" })
+                    Content = JsonContent.Create(new { message = "Success" }),
                 };
             });
 
@@ -226,7 +225,7 @@ public sealed class ChannelEditModalTests : BunitContext
     public async Task ChannelEditModal_SaveChanges_OnSuccess_ShouldShowSuccessMessage()
     {
         // Arrange
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Put, "*/api/channels/*")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new { message = "Success" }));
 
@@ -254,7 +253,7 @@ public sealed class ChannelEditModalTests : BunitContext
         // Arrange
         var onSavedCalled = false;
 
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Put, "*/api/channels/*")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new { message = "Success" }));
 
@@ -280,7 +279,7 @@ public sealed class ChannelEditModalTests : BunitContext
     public async Task ChannelEditModal_SaveChanges_OnNotFound_ShouldShowError()
     {
         // Arrange
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Put, "*/api/channels/*")
             .Respond(HttpStatusCode.NotFound, JsonContent.Create(new { error = "channel_not_found" }));
 
@@ -308,7 +307,7 @@ public sealed class ChannelEditModalTests : BunitContext
     public async Task ChannelEditModal_SaveChanges_OnForbidden_ShouldShowPermissionError(HttpStatusCode statusCode)
     {
         // Arrange
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Put, "*/api/channels/*")
             .Respond(statusCode);
 
@@ -331,12 +330,11 @@ public sealed class ChannelEditModalTests : BunitContext
         Assert.Contains("alert-error", cut.Markup);
     }
 
-
     [Fact]
     public async Task ChannelEditModal_SaveChanges_OnError_ShouldShowGenericError()
     {
         // Arrange
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Put, "*/api/channels/*")
             .Respond(HttpStatusCode.InternalServerError);
 
@@ -362,14 +360,14 @@ public sealed class ChannelEditModalTests : BunitContext
     public async Task ChannelEditModal_WhileSaving_ShouldDisableButton()
     {
         // Arrange
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Put, "*/api/channels/*")
             .Respond(async () =>
             {
                 await Task.Delay(500);
                 return new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = JsonContent.Create(new { message = "Success" })
+                    Content = JsonContent.Create(new { message = "Success" }),
                 };
             });
 
@@ -386,11 +384,13 @@ public sealed class ChannelEditModalTests : BunitContext
         await cut.InvokeAsync(() => saveButton.Click());
 
         // Assert - Le bouton doit être désactivé pendant la sauvegarde
-        await cut.WaitForStateAsync(() =>
+        await cut.WaitForStateAsync(
+            () =>
         {
             var button = cut.Find(".btn-primary");
             return button.HasAttribute("disabled");
-        }, TimeSpan.FromSeconds(1));
+        },
+            TimeSpan.FromSeconds(1));
 
         var disabledButton = cut.Find(".btn-primary");
         Assert.True(disabledButton.HasAttribute("disabled"));
@@ -400,14 +400,14 @@ public sealed class ChannelEditModalTests : BunitContext
     public async Task ChannelEditModal_WhileSaving_ShouldShowSpinner()
     {
         // Arrange
-        _mockHttp
+        mockHttp
             .When(HttpMethod.Put, "*/api/channels/*")
             .Respond(async () =>
             {
                 await Task.Delay(500);
                 return new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = JsonContent.Create(new { message = "Success" })
+                    Content = JsonContent.Create(new { message = "Success" }),
                 };
             });
 

@@ -1,26 +1,22 @@
 // tests/IrcChat.Client.Tests/Components/MessageListTests.cs
 using System.Text.RegularExpressions;
-using Bunit;
 using IrcChat.Client.Components;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
-using Microsoft.JSInterop.Infrastructure;
-using Moq;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
 public partial class MessageListTests : BunitContext
 {
-    private readonly Mock<IJSRuntime> _jsRuntimeMock;
+    private readonly Mock<IJSRuntime> jsRuntimeMock;
 
     public MessageListTests()
     {
-        _jsRuntimeMock = new Mock<IJSRuntime>();
-        Services.AddSingleton(_jsRuntimeMock.Object);
+        jsRuntimeMock = new Mock<IJSRuntime>();
+        Services.AddSingleton(jsRuntimeMock.Object);
     }
 
     [Fact]
@@ -47,7 +43,7 @@ public partial class MessageListTests : BunitContext
                 Username = "user1",
                 Content = "Hello!",
                 Channel = "general",
-                Timestamp = DateTime.UtcNow
+                Timestamp = DateTime.UtcNow,
             },
             new()
             {
@@ -56,7 +52,7 @@ public partial class MessageListTests : BunitContext
                 Content = "Hi there!",
                 Channel = "general",
                 Timestamp = DateTime.UtcNow
-            }
+            },
         };
 
         // Act
@@ -82,7 +78,7 @@ public partial class MessageListTests : BunitContext
                 Content = "My message",
                 Channel = "general",
                 Timestamp = DateTime.UtcNow
-            }
+            },
         };
 
         // Act
@@ -100,7 +96,7 @@ public partial class MessageListTests : BunitContext
         // Arrange
         var mockModule = new Mock<IJSObjectReference>();
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.Is<object[]>(args => args.Length == 1 && args[0].ToString() == "./js/scroll-helper.js")))
@@ -115,7 +111,7 @@ public partial class MessageListTests : BunitContext
                 Content = "Hello",
                 Channel = "general",
                 Timestamp = DateTime.UtcNow
-            }
+            },
         };
 
         // Act
@@ -124,7 +120,7 @@ public partial class MessageListTests : BunitContext
             .Add(p => p.CurrentUsername, "user1"));
 
         // Assert
-        _jsRuntimeMock.Verify(
+        jsRuntimeMock.Verify(
             x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.Is<object[]>(args => args.Length == 1 && args[0].ToString() == "./js/scroll-helper.js")),
@@ -137,7 +133,7 @@ public partial class MessageListTests : BunitContext
         // Arrange
         var mockModule = new Mock<IJSObjectReference>();
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.Is<object[]>(args => args.Length == 1 && args[0].ToString() == "./js/scroll-helper.js")))
@@ -158,7 +154,7 @@ public partial class MessageListTests : BunitContext
                 Content = "Hello",
                 Channel = "general",
                 Timestamp = DateTime.UtcNow
-            }
+            },
         };
 
         var cut = Render<MessageList>(parameters => parameters
@@ -174,7 +170,7 @@ public partial class MessageListTests : BunitContext
             Username = "user2",
             Content = "Hi there",
             Channel = "general",
-            Timestamp = DateTime.UtcNow
+            Timestamp = DateTime.UtcNow,
         });
 
         cut.Render(parameters => parameters
@@ -194,7 +190,7 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WhenModuleLoadFails_ShouldHandleGracefully()
     {
         // Arrange
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.IsAny<object[]>()))
@@ -209,7 +205,7 @@ public partial class MessageListTests : BunitContext
                 Content = "Hello",
                 Channel = "general",
                 Timestamp = DateTime.UtcNow
-            }
+            },
         };
 
         // Act & Assert - Ne devrait pas lancer d'exception
@@ -226,7 +222,7 @@ public partial class MessageListTests : BunitContext
         // Arrange
         var mockModule = new Mock<IJSObjectReference>();
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.IsAny<object[]>()))
@@ -258,7 +254,7 @@ public partial class MessageListTests : BunitContext
         // Arrange
         var mockModule = new Mock<IJSObjectReference>();
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.IsAny<object[]>()))
@@ -291,7 +287,7 @@ public partial class MessageListTests : BunitContext
         // Arrange
         var mockModule = new Mock<IJSObjectReference>();
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.IsAny<object[]>()))
@@ -312,7 +308,7 @@ public partial class MessageListTests : BunitContext
                 Content = "Hello",
                 Channel = "general",
                 Timestamp = DateTime.UtcNow
-            }
+            },
         };
 
         var cut = Render<MessageList>(parameters => parameters
@@ -324,7 +320,7 @@ public partial class MessageListTests : BunitContext
         // Reset les appels précédents
         mockModule.Invocations.Clear();
 
-        // Act - Re-render sans changement de count        
+        // Act - Re-render sans changement de count
         cut.Render(parameters => { });
 
         await Task.Delay(100);
@@ -343,7 +339,7 @@ public partial class MessageListTests : BunitContext
         // Arrange
         var mockModule = new Mock<IJSObjectReference>();
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.IsAny<object[]>()))
@@ -364,7 +360,7 @@ public partial class MessageListTests : BunitContext
                 Content = "Hello",
                 Channel = "general",
                 Timestamp = DateTime.UtcNow
-            }
+            },
         };
 
         // Act & Assert - Ne devrait pas lancer d'exception
@@ -381,7 +377,7 @@ public partial class MessageListTests : BunitContext
         // Arrange
         var mockModule = new Mock<IJSObjectReference>();
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.IsAny<object[]>()))
@@ -402,7 +398,7 @@ public partial class MessageListTests : BunitContext
                 Content = "Message 1",
                 Channel = "general",
                 Timestamp = DateTime.UtcNow
-            }
+            },
         };
 
         var cut = Render<MessageList>(parameters => parameters
@@ -422,7 +418,7 @@ public partial class MessageListTests : BunitContext
                 Username = "user2",
                 Content = "Message 2",
                 Channel = "general",
-                Timestamp = DateTime.UtcNow
+                Timestamp = DateTime.UtcNow,
             },
             new Message
             {
@@ -430,7 +426,7 @@ public partial class MessageListTests : BunitContext
                 Username = "user3",
                 Content = "Message 3",
                 Channel = "general",
-                Timestamp = DateTime.UtcNow
+                Timestamp = DateTime.UtcNow,
             }
         ]);
 
@@ -456,7 +452,7 @@ public partial class MessageListTests : BunitContext
 
         var mockModule = new Mock<IJSObjectReference>();
 
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.IsAny<object[]>()))
@@ -498,7 +494,7 @@ public partial class MessageListTests : BunitContext
         Services.AddSingleton(loggerMock.Object);
 
         var loadException = new JSException("Module not found");
-        _jsRuntimeMock
+        jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.IsAny<object[]>()))
@@ -513,7 +509,7 @@ public partial class MessageListTests : BunitContext
                 Content = "Hello",
                 Channel = "general",
                 Timestamp = DateTime.UtcNow
-            }
+            },
         };
 
         // Act
@@ -547,7 +543,7 @@ public partial class MessageListTests : BunitContext
             Content = "Hey @testuser, how are you?",
             Channel = "general",
             Timestamp = DateTime.UtcNow
-        }
+        },
     };
 
         // Act
@@ -573,7 +569,7 @@ public partial class MessageListTests : BunitContext
             Content = "Hello everyone!",
             Channel = "general",
             Timestamp = DateTime.UtcNow
-        }
+        },
     };
 
         // Act
@@ -599,7 +595,7 @@ public partial class MessageListTests : BunitContext
             Content = "Hey testuser, check this out!",
             Channel = "general",
             Timestamp = DateTime.UtcNow
-        }
+        },
     };
 
         // Act
@@ -626,7 +622,7 @@ public partial class MessageListTests : BunitContext
             Content = "Hey TESTUSER, are you there?",
             Channel = "general",
             Timestamp = DateTime.UtcNow
-        }
+        },
     };
 
         // Act
@@ -652,7 +648,7 @@ public partial class MessageListTests : BunitContext
             Content = "This is a testusername, not the same",
             Channel = "general",
             Timestamp = DateTime.UtcNow
-        }
+        },
     };
 
         // Act
@@ -662,6 +658,7 @@ public partial class MessageListTests : BunitContext
 
         // Assert
         var messageDiv = cut.Find(".message");
+
         // Devrait contenir "mentioned" car "testuser" est inclus dans "testusername"
         // Si on veut une détection stricte par mot complet, il faudrait modifier le code
         Assert.Contains("mentioned", messageDiv.ClassList);
@@ -680,7 +677,7 @@ public partial class MessageListTests : BunitContext
             Content = "I am testuser and this is my message",
             Channel = "general",
             Timestamp = DateTime.UtcNow
-        }
+        },
     };
 
         // Act
@@ -691,6 +688,7 @@ public partial class MessageListTests : BunitContext
         // Assert
         var messageDiv = cut.Find(".message");
         Assert.Contains("own", messageDiv.ClassList);
+
         // Le message contient le pseudo mais c'est le sien, il devrait quand même être marqué "mentioned"
         // C'est un choix de design - vous pouvez décider de l'exclure ou non
     }
@@ -708,7 +706,7 @@ public partial class MessageListTests : BunitContext
             Content = "testuser, can testuser help with this?",
             Channel = "general",
             Timestamp = DateTime.UtcNow
-        }
+        },
     };
 
         // Act
@@ -735,7 +733,7 @@ public partial class MessageListTests : BunitContext
             Content = "<script>alert('test')</script> user<test>",
             Channel = "general",
             Timestamp = DateTime.UtcNow
-        }
+        },
     };
 
         // Act
@@ -745,6 +743,7 @@ public partial class MessageListTests : BunitContext
 
         // Assert
         var content = cut.Find(".content");
+
         // Le HTML doit être échappé pour éviter XSS
         Assert.DoesNotContain("<script>", content.InnerHtml);
         Assert.Contains("&lt;script&gt;", content.InnerHtml);
@@ -763,7 +762,7 @@ public partial class MessageListTests : BunitContext
             Content = "Hello everyone",
             Channel = "general",
             Timestamp = DateTime.UtcNow
-        }
+        },
     };
 
         // Act
@@ -790,7 +789,7 @@ public partial class MessageListTests : BunitContext
             Content = null!,
             Channel = "general",
             Timestamp = DateTime.UtcNow
-        }
+        },
     };
 
         // Act & Assert - Ne devrait pas lancer d'exception
@@ -813,7 +812,7 @@ public partial class MessageListTests : BunitContext
             Username = "user1",
             Content = "Hello everyone!",
             Channel = "general",
-            Timestamp = DateTime.UtcNow
+            Timestamp = DateTime.UtcNow,
         },
         new()
         {
@@ -821,7 +820,7 @@ public partial class MessageListTests : BunitContext
             Username = "user2",
             Content = "Hey testuser, what do you think?",
             Channel = "general",
-            Timestamp = DateTime.UtcNow
+            Timestamp = DateTime.UtcNow,
         },
         new()
         {
@@ -830,7 +829,7 @@ public partial class MessageListTests : BunitContext
             Content = "Just a regular message",
             Channel = "general",
             Timestamp = DateTime.UtcNow
-        }
+        },
     };
 
         // Act
@@ -861,7 +860,7 @@ public partial class MessageListTests : BunitContext
             Content = "testuser: can you help?",
             Channel = "general",
             Timestamp = DateTime.UtcNow
-        }
+        },
     };
 
         // Act
@@ -889,7 +888,7 @@ public partial class MessageListTests : BunitContext
             Content = "Can you help, testuser?",
             Channel = "general",
             Timestamp = DateTime.UtcNow
-        }
+        },
     };
 
         // Act
@@ -1031,7 +1030,7 @@ public partial class MessageListTests : BunitContext
         // Arrange
         var messages = new List<Message>
     {
-        new() { Id = Guid.NewGuid(), Username = "user1", Content = "Premier message", Timestamp = DateTime.UtcNow }
+        new() { Id = Guid.NewGuid(), Username = "user1", Content = "Premier message", Timestamp = DateTime.UtcNow },
     };
         var description = "Description du salon";
 
@@ -1088,6 +1087,7 @@ public partial class MessageListTests : BunitContext
         // Assert
         Assert.DoesNotContain("description-text", cut.Markup);
     }
+
     [Fact]
     public void MessageList_ShouldTriggerUsernameClickedEvent()
     {
@@ -1095,11 +1095,12 @@ public partial class MessageListTests : BunitContext
         var clickedUsername = string.Empty;
         var messages = new List<Message>
         {
-            new() {
+            new()
+            {
                 Username = "Alice",
                 Content = "Hello",
                 Timestamp = DateTime.UtcNow
-            }
+            },
         };
 
         var cut = Render<MessageList>(parameters => parameters
@@ -1122,11 +1123,12 @@ public partial class MessageListTests : BunitContext
         var eventTriggered = false;
         var messages = new List<Message>
         {
-            new() {
+            new()
+            {
                 Username = "Alice",
                 Content = "Hello",
                 Timestamp = DateTime.UtcNow
-            }
+            },
         };
 
         var cut = Render<MessageList>(parameters => parameters

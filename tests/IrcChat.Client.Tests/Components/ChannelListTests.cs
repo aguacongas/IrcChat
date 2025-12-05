@@ -1,23 +1,21 @@
 using System.Net;
 using System.Net.Http.Json;
-using Bunit;
 using IrcChat.Client.Components;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using RichardSzalay.MockHttp;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
 public class ChannelListTests : BunitContext
 {
-    private readonly MockHttpMessageHandler _mockHttp;
+    private readonly MockHttpMessageHandler mockHttp;
 
     public ChannelListTests()
     {
-        _mockHttp = new MockHttpMessageHandler();
-        var httpClient = _mockHttp.ToHttpClient();
+        mockHttp = new MockHttpMessageHandler();
+        var httpClient = mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
         Services.AddSingleton(httpClient);
     }
@@ -29,10 +27,10 @@ public class ChannelListTests : BunitContext
         var channels = new List<Channel>
         {
             new() { Id = Guid.NewGuid(), Name = "general", Description = "General discussion", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 },
-            new() { Id = Guid.NewGuid(), Name = "random", Description = "Random stuff", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 3 }
+            new() { Id = Guid.NewGuid(), Name = "random", Description = "Random stuff", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 3 },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
 
         // Act
@@ -54,10 +52,10 @@ public class ChannelListTests : BunitContext
         var channels = new List<Channel>
         {
             new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 10 },
-            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 }
+            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
 
         // Act
@@ -78,10 +76,10 @@ public class ChannelListTests : BunitContext
         {
             new() { Id = Guid.NewGuid(), Name = "general", Description = "General discussion", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 },
             new() { Id = Guid.NewGuid(), Name = "random", Description = "Random stuff", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 3 },
-            new() { Id = Guid.NewGuid(), Name = "tech", Description = "Technology", CreatedBy = "admin", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 8 }
+            new() { Id = Guid.NewGuid(), Name = "tech", Description = "Technology", CreatedBy = "admin", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 8 },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
 
         var cut = Render<ChannelList>();
@@ -107,10 +105,10 @@ public class ChannelListTests : BunitContext
         var channels = new List<Channel>
         {
             new() { Id = Guid.NewGuid(), Name = "general", Description = "General discussion", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 },
-            new() { Id = Guid.NewGuid(), Name = "tech", Description = "Technology talks", CreatedBy = "admin", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 8 }
+            new() { Id = Guid.NewGuid(), Name = "tech", Description = "Technology talks", CreatedBy = "admin", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 8 },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
 
         var cut = Render<ChannelList>();
@@ -134,15 +132,19 @@ public class ChannelListTests : BunitContext
         // Arrange
         var channels = new List<Channel>
         {
-            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 }
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
 
         var selectedChannel = string.Empty;
         var cut = Render<ChannelList>(parameters => parameters
-            .Add(p => p.OnChannelSelected, (channelName) => { selectedChannel = channelName; return Task.CompletedTask; }));
+            .Add(p => p.OnChannelSelected, (channelName) =>
+            {
+                selectedChannel = channelName;
+                return Task.CompletedTask;
+            }));
 
         await Task.Delay(200);
 
@@ -159,7 +161,7 @@ public class ChannelListTests : BunitContext
     public async Task ChannelList_WhenEmpty_ShouldShowEmptyState()
     {
         // Arrange
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<Channel>()));
 
         // Act
@@ -177,10 +179,10 @@ public class ChannelListTests : BunitContext
         // Arrange
         var channels = new List<Channel>
         {
-            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 }
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
 
         var cut = Render<ChannelList>();
@@ -202,7 +204,7 @@ public class ChannelListTests : BunitContext
     public async Task ChannelList_OnLoadError_ShouldShowErrorMessage()
     {
         // Arrange
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.InternalServerError);
 
         // Act
@@ -218,7 +220,7 @@ public class ChannelListTests : BunitContext
     public async Task ChannelList_OnRetryClick_ShouldReloadChannels()
     {
         // Arrange
-        var channelsRequest = _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        var channelsRequest = mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.InternalServerError);
 
         var cut = Render<ChannelList>();
@@ -230,7 +232,7 @@ public class ChannelListTests : BunitContext
         await Task.Delay(200);
 
         // Assert - Devrait avoir tenté 2 fois (initial + retry)
-        Assert.Equal(2, _mockHttp.GetMatchCount(channelsRequest));
+        Assert.Equal(2, mockHttp.GetMatchCount(channelsRequest));
     }
 
     [Fact]
@@ -240,10 +242,10 @@ public class ChannelListTests : BunitContext
         var channels = new List<Channel>
         {
             new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 5 },
-            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 3 }
+            new() { Id = Guid.NewGuid(), Name = "random", CreatedBy = "system", CreatedAt = DateTime.UtcNow, ConnectedUsersCount = 3 },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
 
         var cut = Render<ChannelList>();
@@ -275,10 +277,10 @@ public class ChannelListTests : BunitContext
         // Arrange
         var channels = new List<Channel>
         {
-            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, IsMuted = true, ConnectedUsersCount = 5 }
+            new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "system", CreatedAt = DateTime.UtcNow, IsMuted = true, ConnectedUsersCount = 5 },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/channels")
+        mockHttp.When(HttpMethod.Get, "*/api/channels")
             .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
 
         // Act

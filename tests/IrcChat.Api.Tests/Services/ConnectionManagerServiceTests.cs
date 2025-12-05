@@ -13,24 +13,24 @@ namespace IrcChat.Api.Tests.Services;
 
 public class ConnectionManagerServiceTests : IAsyncDisposable
 {
-    private readonly PooledDbContextFactory<ChatDbContext> _dbContextFactory;
-    private readonly Mock<ILogger<ConnectionManagerService>> _loggerMock;
-    private readonly IOptions<ConnectionManagerOptions> _options;
+    private readonly PooledDbContextFactory<ChatDbContext> dbContextFactory;
+    private readonly Mock<ILogger<ConnectionManagerService>> loggerMock;
+    private readonly IOptions<ConnectionManagerOptions> options;
 
     public ConnectionManagerServiceTests()
     {
         var optionsBuilder = new DbContextOptionsBuilder<ChatDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString());
 
-        _dbContextFactory = new PooledDbContextFactory<ChatDbContext>(optionsBuilder.Options);
+        dbContextFactory = new PooledDbContextFactory<ChatDbContext>(optionsBuilder.Options);
 
-        _loggerMock = new Mock<ILogger<ConnectionManagerService>>();
+        loggerMock = new Mock<ILogger<ConnectionManagerService>>();
 
-        _options = Options.Create(new ConnectionManagerOptions
+        options = Options.Create(new ConnectionManagerOptions
         {
             InstanceId = "test-instance",
             CleanupIntervalSeconds = 1,
-            UserTimeoutSeconds = 30
+            UserTimeoutSeconds = 30,
         });
     }
 
@@ -38,7 +38,7 @@ public class ConnectionManagerServiceTests : IAsyncDisposable
     public async Task CleanupStaleConnections_ShouldRemoveExpiredConnections()
     {
         // Arrange
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
 
         var staleUser = new ConnectedUser
         {
@@ -48,7 +48,7 @@ public class ConnectionManagerServiceTests : IAsyncDisposable
             Channel = "test",
             ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
             LastActivity = DateTime.UtcNow.AddMinutes(-10),
-            ServerInstanceId = "test-instance"
+            ServerInstanceId = "test-instance",
         };
 
         var activeUser = new ConnectedUser
@@ -59,16 +59,16 @@ public class ConnectionManagerServiceTests : IAsyncDisposable
             Channel = "test",
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            ServerInstanceId = "test-instance"
+            ServerInstanceId = "test-instance",
         };
 
         context.ConnectedUsers.AddRange(staleUser, activeUser);
         await context.SaveChangesAsync();
 
         var service = new ConnectionManagerService(
-            _dbContextFactory,
-            _options,
-            _loggerMock.Object);
+            dbContextFactory,
+            options,
+            loggerMock.Object);
 
         // Act
         await service.StartAsync(CancellationToken.None);
@@ -76,7 +76,7 @@ public class ConnectionManagerServiceTests : IAsyncDisposable
         await service.StopAsync(CancellationToken.None);
 
         // Assert
-        await using var verifyContext = await _dbContextFactory.CreateDbContextAsync();
+        await using var verifyContext = await dbContextFactory.CreateDbContextAsync();
         var remainingUsers = await verifyContext.ConnectedUsers.ToListAsync();
 
         Assert.Single(remainingUsers);

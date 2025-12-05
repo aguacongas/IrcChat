@@ -108,29 +108,29 @@
 
 /* Channel list */
 .channel-list {
-    padding: 0;
-}
-
-.channel-list li {
   padding: 0;
-  margin: 5px 0;
-  border-radius: 6px;
-  transition: background 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  position: relative;
 }
 
-  .channel-list li:hover {
-    background: #3e3e3e;
+  .channel-list li {
+    padding: 0;
+    margin: 5px 0;
+    border-radius: 6px;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    position: relative;
   }
 
-  .channel-list li.active {
-    background: #9cc5ff;
-    color: #000;
-    font-weight: bold;
-  }
+    .channel-list li:hover {
+      background: #3e3e3e;
+    }
+
+    .channel-list li.active {
+      background: #9cc5ff;
+      color: #000;
+      font-weight: bold;
+    }
 
 .channel-content {
   flex: 1;
@@ -173,6 +173,21 @@
 .channel-list li.active .channel-user-count {
   background: rgba(0, 0, 0, 0.2);
   color: #000;
+}
+
+/* Unread badge */
+.unread-badge {
+  background: #f56565;
+  color: #000;
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: bold;
+  margin-left: auto;
+  margin-right: 4px;
+  flex-shrink: 0;
+  min-width: 20px;
+  text-align: center;
 }
 
 .btn-leave-channel {
@@ -266,4 +281,3 @@
     font-size: 13px;
   }
 }
-

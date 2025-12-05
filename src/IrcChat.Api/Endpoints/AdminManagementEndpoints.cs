@@ -150,7 +150,7 @@ public static class AdminManagementEndpoints
                 u.IsAdmin,
                 u.CreatedAt,
                 u.LastLoginAt,
-                u.AvatarUrl
+                u.AvatarUrl,
             })
             .ToListAsync();
 

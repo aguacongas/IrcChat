@@ -61,14 +61,7 @@ public class ApiWebApplicationFactory : WebApplicationFactory<ChatHub>
                 db.Database.EnsureCreated();
             }).ConfigureAppConfiguration((context, config) => config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                { "Jwt:Key", "VotreCleSecrete123456789012345678901234567890" }
+                { "Jwt:Key", "VotreCleSecrete123456789012345678901234567890" },
             }))
             .UseEnvironment("Testing");
-}
-
-public class OAuthServiceStub : OAuthService
-{
-    public OAuthServiceStub() : base(null!, new ConfigurationManager().AddJsonFile("appsettings.json").Build(), null!)
-    {
-    }
 }

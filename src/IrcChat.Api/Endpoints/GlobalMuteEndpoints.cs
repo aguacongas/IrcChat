@@ -55,7 +55,7 @@ public static class GlobalMuteEndpoints
             MutedByUserId = m.MutedByUserId,
             MutedByUsername = userInfoDict.TryGetValue(m.MutedByUserId, out var mutedBy) ? mutedBy : "Unknown",
             MutedAt = m.MutedAt,
-            Reason = m.Reason
+            Reason = m.Reason,
         }).ToList();
 
         return Results.Ok(result);
@@ -90,7 +90,7 @@ public static class GlobalMuteEndpoints
             UserId = userId,
             MutedByUserId = currentUserId,
             MutedAt = DateTime.UtcNow,
-            Reason = request?.Reason
+            Reason = request?.Reason,
         };
 
         db.MutedUsers.Add(globalMute);
@@ -106,7 +106,7 @@ public static class GlobalMuteEndpoints
             mutedByUsername = currentUserName,
             mutedAt = globalMute.MutedAt,
             reason = globalMute.Reason,
-            isGlobal = true
+            isGlobal = true,
         });
     }
 
@@ -145,7 +145,7 @@ public static class GlobalMuteEndpoints
             userId,
             username = targetUser?.Username,
             unmutedByUserId = currentUserId,
-            unmutedByUsername = currentUserName
+            unmutedByUsername = currentUserName,
         });
     }
 

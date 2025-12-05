@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
+using IrcChat.Client.Models;
 using IrcChat.Shared.Models;
 using Microsoft.JSInterop;
 
@@ -53,7 +54,7 @@ public class OAuthClientService(IJSRuntime jsRuntime, HttpClient httpClient) : I
             Provider = provider,
             Code = code,
             RedirectUri = redirectUri,
-            CodeVerifier = codeVerifier
+            CodeVerifier = codeVerifier,
         };
 
         var response = await httpClient.PostAsJsonAsync("/api/oauth/token", tokenRequest);
@@ -90,12 +91,4 @@ public class OAuthClientService(IJSRuntime jsRuntime, HttpClient httpClient) : I
             .Replace('+', '-')
             .Replace('/', '_');
     }
-}
-
-public class OAuthProviderConfig
-{
-    public ExternalAuthProvider Provider { get; set; }
-    public string AuthorizationEndpoint { get; set; } = string.Empty;
-    public string ClientId { get; set; } = string.Empty;
-    public string Scope { get; set; } = string.Empty;
 }

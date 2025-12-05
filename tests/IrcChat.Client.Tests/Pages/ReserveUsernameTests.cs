@@ -1,51 +1,48 @@
 // tests/IrcChat.Client.Tests/Pages/ReserveUsernameTests.cs
-using Bunit;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Pages;
 
 public class ReserveUsernameTests : BunitContext
 {
-    private readonly Mock<IUnifiedAuthService> _authServiceMock;
-    private readonly NavigationManager _navManager;
+    private readonly Mock<IUnifiedAuthService> authServiceMock;
+    private readonly NavigationManager navManager;
 
     public ReserveUsernameTests()
     {
-        _authServiceMock = new Mock<IUnifiedAuthService>();
+        authServiceMock = new Mock<IUnifiedAuthService>();
 
-        Services.AddSingleton(_authServiceMock.Object);
+        Services.AddSingleton(authServiceMock.Object);
         Services.AddSingleton(JSInterop.JSRuntime);
 
-        _navManager = Services.GetRequiredService<NavigationManager>();
+        navManager = Services.GetRequiredService<NavigationManager>();
     }
 
     [Fact]
     public void ReserveUsername_WithoutUsernameParam_ShouldRedirectToLogin()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
         // Act
         Render<ReserveUsername>();
 
         // Assert
-        Assert.EndsWith("/login", _navManager.Uri);
+        Assert.EndsWith("/login", navManager.Uri);
     }
 
     [Fact]
     public void ReserveUsername_WithUsernameParam_ShouldDisplayUsername()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+        navManager.NavigateTo(navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         // Act
         var cut = Render<ReserveUsername>();
@@ -59,10 +56,10 @@ public class ReserveUsernameTests : BunitContext
     public void ReserveUsername_ShouldShowOAuthProviders()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+        navManager.NavigateTo(navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         // Act
         var cut = Render<ReserveUsername>();
@@ -77,12 +74,12 @@ public class ReserveUsernameTests : BunitContext
     public async Task ReserveUsername_ClickGoogleProvider_ShouldSaveAndNavigate()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
         JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+        navManager.NavigateTo(navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         var cut = Render<ReserveUsername>();
 
@@ -92,21 +89,21 @@ public class ReserveUsernameTests : BunitContext
 
         // Assert
         JSInterop.VerifyInvoke("sessionStorage.setItem", 2);
-        Assert.Contains("oauth-login", _navManager.Uri);
-        Assert.Contains("provider=Google", _navManager.Uri);
-        Assert.Contains("mode=reserve", _navManager.Uri);
+        Assert.Contains("oauth-login", navManager.Uri);
+        Assert.Contains("provider=Google", navManager.Uri);
+        Assert.Contains("mode=reserve", navManager.Uri);
     }
 
     [Fact]
     public async Task ReserveUsername_ClickMicrosoftProvider_ShouldSaveAndNavigate()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
         JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+        navManager.NavigateTo(navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         var cut = Render<ReserveUsername>();
 
@@ -116,21 +113,21 @@ public class ReserveUsernameTests : BunitContext
 
         // Assert
         JSInterop.VerifyInvoke("sessionStorage.setItem", 2);
-        Assert.Contains("oauth-login", _navManager.Uri);
-        Assert.Contains("provider=Microsoft", _navManager.Uri);
-        Assert.Contains("mode=reserve", _navManager.Uri);
+        Assert.Contains("oauth-login", navManager.Uri);
+        Assert.Contains("provider=Microsoft", navManager.Uri);
+        Assert.Contains("mode=reserve", navManager.Uri);
     }
 
     [Fact]
     public async Task ReserveUsername_ClickFacebookProvider_ShouldSaveAndNavigate()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
         JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+        navManager.NavigateTo(navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         var cut = Render<ReserveUsername>();
 
@@ -140,19 +137,19 @@ public class ReserveUsernameTests : BunitContext
 
         // Assert
         JSInterop.VerifyInvoke("sessionStorage.setItem", 2);
-        Assert.Contains("oauth-login", _navManager.Uri);
-        Assert.Contains("provider=Facebook", _navManager.Uri);
-        Assert.Contains("mode=reserve", _navManager.Uri);
+        Assert.Contains("oauth-login", navManager.Uri);
+        Assert.Contains("provider=Facebook", navManager.Uri);
+        Assert.Contains("mode=reserve", navManager.Uri);
     }
 
     [Fact]
     public async Task ReserveUsername_BackLink_ShouldNavigateToLogin()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+        navManager.NavigateTo(navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         var cut = Render<ReserveUsername>();
 
@@ -168,10 +165,10 @@ public class ReserveUsernameTests : BunitContext
     public void ReserveUsername_ShouldShowDivider()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+        navManager.NavigateTo(navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         // Act
         var cut = Render<ReserveUsername>();
@@ -185,16 +182,16 @@ public class ReserveUsernameTests : BunitContext
     public void ReserveUsername_WithEmptyUsername_ShouldRedirectToLogin()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", string.Empty));
+        navManager.NavigateTo(navManager.GetUriWithQueryParameter("username", string.Empty));
 
         // Act
         Render<ReserveUsername>();
 
         // Assert
-        Assert.EndsWith("/login", _navManager.Uri);
+        Assert.EndsWith("/login", navManager.Uri);
     }
 
     [Fact]
@@ -202,12 +199,12 @@ public class ReserveUsernameTests : BunitContext
     {
         // Arrange
         var userId = Guid.NewGuid().ToString();
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(userId);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(userId);
 
         JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "MyUsername"));
+        navManager.NavigateTo(navManager.GetUriWithQueryParameter("username", "MyUsername"));
         var cut = Render<ReserveUsername>();
 
         // Act
@@ -232,11 +229,11 @@ public class ReserveUsernameTests : BunitContext
     public void ReserveUsername_LoadingState_ShouldNotShowProviders()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync())
+        authServiceMock.Setup(x => x.InitializeAsync())
             .Returns(async () => await Task.Delay(1000)); // Simulate slow loading
-        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
+        authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(Guid.NewGuid().ToString());
 
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+        navManager.NavigateTo(navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         // Act
         var cut = Render<ReserveUsername>();
@@ -250,12 +247,12 @@ public class ReserveUsernameTests : BunitContext
     {
         // Arrange
         var userId = Guid.NewGuid().ToString();
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(userId);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(userId);
 
         JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+        navManager.NavigateTo(navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         // Act
         Render<ReserveUsername>();
@@ -263,18 +260,18 @@ public class ReserveUsernameTests : BunitContext
         await Task.Delay(100); // Attendre l'initialisation
 
         // Assert
-        _authServiceMock.Verify(x => x.GetClientUserIdAsync(), Times.Once);
+        authServiceMock.Verify(x => x.GetClientUserIdAsync(), Times.Once);
     }
 
     [Fact]
     public void ReserveUsername_FailedToRetrieveUserId_ShouldShowError()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.GetClientUserIdAsync())
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.GetClientUserIdAsync())
             .ReturnsAsync(string.Empty); // Impossible de récupérer l'UserId
 
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+        navManager.NavigateTo(navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         // Act
         var cut = Render<ReserveUsername>();
@@ -287,11 +284,11 @@ public class ReserveUsernameTests : BunitContext
     public void ReserveUsername_InvalidUserIdFormat_ShouldShowError()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.GetClientUserIdAsync())
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.GetClientUserIdAsync())
             .ReturnsAsync("not-a-valid-guid"); // Format GUID invalide
 
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+        navManager.NavigateTo(navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         // Act
         var cut = Render<ReserveUsername>();
@@ -304,13 +301,13 @@ public class ReserveUsernameTests : BunitContext
     public async Task ReserveUsername_ReserveWithProvider_ShouldNotAllowWithoutUserId()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.GetClientUserIdAsync())
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.GetClientUserIdAsync())
             .Returns(Task.FromResult<string>(null!)); // Aucun UserId
 
         JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "TestUser"));
+        navManager.NavigateTo(navManager.GetUriWithQueryParameter("username", "TestUser"));
 
         var cut = Render<ReserveUsername>();
 
@@ -326,12 +323,12 @@ public class ReserveUsernameTests : BunitContext
     {
         // Arrange
         var userId = Guid.NewGuid().ToString();
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(userId);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.GetClientUserIdAsync()).ReturnsAsync(userId);
 
         JSInterop.SetupVoid("sessionStorage.setItem", _ => true).SetVoidResult();
 
-        _navManager.NavigateTo(_navManager.GetUriWithQueryParameter("username", "MyPseudo"));
+        navManager.NavigateTo(navManager.GetUriWithQueryParameter("username", "MyPseudo"));
 
         var cut = Render<ReserveUsername>();
 

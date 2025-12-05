@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RuleSet Name="IrcChat Rules" Description="Code analysis rules for IrcChat" ToolsVersion="17.0">
+  <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
+    <!-- SA1122: Use string.Empty for empty strings -->
+    <Rule Id="SA1122" Action="Warning" />
+    
+    <!-- SA1028: Code should not contain trailing whitespace -->
+    <Rule Id="SA1028" Action="Warning" />
+    
+    <!-- SA1101: Prefix local calls with this (désactivé car non utilisé dans le projet) -->
+    <Rule Id="SA1101" Action="None" />
+    
+    <!-- SA1633: File should have header (désactivé) -->
+    <Rule Id="SA1633" Action="None" />
+    
+    <!-- SA1200: Using directives should be placed correctly (désactivé car file-scoped namespaces) -->
+    <Rule Id="SA1200" Action="None" />
+  </Rules>
+
+  <Rules AnalyzerId="Microsoft.CodeAnalysis.CSharp" RuleNamespace="Microsoft.CodeAnalysis.CSharp">
+    <!-- IDE0300: Use collection expression for array -->
+    <Rule Id="IDE0300" Action="Warning" />
+    
+    <!-- IDE0305: Use collection expression for fluent -->
+    <Rule Id="IDE0305" Action="Warning" />
+  </Rules>
+</RuleSet>

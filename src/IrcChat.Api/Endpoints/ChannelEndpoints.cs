@@ -60,7 +60,6 @@ public static class ChannelEndpoints
     // ========================================================================
     // GET ENDPOINTS
     // ========================================================================
-
     private static async Task<IResult> GetChannelsAsync(ChatDbContext db, ILogger<Program> logger)
     {
         try
@@ -77,7 +76,7 @@ public static class ChannelEndpoints
                             .Where(u => !string.IsNullOrEmpty(u.Channel))
                             .Select(u => u.Username)
                             .Distinct()
-                            .Count()
+                            .Count(),
                     })
                 .OrderByDescending(c => c.ConnectedUsersCount)
                 .ThenBy(c => c.Channel.Name)
@@ -132,6 +131,7 @@ public static class ChannelEndpoints
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
+
     private static async Task<IResult> GetConnectedUsersAsync(
         string channel,
         ChatDbContext db,
@@ -164,7 +164,6 @@ public static class ChannelEndpoints
     // ========================================================================
     // POST ENDPOINTS
     // ========================================================================
-
     private static async Task<IResult> CreateChannelAsync(
         Channel request,
         ChatDbContext db,
@@ -199,7 +198,7 @@ public static class ChannelEndpoints
             CreatedAt = DateTime.UtcNow,
             ActiveManager = username,
             IsMuted = false,
-            ConnectedUsersCount = 0
+            ConnectedUsersCount = 0,
         };
 
         db.Channels.Add(channel);
@@ -208,8 +207,11 @@ public static class ChannelEndpoints
         await hubContext.Clients.All
             .SendAsync("ChannelListUpdated");
 
-        logger.LogInformation("Nouveau salon créé: {ChannelName} par {Username} avec description: {Description}",
-            channel.Name, request.CreatedBy, request.Description ?? "aucune");
+        logger.LogInformation(
+            "Nouveau salon créé: {ChannelName} par {Username} avec description: {Description}",
+            channel.Name,
+            request.CreatedBy,
+            request.Description ?? "aucune");
 
         return Results.Created($"/api/channels/{channel.Id}", channel);
     }
@@ -217,7 +219,6 @@ public static class ChannelEndpoints
     // ========================================================================
     // PUT ENDPOINTS
     // ========================================================================
-
     private static async Task<IResult> UpdateChannelAsync(
         string channelName,
         Channel request,
@@ -245,7 +246,10 @@ public static class ChannelEndpoints
 
         logger.LogInformation(
             "Salon {ChannelName} modifié par {Username}. Description: {OldDescription} -> {NewDescription}",
-            channelName, username, originalDescription ?? "(vide)", channel.Description ?? "(vide)");
+            channelName,
+            username,
+            originalDescription ?? "(vide)",
+            channel.Description ?? "(vide)");
 
         return Results.Ok(new
         {
@@ -256,14 +260,13 @@ public static class ChannelEndpoints
             createdAt = channel.CreatedAt,
             isMuted = channel.IsMuted,
             activeManager = channel.ActiveManager,
-            message = "Le canal a été modifié avec succès"
+            message = "Le canal a été modifié avec succès",
         });
     }
 
     // ========================================================================
     // DELETE ENDPOINTS
     // ========================================================================
-
     private static async Task<IResult> DeleteChannelAsync(
         string channelName,
         ChatDbContext db,
@@ -316,21 +319,23 @@ public static class ChannelEndpoints
 
         logger.LogInformation(
             "Salon {ChannelName} supprimé par {Username}. Messages affectés: {MessageCount}, Utilisateurs déconnectés: {UserCount}",
-            channelName, username, messages.Count, connectedUsers.Count);
+            channelName,
+            username,
+            messages.Count,
+            connectedUsers.Count);
 
         return Results.Ok(new
         {
             channelName = channel.Name,
             deletedBy = username,
             messagesAffected = messages.Count,
-            usersDisconnected = connectedUsers.Count
+            usersDisconnected = connectedUsers.Count,
         });
     }
 
     // ========================================================================
     // POST MUTE ENDPOINTS
     // ========================================================================
-
     private static async Task<IResult> ToggleMuteAsync(
         string channelName,
         ChatDbContext db,
@@ -364,14 +369,16 @@ public static class ChannelEndpoints
 
         logger.LogInformation(
             "Mode muet du salon {ChannelName} modifié par {Username}. Nouveau statut: {IsMuted}",
-            channelName, username, channel.IsMuted);
+            channelName,
+            username,
+            channel.IsMuted);
 
         return Results.Ok(new
         {
             channelName = channel.Name,
             isMuted = channel.IsMuted,
             changedBy = username,
-            message = channel.IsMuted ? "Le salon est maintenant muet" : "Le salon est de nouveau actif"
+            message = channel.IsMuted ? "Le salon est maintenant muet" : "Le salon est de nouveau actif",
         });
     }
 

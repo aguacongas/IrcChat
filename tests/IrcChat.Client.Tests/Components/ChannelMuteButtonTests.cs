@@ -1,22 +1,20 @@
 // tests/IrcChat.Client.Tests/Components/ChannelMuteButtonTests.cs
 using System.Net;
 using System.Net.Http.Json;
-using Bunit;
 using IrcChat.Client.Components;
 using Microsoft.Extensions.DependencyInjection;
 using RichardSzalay.MockHttp;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
 public class ChannelMuteButtonTests : BunitContext
 {
-    private readonly MockHttpMessageHandler _mockHttp;
+    private readonly MockHttpMessageHandler mockHttp;
 
     public ChannelMuteButtonTests()
     {
-        _mockHttp = new MockHttpMessageHandler();
-        var httpClient = _mockHttp.ToHttpClient();
+        mockHttp = new MockHttpMessageHandler();
+        var httpClient = mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
         Services.AddSingleton(httpClient);
     }
@@ -86,7 +84,7 @@ public class ChannelMuteButtonTests : BunitContext
         // Arrange
         var muteToggleResponse = new { ChannelName = "general", IsMuted = true, ChangedBy = "admin" };
 
-        _mockHttp.When(HttpMethod.Post, "*/api/channels/general/toggle-mute")
+        mockHttp.When(HttpMethod.Post, "*/api/channels/general/toggle-mute")
             .Respond(HttpStatusCode.OK, JsonContent.Create(muteToggleResponse));
 
         var statusChanged = false;
@@ -116,7 +114,7 @@ public class ChannelMuteButtonTests : BunitContext
     public async Task ToggleMute_OnError_ShouldShowErrorMessage()
     {
         // Arrange
-        _mockHttp.When(HttpMethod.Post, "*/api/channels/general/toggle-mute")
+        mockHttp.When(HttpMethod.Post, "*/api/channels/general/toggle-mute")
             .Respond(HttpStatusCode.Forbidden);
 
         var cut = Render<ChannelMuteButton>(parameters => parameters
@@ -138,7 +136,7 @@ public class ChannelMuteButtonTests : BunitContext
     public async Task ToggleMute_WhileProcessing_ShouldDisableButton()
     {
         // Arrange
-        _mockHttp.When(HttpMethod.Post, "*/api/channels/general/toggle-mute")
+        mockHttp.When(HttpMethod.Post, "*/api/channels/general/toggle-mute")
             .Respond(async () =>
             {
                 await Task.Delay(1000);
@@ -162,7 +160,7 @@ public class ChannelMuteButtonTests : BunitContext
     public async Task ToggleMute_WithEmptyChannelName_ShouldNotCallApi()
     {
         // Arrange
-        var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/channels/*/toggle-mute")
+        var mockedRequest = mockHttp.When(HttpMethod.Post, "*/api/channels/*/toggle-mute")
             .Respond(HttpStatusCode.OK);
 
         var cut = Render<ChannelMuteButton>(parameters => parameters
@@ -176,14 +174,14 @@ public class ChannelMuteButtonTests : BunitContext
         await Task.Delay(200);
 
         // Assert
-        Assert.Equal(0, _mockHttp.GetMatchCount(mockedRequest));
+        Assert.Equal(0, mockHttp.GetMatchCount(mockedRequest));
     }
 
     [Fact]
     public async Task ToggleMute_ErrorMessageShouldDisappear()
     {
         // Arrange
-        _mockHttp.When(HttpMethod.Post, "*/api/channels/general/toggle-mute")
+        mockHttp.When(HttpMethod.Post, "*/api/channels/general/toggle-mute")
             .Respond(HttpStatusCode.BadRequest);
 
         var cut = Render<ChannelMuteButton>(parameters => parameters
@@ -211,13 +209,13 @@ public class ChannelMuteButtonTests : BunitContext
     public async Task ToggleMute_ShouldNotTriggerWhenAlreadyProcessing()
     {
         // Arrange
-        var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/channels/general/toggle-mute");
+        var mockedRequest = mockHttp.When(HttpMethod.Post, "*/api/channels/general/toggle-mute");
         mockedRequest.Respond(async () =>
         {
             await Task.Delay(500);
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = JsonContent.Create(new { ChannelName = "general", IsMuted = true, ChangedBy = "admin" })
+                Content = JsonContent.Create(new { ChannelName = "general", IsMuted = true, ChangedBy = "admin" }),
             };
         });
 
@@ -235,7 +233,7 @@ public class ChannelMuteButtonTests : BunitContext
         cut.Render();
 
         // Assert - Devrait être appelé une seule fois
-        var requestCount = _mockHttp.GetMatchCount(mockedRequest);
+        var requestCount = mockHttp.GetMatchCount(mockedRequest);
         Assert.Equal(1, requestCount);
     }
 }

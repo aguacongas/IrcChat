@@ -1,71 +1,68 @@
 // tests/IrcChat.Client.Tests/Pages/SettingsTests.cs
 using System.Net;
 using System.Net.Http.Json;
-using Bunit;
 using IrcChat.Client.Pages;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
 using RichardSzalay.MockHttp;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Pages;
 
 public class SettingsTests : BunitContext
 {
-    private readonly Mock<IUnifiedAuthService> _authServiceMock;
-    private readonly Mock<IChatService> _chatServiceMock;
-    private readonly Mock<IActiveChannelsService> _activeChannelsServiceMock;
-    private readonly MockHttpMessageHandler _mockHttp;
-    private readonly NavigationManager _navManager;
+    private readonly Mock<IUnifiedAuthService> authServiceMock;
+    private readonly Mock<IChatService> chatServiceMock;
+    private readonly Mock<IActiveChannelsService> activeChannelsServiceMock;
+    private readonly MockHttpMessageHandler mockHttp;
+    private readonly NavigationManager navManager;
 
     public SettingsTests()
     {
-        _authServiceMock = new Mock<IUnifiedAuthService>();
-        _chatServiceMock = new Mock<IChatService>();
-        _activeChannelsServiceMock = new Mock<IActiveChannelsService>();
-        _mockHttp = new MockHttpMessageHandler();
+        authServiceMock = new Mock<IUnifiedAuthService>();
+        chatServiceMock = new Mock<IChatService>();
+        activeChannelsServiceMock = new Mock<IActiveChannelsService>();
+        mockHttp = new MockHttpMessageHandler();
 
-        var httpClient = _mockHttp.ToHttpClient();
+        var httpClient = mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
 
-        Services.AddSingleton(_authServiceMock.Object);
-        Services.AddSingleton(_chatServiceMock.Object);
-        Services.AddSingleton(_activeChannelsServiceMock.Object);
+        Services.AddSingleton(authServiceMock.Object);
+        Services.AddSingleton(chatServiceMock.Object);
+        Services.AddSingleton(activeChannelsServiceMock.Object);
         Services.AddSingleton(httpClient);
         Services.AddSingleton(JSInterop.JSRuntime);
 
-        _navManager = Services.GetRequiredService<NavigationManager>();
+        navManager = Services.GetRequiredService<NavigationManager>();
     }
 
     [Fact]
     public void Settings_WhenNoUsername_ShouldRedirectToLogin()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(false);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(false);
 
         // Act
         Render<Settings>();
 
         // Assert
-        Assert.EndsWith("/login", _navManager.Uri);
+        Assert.EndsWith("/login", navManager.Uri);
     }
 
     [Fact]
     public void Settings_WithReservedUser_ShouldShowUserInfo()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
-        _authServiceMock.Setup(x => x.Email).Returns("test@example.com");
-        _authServiceMock.Setup(x => x.ReservedProvider).Returns(ExternalAuthProvider.Google);
-        _authServiceMock.Setup(x => x.AvatarUrl).Returns("https://example.com/avatar.jpg");
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(false);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        authServiceMock.Setup(x => x.Email).Returns("test@example.com");
+        authServiceMock.Setup(x => x.ReservedProvider).Returns(ExternalAuthProvider.Google);
+        authServiceMock.Setup(x => x.AvatarUrl).Returns("https://example.com/avatar.jpg");
+        authServiceMock.Setup(x => x.IsAdmin).Returns(false);
 
         // Act
         var cut = Render<Settings>();
@@ -81,10 +78,10 @@ public class SettingsTests : BunitContext
     public void Settings_WithGuestUser_ShouldShowGuestBadge()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("GuestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(false);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("GuestUser");
+        authServiceMock.Setup(x => x.IsReserved).Returns(false);
 
         // Act
         var cut = Render<Settings>();
@@ -98,13 +95,13 @@ public class SettingsTests : BunitContext
     public void Settings_WithAdminUser_ShouldShowAdminPanel()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("AdminUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.UserId).Returns(Guid.NewGuid());
-        _authServiceMock.Setup(x => x.Email).Returns("admin@example.com");
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("AdminUser");
+        authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.UserId).Returns(Guid.NewGuid());
+        authServiceMock.Setup(x => x.Email).Returns("admin@example.com");
 
         // Act
         var cut = Render<Settings>();
@@ -118,22 +115,22 @@ public class SettingsTests : BunitContext
     public async Task Settings_CreateChannel_WithReservedUser_ShouldSucceed()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("test-token");
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("test-token");
 
         var createdChannel = new Channel
         {
             Id = Guid.NewGuid(),
             Name = "test-channel",
             CreatedBy = "TestUser",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
-        var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/channels")
+        var mockedRequest = mockHttp.When(HttpMethod.Post, "*/api/channels")
             .Respond(HttpStatusCode.Created, JsonContent.Create(createdChannel));
 
         var cut = Render<Settings>();
@@ -147,7 +144,7 @@ public class SettingsTests : BunitContext
         await Task.Delay(100);
 
         // Assert
-        var count = _mockHttp.GetMatchCount(mockedRequest);
+        var count = mockHttp.GetMatchCount(mockedRequest);
         Assert.Equal(1, count);
     }
 
@@ -155,15 +152,16 @@ public class SettingsTests : BunitContext
     public async Task Settings_CreateChannel_DuplicateName_ShouldShowError()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("test-token");
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("test-token");
 
-        _mockHttp.When(HttpMethod.Post, "*/api/channels")
-            .Respond(HttpStatusCode.BadRequest,
+        mockHttp.When(HttpMethod.Post, "*/api/channels")
+            .Respond(
+                HttpStatusCode.BadRequest,
                 new StringContent("{\"error\":\"channel_exists\"}"));
 
         var cut = Render<Settings>();
@@ -184,9 +182,9 @@ public class SettingsTests : BunitContext
     public void Settings_BackButton_ShouldNavigateToChat()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
 
         var cut = Render<Settings>();
 
@@ -195,17 +193,17 @@ public class SettingsTests : BunitContext
         cut.InvokeAsync(() => backButton.Click());
 
         // Assert
-        Assert.EndsWith("/chat", _navManager.Uri);
+        Assert.EndsWith("/chat", navManager.Uri);
     }
 
     [Fact]
     public void Settings_GuestUser_ShouldShowReserveOption()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("GuestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(false);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("GuestUser");
+        authServiceMock.Setup(x => x.IsReserved).Returns(false);
 
         // Act
         var cut = Render<Settings>();
@@ -219,10 +217,10 @@ public class SettingsTests : BunitContext
     public void Settings_GuestUser_ReserveButton_ShouldNavigateToReserve()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("GuestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(false);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("GuestUser");
+        authServiceMock.Setup(x => x.IsReserved).Returns(false);
 
         var cut = Render<Settings>();
 
@@ -231,17 +229,17 @@ public class SettingsTests : BunitContext
         cut.InvokeAsync(() => reserveButton.Click());
 
         // Assert
-        Assert.Contains("reserve?username=GuestUser", _navManager.Uri);
+        Assert.Contains("reserve?username=GuestUser", navManager.Uri);
     }
 
     [Fact]
     public async Task Settings_Logout_ShouldCallServiceAndRedirect()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.LogoutAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.LogoutAsync()).Returns(Task.CompletedTask);
 
         var cut = Render<Settings>();
 
@@ -250,18 +248,18 @@ public class SettingsTests : BunitContext
         await cut.InvokeAsync(() => logoutButton.Click());
 
         // Assert
-        _authServiceMock.Verify(x => x.LogoutAsync(), Times.Once);
-        Assert.EndsWith("/login", _navManager.Uri);
+        authServiceMock.Verify(x => x.LogoutAsync(), Times.Once);
+        Assert.EndsWith("/login", navManager.Uri);
     }
 
     [Fact]
     public async Task Settings_ForgetUsername_ShouldShowConfirmation()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsReserved).Returns(true);
 
         var cut = Render<Settings>();
 
@@ -278,11 +276,11 @@ public class SettingsTests : BunitContext
     public async Task Settings_ForgetUsername_Confirm_ShouldCallServiceAndRedirect()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
-        _authServiceMock.Setup(x => x.ForgetUsernameAndLogoutAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        authServiceMock.Setup(x => x.ForgetUsernameAndLogoutAsync()).Returns(Task.CompletedTask);
 
         var cut = Render<Settings>();
 
@@ -294,18 +292,18 @@ public class SettingsTests : BunitContext
         await cut.InvokeAsync(() => confirmButton.Click());
 
         // Assert
-        _authServiceMock.Verify(x => x.ForgetUsernameAndLogoutAsync(), Times.Once);
-        Assert.EndsWith("/login", _navManager.Uri);
+        authServiceMock.Verify(x => x.ForgetUsernameAndLogoutAsync(), Times.Once);
+        Assert.EndsWith("/login", navManager.Uri);
     }
 
     [Fact]
     public async Task Settings_ForgetUsername_Cancel_ShouldHideModal()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsReserved).Returns(true);
 
         var cut = Render<Settings>();
 
@@ -317,7 +315,7 @@ public class SettingsTests : BunitContext
         await cut.InvokeAsync(() => cancelButton.Click());
 
         // Assert
-        _authServiceMock.Verify(x => x.ForgetUsernameAndLogoutAsync(), Times.Never);
+        authServiceMock.Verify(x => x.ForgetUsernameAndLogoutAsync(), Times.Never);
         Assert.DoesNotContain("Confirmer la suppression", cut.Markup);
     }
 
@@ -325,22 +323,22 @@ public class SettingsTests : BunitContext
     public async Task Settings_CreateChannel_Success_ShouldNavigateToChannel()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("test-token");
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("test-token");
 
         var createdChannel = new Channel
         {
             Id = Guid.NewGuid(),
             Name = "new-channel",
             CreatedBy = "TestUser",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
-        _mockHttp.When(HttpMethod.Post, "*/api/channels")
+        mockHttp.When(HttpMethod.Post, "*/api/channels")
             .Respond(HttpStatusCode.Created, JsonContent.Create(createdChannel));
 
         var cut = Render<Settings>();
@@ -354,29 +352,29 @@ public class SettingsTests : BunitContext
         await Task.Delay(2100); // Attendre le délai + navigation
 
         // Assert
-        Assert.EndsWith("/chat/channel/new-channel", _navManager.Uri);
+        Assert.EndsWith("/chat/channel/new-channel", navManager.Uri);
     }
 
     [Fact]
     public async Task Settings_CreateChannel_EnterKey_ShouldCreateChannel()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("test-token");
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("test-token");
 
         var createdChannel = new Channel
         {
             Id = Guid.NewGuid(),
             Name = "new-channel",
             CreatedBy = "TestUser",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
-        var mockedRequest = _mockHttp.When(HttpMethod.Post, "*/api/channels")
+        var mockedRequest = mockHttp.When(HttpMethod.Post, "*/api/channels")
             .Respond(HttpStatusCode.Created, JsonContent.Create(createdChannel));
 
         var cut = Render<Settings>();
@@ -388,7 +386,7 @@ public class SettingsTests : BunitContext
         await Task.Delay(100);
 
         // Assert
-        var count = _mockHttp.GetMatchCount(mockedRequest);
+        var count = mockHttp.GetMatchCount(mockedRequest);
         Assert.Equal(1, count);
     }
 
@@ -396,11 +394,11 @@ public class SettingsTests : BunitContext
     public void Settings_GuestUser_ShouldNotShowChannelCreation()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("GuestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(false);
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(false);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("GuestUser");
+        authServiceMock.Setup(x => x.IsReserved).Returns(false);
+        authServiceMock.Setup(x => x.IsAuthenticated).Returns(false);
 
         // Act
         var cut = Render<Settings>();
@@ -414,7 +412,7 @@ public class SettingsTests : BunitContext
     {
         // Arrange
         var taskCompletionSource = new TaskCompletionSource();
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(taskCompletionSource.Task);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(taskCompletionSource.Task);
 
         // Act
         var cut = Render<Settings>();
@@ -428,12 +426,12 @@ public class SettingsTests : BunitContext
     public void Settings_AdminUser_OpenAdminPanel_ShouldDisplayPanel()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("AdminUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
-        _authServiceMock.Setup(x => x.IsAdmin).Returns(true);
-        _authServiceMock.Setup(x => x.UserId).Returns(Guid.NewGuid());
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("AdminUser");
+        authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        authServiceMock.Setup(x => x.IsAdmin).Returns(true);
+        authServiceMock.Setup(x => x.UserId).Returns(Guid.NewGuid());
 
         var cut = Render<Settings>();
 
@@ -450,14 +448,14 @@ public class SettingsTests : BunitContext
     public async Task Settings_CreateChannel_WithError_ShouldShowError()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
-        _authServiceMock.Setup(x => x.Token).Returns("test-token");
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
+        authServiceMock.Setup(x => x.Token).Returns("test-token");
 
-        _mockHttp.When(HttpMethod.Post, "*/api/channels")
+        mockHttp.When(HttpMethod.Post, "*/api/channels")
             .Respond(HttpStatusCode.InternalServerError);
 
         var cut = Render<Settings>();
@@ -478,11 +476,11 @@ public class SettingsTests : BunitContext
     public async Task Settings_CreateChannelButton_WithEmptyInput_ShouldBeDisabled()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.IsReserved).Returns(true);
-        _authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsReserved).Returns(true);
+        authServiceMock.Setup(x => x.IsAuthenticated).Returns(true);
 
         // Act
         var cut = Render<Settings>();
@@ -496,10 +494,10 @@ public class SettingsTests : BunitContext
     public void Settings_WithAvatarUrl_ShouldDisplayAvatar()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.AvatarUrl).Returns("https://example.com/avatar.jpg");
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.AvatarUrl).Returns("https://example.com/avatar.jpg");
 
         // Act
         var cut = Render<Settings>();
@@ -514,10 +512,10 @@ public class SettingsTests : BunitContext
     public void Settings_WithoutAvatarUrl_ShouldDisplayPlaceholder()
     {
         // Arrange
-        _authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-        _authServiceMock.Setup(x => x.HasUsername).Returns(true);
-        _authServiceMock.Setup(x => x.Username).Returns("TestUser");
-        _authServiceMock.Setup(x => x.AvatarUrl).Returns((string?)null);
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.AvatarUrl).Returns((string?)null);
 
         // Act
         var cut = Render<Settings>();

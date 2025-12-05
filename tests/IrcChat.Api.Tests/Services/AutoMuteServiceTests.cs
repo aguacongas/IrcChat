@@ -14,20 +14,20 @@ namespace IrcChat.Api.Tests.Services;
 
 public class AutoMuteServiceTests : IAsyncDisposable
 {
-    private readonly PooledDbContextFactory<ChatDbContext> _dbContextFactory;
-    private readonly Mock<ILogger<AutoMuteService>> _loggerMock;
-    private readonly Mock<IHubContext<ChatHub>> _hubContextMock;
-    private readonly IOptions<AutoMuteOptions> _options;
+    private readonly PooledDbContextFactory<ChatDbContext> dbContextFactory;
+    private readonly Mock<ILogger<AutoMuteService>> loggerMock;
+    private readonly Mock<IHubContext<ChatHub>> hubContextMock;
+    private readonly IOptions<AutoMuteOptions> options;
 
     public AutoMuteServiceTests()
     {
         var optionsBuilder = new DbContextOptionsBuilder<ChatDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString());
 
-        _dbContextFactory = new PooledDbContextFactory<ChatDbContext>(optionsBuilder.Options);
+        dbContextFactory = new PooledDbContextFactory<ChatDbContext>(optionsBuilder.Options);
 
-        _loggerMock = new Mock<ILogger<AutoMuteService>>();
-        _hubContextMock = new Mock<IHubContext<ChatHub>>();
+        loggerMock = new Mock<ILogger<AutoMuteService>>();
+        hubContextMock = new Mock<IHubContext<ChatHub>>();
 
         var mockClients = new Mock<IHubClients>();
         var mockClientProxy = new Mock<IClientProxy>();
@@ -40,14 +40,14 @@ public class AutoMuteServiceTests : IAsyncDisposable
             .Setup(c => c.All)
             .Returns(mockClientProxy.Object);
 
-        _hubContextMock
+        hubContextMock
             .Setup(h => h.Clients)
             .Returns(mockClients.Object);
 
-        _options = Options.Create(new AutoMuteOptions
+        options = Options.Create(new AutoMuteOptions
         {
             CheckIntervalSeconds = 1,
-            InactivityMinutes = 5
+            InactivityMinutes = 5,
         });
     }
 
@@ -55,7 +55,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
     public async Task AutoMuteService_ShouldMuteChannelWhenActiveManagerInactive()
     {
         // Arrange
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
 
         var inactiveChannel = new Channel
         {
@@ -64,7 +64,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
             CreatedBy = "original_creator",
             ActiveManager = "inactive_manager", // Manager différent du créateur
             CreatedAt = DateTime.UtcNow.AddHours(-1),
-            IsMuted = false
+            IsMuted = false,
         };
 
         // Manager inactif (dernier ping superieur à 5 minutes)
@@ -76,7 +76,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
             Channel = inactiveChannel.Name,
             ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
             LastActivity = DateTime.UtcNow.AddMinutes(-10),
-            ServerInstanceId = "test-server"
+            ServerInstanceId = "test-server",
         };
 
         context.Channels.Add(inactiveChannel);
@@ -84,10 +84,10 @@ public class AutoMuteServiceTests : IAsyncDisposable
         await context.SaveChangesAsync();
 
         var service = new AutoMuteService(
-            _dbContextFactory,
-            _hubContextMock.Object,
-            _options,
-            _loggerMock.Object);
+            dbContextFactory,
+            hubContextMock.Object,
+            options,
+            loggerMock.Object);
 
         // Act
         await service.StartAsync(CancellationToken.None);
@@ -95,7 +95,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
         await service.StopAsync(CancellationToken.None);
 
         // Assert
-        await using var verifyContext = await _dbContextFactory.CreateDbContextAsync();
+        await using var verifyContext = await dbContextFactory.CreateDbContextAsync();
         var result = await verifyContext.Channels
             .FirstOrDefaultAsync(c => c.Name == inactiveChannel.Name);
 
@@ -107,7 +107,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
     public async Task AutoMuteService_ShouldMuteWhenActiveManagerDisconnected()
     {
         // Arrange
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
 
         var abandonedChannel = new Channel
         {
@@ -116,17 +116,17 @@ public class AutoMuteServiceTests : IAsyncDisposable
             CreatedBy = "creator",
             ActiveManager = "disconnected_admin", // Admin qui n'est plus connecté
             CreatedAt = DateTime.UtcNow.AddHours(-1),
-            IsMuted = false
+            IsMuted = false,
         };
 
         context.Channels.Add(abandonedChannel);
         await context.SaveChangesAsync();
 
         var service = new AutoMuteService(
-            _dbContextFactory,
-            _hubContextMock.Object,
-            _options,
-            _loggerMock.Object);
+            dbContextFactory,
+            hubContextMock.Object,
+            options,
+            loggerMock.Object);
 
         // Act
         await service.StartAsync(CancellationToken.None);
@@ -134,7 +134,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
         await service.StopAsync(CancellationToken.None);
 
         // Assert
-        await using var verifyContext = await _dbContextFactory.CreateDbContextAsync();
+        await using var verifyContext = await dbContextFactory.CreateDbContextAsync();
         var result = await verifyContext.Channels
             .FirstOrDefaultAsync(c => c.Name == abandonedChannel.Name);
 
@@ -146,7 +146,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
     public async Task AutoMuteService_ShouldNotMuteWhenActiveManagerActive()
     {
         // Arrange
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
 
         var activeChannel = new Channel
         {
@@ -155,7 +155,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
             CreatedBy = "creator",
             ActiveManager = "active_admin", // Un admin actif gère le salon
             CreatedAt = DateTime.UtcNow.AddHours(-1),
-            IsMuted = false
+            IsMuted = false,
         };
 
         var activeManager = new ConnectedUser
@@ -166,7 +166,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
             Channel = activeChannel.Name,
             ConnectedAt = DateTime.UtcNow.AddMinutes(-2),
             LastActivity = DateTime.UtcNow.AddSeconds(-30), // Actif
-            ServerInstanceId = "test-server"
+            ServerInstanceId = "test-server",
         };
 
         context.Channels.Add(activeChannel);
@@ -174,10 +174,10 @@ public class AutoMuteServiceTests : IAsyncDisposable
         await context.SaveChangesAsync();
 
         var service = new AutoMuteService(
-            _dbContextFactory,
-            _hubContextMock.Object,
-            _options,
-            _loggerMock.Object);
+            dbContextFactory,
+            hubContextMock.Object,
+            options,
+            loggerMock.Object);
 
         // Act
         await service.StartAsync(CancellationToken.None);
@@ -185,7 +185,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
         await service.StopAsync(CancellationToken.None);
 
         // Assert
-        await using var verifyContext = await _dbContextFactory.CreateDbContextAsync();
+        await using var verifyContext = await dbContextFactory.CreateDbContextAsync();
         var result = await verifyContext.Channels
             .FirstOrDefaultAsync(c => c.Name == activeChannel.Name);
 
@@ -197,7 +197,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
     public async Task AutoMuteService_ShouldUseCreatorWhenActiveManagerIsNull()
     {
         // Arrange
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
 
         var channel = new Channel
         {
@@ -206,7 +206,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
             CreatedBy = "creator",
             ActiveManager = null, // Pas de manager actif défini
             CreatedAt = DateTime.UtcNow.AddHours(-1),
-            IsMuted = false
+            IsMuted = false,
         };
 
         // Le créateur n'est pas connecté
@@ -214,10 +214,10 @@ public class AutoMuteServiceTests : IAsyncDisposable
         await context.SaveChangesAsync();
 
         var service = new AutoMuteService(
-            _dbContextFactory,
-            _hubContextMock.Object,
-            _options,
-            _loggerMock.Object);
+            dbContextFactory,
+            hubContextMock.Object,
+            options,
+            loggerMock.Object);
 
         // Act
         await service.StartAsync(CancellationToken.None);
@@ -225,7 +225,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
         await service.StopAsync(CancellationToken.None);
 
         // Assert - Devrait muter car le créateur (fallback) n'est pas connecté
-        await using var verifyContext = await _dbContextFactory.CreateDbContextAsync();
+        await using var verifyContext = await dbContextFactory.CreateDbContextAsync();
         var result = await verifyContext.Channels
             .FirstOrDefaultAsync(c => c.Name == channel.Name);
 
@@ -237,7 +237,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
     public async Task AutoMuteService_ShouldNotMuteAlreadyMutedChannels()
     {
         // Arrange
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
 
         var mutedChannel = new Channel
         {
@@ -246,17 +246,17 @@ public class AutoMuteServiceTests : IAsyncDisposable
             CreatedBy = "user1",
             ActiveManager = "user1",
             CreatedAt = DateTime.UtcNow.AddHours(-1),
-            IsMuted = true
+            IsMuted = true,
         };
 
         context.Channels.Add(mutedChannel);
         await context.SaveChangesAsync();
 
         var service = new AutoMuteService(
-            _dbContextFactory,
-            _hubContextMock.Object,
-            _options,
-            _loggerMock.Object);
+            dbContextFactory,
+            hubContextMock.Object,
+            options,
+            loggerMock.Object);
 
         // Act
         await service.StartAsync(CancellationToken.None);
@@ -264,7 +264,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
         await service.StopAsync(CancellationToken.None);
 
         // Assert
-        await using var verifyContext = await _dbContextFactory.CreateDbContextAsync();
+        await using var verifyContext = await dbContextFactory.CreateDbContextAsync();
         var result = await verifyContext.Channels
             .FirstOrDefaultAsync(c => c.Name == mutedChannel.Name);
 
@@ -276,7 +276,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
     public async Task AutoMuteService_ShouldHandleMultipleChannelsWithDifferentManagers()
     {
         // Arrange
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
 
         // Canal 1: Manager actif
         var activeChannel = new Channel
@@ -286,7 +286,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
             CreatedBy = "creator1",
             ActiveManager = "active_admin",
             CreatedAt = DateTime.UtcNow,
-            IsMuted = false
+            IsMuted = false,
         };
 
         var activeManager = new ConnectedUser
@@ -297,7 +297,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
             Channel = activeChannel.Name,
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            ServerInstanceId = "test-server"
+            ServerInstanceId = "test-server",
         };
 
         // Canal 2: Manager inactif
@@ -308,7 +308,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
             CreatedBy = "creator2",
             ActiveManager = "inactive_user",
             CreatedAt = DateTime.UtcNow,
-            IsMuted = false
+            IsMuted = false,
         };
 
         var inactiveManager = new ConnectedUser
@@ -319,7 +319,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
             Channel = inactiveChannel.Name,
             ConnectedAt = DateTime.UtcNow.AddMinutes(-10),
             LastActivity = DateTime.UtcNow.AddMinutes(-10),
-            ServerInstanceId = "test-server"
+            ServerInstanceId = "test-server",
         };
 
         context.Channels.AddRange(activeChannel, inactiveChannel);
@@ -327,10 +327,10 @@ public class AutoMuteServiceTests : IAsyncDisposable
         await context.SaveChangesAsync();
 
         var service = new AutoMuteService(
-            _dbContextFactory,
-            _hubContextMock.Object,
-            _options,
-            _loggerMock.Object);
+            dbContextFactory,
+            hubContextMock.Object,
+            options,
+            loggerMock.Object);
 
         // Act
         await service.StartAsync(CancellationToken.None);
@@ -338,7 +338,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
         await service.StopAsync(CancellationToken.None);
 
         // Assert
-        await using var verifyContext = await _dbContextFactory.CreateDbContextAsync();
+        await using var verifyContext = await dbContextFactory.CreateDbContextAsync();
 
         var activeResult = await verifyContext.Channels
             .FirstOrDefaultAsync(c => c.Name == "active");
@@ -355,7 +355,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
     public async Task AutoMuteService_CreatorActiveButNotManager_ShouldMute()
     {
         // Arrange
-        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var context = await dbContextFactory.CreateDbContextAsync();
 
         var channel = new Channel
         {
@@ -364,7 +364,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
             CreatedBy = "creator",
             ActiveManager = "admin", // Un admin gère, pas le créateur
             CreatedAt = DateTime.UtcNow,
-            IsMuted = false
+            IsMuted = false,
         };
 
         // Le créateur est actif mais n'est plus le manager
@@ -376,7 +376,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
             Channel = channel.Name,
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
-            ServerInstanceId = "test-server"
+            ServerInstanceId = "test-server",
         };
 
         // L'admin (manager actif) n'est pas connecté
@@ -385,10 +385,10 @@ public class AutoMuteServiceTests : IAsyncDisposable
         await context.SaveChangesAsync();
 
         var service = new AutoMuteService(
-            _dbContextFactory,
-            _hubContextMock.Object,
-            _options,
-            _loggerMock.Object);
+            dbContextFactory,
+            hubContextMock.Object,
+            options,
+            loggerMock.Object);
 
         // Act
         await service.StartAsync(CancellationToken.None);
@@ -396,7 +396,7 @@ public class AutoMuteServiceTests : IAsyncDisposable
         await service.StopAsync(CancellationToken.None);
 
         // Assert - Devrait muter car le manager actif (admin) n'est pas connecté
-        await using var verifyContext = await _dbContextFactory.CreateDbContextAsync();
+        await using var verifyContext = await dbContextFactory.CreateDbContextAsync();
         var result = await verifyContext.Channels
             .FirstOrDefaultAsync(c => c.Name == channel.Name);
 

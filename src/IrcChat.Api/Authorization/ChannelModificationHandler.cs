@@ -38,7 +38,8 @@ public class ChannelModificationHandler(ChatDbContext db, ILogger<ChannelModific
         {
             // Réussir l'autorisation pour un canal inexistant
             // L'endpoint vérifiera l'existence et retournera NotFound
-            logger.LogDebug("Canal {ChannelName} introuvable lors de la vérification d'autorisation, autorisation accordée pour permettre NotFound",
+            logger.LogDebug(
+                "Canal {ChannelName} introuvable lors de la vérification d'autorisation, autorisation accordée pour permettre NotFound",
                 requirement.ChannelName);
             context.Succeed(requirement);
             return;
@@ -49,8 +50,10 @@ public class ChannelModificationHandler(ChatDbContext db, ILogger<ChannelModific
 
         if (isCreator)
         {
-            logger.LogInformation("Utilisateur {Username} autorisé en tant que créateur du canal {ChannelName}",
-                username, channel!.Name);
+            logger.LogInformation(
+                "Utilisateur {Username} autorisé en tant que créateur du canal {ChannelName}",
+                username,
+                channel!.Name);
             context.Succeed(requirement);
             return;
         }
@@ -61,14 +64,18 @@ public class ChannelModificationHandler(ChatDbContext db, ILogger<ChannelModific
 
         if (user?.IsAdmin == true)
         {
-            logger.LogInformation("Utilisateur {Username} autorisé en tant qu'admin pour le canal {ChannelName}",
-                username, channel.Name);
+            logger.LogInformation(
+                "Utilisateur {Username} autorisé en tant qu'admin pour le canal {ChannelName}",
+                username,
+                channel.Name);
             context.Succeed(requirement);
             return;
         }
 
-        logger.LogWarning("Utilisateur {Username} non autorisé à modifier le canal {ChannelName}",
-            username, channel.Name);
+        logger.LogWarning(
+            "Utilisateur {Username} non autorisé à modifier le canal {ChannelName}",
+            username,
+            channel.Name);
         context.Fail();
     }
 }

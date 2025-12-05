@@ -1,23 +1,21 @@
 // tests/IrcChat.Client.Tests/Components/AdminPanelTests.cs
 using System.Net;
 using System.Net.Http.Json;
-using Bunit;
 using IrcChat.Client.Components;
 using IrcChat.Shared.Models;
 using Microsoft.Extensions.DependencyInjection;
 using RichardSzalay.MockHttp;
-using Xunit;
 
 namespace IrcChat.Client.Tests.Components;
 
 public class AdminPanelTests : BunitContext
 {
-    private readonly MockHttpMessageHandler _mockHttp;
+    private readonly MockHttpMessageHandler mockHttp;
 
     public AdminPanelTests()
     {
-        _mockHttp = new MockHttpMessageHandler();
-        var httpClient = _mockHttp.ToHttpClient();
+        mockHttp = new MockHttpMessageHandler();
+        var httpClient = mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
         Services.AddSingleton(httpClient);
     }
@@ -37,7 +35,7 @@ public class AdminPanelTests : BunitContext
                 IsAdmin = false,
                 CreatedAt = DateTime.UtcNow,
                 LastLoginAt = DateTime.UtcNow,
-                AvatarUrl = "https://example.com/avatar1.jpg"
+                AvatarUrl = "https://example.com/avatar1.jpg",
             },
             new
             {
@@ -48,11 +46,11 @@ public class AdminPanelTests : BunitContext
                 IsAdmin = true,
                 CreatedAt = DateTime.UtcNow,
                 LastLoginAt = DateTime.UtcNow,
-                AvatarUrl = (string?)null
-            }
+                AvatarUrl = (string?)null,
+            },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
+        mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(HttpStatusCode.OK, JsonContent.Create(users));
 
         // Act
@@ -70,13 +68,13 @@ public class AdminPanelTests : BunitContext
     public void AdminPanel_ShouldShowLoadingState()
     {
         // Arrange
-        _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
+        mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(async () =>
             {
                 await Task.Delay(100);
                 return new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = JsonContent.Create(new List<object>())
+                    Content = JsonContent.Create(new List<object>()),
                 };
             });
 
@@ -92,7 +90,7 @@ public class AdminPanelTests : BunitContext
     public async Task AdminPanel_CloseButton_ShouldTriggerEvent()
     {
         // Arrange
-        _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
+        mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<object>()));
 
         var closeTriggered = false;
@@ -128,8 +126,8 @@ public class AdminPanelTests : BunitContext
                 IsAdmin = false,
                 CreatedAt = DateTime.UtcNow,
                 LastLoginAt = DateTime.UtcNow,
-                AvatarUrl = (string?)null
-            }
+                AvatarUrl = (string?)null,
+            },
         };
 
         var updatedUsers = new List<object>
@@ -144,13 +142,13 @@ public class AdminPanelTests : BunitContext
                 CreatedAt = DateTime.UtcNow,
                 LastLoginAt = DateTime.UtcNow,
                 AvatarUrl = (string?)null
-            }
+            },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
+        mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(HttpStatusCode.OK, JsonContent.Create(initialUsers));
 
-        _mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/promote")
+        mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/promote")
             .Respond(HttpStatusCode.OK);
 
         var cut = Render<AdminPanel>(parameters => parameters
@@ -159,10 +157,10 @@ public class AdminPanelTests : BunitContext
         await cut.WaitForStateAsync(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
 
         // Reconfigurer pour retourner les users mis à jour
-        _mockHttp.Clear();
-        _mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/promote")
+        mockHttp.Clear();
+        mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/promote")
             .Respond(HttpStatusCode.OK);
-        _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
+        mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(HttpStatusCode.OK, JsonContent.Create(updatedUsers));
 
         cut.Render();
@@ -196,7 +194,7 @@ public class AdminPanelTests : BunitContext
                 CreatedAt = DateTime.UtcNow,
                 LastLoginAt = DateTime.UtcNow,
                 AvatarUrl = (string?)null
-            }
+            },
         };
 
         var updatedUsers = new List<object>
@@ -211,13 +209,13 @@ public class AdminPanelTests : BunitContext
                 CreatedAt = DateTime.UtcNow,
                 LastLoginAt = DateTime.UtcNow,
                 AvatarUrl = (string?)null
-            }
+            },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
+        mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(HttpStatusCode.OK, JsonContent.Create(initialUsers));
 
-        _mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/demote")
+        mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/demote")
             .Respond(HttpStatusCode.OK);
 
         var cut = Render<AdminPanel>(parameters => parameters
@@ -226,10 +224,10 @@ public class AdminPanelTests : BunitContext
         await cut.WaitForStateAsync(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
         cut.Render();
 
-        _mockHttp.Clear();
-        _mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/demote")
+        mockHttp.Clear();
+        mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/demote")
             .Respond(HttpStatusCode.OK);
-        _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
+        mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(HttpStatusCode.OK, JsonContent.Create(updatedUsers));
 
         // Act
@@ -260,13 +258,13 @@ public class AdminPanelTests : BunitContext
                 CreatedAt = DateTime.UtcNow,
                 LastLoginAt = DateTime.UtcNow,
                 AvatarUrl = (string?)null
-            }
+            },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
+        mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(HttpStatusCode.OK, JsonContent.Create(users));
 
-        _mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/promote")
+        mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/promote")
             .Respond(HttpStatusCode.Forbidden, new StringContent("Access denied"));
 
         var cut = Render<AdminPanel>(parameters => parameters
@@ -302,10 +300,10 @@ public class AdminPanelTests : BunitContext
                 CreatedAt = DateTime.UtcNow,
                 LastLoginAt = DateTime.UtcNow,
                 AvatarUrl = (string?)null
-            }
+            },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
+        mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(HttpStatusCode.OK, JsonContent.Create(users));
 
         // Act
@@ -323,7 +321,7 @@ public class AdminPanelTests : BunitContext
     public void AdminPanel_LoadUsers_OnError_ShouldShowError()
     {
         // Arrange
-        _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
+        mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(HttpStatusCode.InternalServerError);
 
         // Act
@@ -352,10 +350,10 @@ public class AdminPanelTests : BunitContext
                 CreatedAt = DateTime.UtcNow,
                 LastLoginAt = DateTime.UtcNow,
                 AvatarUrl = (string?)null
-            }
+            },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
+        mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(HttpStatusCode.OK, JsonContent.Create(users));
 
         // Act
@@ -385,10 +383,10 @@ public class AdminPanelTests : BunitContext
                 CreatedAt = DateTime.UtcNow,
                 LastLoginAt = DateTime.UtcNow,
                 AvatarUrl = "https://example.com/avatar.jpg"
-            }
+            },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
+        mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(HttpStatusCode.OK, JsonContent.Create(users));
 
         // Act
@@ -422,13 +420,13 @@ public class AdminPanelTests : BunitContext
                 CreatedAt = DateTime.UtcNow,
                 LastLoginAt = DateTime.UtcNow,
                 AvatarUrl = (string?)null
-            }
+            },
         };
 
-        _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
+        mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(HttpStatusCode.OK, JsonContent.Create(users));
 
-        _mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/promote")
+        mockHttp.When(HttpMethod.Post, $"*/api/admin-management/{userId}/promote")
             .Respond(async () =>
             {
                 await Task.Delay(1000);
@@ -453,7 +451,7 @@ public class AdminPanelTests : BunitContext
     public async Task AdminPanel_OverlayClick_ShouldClose()
     {
         // Arrange
-        _mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
+        mockHttp.When(HttpMethod.Get, "*/api/admin-management/users")
             .Respond(HttpStatusCode.OK, JsonContent.Create(new List<object>()));
 
         var closeTriggered = false;
