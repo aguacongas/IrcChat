@@ -1,0 +1,32 @@
+@* src/IrcChat.Client/Components/SoundToggle.razor *@
+@using IrcChat.Client.Services
+@inject INotificationSoundService NotificationSoundService
+
+<button class="sound-toggle"
+        @onclick="HandleToggleAsync"
+        @onclick:stopPropagation="true"
+        title="@(isEnabled ? "Désactiver les sons" : "Activer les sons")">
+    <span class="sound-icon">@(isEnabled ? "🔔" : "🔕")</span>
+</button>
+
+@code {
+    private bool isEnabled = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isEnabled = await NotificationSoundService.IsSoundEnabledAsync();
+    }
+
+    private async Task HandleToggleAsync()
+    {
+        await NotificationSoundService.ToggleSoundAsync();
+        isEnabled = !isEnabled;
+
+        // Si l'utilisateur active les sons, jouer un son de test
+        // Cela initialise le contexte audio suite à cette interaction utilisateur
+        if (isEnabled)
+        {
+            await NotificationSoundService.PlaySoundAsync();
+        }
+    }
+}

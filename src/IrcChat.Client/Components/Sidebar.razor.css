@@ -48,11 +48,19 @@
   text-overflow: ellipsis;
 }
 
+/* User actions (sound toggle + settings icon) */
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 .settings-icon {
   color: #8ab4f8;
   transition: transform 0.2s;
   flex-shrink: 0;
-  margin-left: auto;
 }
 
 .user-info:hover .settings-icon {
