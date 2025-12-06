@@ -141,6 +141,7 @@ else
     [Parameter]
     public string? PrivateUsername { get; set; }
 
+    private static readonly TimeSpan timeout = TimeSpan.FromMilliseconds(100);
     private string? currentChannel = null;
     private string? currentChannelDescription = null;
     private string currentUsername = string.Empty;
@@ -470,7 +471,8 @@ else
                 messages.Add(message);
                 StateHasChanged();
             }
-            if (Regex.IsMatch(message.Content, $@"\b{Regex.Escape(currentUsername)}\b", RegexOptions.IgnoreCase))
+            
+            if (Regex.IsMatch(message.Content, $@"\b{Regex.Escape(currentUsername)}\b", RegexOptions.IgnoreCase, timeout))
             {
                 await NotificationSoundService.PlaySoundAsync();
             }
