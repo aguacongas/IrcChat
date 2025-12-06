@@ -1,4 +1,5 @@
 // src/IrcChat.Client/Services/NotificationSoundService.cs
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.JSInterop;
 
 namespace IrcChat.Client.Services;
@@ -44,6 +45,7 @@ public class NotificationSoundService(IJSRuntime jsRuntime, ILogger<Notification
     }
 
     /// <inheritdoc/>
+    [SuppressMessage("Major Code Smell", "S2139:Exceptions should be either logged or rethrown but not both", Justification = "False positive, it's logger")]
     public async Task ToggleSoundAsync()
     {
         try
