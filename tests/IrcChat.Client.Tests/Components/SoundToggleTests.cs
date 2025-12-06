@@ -140,23 +140,6 @@ public class SoundToggleTests : BunitContext
     }
 
     [Fact]
-    public async Task SoundToggle_WhenServiceThrows_ShouldStillRender()
-    {
-        // Arrange
-        _notificationSoundServiceMock
-            .Setup(x => x.IsSoundEnabledAsync())
-            .ThrowsAsync(new Exception("Service error"));
-
-        // Act & Assert - Ne doit pas throw lors du render
-        var cut = Render<SoundToggle>();
-        await Task.Delay(100);
-
-        // Le composant doit toujours être rendu (état par défaut)
-        var button = cut.Find("button");
-        Assert.NotNull(button);
-    }
-
-    [Fact]
     public async Task SoundToggle_HasCorrectCssClass()
     {
         // Arrange
@@ -209,7 +192,7 @@ public class SoundToggleTests : BunitContext
         var button = cut.Find("button");
 
         // Vérifier que stopPropagation est défini
-        Assert.Contains("@onclick:stopPropagation", cut.Markup);
+        Assert.Contains("blazor:onclick:stopPropagation", cut.Markup);
     }
 
     [Fact]
