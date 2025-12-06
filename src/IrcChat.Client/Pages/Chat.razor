@@ -12,6 +12,7 @@
 @using Microsoft.Extensions.Options
 @using System.Net.Http.Headers
 @using System.Diagnostics.CodeAnalysis
+@using System.Text.RegularExpressions;
 @inject HttpClient Http
 @inject IChatService ChatService
 @inject IUnifiedAuthService Auth
@@ -23,6 +24,7 @@
 @inject IIgnoredUsersService IgnoredUsersService
 @inject IActiveChannelsService ActiveChannels
 @inject IChannelUnreadCountService UnreadCountService
+@inject INotificationSoundService NotificationSoundService
 @implements IAsyncDisposable
 
 <PageTitle>IRC Chat</PageTitle>
@@ -139,6 +141,7 @@ else
     [Parameter]
     public string? PrivateUsername { get; set; }
 
+    private static readonly TimeSpan timeout = TimeSpan.FromMilliseconds(100);
     private string? currentChannel = null;
     private string? currentChannelDescription = null;
     private string currentUsername = string.Empty;
@@ -447,23 +450,31 @@ else
     // Handlers pour canaux publics
     private void OnMessageReceived(Message message)
     {
+        if (IgnoredUsersService.IsUserIgnored(message.UserId))
+        {
+            return;
+        }
+
         InvokeAsync(async () =>
         {
             // Incrémenter le compteur si le message est reçu sur un salon non-actif
             if (!isPrivateConversation &&
                 !string.IsNullOrEmpty(message.Channel) &&
-                message.Channel != currentChannel &&
-                !IgnoredUsersService.IsUserIgnored(message.UserId))
+                message.Channel != currentChannel)
             {
                 await UnreadCountService.IncrementCountAsync(message.Channel);
             }
 
             if (message.Channel == currentChannel &&
-              !isPrivateConversation &&
-              !IgnoredUsersService.IsUserIgnored(message.UserId))
+              !isPrivateConversation)
             {
                 messages.Add(message);
                 StateHasChanged();
+            }
+            
+            if (Regex.IsMatch(message.Content, $@"\b{Regex.Escape(currentUsername)}\b", RegexOptions.IgnoreCase, timeout))
+            {
+                await NotificationSoundService.PlaySoundAsync();
             }
         });
     }
@@ -682,11 +693,14 @@ else
     // Handlers pour messages privés
     private void OnPrivateMessageReceived(PrivateMessage message)
     {
+        if (IgnoredUsersService.IsUserIgnored(message.SenderUserId))
+        {
+            return;
+        }
         InvokeAsync(async () =>
         {
             if (isPrivateConversation &&
-              (message.SenderUserId == selectedPrivateUser?.UserId || message.RecipientUserId == selectedPrivateUser?.UserId) &&
-              !(IgnoredUsersService.IsUserIgnored(message.SenderUserId)))
+              (message.SenderUserId == selectedPrivateUser?.UserId || message.RecipientUserId == selectedPrivateUser?.UserId))
             {
                 privateMessages.Add(message);
 
@@ -697,6 +711,8 @@ else
             }
 
             await LoadPrivateConversations();
+            await NotificationSoundService.PlaySoundAsync();
+
             StateHasChanged();
         });
     }

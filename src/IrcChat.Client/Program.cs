@@ -30,6 +30,7 @@ builder.Services.AddScoped(sp =>
     .AddScoped<IIgnoredUsersService, IgnoredUsersService>()
     .AddScoped<IActiveChannelsService, ActiveChannelsService>()
     .AddScoped<IChannelUnreadCountService, ChannelUnreadCountService>()
+    .AddScoped<INotificationSoundService, NotificationSoundService>()
     .AddSingleton<IRequestAuthenticationService, RequestAuthenticationService>();
 
 await builder.Build().RunAsync();

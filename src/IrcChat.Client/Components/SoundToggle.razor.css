@@ -1,0 +1,31 @@
+/* src/IrcChat.Client/Components/SoundToggle.razor.css */
+.sound-toggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+  .sound-toggle:hover {
+    background: rgba(156, 197, 255, 0.1);
+  }
+
+.sound-icon {
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 0.2s;
+}
+
+.sound-toggle:hover .sound-icon {
+  transform: scale(1.1);
+}
+
+.sound-toggle:active .sound-icon {
+  transform: scale(0.95);
+}

@@ -9,11 +9,14 @@ namespace IrcChat.Client.Tests.Components;
 public class SidebarTests : BunitContext
 {
     private readonly Mock<IChannelUnreadCountService> _channelUnreadCountServiceMock;
+    private readonly Mock<INotificationSoundService> _notificationSounServiceMock;
     public SidebarTests()
     {
         _channelUnreadCountServiceMock = new Mock<IChannelUnreadCountService>();
+        _notificationSounServiceMock = new Mock<INotificationSoundService>();
 
         Services.AddSingleton(_channelUnreadCountServiceMock.Object);
+        Services.AddSingleton(_notificationSounServiceMock.Object);
     }
 
     [Fact]
