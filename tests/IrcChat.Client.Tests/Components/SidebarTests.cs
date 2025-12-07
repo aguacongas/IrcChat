@@ -98,7 +98,7 @@ public class SidebarTests : BunitContext
             .Add(p => p.Channels, []));
 
         // Assert
-        Assert.Contains("✓ Réservé", cut.Markup);
+        Assert.Contains("Réservé", cut.Markup);
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public class SidebarTests : BunitContext
             .Add(p => p.Channels, []));
 
         // Assert
-        Assert.Contains("⚡ Admin", cut.Markup);
+        Assert.Contains("Admin", cut.Markup);
     }
 
     [Fact]

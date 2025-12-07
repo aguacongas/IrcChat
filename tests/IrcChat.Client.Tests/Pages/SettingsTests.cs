@@ -737,7 +737,7 @@ public class SettingsTests : BunitContext
         var toggle = cut.Find(".toggle");
         var ariaLabel = toggle.GetAttribute("aria-label");
         Assert.NotNull(ariaLabel);
-        Assert.Contains("mode non MP", ariaLabel.ToLower());
+        Assert.Contains("mode non mp", ariaLabel.ToLower());
     }
 
     [Fact]
