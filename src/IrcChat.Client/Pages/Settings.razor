@@ -78,6 +78,26 @@ else
                 </div>
             </div>
 
+            <!-- Section Mode non MP -->
+            <div class="settings-card">
+                <div class="card-header">
+                    <h2>🔒 Mode non MP</h2>
+                </div>
+                <div class="card-content">
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h3>Bloquer les messages privés non sollicités</h3>
+                            <p>Vous ne recevrez des messages privés que des utilisateurs avec qui vous avez déjà une conversation active.</p>
+                        </div>
+                        <button class="toggle @(Auth.IsNoPvMode ? "active" : "")"
+                                @onclick="ToggleNoPvMode"
+                                aria-label="@(Auth.IsNoPvMode ? "Désactiver le mode non MP" : "Activer le mode non MP")">
+                            <span class="toggle-text">@(Auth.IsNoPvMode ? "Activé" : "Désactivé")</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Section Admin -->
             @if (Auth.IsAdmin && Auth.UserId.HasValue)
             {
@@ -263,6 +283,12 @@ else
     private void CloseAdminPanel()
     {
         showAdminPanel = false;
+    }
+
+    private async Task ToggleNoPvMode()
+    {
+        await Auth.SetNoPvModeAsync(!Auth.IsNoPvMode);
+        StateHasChanged();
     }
 
     private async Task CreateChannel()

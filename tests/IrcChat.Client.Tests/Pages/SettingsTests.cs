@@ -523,4 +523,237 @@ public class SettingsTests : BunitContext
         // Assert
         Assert.Contains("avatar-placeholder", cut.Markup);
     }
+
+    // Tests à ajouter dans tests/IrcChat.Client.Tests/Pages/SettingsTests.cs
+
+    // ==================== TESTS TOGGLE MODE NO PV ====================
+
+    [Fact]
+    public void Settings_ShouldDisplayNoPvModeToggle()
+    {
+        // Arrange
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsNoPvMode).Returns(false);
+
+        // Act
+        var cut = Render<Settings>();
+
+        // Assert
+        Assert.Contains("Mode non MP", cut.Markup);
+        Assert.Contains("Bloquer les messages privés non sollicités", cut.Markup);
+        Assert.NotNull(cut.Find(".toggle"));
+    }
+
+    [Fact]
+    public void Settings_WithNoPvModeDisabled_ShouldShowInactiveToggle()
+    {
+        // Arrange
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsNoPvMode).Returns(false);
+
+        // Act
+        var cut = Render<Settings>();
+
+        // Assert
+        var toggle = cut.Find(".toggle");
+        Assert.DoesNotContain("active", toggle.ClassList);
+        Assert.Contains("Désactivé", cut.Markup);
+    }
+
+    [Fact]
+    public void Settings_WithNoPvModeEnabled_ShouldShowActiveToggle()
+    {
+        // Arrange
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsNoPvMode).Returns(true);
+
+        // Act
+        var cut = Render<Settings>();
+
+        // Assert
+        var toggle = cut.Find(".toggle");
+        Assert.Contains("active", toggle.ClassList);
+        Assert.Contains("Activé", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Settings_ToggleNoPvMode_ShouldCallService()
+    {
+        // Arrange
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsNoPvMode).Returns(false);
+        authServiceMock.Setup(x => x.SetNoPvModeAsync(It.IsAny<bool>())).Returns(Task.CompletedTask);
+
+        var cut = Render<Settings>();
+
+        // Act
+        var toggle = cut.Find(".toggle");
+        await cut.InvokeAsync(() => toggle.Click());
+
+        // Assert
+        authServiceMock.Verify(x => x.SetNoPvModeAsync(true), Times.Once);
+    }
+
+    [Fact]
+    public async Task Settings_ToggleNoPvMode_FromEnabledToDisabled_ShouldCallService()
+    {
+        // Arrange
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsNoPvMode).Returns(true);
+        authServiceMock.Setup(x => x.SetNoPvModeAsync(It.IsAny<bool>())).Returns(Task.CompletedTask);
+
+        var cut = Render<Settings>();
+
+        // Act
+        var toggle = cut.Find(".toggle");
+        await cut.InvokeAsync(() => toggle.Click());
+
+        // Assert
+        authServiceMock.Verify(x => x.SetNoPvModeAsync(false), Times.Once);
+    }
+
+    [Fact]
+    public async Task Settings_ToggleNoPvMode_ShouldUpdateUI()
+    {
+        // Arrange
+        var isNoPvMode = false;
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsNoPvMode).Returns(() => isNoPvMode);
+        authServiceMock.Setup(x => x.SetNoPvModeAsync(It.IsAny<bool>()))
+            .Callback<bool>(enabled => isNoPvMode = enabled)
+            .Returns(Task.CompletedTask);
+
+        var cut = Render<Settings>();
+
+        // Act - Premier clic (activer)
+        var toggle = cut.Find(".toggle");
+        await cut.InvokeAsync(() => toggle.Click());
+
+        // Assert - Doit être activé
+        Assert.Contains("active", cut.Find(".toggle").ClassList);
+        Assert.Contains("Activé", cut.Markup);
+
+        // Act - Deuxième clic (désactiver)
+        await cut.InvokeAsync(() => toggle.Click());
+
+        // Assert - Doit être désactivé
+        Assert.DoesNotContain("active", cut.Find(".toggle").ClassList);
+        Assert.Contains("Désactivé", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Settings_ToggleNoPvMode_MultipleTimes_ShouldToggleCorrectly()
+    {
+        // Arrange
+        var isNoPvMode = false;
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsNoPvMode).Returns(() => isNoPvMode);
+        authServiceMock.Setup(x => x.SetNoPvModeAsync(It.IsAny<bool>()))
+            .Callback<bool>(enabled => isNoPvMode = enabled)
+            .Returns(Task.CompletedTask);
+
+        var cut = Render<Settings>();
+
+        // Act & Assert - Cliquer 5 fois
+        for (var i = 0; i < 5; i++)
+        {
+            var toggle = cut.Find(".toggle");
+            await cut.InvokeAsync(() => toggle.Click());
+
+            var expectedState = (i + 1) % 2 == 1; // Impair = activé, Pair = désactivé
+            Assert.Equal(expectedState, isNoPvMode);
+        }
+
+        // Vérifier que SetNoPvModeAsync a été appelé 5 fois
+        authServiceMock.Verify(x => x.SetNoPvModeAsync(It.IsAny<bool>()), Times.Exactly(5));
+    }
+
+    [Fact]
+    public void Settings_NoPvModeSection_ShouldExplainFeature()
+    {
+        // Arrange
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+
+        // Act
+        var cut = Render<Settings>();
+
+        // Assert - Vérifier que l'explication est présente
+        Assert.Contains("Bloquer les messages privés non sollicités", cut.Markup);
+        Assert.Contains("ne recevrez des messages privés que des utilisateurs avec qui vous avez déjà une conversation active", cut.Markup);
+    }
+
+    [Fact]
+    public async Task Settings_ToggleNoPvMode_ShouldCallStateHasChanged()
+    {
+        // Arrange
+        var stateChangedCount = 0;
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsNoPvMode).Returns(false);
+        authServiceMock.Setup(x => x.SetNoPvModeAsync(It.IsAny<bool>()))
+            .Returns(Task.CompletedTask)
+            .Callback(() => stateChangedCount++);
+
+        var cut = Render<Settings>();
+
+        // Act
+        var toggle = cut.Find(".toggle");
+        await cut.InvokeAsync(() => toggle.Click());
+
+        // Assert - StateHasChanged devrait avoir été appelé
+        Assert.True(stateChangedCount > 0);
+    }
+
+    [Fact]
+    public void Settings_NoPvModeToggle_ShouldHaveAriaLabel()
+    {
+        // Arrange
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+        authServiceMock.Setup(x => x.IsNoPvMode).Returns(false);
+
+        // Act
+        var cut = Render<Settings>();
+
+        // Assert
+        var toggle = cut.Find(".toggle");
+        var ariaLabel = toggle.GetAttribute("aria-label");
+        Assert.NotNull(ariaLabel);
+        Assert.Contains("mode non MP", ariaLabel.ToLower());
+    }
+
+    [Fact]
+    public void Settings_NoPvModeSection_ShouldBeInCorrectCard()
+    {
+        // Arrange
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.HasUsername).Returns(true);
+        authServiceMock.Setup(x => x.Username).Returns("TestUser");
+
+        // Act
+        var cut = Render<Settings>();
+
+        // Assert - Vérifier que la section est dans une carte dédiée
+        var cards = cut.FindAll(".settings-card");
+        var noPvCard = cards.FirstOrDefault(c => c.TextContent.Contains("Mode non MP"));
+        Assert.NotNull(noPvCard);
+    }
 }

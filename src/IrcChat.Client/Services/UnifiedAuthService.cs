@@ -14,7 +14,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
     private static readonly string AuthKey = "ircchat_unified_auth";
     private bool isInitialized = false;
     private IJSObjectReference? userIdModule;
-    private string? clientUserId; // UserId généré côté client
+    private string? clientUserId;
 
     public event Action? OnAuthStateChanged;
 
@@ -39,6 +39,8 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
     public Guid? UserId { get; private set; }
 
     public bool CanForgetUsername => HasUsername && (!IsReserved || IsAuthenticated);
+
+    public bool IsNoPvMode { get; private set; }
 
     public async Task InitializeAsync()
     {
@@ -92,7 +94,6 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
             }
             catch (Exception ex)
             {
-                // Ignore les erreurs de déconnexion côté serveur - l'utilisateur sera déconnecté localement de toute façon
                 logger.LogWarning(ex, "Erreur lors de la déconnexion côté serveur, ignorée");
             }
         }
@@ -107,6 +108,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
         AvatarUrl = null;
         UserId = null;
         IsAdmin = false;
+        IsNoPvMode = false;
 
         OnAuthStateChanged?.Invoke();
     }
@@ -133,15 +135,12 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
         AvatarUrl = null;
         UserId = null;
         IsAdmin = false;
+        IsNoPvMode = false;
 
         await ClearLocalStorageAsync();
         OnAuthStateChanged?.Invoke();
     }
 
-    /// <summary>
-    /// Obtient le UserId client (GUID pour invités, Username pour OAuth).
-    /// </summary>
-    /// <returns>Le UserId.</returns>
     public async Task<string> GetClientUserIdAsync()
     {
         if (!string.IsNullOrEmpty(clientUserId))
@@ -149,7 +148,6 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
             return clientUserId;
         }
 
-        // Initialiser le module si nécessaire
         if (userIdModule == null)
         {
             try
@@ -160,8 +158,6 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
             catch (Exception ex)
             {
                 logger.LogError(ex, "Erreur lors du chargement du module userIdManager");
-
-                // Fallback : générer un GUID temporaire
                 clientUserId = Guid.NewGuid().ToString();
                 return clientUserId;
             }
@@ -169,11 +165,9 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
 
         if (IsReserved && !string.IsNullOrEmpty(Username) && UserId.HasValue)
         {
-            // Utilisateur OAuth : clientUserId = Username
             return UserId.Value.ToString();
         }
 
-        // Utilisateur invité : clientUserId = GUID depuis IndexedDB
         try
         {
             clientUserId = await userIdModule.InvokeAsync<string>("getUserId");
@@ -181,8 +175,6 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
         catch (Exception ex)
         {
             logger.LogError(ex, "Erreur lors de la récupération du UserId depuis IndexedDB");
-
-            // Fallback : générer un GUID
             clientUserId = Guid.NewGuid().ToString();
         }
 
@@ -192,6 +184,13 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
             IsReserved);
 
         return clientUserId;
+    }
+
+    public async Task SetNoPvModeAsync(bool enabled)
+    {
+        IsNoPvMode = enabled;
+        await SaveToLocalStorageAsync();
+        OnAuthStateChanged?.Invoke();
     }
 
     private async Task SaveToLocalStorageAsync()
@@ -206,6 +205,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
             AvatarUrl = AvatarUrl,
             UserId = UserId,
             IsAdmin = IsAdmin,
+            IsNoPvMode = IsNoPvMode,
         };
 
         var json = JsonSerializer.Serialize(authData);
@@ -230,6 +230,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
                     AvatarUrl = authData.AvatarUrl;
                     UserId = authData.UserId;
                     IsAdmin = authData.IsAdmin;
+                    IsNoPvMode = authData.IsNoPvMode;
                 }
             }
         }
@@ -258,5 +259,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
         public Guid? UserId { get; set; }
 
         public bool IsAdmin { get; set; }
+
+        public bool IsNoPvMode { get; set; }
     }
 }

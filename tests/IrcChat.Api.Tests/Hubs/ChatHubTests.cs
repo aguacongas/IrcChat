@@ -1423,6 +1423,433 @@ public class ChatHubTests : IAsyncDisposable
             Times.Never);
     }
 
+    [Fact]
+    public async Task Ping_WithIsNoPvMode_ShouldStoreCorrectly()
+    {
+        // Arrange
+        var username = "testuser";
+        var userId = "user-123";
+
+        // Act
+        await hub.Ping(username, userId, isNoPvMode: true);
+
+        // Assert
+        var user = await db.ConnectedUsers
+            .FirstOrDefaultAsync(u => u.Username == username && u.ConnectionId == testConnectionId);
+
+        Assert.NotNull(user);
+        Assert.True(user!.IsNoPvMode);
+    }
+
+    [Fact]
+    public async Task Ping_UpdateExistingUser_ShouldUpdateIsNoPvMode()
+    {
+        // Arrange
+        var username = "testuser";
+        var userId = "user-123";
+
+        var user = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Username = username,
+            Channel = null,
+            ConnectionId = testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow.AddMinutes(-5),
+            ServerInstanceId = "test-instance",
+            IsNoPvMode = false,
+        };
+
+        db.ConnectedUsers.Add(user);
+        await db.SaveChangesAsync();
+
+        // Act
+        await hub.Ping(username, userId, isNoPvMode: true);
+
+        // Assert
+        var updatedUser = await db.ConnectedUsers
+            .FirstOrDefaultAsync(u => u.Username == username && u.ConnectionId == testConnectionId);
+
+        Assert.NotNull(updatedUser);
+        Assert.True(updatedUser!.IsNoPvMode);
+    }
+
+    [Fact]
+    public async Task SendPrivateMessage_RecipientInNoPvMode_WithoutConversation_ShouldBlock()
+    {
+        // Arrange
+        var sender = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "sender-id",
+            Username = "sender",
+            Channel = "general",
+            ConnectionId = testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+            IsNoPvMode = false,
+        };
+
+        var recipient = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "recipient-id",
+            Username = "recipient",
+            Channel = "general",
+            ConnectionId = "recipient-connection",
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+            IsNoPvMode = true, // Mode no PV activé
+        };
+
+        db.ConnectedUsers.AddRange(sender, recipient);
+        await db.SaveChangesAsync();
+
+        var messageRequest = new SendPrivateMessageRequest
+        {
+            RecipientUserId = recipient.UserId,
+            RecipientUsername = recipient.Username,
+            Content = "Premier message non sollicité",
+        };
+
+        // Act
+        await hub.SendPrivateMessage(messageRequest);
+
+        // Assert
+        // Vérifier qu'aucun message n'a été sauvegardé
+        var message = await db.PrivateMessages
+            .FirstOrDefaultAsync(m => m.SenderUserId == sender.UserId && m.RecipientUserId == recipient.UserId);
+
+        Assert.Null(message);
+
+        // Vérifier que l'appelant a reçu un message de blocage
+        callerMock.Verify(
+            c => c.SendCoreAsync(
+                "MessageBlocked",
+                It.Is<object[]>(args =>
+                    args.Length == 1 &&
+                    args[0].ToString()!.Contains("ne reçoit pas de messages privés non sollicités")),
+                default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendPrivateMessage_RecipientInNoPvMode_WithExistingConversation_ShouldAllow()
+    {
+        // Arrange
+        var sender = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "sender-id",
+            Username = "sender",
+            Channel = "general",
+            ConnectionId = testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+            IsNoPvMode = false,
+        };
+
+        var recipient = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "recipient-id",
+            Username = "recipient",
+            Channel = "general",
+            ConnectionId = "recipient-connection",
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+            IsNoPvMode = true, // Mode no PV activé
+        };
+
+        db.ConnectedUsers.AddRange(sender, recipient);
+
+        // Message existant du destinataire vers l'expéditeur (conversation active)
+        var existingMessage = new PrivateMessage
+        {
+            Id = Guid.NewGuid(),
+            SenderUserId = recipient.UserId,
+            SenderUsername = recipient.Username,
+            RecipientUserId = sender.UserId,
+            RecipientUsername = sender.Username,
+            Content = "Message précédent",
+            Timestamp = DateTime.UtcNow.AddMinutes(-10),
+            IsRead = true,
+            IsDeletedBySender = false,
+            IsDeletedByRecipient = false,
+        };
+
+        db.PrivateMessages.Add(existingMessage);
+        await db.SaveChangesAsync();
+
+        var messageRequest = new SendPrivateMessageRequest
+        {
+            RecipientUserId = recipient.UserId,
+            RecipientUsername = recipient.Username,
+            Content = "Réponse dans une conversation existante",
+        };
+
+        // Act
+        await hub.SendPrivateMessage(messageRequest);
+
+        // Assert
+        // Vérifier que le message a été sauvegardé
+        var message = await db.PrivateMessages
+            .FirstOrDefaultAsync(m =>
+                m.SenderUserId == sender.UserId &&
+                m.RecipientUserId == recipient.UserId &&
+                m.Content == messageRequest.Content);
+
+        Assert.NotNull(message);
+        Assert.Equal(messageRequest.Content, message!.Content);
+
+        // Vérifier qu'aucun message de blocage n'a été envoyé
+        callerMock.Verify(
+            c => c.SendCoreAsync("MessageBlocked", It.IsAny<object[]>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task SendPrivateMessage_RecipientInNoPvMode_ConversationDeleted_ShouldBlock()
+    {
+        // Arrange
+        var sender = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "sender-id",
+            Username = "sender",
+            Channel = "general",
+            ConnectionId = testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+            IsNoPvMode = false,
+        };
+
+        var recipient = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "recipient-id",
+            Username = "recipient",
+            Channel = "general",
+            ConnectionId = "recipient-connection",
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+            IsNoPvMode = true,
+        };
+
+        db.ConnectedUsers.AddRange(sender, recipient);
+
+        // Message existant mais supprimé par le destinataire
+        var existingMessage = new PrivateMessage
+        {
+            Id = Guid.NewGuid(),
+            SenderUserId = recipient.UserId,
+            SenderUsername = recipient.Username,
+            RecipientUserId = sender.UserId,
+            RecipientUsername = sender.Username,
+            Content = "Message précédent",
+            Timestamp = DateTime.UtcNow.AddMinutes(-10),
+            IsRead = true,
+            IsDeletedBySender = true, // Supprimé par l'expéditeur (le destinataire du nouveau message)
+            IsDeletedByRecipient = false,
+        };
+
+        db.PrivateMessages.Add(existingMessage);
+        await db.SaveChangesAsync();
+
+        var messageRequest = new SendPrivateMessageRequest
+        {
+            RecipientUserId = recipient.UserId,
+            RecipientUsername = recipient.Username,
+            Content = "Message après suppression",
+        };
+
+        // Act
+        await hub.SendPrivateMessage(messageRequest);
+
+        // Assert
+        var message = await db.PrivateMessages
+            .FirstOrDefaultAsync(m =>
+                m.SenderUserId == sender.UserId &&
+                m.RecipientUserId == recipient.UserId &&
+                m.Content == messageRequest.Content);
+
+        Assert.Null(message);
+
+        callerMock.Verify(
+            c => c.SendCoreAsync(
+                "MessageBlocked",
+                It.Is<object[]>(args => args.Length == 1),
+                default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendPrivateMessage_RecipientNotInNoPvMode_ShouldAlwaysAllow()
+    {
+        // Arrange
+        var sender = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "sender-id",
+            Username = "sender",
+            Channel = "general",
+            ConnectionId = testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+            IsNoPvMode = false,
+        };
+
+        var recipient = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "recipient-id",
+            Username = "recipient",
+            Channel = "general",
+            ConnectionId = "recipient-connection",
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+            IsNoPvMode = false, // Mode no PV désactivé
+        };
+
+        db.ConnectedUsers.AddRange(sender, recipient);
+        await db.SaveChangesAsync();
+
+        var messageRequest = new SendPrivateMessageRequest
+        {
+            RecipientUserId = recipient.UserId,
+            RecipientUsername = recipient.Username,
+            Content = "Premier message",
+        };
+
+        // Act
+        await hub.SendPrivateMessage(messageRequest);
+
+        // Assert
+        var message = await db.PrivateMessages
+            .FirstOrDefaultAsync(m => m.SenderUserId == sender.UserId && m.RecipientUserId == recipient.UserId);
+
+        Assert.NotNull(message);
+        Assert.Equal(messageRequest.Content, message!.Content);
+
+        callerMock.Verify(
+            c => c.SendCoreAsync("MessageBlocked", It.IsAny<object[]>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task JoinChannel_ShouldCopyIsNoPvModeFromBaseUser()
+    {
+        // Arrange
+        var username = "testuser";
+        var userId = "user-123";
+        var channel = "general";
+
+        // Créer le canal
+        var channelEntity = new Channel
+        {
+            Id = Guid.NewGuid(),
+            Name = channel,
+            CreatedBy = "admin",
+            CreatedAt = DateTime.UtcNow,
+            IsMuted = false,
+        };
+        db.Channels.Add(channelEntity);
+
+        // Créer l'utilisateur de base avec IsNoPvMode = true
+        var baseUser = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Username = username,
+            Channel = null,
+            ConnectionId = testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+            IsNoPvMode = true, // Mode no PV activé
+        };
+
+        db.ConnectedUsers.Add(baseUser);
+        await db.SaveChangesAsync();
+
+        // Act
+        await hub.JoinChannel(channel);
+
+        // Assert
+        var userInChannel = await db.ConnectedUsers
+            .FirstOrDefaultAsync(u => u.Username == username && u.Channel == channel);
+
+        Assert.NotNull(userInChannel);
+        Assert.True(userInChannel!.IsNoPvMode); // Doit avoir copié le mode no PV
+    }
+
+    [Fact]
+    public async Task SendPrivateMessage_RecipientOfflineButInNoPvMode_ShouldCheckDatabase()
+    {
+        // Arrange
+        var sender = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "sender-id",
+            Username = "sender",
+            Channel = "general",
+            ConnectionId = testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+            IsNoPvMode = false,
+        };
+
+        db.ConnectedUsers.Add(sender);
+
+        // Recipient offline mais avait IsNoPvMode = true
+        // On simule avec un ConnectedUser qui existe mais pas actif
+        var recipientOldConnection = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "recipient-id",
+            Username = "recipient",
+            Channel = null,
+            ConnectionId = "old-connection",
+            ConnectedAt = DateTime.UtcNow.AddHours(-2),
+            LastActivity = DateTime.UtcNow.AddHours(-1),
+            ServerInstanceId = "test-instance",
+            IsNoPvMode = true,
+        };
+
+        db.ConnectedUsers.Add(recipientOldConnection);
+        await db.SaveChangesAsync();
+
+        var messageRequest = new SendPrivateMessageRequest
+        {
+            RecipientUserId = "recipient-id",
+            RecipientUsername = "recipient",
+            Content = "Message à utilisateur offline en mode no PV",
+        };
+
+        // Act
+        await hub.SendPrivateMessage(messageRequest);
+
+        // Assert - Le message devrait être bloqué car IsNoPvMode = true
+        var message = await db.PrivateMessages
+            .FirstOrDefaultAsync(m => m.SenderUserId == sender.UserId && m.RecipientUserId == "recipient-id");
+
+        Assert.Null(message);
+
+        callerMock.Verify(
+            c => c.SendCoreAsync("MessageBlocked", It.IsAny<object[]>(), default),
+            Times.Once);
+    }
+
     public async ValueTask DisposeAsync()
     {
         await db.DisposeAsync();

@@ -58,6 +58,7 @@ public class ChatHub(
             LastActivity = DateTime.UtcNow,
             ServerInstanceId = user.ServerInstanceId,
             ConnectedAt = DateTime.UtcNow,
+            IsNoPvMode = user.IsNoPvMode,
         };
 
         user.LastActivity = DateTime.UtcNow;
@@ -169,6 +170,37 @@ public class ChatHub(
             return;
         }
 
+        // Vérifier si le destinataire est en mode no PV
+        var recipientInNoPvMode = await db.ConnectedUsers
+            .Where(u => u.UserId == request.RecipientUserId)
+            .OrderByDescending(u => u.LastActivity)
+            .Select(u => u.IsNoPvMode)
+            .FirstOrDefaultAsync();
+
+        // Si destinataire en mode no PV, vérifier s'il existe une conversation
+        if (recipientInNoPvMode)
+        {
+            var hasConversation = await db.PrivateMessages
+                .AnyAsync(m =>
+                    ((m.SenderUserId == request.RecipientUserId && m.RecipientUserId == sender.UserId) ||
+                     (m.SenderUserId == sender.UserId && m.RecipientUserId == request.RecipientUserId))
+                    && !(m.SenderUserId == request.RecipientUserId && m.IsDeletedBySender)
+                    && !(m.RecipientUserId == request.RecipientUserId && m.IsDeletedByRecipient));
+
+            if (!hasConversation)
+            {
+                logger.LogInformation(
+                    "Message privé bloqué: {Sender} -> {Recipient} (destinataire en mode no PV)",
+                    sender.Username,
+                    request.RecipientUsername);
+
+                await Clients.Caller.SendAsync(
+                    "MessageBlocked",
+                    "Cet utilisateur ne reçoit pas de messages privés non sollicités.");
+                return;
+            }
+        }
+
         var isGlobalyMute = await db.MutedUsers
             .Where(m => m.ChannelName == null
                 && (m.UserId == sender.UserId || m.UserId == request.RecipientUserId))
@@ -247,7 +279,7 @@ public class ChatHub(
         }
     }
 
-    public async Task Ping(string username, string userId)
+    public async Task Ping(string username, string userId, bool isNoPvMode = false)
     {
         var user = await db.ConnectedUsers
             .OrderByDescending(u => u.LastActivity)
@@ -265,16 +297,22 @@ public class ChatHub(
                 LastActivity = DateTime.UtcNow,
                 ServerInstanceId = instanceId,
                 ConnectedAt = DateTime.UtcNow,
+                IsNoPvMode = isNoPvMode,
             };
 
             await Clients.All.SendAsync(UserStatusChangedMethod, username, userId, true);
             db.ConnectedUsers.Add(user);
-            logger.LogInformation("Utilisateur {Username} enregistré via Ping avec UserId {UserId}", username, userId);
+            logger.LogInformation(
+                "Utilisateur {Username} enregistré via Ping avec UserId {UserId}, IsNoPvMode={IsNoPvMode}",
+                username,
+                userId,
+                isNoPvMode);
         }
         else
         {
             user.LastActivity = DateTime.UtcNow;
             user.Username = username;
+            user.IsNoPvMode = isNoPvMode;
         }
 
         await db.SaveChangesAsync();

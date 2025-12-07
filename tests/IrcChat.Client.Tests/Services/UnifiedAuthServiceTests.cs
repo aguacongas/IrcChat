@@ -1276,4 +1276,515 @@ public class UnifiedAuthServiceTests
             x => x.InvokeAsync<string>("getUserId", It.IsAny<object[]>()),
             Times.Once);
     }
+
+    // Tests à ajouter dans tests/IrcChat.Client.Tests/Services/UnifiedAuthServiceTests.cs
+
+    // ==================== TESTS SETNOPVMODEASYNC ====================
+
+    [Fact]
+    public async Task SetNoPvModeAsync_WithTrue_ShouldSetPropertyAndSave()
+    {
+        // Arrange
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        var setItemCalls = 0;
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .Callback(() => setItemCalls++)
+            .ReturnsAsync((IJSVoidResult)null!);
+
+        var service = new UnifiedAuthService(
+            localStorageService,
+            httpClient,
+            jsRuntimeMock.Object,
+            requestAuthenticationService,
+            NullLogger<UnifiedAuthService>.Instance);
+
+        await service.InitializeAsync();
+
+        // Act
+        await service.SetNoPvModeAsync(true);
+
+        // Assert
+        Assert.True(service.IsNoPvMode);
+        Assert.Equal(1, setItemCalls); // Doit sauvegarder
+    }
+
+    [Fact]
+    public async Task SetNoPvModeAsync_WithFalse_ShouldSetPropertyAndSave()
+    {
+        // Arrange
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((IJSVoidResult)null!);
+
+        var service = new UnifiedAuthService(
+            localStorageService,
+            httpClient,
+            jsRuntimeMock.Object,
+            requestAuthenticationService,
+            NullLogger<UnifiedAuthService>.Instance);
+
+        await service.InitializeAsync();
+        await service.SetNoPvModeAsync(true); // Activer d'abord
+
+        var setItemCalls = 0;
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .Callback(() => setItemCalls++)
+            .ReturnsAsync((IJSVoidResult)null!);
+
+        // Act
+        await service.SetNoPvModeAsync(false);
+
+        // Assert
+        Assert.False(service.IsNoPvMode);
+        Assert.Equal(1, setItemCalls);
+    }
+
+    [Fact]
+    public async Task SetNoPvModeAsync_ShouldTriggerOnAuthStateChanged()
+    {
+        // Arrange
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((IJSVoidResult)null!);
+
+        var service = new UnifiedAuthService(
+            localStorageService,
+            httpClient,
+            jsRuntimeMock.Object,
+            requestAuthenticationService,
+            NullLogger<UnifiedAuthService>.Instance);
+
+        await service.InitializeAsync();
+
+        var eventTriggered = false;
+        service.OnAuthStateChanged += () => eventTriggered = true;
+
+        // Act
+        await service.SetNoPvModeAsync(true);
+
+        // Assert
+        Assert.True(eventTriggered);
+    }
+
+    [Fact]
+    public async Task SetNoPvModeAsync_MultipleTimes_ShouldUpdateCorrectly()
+    {
+        // Arrange
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((IJSVoidResult)null!);
+
+        var service = new UnifiedAuthService(
+            localStorageService,
+            httpClient,
+            jsRuntimeMock.Object,
+            requestAuthenticationService,
+            NullLogger<UnifiedAuthService>.Instance);
+
+        await service.InitializeAsync();
+
+        // Act & Assert
+        await service.SetNoPvModeAsync(true);
+        Assert.True(service.IsNoPvMode);
+
+        await service.SetNoPvModeAsync(false);
+        Assert.False(service.IsNoPvMode);
+
+        await service.SetNoPvModeAsync(true);
+        Assert.True(service.IsNoPvMode);
+
+        await service.SetNoPvModeAsync(true); // Même valeur
+        Assert.True(service.IsNoPvMode);
+    }
+
+    [Fact]
+    public async Task SetNoPvModeAsync_ShouldPersistToLocalStorage()
+    {
+        // Arrange
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        var savedData = string.Empty;
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .Callback<string, object[]>((method, args) =>
+            {
+                if (args.Length == 2 && args[0]?.ToString() == "ircchat_unified_auth")
+                {
+                    savedData = args[1]?.ToString() ?? string.Empty;
+                }
+            })
+            .ReturnsAsync((IJSVoidResult)null!);
+
+        var service = new UnifiedAuthService(
+            localStorageService,
+            httpClient,
+            jsRuntimeMock.Object,
+            requestAuthenticationService,
+            NullLogger<UnifiedAuthService>.Instance);
+
+        await service.InitializeAsync();
+
+        // Act
+        await service.SetNoPvModeAsync(true);
+
+        // Assert
+        Assert.Contains("\"IsNoPvMode\":true", savedData);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_WithIsNoPvModeInStorage_ShouldRestore()
+    {
+        // Arrange
+        var authData = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            Username = "testuser",
+            Token = (string?)null,
+            IsReserved = false,
+            ReservedProvider = (ExternalAuthProvider?)null,
+            Email = (string?)null,
+            AvatarUrl = (string?)null,
+            UserId = (Guid?)null,
+            IsAdmin = false,
+            IsNoPvMode = true, // Mode no PV activé dans le storage
+        });
+
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.Is<object[]>(o => o.Length == 1 && (string)o[0] == "ircchat_unified_auth")))
+            .ReturnsAsync(authData);
+
+        var service = new UnifiedAuthService(
+            localStorageService,
+            httpClient,
+            jsRuntimeMock.Object,
+            requestAuthenticationService,
+            NullLogger<UnifiedAuthService>.Instance);
+
+        // Act
+        await service.InitializeAsync();
+
+        // Assert
+        Assert.True(service.IsNoPvMode);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_WithoutIsNoPvModeInStorage_ShouldDefaultToFalse()
+    {
+        // Arrange
+        var authData = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            Username = "testuser",
+            Token = (string?)null,
+            IsReserved = false,
+            ReservedProvider = (ExternalAuthProvider?)null,
+            Email = (string?)null,
+            AvatarUrl = (string?)null,
+            UserId = (Guid?)null,
+            IsAdmin = false,
+            // IsNoPvMode absent
+        });
+
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.Is<object[]>(o => o.Length == 1 && (string)o[0] == "ircchat_unified_auth")))
+            .ReturnsAsync(authData);
+
+        var service = new UnifiedAuthService(
+            localStorageService,
+            httpClient,
+            jsRuntimeMock.Object,
+            requestAuthenticationService,
+            NullLogger<UnifiedAuthService>.Instance);
+
+        // Act
+        await service.InitializeAsync();
+
+        // Assert
+        Assert.False(service.IsNoPvMode);
+    }
+
+    [Fact]
+    public async Task LogoutAsync_ShouldPreserveIsNoPvMode()
+    {
+        // Arrange
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((IJSVoidResult)null!);
+
+        var service = new UnifiedAuthService(
+            localStorageService,
+            httpClient,
+            jsRuntimeMock.Object,
+            requestAuthenticationService,
+            NullLogger<UnifiedAuthService>.Instance);
+
+        await service.InitializeAsync();
+
+        await service.SetAuthStateAsync(
+            "token",
+            "user",
+            "email@test.com",
+            null,
+            Guid.NewGuid(),
+            ExternalAuthProvider.Google,
+            isAdmin: false);
+
+        await service.SetNoPvModeAsync(true);
+
+        // Act
+        await service.LogoutAsync();
+
+        // Assert - IsNoPvMode doit être préservé après logout
+        Assert.True(service.IsNoPvMode);
+    }
+
+    [Fact]
+    public async Task ForgetUsernameAndLogoutAsync_ShouldResetIsNoPvMode()
+    {
+        // Arrange
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((IJSVoidResult)null!);
+
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.removeItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((IJSVoidResult)null!);
+
+        mockHttp.When(HttpMethod.Post, "*/api/oauth/forget-username")
+            .Respond(HttpStatusCode.OK);
+
+        var service = new UnifiedAuthService(
+            localStorageService,
+            httpClient,
+            jsRuntimeMock.Object,
+            requestAuthenticationService,
+            NullLogger<UnifiedAuthService>.Instance);
+
+        await service.InitializeAsync();
+
+        await service.SetAuthStateAsync(
+            "token",
+            "user",
+            "email@test.com",
+            null,
+            Guid.NewGuid(),
+            ExternalAuthProvider.Google,
+            isAdmin: false);
+
+        await service.SetNoPvModeAsync(true);
+
+        // Act
+        await service.ForgetUsernameAndLogoutAsync();
+
+        // Assert - IsNoPvMode doit être réinitialisé
+        Assert.False(service.IsNoPvMode);
+    }
+
+    [Fact]
+    public async Task ClearAllAsync_ShouldResetIsNoPvMode()
+    {
+        // Arrange
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((IJSVoidResult)null!);
+
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.removeItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((IJSVoidResult)null!);
+
+        var service = new UnifiedAuthService(
+            localStorageService,
+            httpClient,
+            jsRuntimeMock.Object,
+            requestAuthenticationService,
+            NullLogger<UnifiedAuthService>.Instance);
+
+        await service.InitializeAsync();
+
+        await service.SetNoPvModeAsync(true);
+
+        // Act
+        await service.ClearAllAsync();
+
+        // Assert
+        Assert.False(service.IsNoPvMode);
+    }
+
+    [Fact]
+    public async Task SetNoPvModeAsync_WithMultipleSubscribers_ShouldNotifyAll()
+    {
+        // Arrange
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((IJSVoidResult)null!);
+
+        var service = new UnifiedAuthService(
+            localStorageService,
+            httpClient,
+            jsRuntimeMock.Object,
+            requestAuthenticationService,
+            NullLogger<UnifiedAuthService>.Instance);
+
+        await service.InitializeAsync();
+
+        var subscriber1Called = 0;
+        var subscriber2Called = 0;
+        var subscriber3Called = 0;
+
+        service.OnAuthStateChanged += () => subscriber1Called++;
+        service.OnAuthStateChanged += () => subscriber2Called++;
+        service.OnAuthStateChanged += () => subscriber3Called++;
+
+        // Act
+        await service.SetNoPvModeAsync(true);
+
+        // Assert
+        Assert.Equal(1, subscriber1Called);
+        Assert.Equal(1, subscriber2Called);
+        Assert.Equal(1, subscriber3Called);
+    }
+
+    [Fact]
+    public async Task SetAuthStateAsync_ShouldNotAffectIsNoPvMode()
+    {
+        // Arrange
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<IJSVoidResult>(
+                "localStorageHelper.setItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((IJSVoidResult)null!);
+
+        var service = new UnifiedAuthService(
+            localStorageService,
+            httpClient,
+            jsRuntimeMock.Object,
+            requestAuthenticationService,
+            NullLogger<UnifiedAuthService>.Instance);
+
+        await service.InitializeAsync();
+
+        await service.SetNoPvModeAsync(true);
+
+        // Act - SetAuthState ne devrait pas réinitialiser IsNoPvMode
+        await service.SetAuthStateAsync(
+            "token",
+            "user",
+            "email@test.com",
+            null,
+            Guid.NewGuid(),
+            ExternalAuthProvider.Google,
+            isAdmin: false);
+
+        // Assert
+        Assert.True(service.IsNoPvMode); // Doit être préservé
+    }
+
+    [Fact]
+    public async Task IsNoPvMode_DefaultValue_ShouldBeFalse()
+    {
+        // Arrange
+        jsRuntimeMock
+            .Setup(x => x.InvokeAsync<string?>(
+                "localStorageHelper.getItem",
+                It.IsAny<object[]>()))
+            .ReturnsAsync((string?)null);
+
+        var service = new UnifiedAuthService(
+            localStorageService,
+            httpClient,
+            jsRuntimeMock.Object,
+            requestAuthenticationService,
+            NullLogger<UnifiedAuthService>.Instance);
+
+        // Act
+        await service.InitializeAsync();
+
+        // Assert
+        Assert.False(service.IsNoPvMode); // Valeur par défaut
+    }
 }
