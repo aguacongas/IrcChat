@@ -18,13 +18,14 @@
             <span class="current-user">@Username</span>
             @if (IsOAuthUser)
             {
-                <div class="badges">
-                    <span class="badge verified">✓ Réservé</span>
-                    @if (IsAdmin)
-                    {
-                        <span class="badge admin">⚡ Admin</span>
-                    }
-                </div>
+                @if (IsAdmin)
+                {
+                    <span class="badge admin">Admin</span>
+                }
+                else
+                {
+                    <span class="badge verified">Réservé</span>
+                }
             }
             else
             {

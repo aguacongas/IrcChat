@@ -28,6 +28,11 @@ public interface IUnifiedAuthService
 
     bool CanForgetUsername { get; }
 
+    /// <summary>
+    /// Gets a value indicating whether l'utilisateur est en mode "non MP".
+    /// </summary>
+    bool IsNoPvMode { get; }
+
     Task InitializeAsync();
 
     Task SetUsernameAsync(string username, bool isReserved = false, ExternalAuthProvider? provider = null);
@@ -43,6 +48,10 @@ public interface IUnifiedAuthService
     /// <summary>
     /// Obtient le UserId client (GUID pour invités, Username pour OAuth).
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
     Task<string> GetClientUserIdAsync();
+
+    /// <summary>
+    /// Active ou désactive le mode "non MP".
+    /// </summary>
+    Task SetNoPvModeAsync(bool enabled);
 }

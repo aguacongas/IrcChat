@@ -1862,6 +1862,311 @@ public class ChatServiceTests : BunitContext
             Times.AtLeastOnce);
     }
 
+    // Tests à ajouter dans tests/IrcChat.Client.Tests/Services/ChatServiceTests.cs
+
+    // ==================== TESTS PING AVEC ISNOPVMODE ====================
+
+    [Fact]
+    public async Task Ping_WithIsNoPvModeTrue_ShouldSendCorrectParameter()
+    {
+        // Arrange
+        unverifiedAuthServiceMock.Setup(x => x.GetClientUserIdAsync())
+            .ReturnsAsync("testUserId");
+        unverifiedAuthServiceMock.Setup(x => x.Username).Returns("testUser");
+        unverifiedAuthServiceMock.Setup(x => x.IsNoPvMode).Returns(true); // Mode no PV activé
+
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            NullLogger<ChatService>.Instance);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        SetConnectedState(hubConnectionMock);
+
+        hubConnectionMock.Setup(x => x.SendCoreAsync("Ping", It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Wait for ping timer to execute
+        await Task.Delay(300);
+
+        // Assert - Vérifier que Ping a été appelé avec IsNoPvMode = true
+        hubConnectionMock.Verify(
+            x => x.SendCoreAsync(
+                "Ping",
+                It.Is<object[]>(args =>
+                    args.Length == 3 &&
+                    args[0].ToString() == "testUser" &&
+                    args[1].ToString() == "testUserId" &&
+                    (bool)args[2] == true), // IsNoPvMode = true
+                It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task Ping_WithIsNoPvModeFalse_ShouldSendCorrectParameter()
+    {
+        // Arrange
+        unverifiedAuthServiceMock.Setup(x => x.GetClientUserIdAsync())
+            .ReturnsAsync("testUserId");
+        unverifiedAuthServiceMock.Setup(x => x.Username).Returns("testUser");
+        unverifiedAuthServiceMock.Setup(x => x.IsNoPvMode).Returns(false); // Mode no PV désactivé
+
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            NullLogger<ChatService>.Instance);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        SetConnectedState(hubConnectionMock);
+
+        hubConnectionMock.Setup(x => x.SendCoreAsync("Ping", It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Wait for ping timer to execute
+        await Task.Delay(300);
+
+        // Assert - Vérifier que Ping a été appelé avec IsNoPvMode = false
+        hubConnectionMock.Verify(
+            x => x.SendCoreAsync(
+                "Ping",
+                It.Is<object[]>(args =>
+                    args.Length == 3 &&
+                    args[0].ToString() == "testUser" &&
+                    args[1].ToString() == "testUserId" &&
+                    (bool)args[2] == false), // IsNoPvMode = false
+                It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task Ping_IsNoPvModeChanges_ShouldSendUpdatedValue()
+    {
+        // Arrange
+        var isNoPvMode = false;
+        unverifiedAuthServiceMock.Setup(x => x.GetClientUserIdAsync())
+            .ReturnsAsync("testUserId");
+        unverifiedAuthServiceMock.Setup(x => x.Username).Returns("testUser");
+        unverifiedAuthServiceMock.Setup(x => x.IsNoPvMode).Returns(() => isNoPvMode);
+
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            NullLogger<ChatService>.Instance);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        SetConnectedState(hubConnectionMock);
+
+        hubConnectionMock.Setup(x => x.SendCoreAsync("Ping", It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Wait for first ping
+        await Task.Delay(300);
+
+        // Act - Changer IsNoPvMode
+        isNoPvMode = true;
+
+        // Wait for second ping
+        await Task.Delay(30500); // Attendre le prochain ping (30s + marge)
+
+        // Assert - Vérifier que le premier ping avait IsNoPvMode = false
+        hubConnectionMock.Verify(
+            x => x.SendCoreAsync(
+                "Ping",
+                It.Is<object[]>(args =>
+                    args.Length == 3 &&
+                    (bool)args[2] == false),
+                It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce);
+
+        // Vérifier que le second ping a IsNoPvMode = true
+        hubConnectionMock.Verify(
+            x => x.SendCoreAsync(
+                "Ping",
+                It.Is<object[]>(args =>
+                    args.Length == 3 &&
+                    (bool)args[2] == true),
+                It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task Ping_WithNullUserId_ShouldNotSendPing()
+    {
+        // Arrange
+        unverifiedAuthServiceMock.Setup(x => x.GetClientUserIdAsync())
+            .ReturnsAsync((string)null!); // UserId null
+        unverifiedAuthServiceMock.Setup(x => x.Username).Returns("testUser");
+        unverifiedAuthServiceMock.Setup(x => x.IsNoPvMode).Returns(true);
+
+        var loggerMock = new Mock<ILogger<ChatService>>();
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            loggerMock.Object);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        SetConnectedState(hubConnectionMock);
+
+        hubConnectionMock.Setup(x => x.SendCoreAsync("Ping", It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Wait for ping timer
+        await Task.Delay(300);
+
+        // Assert - Ping ne devrait PAS être appelé
+        hubConnectionMock.Verify(
+            x => x.SendCoreAsync("Ping", It.IsAny<object[]>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+
+        // Vérifier qu'un warning a été loggé
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("UserId vide")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task Ping_WithEmptyUserId_ShouldNotSendPing()
+    {
+        // Arrange
+        unverifiedAuthServiceMock.Setup(x => x.GetClientUserIdAsync())
+            .ReturnsAsync(string.Empty); // UserId vide
+        unverifiedAuthServiceMock.Setup(x => x.Username).Returns("testUser");
+        unverifiedAuthServiceMock.Setup(x => x.IsNoPvMode).Returns(false);
+
+        var loggerMock = new Mock<ILogger<ChatService>>();
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            loggerMock.Object);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        SetConnectedState(hubConnectionMock);
+
+        hubConnectionMock.Setup(x => x.SendCoreAsync("Ping", It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Wait for ping timer
+        await Task.Delay(300);
+
+        // Assert - Ping ne devrait PAS être appelé
+        hubConnectionMock.Verify(
+            x => x.SendCoreAsync("Ping", It.IsAny<object[]>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+
+        // Vérifier qu'un warning a été loggé
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("UserId vide")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task Ping_After30Seconds_ShouldSendIsNoPvMode()
+    {
+        // Arrange
+        unverifiedAuthServiceMock.Setup(x => x.GetClientUserIdAsync())
+            .ReturnsAsync("testUserId");
+        unverifiedAuthServiceMock.Setup(x => x.Username).Returns("testUser");
+        unverifiedAuthServiceMock.Setup(x => x.IsNoPvMode).Returns(true);
+
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            NullLogger<ChatService>.Instance);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        SetConnectedState(hubConnectionMock);
+
+        var pingCalls = 0;
+        hubConnectionMock.Setup(x => x.SendCoreAsync("Ping", It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
+            .Callback(() => pingCalls++)
+            .Returns(Task.CompletedTask);
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Wait for multiple pings (initial + 30s)
+        await Task.Delay(30500);
+
+        // Assert - Au moins 2 pings doivent avoir été envoyés
+        Assert.True(pingCalls >= 2);
+
+        // Vérifier que tous les pings ont le bon IsNoPvMode
+        hubConnectionMock.Verify(
+            x => x.SendCoreAsync(
+                "Ping",
+                It.Is<object[]>(args =>
+                    args.Length == 3 &&
+                    (bool)args[2] == true),
+                It.IsAny<CancellationToken>()),
+            Times.AtLeast(2));
+    }
     private static void SetConnectedState(Mock<HubConnectionStub> hubConnectionMock)
     {
         // Simuler l'état connecté

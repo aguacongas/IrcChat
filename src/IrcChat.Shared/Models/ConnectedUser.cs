@@ -17,4 +17,10 @@ public class ConnectedUser
     public string ServerInstanceId { get; set; } = string.Empty;
 
     public string UserId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether l'utilisateur est en mode "non MP".
+    /// Si true, l'utilisateur ne peut pas recevoir de messages privés non sollicités.
+    /// </summary>
+    public bool IsNoPvMode { get; set; }
 }
