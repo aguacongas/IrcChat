@@ -287,7 +287,7 @@ schedule:
 - Manuel (workflow_dispatch)
 
 #### Processus
-1. 🔧 Setup .NET 8.0
+1. 🔧 Setup .NET 10.0
 2. 🏗️ Build Release
 3. 📦 Publish Blazor WebAssembly
 4. 🔧 Fix du base path pour GitHub Pages (`/IrcChat/`)
