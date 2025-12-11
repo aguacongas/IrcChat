@@ -128,28 +128,9 @@
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
         // Priorité à l'autocomplétion emoji si active
-        if (showEmojiAutocomplete && filteredEmojis.Any())
+        if (ManageEmojiAutocomplete(e))
         {
-            switch (e.Key)
-            {
-                case "ArrowDown":
-                    selectedEmojiIndex = (selectedEmojiIndex + 1) % filteredEmojis.Count;
-                    StateHasChanged();
-                    return;
-                case "ArrowUp":
-                    selectedEmojiIndex = selectedEmojiIndex <= 0 ? filteredEmojis.Count - 1 : selectedEmojiIndex - 1;
-                    StateHasChanged();
-                    return;
-                case "Tab":
-                case "Enter":
-                    SelectEmojiFromAutocomplete(filteredEmojis[selectedEmojiIndex]);
-                    StateHasChanged();
-                    return;
-                case "Escape":
-                    HideEmojiAutocomplete();
-                    StateHasChanged();
-                    return;
-            }
+            return;
         }
 
         // Ensuite l'autocomplétion des mentions
@@ -184,6 +165,35 @@
             TryAutoCompleteFromCursor();
         }
     }
+
+    private bool ManageEmojiAutocomplete(KeyboardEventArgs e)
+    {
+        if (showEmojiAutocomplete && filteredEmojis.Any())
+        {
+            switch (e.Key)
+            {
+                case "ArrowDown":
+                    selectedEmojiIndex = (selectedEmojiIndex + 1) % filteredEmojis.Count;
+                    StateHasChanged();
+                    return true;
+                case "ArrowUp":
+                    selectedEmojiIndex = selectedEmojiIndex <= 0 ? filteredEmojis.Count - 1 : selectedEmojiIndex - 1;
+                    StateHasChanged();
+                    return true;
+                case "Tab":
+                case "Enter":
+                    SelectEmojiFromAutocomplete(filteredEmojis[selectedEmojiIndex]);
+                    StateHasChanged();
+                    return true;
+                case "Escape":
+                    HideEmojiAutocomplete();
+                    StateHasChanged();
+                    return true;
+            }
+        }
+
+        return false;
+    } 
 
     private async Task HandleKeyUp(KeyboardEventArgs e)
     {

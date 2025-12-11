@@ -11,7 +11,6 @@ namespace IrcChat.Client.Services;
 public partial class EmojiService(HttpClient http, ILogger<EmojiService> logger) : IEmojiService
 {
     private EmojiData? _emojiData;
-    private Dictionary<string, string>? _codeToEmojiMap;
 
     /// <summary>
     /// Charge les données emoji depuis emojis.json
@@ -64,19 +63,6 @@ public partial class EmojiService(HttpClient http, ILogger<EmojiService> logger)
         }
 
         return map;
-    }
-
-    /// <summary>
-    /// Remplace un style IRC uniquement s'il est isolé (pas au milieu d'un mot)
-    /// </summary>
-    private static string ReplaceIRCStyle(string text, string code, string emoji)
-    {
-        // Regex pour matcher le code IRC seulement s'il est:
-        // - Au début de la chaîne
-        // - À la fin de la chaîne
-        // - Précédé et suivi d'un espace ou ponctuation
-        var pattern = $@"(^|\s)({Regex.Escape(code)})(?=\s|$|[.,!?;:])";
-        return Regex.Replace(text, pattern, $"$1{emoji}", RegexOptions.None, TimeSpan.FromSeconds(1));
     }
 
     /// <summary>
