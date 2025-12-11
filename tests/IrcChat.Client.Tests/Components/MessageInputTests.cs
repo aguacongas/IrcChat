@@ -1,11 +1,27 @@
 using IrcChat.Client.Components;
+using IrcChat.Client.Models;
+using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace IrcChat.Client.Tests.Components;
 
-public class MessageInputTests : BunitContext
+public partial class MessageInputTests : BunitContext
 {
+    private readonly Mock<IEmojiService> _emojiServiceMock;
+
+    public MessageInputTests()
+    {
+        _emojiServiceMock = new Mock<IEmojiService>();
+
+        _emojiServiceMock.Setup(x => x.IsLoaded).Returns(true);
+        _emojiServiceMock.Setup(x => x.GetAllEmojis()).Returns(GetTestEmojis());
+        _emojiServiceMock.Setup(x => x.GetCategories()).Returns([new EmojiCategory()]);
+
+        Services.AddSingleton(_emojiServiceMock.Object);
+    }
+
     [Fact]
     public void MessageInput_ShouldRenderCorrectly()
     {
@@ -17,7 +33,7 @@ public class MessageInputTests : BunitContext
         // Assert
         var input = cut.Find("input");
         Assert.NotNull(input);
-        Assert.Equal("Tapez votre message... (@ pour mentionner)", input.GetAttribute("placeholder"));
+        Assert.Equal("Tapez votre message... (@ pour mentionner, : pour emoji)", input.GetAttribute("placeholder"));
         Assert.False(input.HasAttribute("disabled"));
     }
 
@@ -82,7 +98,6 @@ public class MessageInputTests : BunitContext
 
         var input = await cut.InvokeAsync(() => cut.Find("input"));
         var button = await cut.InvokeAsync(() => cut.Find("button"));
-
         // Act
         input.Input("Test message");
         await button.ClickAsync();

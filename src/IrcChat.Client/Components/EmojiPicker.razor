@@ -1,0 +1,146 @@
+@using IrcChat.Client.Models
+@using IrcChat.Client.Services
+@inject IEmojiService EmojiService
+
+<div class="emoji-picker-wrapper">
+    @if (IsOpen)
+    {
+        <div class="emoji-picker-overlay" @onclick="Close"></div>
+        <div class="emoji-picker" @onclick:stopPropagation="true">
+            <div class="emoji-picker-header">
+                <input class="emoji-search"
+                       @bind="searchQuery"
+                       @bind:event="oninput"
+                       placeholder="Rechercher un emoji..."
+                       @ref="searchInput"
+                       @onkeyup="HandleKeyUp" />
+                <button class="emoji-close" @onclick="Close" title="Fermer">×</button>
+            </div>
+
+            <div class="emoji-categories">
+                <button class="emoji-category-btn @(selectedCategoryId == allCategoryId ? "active" : string.Empty)"
+                        @onclick="() => SelectCategory(allCategoryId)"
+                        title="Tous">
+                    🔍
+                </button>
+                @foreach (var category in categories)
+                {
+                    <button class="emoji-category-btn @(selectedCategoryId == category.Id ? "active" : string.Empty)"
+                            @onclick="() => SelectCategory(category.Id)"
+                            title="@category.Name">
+                        @category.Icon
+                    </button>
+                }
+            </div>
+
+            <div class="emoji-grid">
+                @if (filteredEmojis.Any())
+                {
+                    @foreach (var emoji in filteredEmojis)
+                    {
+                        <button class="emoji-item"
+                                @onclick="() => SelectEmoji(emoji)"
+                                title="@emoji.Code @emoji.Name">
+                            @emoji.Emoji
+                        </button>
+                    }
+                }
+                else
+                {
+                    <div class="emoji-empty">
+                        <p>Aucun emoji trouvé</p>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private static readonly string allCategoryId = "all";
+    private string searchQuery = string.Empty;
+    private string selectedCategoryId = "all";
+    private List<EmojiCategory> categories = [];
+    private List<EmojiItem> filteredEmojis = [];
+    private ElementReference searchInput;
+
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsOpenChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnEmojiSelected { get; set; }
+
+    protected override void OnInitialized()
+    {
+        categories = EmojiService.GetCategories();
+        UpdateFilteredEmojis();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsOpen && !string.IsNullOrEmpty(searchQuery))
+        {
+            try
+            {
+                await searchInput.FocusAsync();
+            }
+            catch
+            {
+                // Ignorer les erreurs de focus
+            }
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (IsOpen)
+        {
+            searchQuery = string.Empty;
+            selectedCategoryId = "all";
+            UpdateFilteredEmojis();
+        }
+    }
+
+    private void SelectCategory(string categoryId)
+    {
+        selectedCategoryId = categoryId;
+        searchQuery = string.Empty;
+        UpdateFilteredEmojis();
+    }
+
+    private void UpdateFilteredEmojis()
+    {
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            filteredEmojis = EmojiService.SearchEmojis(searchQuery);
+        }
+        else if (selectedCategoryId == "all")
+        {
+            filteredEmojis = EmojiService.GetAllEmojis().Take(100).ToList();
+        }
+        else
+        {
+            filteredEmojis = EmojiService.GetEmojisByCategory(selectedCategoryId);
+        }
+    }
+
+    private async Task SelectEmoji(EmojiItem emoji)
+    {
+        await OnEmojiSelected.InvokeAsync(emoji.Emoji);
+        await Close();
+    }
+
+    private async Task Close()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    private void HandleKeyUp(KeyboardEventArgs args)
+    {
+        UpdateFilteredEmojis();
+    }
+}

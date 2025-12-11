@@ -11,6 +11,7 @@ public class ChatAreaTests : BunitContext
 {
     private readonly MockHttpMessageHandler mockHttp;
     private readonly Mock<IIgnoredUsersService> ignoredUsersServiceMock;
+    private readonly Mock<IEmojiService> emojiServiceMock;
 
     public ChatAreaTests()
     {
@@ -18,11 +19,16 @@ public class ChatAreaTests : BunitContext
         ignoredUsersServiceMock = new Mock<IIgnoredUsersService>();
         ignoredUsersServiceMock.Setup(x => x.InitializeAsync())
             .Returns(Task.CompletedTask);
+        emojiServiceMock = new Mock<IEmojiService>();
+        emojiServiceMock.Setup(x => x.IsLoaded).Returns(true);
+        emojiServiceMock.Setup(x => x.GetAllEmojis()).Returns([]);
+        emojiServiceMock.Setup(x => x.GetCategories()).Returns([]);
 
         var httpClient = mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
         Services.AddSingleton(httpClient);
         Services.AddSingleton(ignoredUsersServiceMock.Object);
+        Services.AddSingleton(emojiServiceMock.Object);
 
         JSInterop.Mode = JSRuntimeMode.Loose;
     }
@@ -234,7 +240,7 @@ public class ChatAreaTests : BunitContext
 
         // Assert
         Assert.Contains("input-area", cut.Markup);
-        Assert.Contains("placeholder=\"Tapez votre message... (@ pour mentionner)\"", cut.Markup);
+        Assert.Contains("placeholder=\"Tapez votre message... (@ pour mentionner, : pour emoji)\"", cut.Markup);
     }
 
     [Fact]
@@ -308,7 +314,6 @@ public class ChatAreaTests : BunitContext
         // Act
         var input = cut.Find(".input-area input");
         var button = cut.Find(".input-area button");
-
         await cut.InvokeAsync(() => input.Input("Hello World"));
         await cut.InvokeAsync(() => button.Click());
 

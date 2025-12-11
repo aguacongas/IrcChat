@@ -1,0 +1,21 @@
+{
+  "name": "ircchat-emoji-generator",
+  "version": "1.0.0",
+  "description": "Générateur de données emoji depuis Unicode CLDR pour IrcChat",
+  "main": "generate-emoji-data.js",
+  "scripts": {
+    "generate": "node generate-emoji-data.js",
+    "test": "echo \"No tests configured\" && exit 0"
+  },
+  "keywords": [
+    "emoji",
+    "unicode",
+    "cldr",
+    "generator"
+  ],
+  "author": "IrcChat Team",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

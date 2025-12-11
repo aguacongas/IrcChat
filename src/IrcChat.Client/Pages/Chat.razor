@@ -813,12 +813,6 @@ else
 
         if (channelInfo == null)
         {
-            muteNotification = $"Le salon #{channel} n'existe plus";
-            currentChannel = null;
-            currentChannelDescription = null;
-            isCurrentChannelMuted = false;
-            NavigateToRelativeIfNeeded("chat");
-            StateHasChanged();
             return;
         }
 

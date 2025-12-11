@@ -1,10 +1,14 @@
 @using IrcChat.Shared.Models
+@using IrcChat.Client.Components
+@using IrcChat.Client.Services
+@inject IEmojiService EmojiService
+
 <div class="input-area">
     <div class="input-wrapper">
         <input @ref="inputElement"
                @bind="messageInput"
                @bind:event="oninput"
-               placeholder="Tapez votre message... (@@ pour mentionner)"
+               placeholder="Tapez votre message... (@@ pour mentionner, : pour emoji)"
                @onkeydown="HandleKeyDown"
                @onkeyup="HandleKeyUp"
                disabled="@(!IsConnected)" />
@@ -22,18 +26,50 @@
                 }
             </div>
         }
+
+        @if (showEmojiAutocomplete && filteredEmojis.Any())
+        {
+            <div class="autocomplete-dropdown emoji-autocomplete">
+                @foreach (var (emoji, index) in filteredEmojis.Select((e, i) => (e, i)))
+                {
+                    <div class="autocomplete-item @(index == selectedEmojiIndex ? "selected" : string.Empty)"
+                         @onclick="() => SelectEmojiFromAutocomplete(emoji)"
+                         @onmouseenter="() => selectedEmojiIndex = index">
+                        <span class="emoji-char">@emoji.Emoji</span>
+                        <span class="emoji-code">@emoji.Code</span>
+                    </div>
+                }
+            </div>
+        }
     </div>
+
     <button @onclick="SendMessage" disabled="@(!IsConnected)">Envoyer</button>
+
+    <button class="emoji-button" @onclick="ToggleEmojiPicker" title="Insérer un emoji" disabled="@(!IsConnected)">
+        😀
+    </button>    
 </div>
+
+<EmojiPicker @bind-IsOpen="isEmojiPickerOpen" OnEmojiSelected="InsertEmoji" />
 
 @code {
     private string messageInput = string.Empty;
     private ElementReference inputElement;
     private bool showAutoComplete = false;
-    private List<User> filteredUsers = new();
+    private List<User> filteredUsers = [];
     private int selectedUserIndex = 0;
     private string currentMentionQuery = string.Empty;
     private int mentionStartPosition = 0;
+
+    // Emoji autocomplete
+    private bool showEmojiAutocomplete = false;
+    private List<IrcChat.Client.Models.EmojiItem> filteredEmojis = [];
+    private int selectedEmojiIndex = 0;
+    private string currentEmojiQuery = string.Empty;
+    private int emojiStartPosition = 0;
+
+    // Emoji picker
+    private bool isEmojiPickerOpen = false;
 
     [Parameter]
     public bool IsConnected { get; set; }
@@ -55,6 +91,29 @@
         }
     }
 
+    private void ToggleEmojiPicker()
+    {
+        isEmojiPickerOpen = !isEmojiPickerOpen;
+    }
+
+    private void InsertEmoji(string emoji)
+    {
+        if (string.IsNullOrEmpty(messageInput))
+        {
+            messageInput = $"{emoji} ";
+        }
+        else if (messageInput.EndsWith(' '))
+        {
+            messageInput += $"{emoji} ";
+        }
+        else
+        {
+            messageInput += $" {emoji} ";
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
     private async Task SendMessage()
     {        
         if (!string.IsNullOrWhiteSpace(messageInput))
@@ -62,11 +121,38 @@
             await OnSendMessage.InvokeAsync(messageInput.Trim());
             messageInput = string.Empty;
             HideAutoComplete();
+            HideEmojiAutocomplete();
         }
     }
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
+        // Priorité à l'autocomplétion emoji si active
+        if (showEmojiAutocomplete && filteredEmojis.Any())
+        {
+            switch (e.Key)
+            {
+                case "ArrowDown":
+                    selectedEmojiIndex = (selectedEmojiIndex + 1) % filteredEmojis.Count;
+                    StateHasChanged();
+                    return;
+                case "ArrowUp":
+                    selectedEmojiIndex = selectedEmojiIndex <= 0 ? filteredEmojis.Count - 1 : selectedEmojiIndex - 1;
+                    StateHasChanged();
+                    return;
+                case "Tab":
+                case "Enter":
+                    SelectEmojiFromAutocomplete(filteredEmojis[selectedEmojiIndex]);
+                    StateHasChanged();
+                    return;
+                case "Escape":
+                    HideEmojiAutocomplete();
+                    StateHasChanged();
+                    return;
+            }
+        }
+
+        // Ensuite l'autocomplétion des mentions
         if (showAutoComplete && filteredUsers.Any())
         {
             switch (e.Key)
@@ -87,7 +173,6 @@
                 default:
                     return;
             }
-            // Empêcher le comportement par défaut pour ces touches
             StateHasChanged();
         }
         else if (e.Key == "Enter")
@@ -96,21 +181,19 @@
         }
         else if (e.Key == "Tab")
         {
-            // Tentative de complétion avec TAB même sans @
             TryAutoCompleteFromCursor();
         }
     }
 
     private async Task HandleKeyUp(KeyboardEventArgs e)
     {
-        // Ne pas traiter les touches de navigation
         if (e.Key is "ArrowDown" or "ArrowUp" or "Enter" or "Tab" or "Escape")
         {
             return;
         }
 
-        // Détecter si on est en train de taper une mention
         await CheckForMention();
+        await CheckForEmoji();
     }
 
     private async Task CheckForMention()
@@ -121,7 +204,6 @@
             return;
         }
 
-        // Trouver la position du dernier @ avant le curseur
         var lastAtIndex = messageInput.LastIndexOf('@');
 
         if (lastAtIndex == -1)
@@ -130,25 +212,21 @@
             return;
         }
 
-        // Vérifier que le @ est au début ou précédé d'un espace
         if (lastAtIndex > 0 && !char.IsWhiteSpace(messageInput[lastAtIndex - 1]))
         {
             HideAutoComplete();
             return;
         }
 
-        // Extraire le texte après le @
         currentMentionQuery = messageInput.Substring(lastAtIndex + 1);
         mentionStartPosition = lastAtIndex;
 
-        // Vérifier qu'il n'y a pas d'espace dans la requête (sinon la mention est terminée)
         if (currentMentionQuery.Contains(' '))
         {
             HideAutoComplete();
             return;
         }
 
-        // Filtrer les utilisateurs
         filteredUsers = AvailableUsers
             .Where(u => u.Username.StartsWith(currentMentionQuery, StringComparison.OrdinalIgnoreCase))
             .Take(5)
@@ -164,6 +242,55 @@
         {
             HideAutoComplete();
         }
+
+        await Task.CompletedTask;
+    }
+
+    private async Task CheckForEmoji()
+    {
+        if (string.IsNullOrEmpty(messageInput) || !EmojiService.IsLoaded)
+        {
+            HideEmojiAutocomplete();
+            return;
+        }
+
+        var lastColonIndex = messageInput.LastIndexOf(':');
+
+        if (lastColonIndex == -1)
+        {
+            HideEmojiAutocomplete();
+            return;
+        }
+
+        if (lastColonIndex > 0 && !char.IsWhiteSpace(messageInput[lastColonIndex - 1]))
+        {
+            HideEmojiAutocomplete();
+            return;
+        }
+
+        currentEmojiQuery = messageInput.Substring(lastColonIndex + 1);
+        emojiStartPosition = lastColonIndex;
+
+        if (currentEmojiQuery.Contains(' '))
+        {
+            HideEmojiAutocomplete();
+            return;
+        }
+
+        filteredEmojis = EmojiService.SearchEmojis(currentEmojiQuery).Take(8).ToList();
+
+        if (filteredEmojis.Any())
+        {
+            showEmojiAutocomplete = true;
+            selectedEmojiIndex = 0;
+            StateHasChanged();
+        }
+        else
+        {
+            HideEmojiAutocomplete();
+        }
+
+        await Task.CompletedTask;
     }
 
     private void TryAutoCompleteFromCursor()
@@ -173,7 +300,6 @@
             return;
         }
 
-        // Trouver le début du mot actuel (depuis la fin ou le dernier espace)
         var words = messageInput.Split(' ');
         if (!words.Any())
         {
@@ -186,13 +312,11 @@
             return;
         }
 
-        // Chercher un utilisateur qui commence par ce mot
         var matchingUser = AvailableUsers
             .FirstOrDefault(u => u.Username.StartsWith(lastWord, StringComparison.OrdinalIgnoreCase));
 
         if (matchingUser != null)
         {
-            // Remplacer le dernier mot par le pseudo complet
             var beforeLastWord = string.Join(" ", words.Take(words.Length - 1));
             messageInput = string.IsNullOrEmpty(beforeLastWord) 
                 ? matchingUser.Username 
@@ -205,7 +329,6 @@
     {
         if (mentionStartPosition >= 0)
         {
-            // Remplacer @query par username (sans le @)
             var before = messageInput.Substring(0, mentionStartPosition);
             var after = messageInput.Length > mentionStartPosition + currentMentionQuery.Length + 1
                 ? messageInput.Substring(mentionStartPosition + currentMentionQuery.Length + 1)
@@ -218,12 +341,36 @@
         StateHasChanged();
     }
 
+    private void SelectEmojiFromAutocomplete(IrcChat.Client.Models.EmojiItem emoji)
+    {
+        if (emojiStartPosition >= 0)
+        {
+            var before = messageInput.Substring(0, emojiStartPosition);
+            var after = messageInput.Length > emojiStartPosition + currentEmojiQuery.Length + 1
+                ? messageInput.Substring(emojiStartPosition + currentEmojiQuery.Length + 1)
+                : string.Empty;
+
+            messageInput = $"{before}{emoji.Emoji} {after}";
+        }
+
+        HideEmojiAutocomplete();
+        StateHasChanged();
+    }
+
     private void HideAutoComplete()
     {
         showAutoComplete = false;
         filteredUsers.Clear();
         currentMentionQuery = string.Empty;
         selectedUserIndex = 0;
+    }
+
+    private void HideEmojiAutocomplete()
+    {
+        showEmojiAutocomplete = false;
+        filteredEmojis.Clear();
+        currentEmojiQuery = string.Empty;
+        selectedEmojiIndex = 0;
     }
 
     public async Task FocusAsync()
