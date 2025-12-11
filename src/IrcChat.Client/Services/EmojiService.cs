@@ -30,7 +30,6 @@ public partial class EmojiService(HttpClient http, ILogger<EmojiService> logger)
                 throw new InvalidOperationException("Les données emoji n'ont pas pu être chargées");
             }
 
-            _codeToEmojiMap = BuildCodeMap(_emojiData);
             IsLoaded = true;
 
             logger.LogInformation(
@@ -46,24 +45,6 @@ public partial class EmojiService(HttpClient http, ILogger<EmojiService> logger)
         }
     }
 
-    /// <summary>
-    /// Construit le dictionnaire code → emoji pour O(1) lookup
-    /// </summary>
-    private static Dictionary<string, string> BuildCodeMap(EmojiData emojiData)
-    {
-        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var emoji in emojiData.Emojis)
-        {
-            // Ajouter tous les aliases
-            foreach (var alias in emoji.Aliases.Where(alias => !map.ContainsKey(alias)))
-            {
-                map[alias] = emoji.Emoji;
-            }
-        }
-
-        return map;
-    }
 
     /// <summary>
     /// Recherche des emojis par code, nom ou keywords
