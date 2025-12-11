@@ -31,6 +31,30 @@ builder.Services.AddScoped(sp =>
     .AddScoped<IActiveChannelsService, ActiveChannelsService>()
     .AddScoped<IChannelUnreadCountService, ChannelUnreadCountService>()
     .AddScoped<INotificationSoundService, NotificationSoundService>()
-    .AddSingleton<IRequestAuthenticationService, RequestAuthenticationService>();
+    .AddSingleton<IRequestAuthenticationService, RequestAuthenticationService>()
+    .AddSingleton<IEmojiService>(sp =>
+    {
+        var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient();
+        http.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress);
+        return new EmojiService(http, sp.GetRequiredService<ILogger<EmojiService>>());
+    });
 
-await builder.Build().RunAsync();
+var host = builder.Build();
+
+// Initialisation asynchrone NON-BLOQUANTE du service emoji
+// Le service se charge en arrière-plan pendant que l'app démarre
+_ = Task.Run(async () =>
+{
+    try
+    {
+        var emojiService = host.Services.GetRequiredService<IEmojiService>();
+        await emojiService.InitializeAsync();
+    }
+    catch (Exception ex)
+    {
+        var logger = host.Services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Erreur lors du chargement des emojis");
+    }
+});
+
+await host.RunAsync();

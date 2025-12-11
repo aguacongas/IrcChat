@@ -21,4 +21,10 @@
   <ItemGroup>
     <ProjectReference Include="..\IrcChat.Shared\IrcChat.Shared.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\data\emojis.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

@@ -1,0 +1,135 @@
+name: Update Emoji Data
+
+on:
+  # Exécution manuelle
+  workflow_dispatch:
+  
+  # Exécution automatique le 1er de chaque mois à 2h du matin
+  schedule:
+    - cron: '0 2 1 * *'
+  
+  # Exécution sur push de tags de release (optionnel)
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  update-emojis:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Generate emoji data
+        run: |
+          cd scripts
+          node generate-emoji-data.js
+        
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet src/IrcChat.Client/wwwroot/data/emojis.json; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "✅ Aucun changement détecté dans emojis.json"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "🔄 Changements détectés dans emojis.json"
+          fi
+      
+      - name: Get emoji statistics
+        if: steps.check_changes.outputs.has_changes == 'true'
+        id: stats
+        run: |
+          EMOJI_COUNT=$(jq '.emojis | length' src/IrcChat.Client/wwwroot/data/emojis.json)
+          CATEGORY_COUNT=$(jq '.categories | length' src/IrcChat.Client/wwwroot/data/emojis.json)
+          VERSION=$(jq -r '.version' src/IrcChat.Client/wwwroot/data/emojis.json)
+          
+          echo "emoji_count=$EMOJI_COUNT" >> $GITHUB_OUTPUT
+          echo "category_count=$CATEGORY_COUNT" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          echo "📊 Statistiques:"
+          echo "  - Version Unicode: $VERSION"
+          echo "  - Emojis: $EMOJI_COUNT"
+          echo "  - Catégories: $CATEGORY_COUNT"
+      
+      - name: Create Pull Request
+        if: steps.check_changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@98357b18bf14b5342f975ff684046ec3b2a07725
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore(emojis): update emoji data from Unicode CLDR'
+          title: '🔄 Update Emoji Data (Unicode ${{ steps.stats.outputs.version }})'
+          body: |
+            ## 📦 Mise à jour automatique des données emoji
+            
+            Cette PR a été générée automatiquement par le workflow `update-emojis.yml`.
+            
+            ### 📊 Statistiques
+            
+            - **Version Unicode**: ${{ steps.stats.outputs.version }}
+            - **Nombre d'emojis**: ${{ steps.stats.outputs.emoji_count }}
+            - **Nombre de catégories**: ${{ steps.stats.outputs.category_count }}
+            
+            ### 🔍 Source
+            
+            Les données proviennent de [Unicode CLDR](https://github.com/unicode-org/cldr-json) (Common Locale Data Repository).
+            
+            ### ✅ Vérifications
+            
+            - [x] Données générées depuis Unicode CLDR officiel
+            - [x] Format JSON validé
+            - [x] Statistiques vérifiées
+            
+            ### 🚀 Actions requises
+            
+            1. Vérifier que le fichier `emojis.json` est valide
+            2. Tester localement si nécessaire :
+               ```bash
+               cd scripts
+               node generate-emoji-data.js
+               ```
+            3. Merger la PR si tout est OK
+            
+            ---
+            
+            **Généré le**: ${{ github.event.head_commit.timestamp }}  
+            **Workflow**: [${{ github.workflow }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          branch: update-emojis-${{ github.run_number }}
+          delete-branch: true
+          labels: |
+            automated
+            emojis
+            dependencies
+          draft: false
+      
+      - name: Comment on issue (no changes)
+        if: steps.check_changes.outputs.has_changes == 'false' && github.event_name == 'workflow_dispatch'
+        run: |
+          echo "ℹ️ Aucun changement détecté dans les données emoji."
+          echo "Les données sont déjà à jour."
+      
+      - name: Summary
+        run: |
+          if [ "${{ steps.check_changes.outputs.has_changes }}" == "true" ]; then
+            echo "### 🔄 Mise à jour des emojis" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Pull Request créée avec succès" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Statistiques:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Version Unicode: ${{ steps.stats.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Emojis: ${{ steps.stats.outputs.emoji_count }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Catégories: ${{ steps.stats.outputs.category_count }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ℹ️ Pas de mise à jour nécessaire" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Les données emoji sont déjà à jour." >> $GITHUB_STEP_SUMMARY
+          fi
