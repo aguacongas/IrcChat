@@ -73,7 +73,8 @@
                              ShowDescription="@(!IsPrivateConversation && (!string.IsNullOrWhiteSpace(ChannelDescription) || CanManage))"
                              CanManage="@CanManage"
                              OnEditDescription="OpenEditModal"
-                             OnUsernameClicked="HandleUsernameClicked" />
+                             OnUsernameClicked="HandleUsernameClicked"
+                             OnDeleteMessage="OnDeleteMessage" />
 
                 <MessageInput @ref="messageInputRef"
                               IsConnected="IsConnected"
@@ -169,6 +170,9 @@
 
     [Parameter]
     public EventCallback<string> OnGlobalFilterChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnDeleteMessage { get; set; }
 
     private bool showEditModal = false;
 

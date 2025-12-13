@@ -6,6 +6,7 @@
 
 /* Message */
 .message {
+  position: relative;
   padding: 12px 16px;
   background: #252525;
   border-radius: 8px;
@@ -243,6 +244,35 @@
   opacity: 1;
 }
 
+.btn-delete-message {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: 1px solid #fc8181;
+  color: #fc8181;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0;
+}
+
+.message:hover .btn-delete-message {
+  opacity: 1;
+}
+
+.btn-delete-message:hover {
+  background: #fc8181;
+  color: #000;
+  transform: scale(1.05);
+}
+
+.btn-delete-message:active {
+  transform: scale(0.95);
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .messages-container {
@@ -272,4 +302,11 @@
   .description-text {
     font-size: 12px;
   }
+
+  .btn-delete-message {
+    opacity: 1;
+    font-size: 16px;
+    padding: 6px 10px;
+  }
+
 }

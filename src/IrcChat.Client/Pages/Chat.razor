@@ -94,7 +94,8 @@ else
                       OnChannelDeleted="HandleChannelDeleted"
                       OnUsersListToggle="HandleUsersListToggle"
                       OnChannelUpdated="HandleChannelUpdated"
-                      OnGlobalFilterChanged="HandleGlobalFilterChanged" />
+                      OnGlobalFilterChanged="HandleGlobalFilterChanged"
+                      OnDeleteMessage="HandleDeleteMessage" />        
         }
     </div>
 
@@ -328,6 +329,8 @@ else
         ChatService.OnUserStatusChanged += OnUserStatusChanged;
         ChatService.OnUserMuted += OnUserMutedSignalR;
         ChatService.OnUserUnmuted += OnUserUnmutedSignalR;
+        ChatService.OnMessageDeleted += OnMessageDeleted;
+
 
         PrivateMessageService.OnPrivateMessageReceived += OnPrivateMessageReceived;
         PrivateMessageService.OnPrivateMessageSent += OnPrivateMessageSent;
@@ -568,6 +571,19 @@ else
         await InvokeAsync(StateHasChanged);
     }
 
+    private void OnMessageDeleted(Guid messageId, string channelName)
+    {
+        InvokeAsync(() =>
+        {
+            if (!isPrivateConversation && channelName == currentChannel)
+            {
+                messages = messages.Where(m => m.Id != messageId).ToList();
+                Logger.LogInformation("Message {MessageId} supprimé dans {Channel}", messageId, channelName);
+                StateHasChanged();
+            }
+        });
+    }
+
     private void OnChannelNotFound(string channelName)
     {
         muteNotification = $"Le salon #{channelName} n'existe plus";
@@ -687,6 +703,36 @@ else
             await Task.Delay(4000);
             muteNotification = string.Empty;
             StateHasChanged();
+        }
+    }
+
+    private async Task HandleDeleteMessage(Guid messageId)
+    {
+        try
+        {
+            var token = Auth.Token;
+            if (string.IsNullOrEmpty(token))
+            {
+                Logger.LogWarning("Token manquant pour supprimer le message");
+                return;
+            }
+
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.DeleteAsync($"/api/messages/{currentChannel}/{messageId}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Logger.LogError(
+                    "Échec de la suppression du message {MessageId}: {StatusCode}",
+                    messageId,
+                    response.StatusCode);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de la suppression du message {MessageId}", messageId);
         }
     }
 
@@ -1307,6 +1353,8 @@ else
         ChatService.OnUserStatusChanged -= OnUserStatusChanged;
         ChatService.OnUserMuted -= OnUserMutedSignalR;
         ChatService.OnUserUnmuted -= OnUserUnmutedSignalR;
+        ChatService.OnMessageDeleted -= OnMessageDeleted;
+
 
         // Événements de connexion
         ChatService.OnDisconnected -= OnSignalRDisconnected;

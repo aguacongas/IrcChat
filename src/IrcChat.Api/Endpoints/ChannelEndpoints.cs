@@ -26,7 +26,7 @@ public static class ChannelEndpoints
             .WithName("GetMyChannels")
             .WithDescription("Récupère les salons auxquels l'utilisateur est connecté");
 
-        group.MapGet("/{channel}/users", GetConnectedUsersAsync)
+        group.MapGet("/{channelName}/users", GetConnectedUsersAsync)
             .WithName("GetConnectedUsers")
             .WithDescription("Récupère les utilisateurs connectés à un salon");
 
@@ -133,14 +133,14 @@ public static class ChannelEndpoints
     }
 
     private static async Task<IResult> GetConnectedUsersAsync(
-        string channel,
+        string channelName,
         ChatDbContext db,
         ILogger<Program> logger)
     {
         try
         {
             var users = await db.ConnectedUsers
-                .Where(u => u.Channel == channel)
+                .Where(u => u.Channel == channelName)
                 .OrderBy(u => u.Username)
                 .Select(u => new User
                 {
@@ -151,12 +151,12 @@ public static class ChannelEndpoints
                 .Distinct()
                 .ToListAsync();
 
-            logger.LogInformation("Récupération des utilisateurs du salon {Channel}: {UserCount} utilisateurs", channel, users.Count);
+            logger.LogInformation("Récupération des utilisateurs du salon {Channel}: {UserCount} utilisateurs", channelName, users.Count);
             return Results.Ok(users);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Erreur lors de la récupération des utilisateurs du salon {Channel}", channel);
+            logger.LogError(ex, "Erreur lors de la récupération des utilisateurs du salon {Channel}", channelName);
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
