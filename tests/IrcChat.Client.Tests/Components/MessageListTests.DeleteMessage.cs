@@ -54,7 +54,7 @@ public partial class MessageListTests
             .Add(p => p.CanManage, false));
 
         // Assert
-        Assert.Throws<Bunit.ElementNotFoundException>(() => cut.Find(".btn-delete-message"));
+        Assert.Throws<ElementNotFoundException>(() => cut.Find(".btn-delete-message"));
     }
 
     [Fact]
@@ -140,7 +140,7 @@ public partial class MessageListTests
             .Add(p => p.CanManage, true));
 
         // Assert
-        Assert.Throws<Bunit.ElementNotFoundException>(() => cut.Find(".btn-delete-message"));
+        Assert.Throws<ElementNotFoundException>(() => cut.Find(".btn-delete-message"));
     }
 
     [Fact]
@@ -223,7 +223,7 @@ public partial class MessageListTests
             .Add(p => p.CanManage, false));
 
         // Assert - Pas de bouton initialement
-        Assert.Throws<Bunit.ElementNotFoundException>(() => cut.Find(".btn-delete-message"));
+        Assert.Throws<ElementNotFoundException>(() => cut.Find(".btn-delete-message"));
 
         // Act - Changer CanManage à true
         cut.Render(parameters => parameters
