@@ -11,12 +11,12 @@ namespace IrcChat.Client.Tests.Components;
 
 public partial class MessageListTests : BunitContext
 {
-    private readonly Mock<IJSRuntime> jsRuntimeMock;
+    private readonly Mock<IJSRuntime> _jsRuntimeMock;
 
     public MessageListTests()
     {
-        jsRuntimeMock = new Mock<IJSRuntime>();
-        Services.AddSingleton(jsRuntimeMock.Object);
+        _jsRuntimeMock = new Mock<IJSRuntime>();
+        Services.AddSingleton(_jsRuntimeMock.Object);
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public partial class MessageListTests : BunitContext
         // Arrange
         var mockModule = new Mock<IJSObjectReference>();
 
-        jsRuntimeMock
+        _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.Is<object[]>(args => args.Length == 1 && args[0].ToString() == "./js/scroll-helper.js")))
@@ -120,7 +120,7 @@ public partial class MessageListTests : BunitContext
             .Add(p => p.CurrentUsername, "user1"));
 
         // Assert
-        jsRuntimeMock.Verify(
+        _jsRuntimeMock.Verify(
             x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.Is<object[]>(args => args.Length == 1 && args[0].ToString() == "./js/scroll-helper.js")),
@@ -133,7 +133,7 @@ public partial class MessageListTests : BunitContext
         // Arrange
         var mockModule = new Mock<IJSObjectReference>();
 
-        jsRuntimeMock
+        _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.Is<object[]>(args => args.Length == 1 && args[0].ToString() == "./js/scroll-helper.js")))
@@ -190,7 +190,7 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WhenModuleLoadFails_ShouldHandleGracefully()
     {
         // Arrange
-        jsRuntimeMock
+        _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.IsAny<object[]>()))
@@ -222,7 +222,7 @@ public partial class MessageListTests : BunitContext
         // Arrange
         var mockModule = new Mock<IJSObjectReference>();
 
-        jsRuntimeMock
+        _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.IsAny<object[]>()))
@@ -254,7 +254,7 @@ public partial class MessageListTests : BunitContext
         // Arrange
         var mockModule = new Mock<IJSObjectReference>();
 
-        jsRuntimeMock
+        _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.IsAny<object[]>()))
@@ -287,7 +287,7 @@ public partial class MessageListTests : BunitContext
         // Arrange
         var mockModule = new Mock<IJSObjectReference>();
 
-        jsRuntimeMock
+        _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.IsAny<object[]>()))
@@ -339,7 +339,7 @@ public partial class MessageListTests : BunitContext
         // Arrange
         var mockModule = new Mock<IJSObjectReference>();
 
-        jsRuntimeMock
+        _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.IsAny<object[]>()))
@@ -377,7 +377,7 @@ public partial class MessageListTests : BunitContext
         // Arrange
         var mockModule = new Mock<IJSObjectReference>();
 
-        jsRuntimeMock
+        _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.IsAny<object[]>()))
@@ -452,7 +452,7 @@ public partial class MessageListTests : BunitContext
 
         var mockModule = new Mock<IJSObjectReference>();
 
-        jsRuntimeMock
+        _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.IsAny<object[]>()))
@@ -494,7 +494,7 @@ public partial class MessageListTests : BunitContext
         Services.AddSingleton(loggerMock.Object);
 
         var loadException = new JSException("Module not found");
-        jsRuntimeMock
+        _jsRuntimeMock
             .Setup(x => x.InvokeAsync<IJSObjectReference>(
                 "import",
                 It.IsAny<object[]>()))

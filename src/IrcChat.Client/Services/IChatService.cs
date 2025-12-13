@@ -33,6 +33,11 @@ public interface IChatService : IAsyncDisposable
     /// </summary>
     event Action<string, string, string, string, string> OnUserUnmuted;
 
+    /// <summary>
+    /// Événement levé quand un message est supprimé dans un salon
+    /// </summary>
+    event Action<Guid, string>? OnMessageDeleted;
+
     // Événements pour l'état de la connexion SignalR
     event Action? OnDisconnected;
 

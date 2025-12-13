@@ -50,6 +50,14 @@
             <span class="username" @onclick="() => OnUsernameClick(msg.Username)">@msg.Username</span>
             <span class="time">@msg.Timestamp.ToLocalTime().ToMessageTimeString()</span>
             <span class="content">@((MarkupString)HighlightMention(msg.Content, CurrentUsername))</span>
+            @if (CanManage)
+            {
+                <button class="btn-delete-message"
+                        @onclick="() => OnDeleteMessage.InvokeAsync(msg.Id)"
+                        title="Supprimer ce message">
+                    🗑️
+                </button>
+            }
         </div>
     }
 </div>
@@ -92,6 +100,9 @@
 
     [Parameter]
     public EventCallback<string> OnUsernameClicked { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> OnDeleteMessage { get; set; }
 
     private async Task OnUsernameClick(string username)
     {
