@@ -31,7 +31,7 @@ jobs:
         java-version: '17'
 
     - name: 📦 Cache SonarCloud packages
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/.sonar/cache
         key: ${{ runner.os }}-sonar
@@ -39,7 +39,7 @@ jobs:
 
     - name: 📦 Cache SonarCloud scanner
       id: cache-sonar-scanner
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ./.sonar/scanner
         key: ${{ runner.os }}-sonar-scanner-${{ hashFiles('.github/workflows/sonar-main-analysis.yml') }}
@@ -101,7 +101,7 @@ jobs:
       run: ./.sonar/scanner/dotnet-sonarscanner end /d:sonar.token="$SONAR_TOKEN"
 
     - name: 📊 Upload coverage reports (optional)
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       if: always()
       with:
         name: coverage-reports
