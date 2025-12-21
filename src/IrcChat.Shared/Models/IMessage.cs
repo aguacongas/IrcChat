@@ -1,4 +1,4 @@
-﻿
+
 namespace IrcChat.Shared.Models;
 
 public interface IMessage
