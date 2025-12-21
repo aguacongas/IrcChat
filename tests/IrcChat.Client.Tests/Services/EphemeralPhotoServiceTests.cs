@@ -226,7 +226,7 @@ public class EphemeralPhotoServiceTests : IDisposable
                     req.RequestUri!.ToString().Contains($"/api/ephemeral-photos/{userId}/upload")),
                 ItExpr.IsAny<CancellationToken>())
             .Callback<HttpRequestMessage, CancellationToken>(async (req, _)
-                => capturedRequest = await req.Content!.ReadFromJsonAsync<UploadEphemeralPhotoRequest>())
+                => capturedRequest = await req.Content!.ReadFromJsonAsync<UploadEphemeralPhotoRequest>(cancellationToken: _))
             .ReturnsAsync(new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.OK,
