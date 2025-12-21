@@ -78,10 +78,7 @@ public class EphemeralPhotoServiceTests : IDisposable
     /// <summary>
     /// Génère des bytes corrompus (pas une vraie image)
     /// </summary>
-    private static byte[] GenerateCorruptedImage()
-    {
-        return "This is not a valid image"u8.ToArray();
-    }
+    private static byte[] GenerateCorruptedImage() => "This is not a valid image"u8.ToArray();
 
     private enum ImageFormat
     {
