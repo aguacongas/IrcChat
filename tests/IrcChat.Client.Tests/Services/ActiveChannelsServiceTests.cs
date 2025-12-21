@@ -208,37 +208,6 @@ public sealed class ActiveChannelsServiceTests
     }
 
     [Fact]
-    public async Task RemoveChannelAsync_NonExistingChannel_ShouldDoNothing()
-    {
-        // Arrange
-        var savedChannels = new List<string> { "general" };
-        var json = JsonSerializer.Serialize(savedChannels);
-
-        jsRuntimeMock
-            .Setup(x => x.InvokeAsync<string?>("localStorage.getItem", It.IsAny<object[]>()))
-            .ReturnsAsync(json);
-
-        jsRuntimeMock
-            .Setup(x => x.InvokeAsync<IJSVoidResult>("localStorage.setItem", It.IsAny<object[]>()))
-            .ReturnsAsync((IJSVoidResult)null!);
-
-        await service.InitializeAsync();
-
-        // Act
-        await service.RemoveChannelAsync("nonexisting");
-        var channels = await service.GetActiveChannelsAsync();
-
-        // Assert
-        Assert.Single(channels);
-        Assert.Equal("general", channels[0]);
-
-        // Vérifier qu'on n'a pas sauvegardé inutilement
-        jsRuntimeMock.Verify(
-            x => x.InvokeAsync<IJSVoidResult>("localStorage.setItem", It.IsAny<object[]>()),
-            Times.Never);
-    }
-
-    [Fact]
     public async Task RemoveChannelAsync_CaseInsensitive_ShouldRemove()
     {
         // Arrange

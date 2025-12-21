@@ -1,6 +1,7 @@
 // tests/IrcChat.Client.Tests/Components/MessageListTests.cs
 using System.Text.RegularExpressions;
 using IrcChat.Client.Components;
+using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,11 +13,14 @@ namespace IrcChat.Client.Tests.Components;
 public partial class MessageListTests : BunitContext
 {
     private readonly Mock<IJSRuntime> _jsRuntimeMock;
+    private readonly Mock<IEphemeralPhotoService> _ephemeralPhotoServiceMock;
 
     public MessageListTests()
     {
         _jsRuntimeMock = new Mock<IJSRuntime>();
+        _ephemeralPhotoServiceMock = new Mock<IEphemeralPhotoService>();
         Services.AddSingleton(_jsRuntimeMock.Object);
+        Services.AddSingleton(_ephemeralPhotoServiceMock.Object);
     }
 
     [Fact]
@@ -35,9 +39,9 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithMessages_ShouldRenderMessages()
     {
         // Arrange
-        var messages = new List<Message>
+        var messages = new List<IMessage>
         {
-            new()
+            new Message
             {
                 Id = Guid.NewGuid(),
                 Username = "user1",
@@ -45,7 +49,7 @@ public partial class MessageListTests : BunitContext
                 Channel = "general",
                 Timestamp = DateTime.UtcNow,
             },
-            new()
+            new Message
             {
                 Id = Guid.NewGuid(),
                 Username = "user2",
@@ -69,9 +73,9 @@ public partial class MessageListTests : BunitContext
     public void MessageList_ShouldMarkOwnMessages()
     {
         // Arrange
-        var messages = new List<Message>
+        var messages = new List<IMessage>
         {
-            new()
+            new Message
             {
                 Id = Guid.NewGuid(),
                 Username = "currentuser",
@@ -102,9 +106,9 @@ public partial class MessageListTests : BunitContext
                 It.Is<object[]>(args => args.Length == 1 && args[0].ToString() == "./js/scroll-helper.js")))
             .ReturnsAsync(mockModule.Object);
 
-        var messages = new List<Message>
+        var messages = new List<IMessage>
         {
-            new()
+            new Message
             {
                 Id = Guid.NewGuid(),
                 Username = "user1",
@@ -145,9 +149,9 @@ public partial class MessageListTests : BunitContext
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var messages = new List<Message>
+        var messages = new List<IMessage>
         {
-            new()
+            new Message
             {
                 Id = Guid.NewGuid(),
                 Username = "user1",
@@ -196,9 +200,9 @@ public partial class MessageListTests : BunitContext
                 It.IsAny<object[]>()))
             .ThrowsAsync(new JSException("Module not found"));
 
-        var messages = new List<Message>
+        var messages = new List<IMessage>
         {
-            new()
+            new Message
             {
                 Id = Guid.NewGuid(),
                 Username = "user1",
@@ -232,7 +236,7 @@ public partial class MessageListTests : BunitContext
             .Setup(x => x.DisposeAsync())
             .Returns(ValueTask.CompletedTask);
 
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
@@ -299,9 +303,9 @@ public partial class MessageListTests : BunitContext
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var messages = new List<Message>
+        var messages = new List<IMessage>
         {
-            new()
+            new Message
             {
                 Id = Guid.NewGuid(),
                 Username = "user1",
@@ -351,9 +355,9 @@ public partial class MessageListTests : BunitContext
                 It.IsAny<object[]>()))
             .ThrowsAsync(new JSException("Scroll failed"));
 
-        var messages = new List<Message>
+        var messages = new List<IMessage>
         {
-            new()
+            new Message
             {
                 Id = Guid.NewGuid(),
                 Username = "user1",
@@ -389,9 +393,9 @@ public partial class MessageListTests : BunitContext
                 It.IsAny<object[]>()))
             .ReturnsAsync((IJSVoidResult)null!);
 
-        var messages = new List<Message>
+        var messages = new List<IMessage>
         {
-            new()
+            new Message
             {
                 Id = Guid.NewGuid(),
                 Username = "user1",
@@ -463,7 +467,7 @@ public partial class MessageListTests : BunitContext
             .Setup(x => x.DisposeAsync())
             .ThrowsAsync(disposeException);
 
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
@@ -500,9 +504,9 @@ public partial class MessageListTests : BunitContext
                 It.IsAny<object[]>()))
             .ThrowsAsync(loadException);
 
-        var messages = new List<Message>
+        var messages = new List<IMessage>
         {
-            new()
+            new Message
             {
                 Id = Guid.NewGuid(),
                 Username = "user1",
@@ -534,17 +538,17 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithMention_ShouldApplyMentionedClass()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "user1",
-            Content = "Hey @testuser, how are you?",
-            Channel = "general",
-            Timestamp = DateTime.UtcNow
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "user1",
+                Content = "Hey @testuser, how are you?",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            },
+        };
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -560,17 +564,17 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithoutMention_ShouldNotApplyMentionedClass()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "user1",
-            Content = "Hello everyone!",
-            Channel = "general",
-            Timestamp = DateTime.UtcNow
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "user1",
+                Content = "Hello everyone!",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            },
+        };
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -586,17 +590,17 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithMention_ShouldHighlightUsername()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "user1",
-            Content = "Hey testuser, check this out!",
-            Channel = "general",
-            Timestamp = DateTime.UtcNow
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "user1",
+                Content = "Hey testuser, check this out!",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            },
+        };
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -613,17 +617,17 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithCaseInsensitiveMention_ShouldDetect()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "user1",
-            Content = "Hey TESTUSER, are you there?",
-            Channel = "general",
-            Timestamp = DateTime.UtcNow
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "user1",
+                Content = "Hey TESTUSER, are you there?",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            },
+        };
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -639,17 +643,17 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithPartialMatch_ShouldNotDetectMention()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "user1",
-            Content = "This is a testusername, not the same",
-            Channel = "general",
-            Timestamp = DateTime.UtcNow
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "user1",
+                Content = "This is a testusername, not the same",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            },
+        };
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -668,17 +672,17 @@ public partial class MessageListTests : BunitContext
     public void MessageList_OwnMessageWithOwnUsername_ShouldNotApplyMentionedClass()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "testuser",
-            Content = "I am testuser and this is my message",
-            Channel = "general",
-            Timestamp = DateTime.UtcNow
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "testuser",
+                Content = "I am testuser and this is my message",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            },
+        };
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -697,17 +701,17 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithMultipleMentions_ShouldHighlightAll()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "user1",
-            Content = "testuser, can testuser help with this?",
-            Channel = "general",
-            Timestamp = DateTime.UtcNow
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "user1",
+                Content = "testuser, can testuser help with this?",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            },
+        };
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -724,17 +728,17 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithSpecialCharactersInUsername_ShouldEscapeHtml()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "user1",
-            Content = "<script>alert('test')</script> user<test>",
-            Channel = "general",
-            Timestamp = DateTime.UtcNow
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "user1",
+                Content = "<script>alert('test')</script> user<test>",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            },
+        };
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -753,17 +757,17 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithEmptyUsername_ShouldNotCrash()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "user1",
-            Content = "Hello everyone",
-            Channel = "general",
-            Timestamp = DateTime.UtcNow
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "user1",
+                Content = "Hello everyone",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            },
+        };
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -780,17 +784,17 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithNullContent_ShouldHandleGracefully()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "user1",
-            Content = null!,
-            Channel = "general",
-            Timestamp = DateTime.UtcNow
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "user1",
+                Content = null!,
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            },
+        };
 
         // Act & Assert - Ne devrait pas lancer d'exception
         var cut = Render<MessageList>(parameters => parameters
@@ -804,33 +808,33 @@ public partial class MessageListTests : BunitContext
     public void MessageList_MixedMessagesWithAndWithoutMentions_ShouldOnlyHighlightMentioned()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "user1",
-            Content = "Hello everyone!",
-            Channel = "general",
-            Timestamp = DateTime.UtcNow,
-        },
-        new()
-        {
-            Id = Guid.NewGuid(),
-            Username = "user2",
-            Content = "Hey testuser, what do you think?",
-            Channel = "general",
-            Timestamp = DateTime.UtcNow,
-        },
-        new()
-        {
-            Id = Guid.NewGuid(),
-            Username = "user3",
-            Content = "Just a regular message",
-            Channel = "general",
-            Timestamp = DateTime.UtcNow
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "user1",
+                Content = "Hello everyone!",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow,
+            },
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "user2",
+                Content = "Hey testuser, what do you think?",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow,
+            },
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "user3",
+                Content = "Just a regular message",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            },
+        };
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -851,17 +855,17 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithMentionAtStartOfMessage_ShouldHighlight()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "user1",
-            Content = "testuser: can you help?",
-            Channel = "general",
-            Timestamp = DateTime.UtcNow
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "user1",
+                Content = "testuser: can you help?",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            },
+        };
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -879,17 +883,17 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithMentionAtEndOfMessage_ShouldHighlight()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "user1",
-            Content = "Can you help, testuser?",
-            Channel = "general",
-            Timestamp = DateTime.UtcNow
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "user1",
+                Content = "Can you help, testuser?",
+                Channel = "general",
+                Timestamp = DateTime.UtcNow
+            },
+        };
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -907,7 +911,7 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithChannelDescription_ShouldDisplayDescriptionMessage()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
         var description = "Bienvenue sur le salon général !";
 
         // Act
@@ -927,7 +931,7 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithoutDescription_ShouldNotDisplayDescriptionMessage()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -946,7 +950,7 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithEmptyDescription_ShouldNotDisplayDescriptionMessage()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -965,7 +969,7 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithDescriptionAndCanManage_ShouldShowEditButton()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
         var description = "Description du salon";
 
         // Act
@@ -985,7 +989,7 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithDescriptionButCannotManage_ShouldNotShowEditButton()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
         var description = "Description du salon";
 
         // Act
@@ -1004,7 +1008,7 @@ public partial class MessageListTests : BunitContext
     public async Task MessageList_EditDescriptionButton_WhenClicked_ShouldInvokeCallback()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
         var description = "Description du salon";
         var callbackInvoked = false;
 
@@ -1028,10 +1032,10 @@ public partial class MessageListTests : BunitContext
     public void MessageList_DescriptionMessage_ShouldAppearBeforeRegularMessages()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new() { Id = Guid.NewGuid(), Username = "user1", Content = "Premier message", Timestamp = DateTime.UtcNow },
-    };
+        var messages = new List<IMessage>
+        {
+            new Message { Id = Guid.NewGuid(), Username = "user1", Content = "Premier message", Timestamp = DateTime.UtcNow },
+        };
         var description = "Description du salon";
 
         // Act
@@ -1054,7 +1058,7 @@ public partial class MessageListTests : BunitContext
     public void MessageList_LongDescription_ShouldDisplayFullText()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
         var longDescription = new string('a', 500); // 500 caractères
 
         // Act
@@ -1073,7 +1077,7 @@ public partial class MessageListTests : BunitContext
     public void MessageList_WithoutCurrentChannel_ShouldNotDisplayDescription()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
         var description = "Description";
 
         // Act
@@ -1093,9 +1097,9 @@ public partial class MessageListTests : BunitContext
     {
         // Arrange
         var clickedUsername = string.Empty;
-        var messages = new List<Message>
+        var messages = new List<IMessage>
         {
-            new()
+            new Message
             {
                 Username = "Alice",
                 Content = "Hello",
@@ -1121,9 +1125,9 @@ public partial class MessageListTests : BunitContext
     {
         // Arrange
         var eventTriggered = false;
-        var messages = new List<Message>
+        var messages = new List<IMessage>
         {
-            new()
+            new Message
             {
                 Username = "Alice",
                 Content = "Hello",

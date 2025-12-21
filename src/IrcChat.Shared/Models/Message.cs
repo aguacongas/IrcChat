@@ -1,6 +1,6 @@
 namespace IrcChat.Shared.Models;
 
-public class Message
+public class Message : IMessage
 {
     public Guid Id { get; set; }
 

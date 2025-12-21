@@ -10,16 +10,21 @@ namespace IrcChat.Client.Tests.Components;
 public partial class MessageInputTests : BunitContext
 {
     private readonly Mock<IEmojiService> _emojiServiceMock;
+    private readonly Mock<IUnifiedAuthService> _authServiceMock;
+    private readonly Mock<IEphemeralPhotoService> _ephemeralPhotoServiceMock;
 
     public MessageInputTests()
     {
         _emojiServiceMock = new Mock<IEmojiService>();
-
+        _authServiceMock = new Mock<IUnifiedAuthService>();
+        _ephemeralPhotoServiceMock = new Mock<IEphemeralPhotoService>();
         _emojiServiceMock.Setup(x => x.IsLoaded).Returns(true);
         _emojiServiceMock.Setup(x => x.GetAllEmojis()).Returns(GetTestEmojis());
         _emojiServiceMock.Setup(x => x.GetCategories()).Returns([new EmojiCategory()]);
 
         Services.AddSingleton(_emojiServiceMock.Object);
+        Services.AddSingleton(_authServiceMock.Object);
+        Services.AddSingleton(_ephemeralPhotoServiceMock.Object);
     }
 
     [Fact]

@@ -84,6 +84,92 @@
     color: #1a1a1a;
   }
 
+  /* Photo content - layout horizontal sur une ligne */
+  .message.message-photo .content {
+    margin-left: 0;
+  }
+
+  .message.message-photo {
+    display: flex;
+    align-items: center;
+  }
+
+.message-header-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+  .message-header-inline .username {
+    flex-shrink: 0;
+  }
+
+  .message-header-inline .time {
+    flex-shrink: 0;
+    margin-left: 0;
+  }
+
+/* Photo content inline - occupe l'espace restant */
+.photo-content-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+}
+
+  .photo-content-inline:hover {
+    opacity: 0.9;
+  }
+
+    .photo-content-inline:hover .photo-thumbnail-inline {
+      transform: scale(1.05);
+    }
+
+/* Photo thumbnail inline - plus petit */
+.photo-thumbnail-inline {
+  width: 50px;
+  height: 50px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.thumbnail-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Photo info à droite */
+.photo-info-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.photo-badge {
+  padding: 4px 10px;
+  background: rgba(138, 180, 248, 0.2);
+  color: #9cc5ff;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  border: 1px solid #8ab4f8;
+  white-space: nowrap;
+}
+
+.photo-hint {
+  color: #aaa;
+  font-size: 0.7rem;
+  font-style: italic;
+  white-space: nowrap;
+}
+
 /* Animation pour les mentions */
 @keyframes mentionPulse {
   0% {

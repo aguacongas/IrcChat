@@ -14,8 +14,9 @@ public class ChatHub(
     IOptions<ConnectionManagerOptions> options,
     ILogger<ChatHub> logger) : Hub
 {
+    [SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Constante")]
     private static readonly string UserStatusChangedMethod = "UserStatusChanged";
-    private readonly string instanceId = options.Value.GetInstanceId();
+    private readonly string _instanceId = options.Value.GetInstanceId();
 
     public async Task JoinChannel(string channel)
     {
@@ -110,21 +111,9 @@ public class ChatHub(
         var channel = await db.Channels
             .FirstOrDefaultAsync(c => c.Name.ToLower() == request.Channel.ToLower());
 
-        if (channel != null && channel.IsMuted)
+        if (!await CanSendToChannelAsync(connectedUser, channel))
         {
-            var user = await db.ReservedUsernames
-                .FirstOrDefaultAsync(u => u.Username.ToLower() == connectedUser.Username.ToLower());
-
-            var isCreator = channel.CreatedBy.Equals(connectedUser.Username, StringComparison.OrdinalIgnoreCase);
-            var isAdmin = user?.IsAdmin ?? false;
-
-            if (!isCreator && !isAdmin)
-            {
-                await Clients.Caller.SendAsync(
-                    "MessageBlocked",
-                    "Ce salon est actuellement muet. Seul le créateur ou un administrateur peut envoyer des messages.");
-                return;
-            }
+            return;
         }
 
         var isMuted = await db.MutedUsers
@@ -171,34 +160,15 @@ public class ChatHub(
         }
 
         // Vérifier si le destinataire est en mode no PV
-        var recipientInNoPvMode = await db.ConnectedUsers
+        var recipient = await db.ConnectedUsers
             .Where(u => u.UserId == request.RecipientUserId)
             .OrderByDescending(u => u.LastActivity)
-            .Select(u => u.IsNoPvMode)
             .FirstOrDefaultAsync();
 
-        // Si destinataire en mode no PV, vérifier s'il existe une conversation
-        if (recipientInNoPvMode)
+        var flowControl = await CanSendMessageToRecipientAsync(recipient, sender);
+        if (!flowControl)
         {
-            var hasConversation = await db.PrivateMessages
-                .AnyAsync(m =>
-                    ((m.SenderUserId == request.RecipientUserId && m.RecipientUserId == sender.UserId) ||
-                     (m.SenderUserId == sender.UserId && m.RecipientUserId == request.RecipientUserId))
-                    && !(m.SenderUserId == request.RecipientUserId && m.IsDeletedBySender)
-                    && !(m.RecipientUserId == request.RecipientUserId && m.IsDeletedByRecipient));
-
-            if (!hasConversation)
-            {
-                logger.LogInformation(
-                    "Message privé bloqué: {Sender} -> {Recipient} (destinataire en mode no PV)",
-                    sender.Username,
-                    request.RecipientUsername);
-
-                await Clients.Caller.SendAsync(
-                    "MessageBlocked",
-                    "Cet utilisateur ne reçoit pas de messages privés non sollicités.");
-                return;
-            }
+            return;
         }
 
         var isGlobalyMute = await db.MutedUsers
@@ -229,14 +199,9 @@ public class ChatHub(
             request.RecipientUsername,
             request.RecipientUserId);
 
-        var recipient = await db.ConnectedUsers
-            .Where(u => u.UserId == request.RecipientUserId)
-            .OrderByDescending(u => u.LastActivity)
-            .FirstOrDefaultAsync();
-
-        if (recipient?.ConnectionId != null && !isGlobalyMute)
+        if (!isGlobalyMute)
         {
-            await Clients.Client(recipient.ConnectionId).SendAsync("ReceivePrivateMessage", privateMessage);
+            await Clients.Client(recipient!.ConnectionId).SendAsync("ReceivePrivateMessage", privateMessage);
         }
 
         await Clients.Caller.SendAsync("PrivateMessageSent", privateMessage);
@@ -295,7 +260,7 @@ public class ChatHub(
                 Channel = null,
                 ConnectionId = Context.ConnectionId,
                 LastActivity = DateTime.UtcNow,
-                ServerInstanceId = instanceId,
+                ServerInstanceId = _instanceId,
                 ConnectedAt = DateTime.UtcNow,
                 IsNoPvMode = isNoPvMode,
             };
@@ -316,6 +281,81 @@ public class ChatHub(
         }
 
         await db.SaveChangesAsync();
+    }
+
+
+    /// <summary>
+    /// Envoie une photo éphémère (3 secondes d'affichage) avec URL Cloudinary.
+    /// </summary>
+    /// <param name="channelOrUserId">ID du canal ou userId du destinataire.</param>
+    /// <param name="imageUrl">URL Cloudinary de l'image full-size.</param>
+    /// <param name="thumbnailUrl">URL Cloudinary de la thumbnail floutée.</param>
+    /// <param name="isPrivate">True si message privé, False si canal public.</param>
+    public async Task SendEphemeralPhoto(string channelOrUserId, string imageUrl, string thumbnailUrl, bool isPrivate)
+    {
+        var currentUser = await db.ConnectedUsers
+                   .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
+        if (currentUser == null)
+        {
+            logger.LogWarning("Tentative d'envoi de photo éphémère sans utilisateur enregistré");
+            return;
+        }
+
+        currentUser.LastActivity = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        var userId = currentUser.UserId;
+        var userName = currentUser.Username;
+
+        logger.LogInformation("Envoi photo éphémère de {Username} pour {Target} (privé: {IsPrivate})",
+                currentUser.Username, channelOrUserId, isPrivate);
+
+        // Créer le DTO
+        var ephemeralPhoto = new EphemeralPhotoDto
+        {
+            Id = Guid.NewGuid(),
+            SenderId = userId,
+            SenderUsername = userName,
+            ChannelId = isPrivate ? null : channelOrUserId,
+            RecipientId = isPrivate ? channelOrUserId : null,
+            ImageUrl = imageUrl,
+            ThumbnailUrl = thumbnailUrl,
+            Timestamp = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddSeconds(3)
+        };
+
+        // Broadcast selon le contexte
+        if (isPrivate)
+        {
+            await SendPrivateEphemeralPhoto(channelOrUserId, currentUser, ephemeralPhoto);
+            return;
+        }
+
+        var channel = await db.Channels
+            .FirstOrDefaultAsync(c => c.Name.ToLower() == channelOrUserId.ToLower());
+
+        if (!await CanSendToChannelAsync(currentUser, channel))
+        {
+            return;
+        }
+
+        var isMuted = await db.MutedUsers
+            .AnyAsync(m => m.ChannelName == null || (m.ChannelName.ToLower() == channelOrUserId.ToLower()
+                        && m.UserId == currentUser.UserId));
+
+        if (isMuted)
+        {
+            logger.LogInformation(
+                "Photo de l'utilisateur muté {UserId} non diffusée dans {Channel}",
+                currentUser.UserId,
+                channelOrUserId);
+            await Clients.Caller.SendAsync("ReceiveEphemeralPhoto", ephemeralPhoto);
+            return;
+        }
+
+        // Canal public : broadcast à tous les utilisateurs du canal
+        await Clients.Group(channelOrUserId).SendAsync("ReceiveEphemeralPhoto", ephemeralPhoto);
+        logger.LogInformation("Photo éphémère diffusée dans le canal {Channel}", channelOrUserId);
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
@@ -352,5 +392,93 @@ public class ChatHub(
         }
 
         await base.OnDisconnectedAsync(exception);
+    }
+
+    private async Task SendPrivateEphemeralPhoto(string channelOrUserId, ConnectedUser currentUser, EphemeralPhotoDto ephemeralPhoto)
+    {
+        // Message privé : envoyer au destinataire uniquement
+        var recipient = await db.ConnectedUsers
+            .Where(u => u.UserId == channelOrUserId)
+            .OrderByDescending(u => u.LastActivity)
+            .FirstOrDefaultAsync();
+
+        if (!await CanSendMessageToRecipientAsync(recipient, currentUser))
+        {
+            return;
+        }
+
+        var isGlobalyMute = await db.MutedUsers
+            .Where(m => m.ChannelName == null
+                && (m.UserId == currentUser.UserId || m.UserId == recipient!.UserId))
+            .AnyAsync();
+
+
+        if (!isGlobalyMute)
+        {
+            await Clients.Client(recipient!.ConnectionId).SendAsync("ReceiveEphemeralPhoto", ephemeralPhoto);
+            logger.LogInformation("Photo éphémère envoyée en privé à {Recipient}", channelOrUserId);
+        }
+
+        // Envoyer aussi à l'expéditeur (confirmation)
+        await Clients.Caller.SendAsync("ReceiveEphemeralPhoto", ephemeralPhoto);
+    }
+
+    private async Task<bool> CanSendMessageToRecipientAsync(ConnectedUser? recipient, ConnectedUser sender)
+    {
+        if (recipient?.ConnectionId == null)
+        {
+            logger.LogWarning("Tentative d'envoi de message privé sans recipient identifié");
+            return false;
+        }
+
+        if (!recipient.IsNoPvMode)
+        {
+            return true;
+        }
+
+        // Si destinataire en mode no PV, vérifier s'il existe une conversation
+        var hasConversation = await db.PrivateMessages
+            .AnyAsync(m =>
+                ((m.SenderUserId == recipient.UserId && m.RecipientUserId == sender.UserId) ||
+                    (m.SenderUserId == sender.UserId && m.RecipientUserId == recipient.UserId))
+                && !(m.SenderUserId == recipient.UserId && m.IsDeletedBySender)
+                && !(m.RecipientUserId == recipient.UserId && m.IsDeletedByRecipient));
+
+        if (!hasConversation)
+        {
+            logger.LogInformation(
+                "Message privé bloqué: {Sender} -> {Recipient} (destinataire en mode no PV)",
+                sender.Username,
+                recipient.Username);
+
+            await Clients.Caller.SendAsync(
+                "MessageBlocked",
+                "Cet utilisateur ne reçoit pas de messages privés non sollicités.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task<bool> CanSendToChannelAsync(ConnectedUser connectedUser, Channel? channel)
+    {
+        if (channel != null && channel.IsMuted)
+        {
+            var user = await db.ReservedUsernames
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == connectedUser.Username.ToLower());
+
+            var isCreator = channel.CreatedBy.Equals(connectedUser.Username, StringComparison.OrdinalIgnoreCase);
+            var isAdmin = user?.IsAdmin ?? false;
+
+            if (!isCreator && !isAdmin)
+            {
+                await Clients.Caller.SendAsync(
+                    "MessageBlocked",
+                    "Ce salon est actuellement muet. Seul le créateur ou un administrateur peut envoyer des messages.");
+                return false;
+            }
+        }
+
+        return true;
     }
 }

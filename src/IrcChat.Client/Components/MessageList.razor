@@ -43,24 +43,58 @@
     </div>
 }
 <div class="messages" @ref="messagesContainer">
-    @foreach (var msg in Messages)
+    @foreach (var item in Messages)
     {
-        var isMentioned = IsMentioned(msg.Content, CurrentUsername);
-        <div class="message @(msg.Username == CurrentUsername ? "own" : string.Empty) @(isMentioned ? "mentioned" : string.Empty)">
-            <span class="username" @onclick="() => OnUsernameClick(msg.Username)">@msg.Username</span>
-            <span class="time">@msg.Timestamp.ToLocalTime().ToMessageTimeString()</span>
-            <span class="content">@((MarkupString)HighlightMention(msg.Content, CurrentUsername))</span>
-            @if (CanManage)
-            {
-                <button class="btn-delete-message"
-                        @onclick="() => OnDeleteMessage.InvokeAsync(msg.Id)"
-                        title="Supprimer ce message">
-                    🗑️
-                </button>
-            }
-        </div>
+        if (item is EphemeralPhotoDto photo)
+        {
+            <div class="message @(photo.SenderUsername == CurrentUsername ? "own" : string.Empty) message-photo">
+                <div class="message-header-inline">
+                    <span class="username" @onclick="() => OnUsernameClick(photo.SenderUsername)">@photo.SenderUsername</span>
+                    <span class="time">@photo.Timestamp.ToLocalTime().ToMessageTimeString()</span>
+                    <div class="photo-content-inline" @onclick="() => HandlePhotoClick(photo)">
+                        <div class="photo-thumbnail-inline">
+                            <img src="@photo.ThumbnailUrl" alt="Photo éphémère" class="thumbnail-img" />
+                        </div>
+                        <div class="photo-info-inline">
+                            <span class="photo-badge">📷 Photo éphémère</span>
+                            @if (photo.ImageUrl != null)
+                            {
+                                <span class="photo-hint">Cliquer pour voir (3s)</span>
+                            }                            
+                        </div>
+                    </div>
+                    @if (CanManage)
+                    {
+                        <button class="btn-delete-message"
+                                @onclick="() => OnDeleteMessage.InvokeAsync(photo.Id)"
+                                title="Supprimer ce message">
+                            🗑️
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+        if (item is Message msg)
+        {
+            var isMentioned = IsMentioned(msg.Content, CurrentUsername);
+            <div class="message @(msg.Username == CurrentUsername ? "own" : string.Empty) @(isMentioned ? "mentioned" : string.Empty)">
+                <span class="username" @onclick="() => OnUsernameClick(msg.Username)">@msg.Username</span>
+                <span class="time">@msg.Timestamp.ToLocalTime().ToMessageTimeString()</span>
+                <span class="content">@((MarkupString)HighlightMention(msg.Content, CurrentUsername))</span>
+                @if (CanManage)
+                {
+                    <button class="btn-delete-message"
+                            @onclick="() => OnDeleteMessage.InvokeAsync(msg.Id)"
+                            title="Supprimer ce message">
+                        🗑️
+                    </button>
+                }
+            </div>
+        }
     }
 </div>
+
+<EphemeralPhotoModal Photo="@selectedPhoto" OnClose="HandleModalClose" />
 
 @code {
     private bool isHeaderCollapsed = false;
@@ -69,11 +103,12 @@
     private int previousMessageCount = 0;
     private bool isUserScrolling = false;
     private DotNetObjectReference<MessageList>? dotNetReference;
-    private List<Message> messages = new();
+    private List<IMessage> messages = new();
+    private EphemeralPhotoDto? selectedPhoto;
 
     [Parameter]
     [SuppressMessage("Blazor", "BL0007", Justification = "Reset previous message count on set")]
-    public List<Message> Messages
+    public List<IMessage> Messages
     {
         get => messages;
         set
@@ -227,6 +262,18 @@
     private void ToggleHeaderExpand()
     {
         isHeaderCollapsed = !isHeaderCollapsed;
+    }
+
+    private void HandlePhotoClick(EphemeralPhotoDto photo)
+    {
+        selectedPhoto = photo;
+        StateHasChanged();
+    }
+
+    private void HandleModalClose()
+    {
+        selectedPhoto = null;
+        StateHasChanged();
     }
 
     public async ValueTask DisposeAsync()

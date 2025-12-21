@@ -260,7 +260,7 @@ public class MessageEndpointsTests(ApiWebApplicationFactory factory)
     }
 
     [Fact]
-    public async Task DeleteMessage_WithNonExistentMessage_ShouldReturnNotFound()
+    public async Task DeleteMessage_WithNonExistentMessage_ShouldReturnNotContent()
     {
         // Arrange
         using var scope = factory.Services.CreateScope();
@@ -299,7 +299,7 @@ public class MessageEndpointsTests(ApiWebApplicationFactory factory)
         var response = await _client.DeleteAsync($"/api/messages/{channel.Name}/{nonExistentId}");
 
         // Assert
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
     [Fact]

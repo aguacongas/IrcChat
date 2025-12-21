@@ -1,0 +1,101 @@
+@using IrcChat.Shared.Models
+@using IrcChat.Client.Services
+@implements IAsyncDisposable
+@inject IEphemeralPhotoService EphemeralPhotoService
+@inject ILogger<EphemeralPhotoModal> Logger
+
+@if (_isVisible && Photo != null)
+{
+    <div class="ephemeral-modal-overlay" @onclick="CloseModal">
+        <div class="ephemeral-modal-content" @onclick:stopPropagation="true">
+            <button class="modal-close" @onclick="CloseModal">✕</button>
+
+            <div class="photo-container" id="ephemeral-photo-container">
+                <img src="@Photo.ImageUrl" alt="Photo éphémère" class="ephemeral-photo" id="ephemeral-photo-img" />
+                <div class="watermark">🚫 Photo éphémère - Ne pas capturer</div>
+            </div>
+
+            <div class="ephemeral-modal-footer">
+                <p class="disclaimer-text">Photo éphémère - Protection non-absolue</p>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public EphemeralPhotoDto? Photo { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private bool _isVisible;
+    private Timer? _timer;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Photo?.ImageUrl != null && !_isVisible)
+        {
+            await ShowModalAsync();
+        }
+    }
+
+    private async Task ShowModalAsync()
+    {
+        const int displaySecond = 3;
+        try
+        {
+            // Activer la sécurité via le service
+            await EphemeralPhotoService.BlockDevToolsAsync();
+            await EphemeralPhotoService.DetectScreenshotAsync();
+
+            _isVisible = true;
+            Logger.LogInformation("Modal photo éphémère ouverte");
+
+            // Démarrer le countdown
+            _timer = new Timer(async _ =>
+            {
+                await CloseModalAsync();
+            }, null, TimeSpan.FromSeconds(displaySecond), TimeSpan.FromSeconds(displaySecond));
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de l'ouverture de la modal");
+        }
+    }
+
+    private async Task CloseModal()
+    {
+        await CloseModalAsync();
+    }
+
+    private async Task CloseModalAsync()
+    {
+        _timer?.Dispose();
+        _timer = null;
+
+        try
+        {
+            await EphemeralPhotoService.DestroyImageDataAsync("ephemeral-photo-img");
+            Logger.LogInformation("Image détruite de la mémoire");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de la destruction de l'image");
+        }
+
+        _isVisible = false;
+        Photo?.ImageUrl = null;
+        Photo = null;
+        await OnClose.InvokeAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _timer?.Dispose();
+
+        // Le module JS sera disposé par le service
+        await Task.CompletedTask;
+    }
+}
