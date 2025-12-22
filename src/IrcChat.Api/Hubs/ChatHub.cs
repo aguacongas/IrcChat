@@ -16,6 +16,7 @@ public class ChatHub(
 {
     [SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Constante")]
     private static readonly string UserStatusChangedMethod = "UserStatusChanged";
+    private static readonly string ReceiveEphemeralPhoto = "ReceiveEphemeralPhoto";
     private readonly string _instanceId = options.Value.GetInstanceId();
 
     public async Task JoinChannel(string channel)
@@ -349,12 +350,12 @@ public class ChatHub(
                 "Photo de l'utilisateur muté {UserId} non diffusée dans {Channel}",
                 currentUser.UserId,
                 channelOrUserId);
-            await Clients.Caller.SendAsync("ReceiveEphemeralPhoto", ephemeralPhoto);
+            await Clients.Caller.SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto);
             return;
         }
 
         // Canal public : broadcast à tous les utilisateurs du canal
-        await Clients.Group(channelOrUserId).SendAsync("ReceiveEphemeralPhoto", ephemeralPhoto);
+        await Clients.Group(channelOrUserId).SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto);
         logger.LogInformation("Photo éphémère diffusée dans le canal {Channel}", channelOrUserId);
     }
 
@@ -415,12 +416,12 @@ public class ChatHub(
 
         if (!isGlobalyMute)
         {
-            await Clients.Client(recipient!.ConnectionId).SendAsync("ReceiveEphemeralPhoto", ephemeralPhoto);
+            await Clients.Client(recipient!.ConnectionId).SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto);
             logger.LogInformation("Photo éphémère envoyée en privé à {Recipient}", channelOrUserId);
         }
 
         // Envoyer aussi à l'expéditeur (confirmation)
-        await Clients.Caller.SendAsync("ReceiveEphemeralPhoto", ephemeralPhoto);
+        await Clients.Caller.SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto);
     }
 
     private async Task<bool> CanSendMessageToRecipientAsync(ConnectedUser? recipient, ConnectedUser sender)

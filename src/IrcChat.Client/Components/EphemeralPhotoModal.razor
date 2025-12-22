@@ -43,13 +43,13 @@
     private async Task ShowModalAsync()
     {
         const int displaySecond = 3;
+        _isVisible = true;
         try
         {
             // Activer la sécurité via le service
             await EphemeralPhotoService.BlockDevToolsAsync();
             await EphemeralPhotoService.DetectScreenshotAsync();
 
-            _isVisible = true;
             Logger.LogInformation("Modal photo éphémère ouverte");
 
             // Démarrer le countdown
@@ -71,8 +71,11 @@
 
     private async Task CloseModalAsync()
     {
-        _timer?.Dispose();
-        _timer = null;
+        if (_timer is not null)
+        {
+            await _timer.DisposeAsync();
+            _timer = null;
+        }
 
         try
         {
@@ -85,15 +88,20 @@
         }
 
         _isVisible = false;
-        Photo?.ImageUrl = null;
-        Photo = null;
+        if (Photo is not null){
+            Photo.ImageUrl = null;
+            Photo = null;
+        }
         await OnClose.InvokeAsync();
         await InvokeAsync(StateHasChanged);
     }
 
     public async ValueTask DisposeAsync()
     {
-        _timer?.Dispose();
+        if (_timer is not null)
+        {
+            await _timer.DisposeAsync();
+        }
 
         // Le module JS sera disposé par le service
         await Task.CompletedTask;

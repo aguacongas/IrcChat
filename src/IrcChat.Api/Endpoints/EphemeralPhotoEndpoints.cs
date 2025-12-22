@@ -46,9 +46,9 @@ public static class EphemeralPhotoEndpoints
         {
             imageBytes = Convert.FromBase64String(request.ImageBase64);
         }
-        catch (FormatException)
+        catch (FormatException e)
         {
-            logger.LogWarning("Format base64 invalide pour UserId {UserId}", userId);
+            logger.LogWarning(e, "Format base64 invalide pour UserId {UserId}", userId);
             return Results.BadRequest(new { Error = "Format base64 invalide" });
         }
 
