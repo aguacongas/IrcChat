@@ -62,68 +62,52 @@ public class EphemeralPhotoService(ILogger<EphemeralPhotoService> logger) : IEph
 
     public async Task<byte[]> GenerateBlurredThumbnailAsync(byte[] imageBytes)
     {
-        try
+        using var ms = new MemoryStream(imageBytes);
+        using var image = await Image.LoadAsync(ms);
+
+        // Redimensionner en thumbnail
+        image.Mutate(x => x.Resize(new ResizeOptions
         {
-            using var ms = new MemoryStream(imageBytes);
-            using var image = await Image.LoadAsync(ms);
+            Size = new Size(ThumbnailSize, ThumbnailSize),
+            Mode = ResizeMode.Max
+        }));
 
-            // Redimensionner en thumbnail
-            image.Mutate(x => x.Resize(new ResizeOptions
-            {
-                Size = new Size(ThumbnailSize, ThumbnailSize),
-                Mode = ResizeMode.Max
-            }));
+        // Flouter
+        image.Mutate(x => x.GaussianBlur(20));
 
-            // Flouter
-            image.Mutate(x => x.GaussianBlur(20));
+        // Convertir en Base64
+        using var outputMs = new MemoryStream();
+        await image.SaveAsJpegAsync(outputMs, new JpegEncoder { Quality = 75 });
+        var thumbnailBytes = outputMs.ToArray();
 
-            // Convertir en Base64
-            using var outputMs = new MemoryStream();
-            await image.SaveAsJpegAsync(outputMs, new JpegEncoder { Quality = 75 });
-            var thumbnailBytes = outputMs.ToArray();
-
-            logger.LogInformation("Thumbnail floutée générée: {Size} bytes", thumbnailBytes.Length);
-            return thumbnailBytes;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Erreur lors de la génération de la thumbnail floutée");
-            throw;
-        }
+        logger.LogInformation("Thumbnail floutée générée: {Size} bytes", thumbnailBytes.Length);
+        return thumbnailBytes;
     }
 
     public async Task<byte[]> CompressImageAsync(byte[] imageBytes, int quality)
     {
-        try
-        {
-            using var ms = new MemoryStream(imageBytes);
-            using var image = await Image.LoadAsync(ms);
+        using var ms = new MemoryStream(imageBytes);
+        using var image = await Image.LoadAsync(ms);
 
-            // Redimensionner si trop grande
-            if (image.Width > MaxImageWidth || image.Height > MaxImageHeight)
+        // Redimensionner si trop grande
+        if (image.Width > MaxImageWidth || image.Height > MaxImageHeight)
+        {
+            image.Mutate(x => x.Resize(new ResizeOptions
             {
-                image.Mutate(x => x.Resize(new ResizeOptions
-                {
-                    Size = new Size(MaxImageWidth, MaxImageHeight),
-                    Mode = ResizeMode.Max
-                }));
-            }
-
-            // Compresser en JPEG
-            using var outputMs = new MemoryStream();
-            await image.SaveAsJpegAsync(outputMs, new JpegEncoder { Quality = quality });
-            var compressedBytes = outputMs.ToArray();
-
-            logger.LogInformation("Image compressée: {OriginalSize}KB -> {CompressedSize}KB",
-                imageBytes.Length / 1024, compressedBytes.Length / 1024);
-
-            return compressedBytes;
+                Size = new Size(MaxImageWidth, MaxImageHeight),
+                Mode = ResizeMode.Max
+            }));
         }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Erreur lors de la compression de l'image");
-            throw;
-        }
+
+        // Compresser en JPEG
+        using var outputMs = new MemoryStream();
+        await image.SaveAsJpegAsync(outputMs, new JpegEncoder { Quality = quality });
+        var compressedBytes = outputMs.ToArray();
+
+        logger.LogInformation("Image compressée: {OriginalSize}KB -> {CompressedSize}KB",
+            imageBytes.Length / 1024, compressedBytes.Length / 1024);
+
+        return compressedBytes;
     }
 
     public bool CheckRateLimit(string userId)

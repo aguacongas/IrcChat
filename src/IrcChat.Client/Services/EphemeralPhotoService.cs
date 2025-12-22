@@ -41,46 +41,38 @@ IJSRuntime jsRuntime) : IEphemeralPhotoService
 
     public async Task<(string ImageUrl, string ThumbnailUrl)> UploadImageAsync(string imageBase64, string userId)
     {
-        try
+        logger.LogInformation("Upload image pour UserId {UserId}", userId);
+
+        // Retirer le préfixe data:image/...;base64, si présent
+        var base64Data = imageBase64.Contains(',')
+            ? imageBase64.Split(',')[1]
+            : imageBase64;
+
+        var request = new UploadEphemeralPhotoRequest
         {
-            logger.LogInformation("Upload image pour UserId {UserId}", userId);
+            ImageBase64 = base64Data
+        };
 
-            // Retirer le préfixe data:image/...;base64, si présent
-            var base64Data = imageBase64.Contains(',')
-                ? imageBase64.Split(',')[1]
-                : imageBase64;
+        var response = await httpClient.PostAsJsonAsync(
+            $"/api/ephemeral-photos/{userId}/upload",
+            request);
 
-            var request = new UploadEphemeralPhotoRequest
-            {
-                ImageBase64 = base64Data
-            };
-
-            var response = await httpClient.PostAsJsonAsync(
-                $"/api/ephemeral-photos/{userId}/upload",
-                request);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var error = await response.Content.ReadAsStringAsync();
-                logger.LogError("Erreur upload: {StatusCode}, {Error}", response.StatusCode, error);
-                throw new HttpRequestException($"Upload failed: {response.StatusCode}");
-            }
-
-            var result = await response.Content.ReadFromJsonAsync<UploadEphemeralPhotoResponse>();
-
-            if (result == null)
-            {
-                throw new InvalidOperationException("Réponse invalide du serveur");
-            }
-
-            logger.LogInformation("Image uploadée avec succès");
-            return (result.ImageUrl, result.ThumbnailUrl);
-        }
-        catch (Exception ex)
+        if (!response.IsSuccessStatusCode)
         {
-            logger.LogError(ex, "Erreur lors de l'upload de l'image");
-            throw;
+            var error = await response.Content.ReadAsStringAsync();
+            logger.LogError("Erreur upload: {StatusCode}, {Error}", response.StatusCode, error);
+            throw new HttpRequestException($"Upload failed: {response.StatusCode}");
         }
+
+        var result = await response.Content.ReadFromJsonAsync<UploadEphemeralPhotoResponse>();
+
+        if (result == null)
+        {
+            throw new InvalidOperationException("Réponse invalide du serveur");
+        }
+
+        logger.LogInformation("Image uploadée avec succès");
+        return (result.ImageUrl, result.ThumbnailUrl);
     }
 
     // ========== Méthodes Caméra ==========
@@ -117,34 +109,18 @@ IJSRuntime jsRuntime) : IEphemeralPhotoService
 
     public async Task AttachCameraToVideoAsync(string videoElementId)
     {
-        try
-        {
-            var module = await GetCameraModuleAsync();
-            var stream = await module.InvokeAsync<IJSObjectReference>("startCamera");
-            await module.InvokeVoidAsync("attachStreamToVideo", videoElementId, stream);
-            logger.LogInformation("Stream caméra attaché à {ElementId}", videoElementId);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Erreur lors de l'attachement du stream caméra");
-            throw;
-        }
+        var module = await GetCameraModuleAsync();
+        var stream = await module.InvokeAsync<IJSObjectReference>("startCamera");
+        await module.InvokeVoidAsync("attachStreamToVideo", videoElementId, stream);
+        logger.LogInformation("Stream caméra attaché à {ElementId}", videoElementId);
     }
 
     public async Task<string> CapturePhotoAsync(string videoElementId)
     {
-        try
-        {
-            var module = await GetCameraModuleAsync();
-            var base64 = await module.InvokeAsync<string>("capturePhotoFromVideo", videoElementId);
-            logger.LogInformation("Photo capturée depuis {ElementId}", videoElementId);
-            return base64;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Erreur lors de la capture de la photo");
-            throw;
-        }
+        var module = await GetCameraModuleAsync();
+        var base64 = await module.InvokeAsync<string>("capturePhotoFromVideo", videoElementId);
+        logger.LogInformation("Photo capturée depuis {ElementId}", videoElementId);
+        return base64;
     }
 
     public async Task<bool> IsCameraAvailableAsync()
@@ -211,16 +187,8 @@ IJSRuntime jsRuntime) : IEphemeralPhotoService
     {
         if (_cameraModule == null)
         {
-            try
-            {
-                _cameraModule = await jsRuntime.InvokeAsync<IJSObjectReference>("import", "./js/camera.js");
-                logger.LogInformation("Module JS camera.js chargé");
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Erreur lors du chargement du module camera.js");
-                throw;
-            }
+            _cameraModule = await jsRuntime.InvokeAsync<IJSObjectReference>("import", "./js/camera.js");
+            logger.LogInformation("Module JS camera.js chargé");
         }
         return _cameraModule;
     }
@@ -229,16 +197,8 @@ IJSRuntime jsRuntime) : IEphemeralPhotoService
     {
         if (_ephemeralModule == null)
         {
-            try
-            {
-                _ephemeralModule = await jsRuntime.InvokeAsync<IJSObjectReference>("import", "./js/ephemeralPhoto.js");
-                logger.LogInformation("Module JS ephemeralPhoto.js chargé");
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Erreur lors du chargement du module ephemeralPhoto.js");
-                throw;
-            }
+            _ephemeralModule = await jsRuntime.InvokeAsync<IJSObjectReference>("import", "./js/ephemeralPhoto.js");
+            logger.LogInformation("Module JS ephemeralPhoto.js chargé");
         }
         return _ephemeralModule;
     }
