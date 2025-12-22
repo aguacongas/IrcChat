@@ -49,9 +49,9 @@ public class EphemeralPhotoServiceTests : IDisposable
         // Remplir avec un dégradé de couleurs pour avoir une vraie image
         image.Mutate(ctx =>
         {
-            for (int y = 0; y < height; y++)
+            for (var y = 0; y < height; y++)
             {
-                for (int x = 0; x < width; x++)
+                for (var x = 0; x < width; x++)
                 {
                     var r = (byte)((x * 255) / width);
                     var g = (byte)((y * 255) / height);
@@ -393,7 +393,7 @@ public class EphemeralPhotoServiceTests : IDisposable
         var userId = Guid.NewGuid().ToString();
 
         // Enregistrer 3 photos (sous la limite de 5)
-        for (int i = 0; i < 3; i++)
+        for (var i = 0; i < 3; i++)
         {
             _service.RecordPhotoSent(userId);
         }
@@ -412,7 +412,7 @@ public class EphemeralPhotoServiceTests : IDisposable
         var userId = Guid.NewGuid().ToString();
 
         // Enregistrer 5 photos (exactement la limite)
-        for (int i = 0; i < 5; i++)
+        for (var i = 0; i < 5; i++)
         {
             _service.RecordPhotoSent(userId);
         }
@@ -431,7 +431,7 @@ public class EphemeralPhotoServiceTests : IDisposable
         var userId = Guid.NewGuid().ToString();
 
         // Enregistrer 7 photos (au-dessus de la limite)
-        for (int i = 0; i < 7; i++)
+        for (var i = 0; i < 7; i++)
         {
             _service.RecordPhotoSent(userId);
         }
@@ -451,7 +451,7 @@ public class EphemeralPhotoServiceTests : IDisposable
         var userId2 = Guid.NewGuid().ToString();
 
         // User1 atteint la limite
-        for (int i = 0; i < 5; i++)
+        for (var i = 0; i < 5; i++)
         {
             _service.RecordPhotoSent(userId1);
         }
@@ -502,7 +502,7 @@ public class EphemeralPhotoServiceTests : IDisposable
         var userId = Guid.NewGuid().ToString();
 
         // Act - Enregistrer exactement 5 photos
-        for (int i = 0; i < 5; i++)
+        for (var i = 0; i < 5; i++)
         {
             _service.RecordPhotoSent(userId);
         }
@@ -583,7 +583,7 @@ public class EphemeralPhotoServiceTests : IDisposable
         // Arrange
         var userId = Guid.NewGuid().ToString();
 
-        for (int i = 0; i < 5; i++)
+        for (var i = 0; i < 5; i++)
         {
             _service.RecordPhotoSent(userId);
         }
