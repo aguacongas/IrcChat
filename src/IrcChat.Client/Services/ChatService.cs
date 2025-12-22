@@ -160,20 +160,12 @@ public class ChatService(IPrivateMessageService privateMessageService,
             throw new InvalidOperationException("Hub non initialisé");
         }
 
-        try
-        {
-            await _hubConnection.InvokeAsync(
-                "SendEphemeralPhoto",
-                channelOrUserId,
-                imageUrl,
-                thumbnailUrl,
-                isPrivate);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Erreur lors de l'envoi de la photo éphémère");
-            throw;
-        }
+        await _hubConnection.InvokeAsync(
+            "SendEphemeralPhoto",
+            channelOrUserId,
+            imageUrl,
+            thumbnailUrl,
+            isPrivate);
     }
 
     public async ValueTask DisposeAsync()

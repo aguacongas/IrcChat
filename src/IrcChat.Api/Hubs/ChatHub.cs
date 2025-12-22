@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace IrcChat.Api.Hubs;
 
+[SuppressMessage("Performance", "CA1862", Justification = "Not translated in SQL requests")]
 public class ChatHub(
     ChatDbContext db,
     IOptions<ConnectionManagerOptions> options,

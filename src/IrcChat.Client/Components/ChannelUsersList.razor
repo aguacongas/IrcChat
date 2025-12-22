@@ -25,7 +25,7 @@
                     @if (CanModifyChannel && user.Username != Username && !IsMutedUser(user.UserId))
                     {
                         <button class="btn-mute"
-                                @onclick="(MouseEventArgs e) => MuteUserAsync(user, ChannelName, e)"
+                                @onclick="(MouseEventArgs e) => MuteUserAsync(user, ChannelName)"
                                 @onclick:stopPropagation="true"
                                 title="Rendre mute cet utilisateur"
                                 disabled="@_isMuting">
@@ -42,7 +42,7 @@
                     else if (CanModifyChannel && user.Username != Username && IsMutedUser(user.UserId))
                     {
                         <button class="btn-unmute"
-                                @onclick="(MouseEventArgs e) => UnmuteUserAsync(user, ChannelName, e)"
+                                @onclick="(MouseEventArgs e) => UnmuteUserAsync(user, ChannelName)"
                                 @onclick:stopPropagation="true"
                                 title="Retirer le mute de cet utilisateur"
                                 disabled="@_isMuting">
@@ -144,7 +144,7 @@
 
     private bool IsMutedUser(string userId) => _mutedUserIds.Contains(userId);
 
-    private async Task MuteUserAsync(User user, string channelName, MouseEventArgs e)
+    private async Task MuteUserAsync(User user, string channelName)
     {
         if (_isMuting)
         {
@@ -192,7 +192,7 @@
         }
     }
 
-    private async Task UnmuteUserAsync(User user, string channelName, MouseEventArgs e)
+    private async Task UnmuteUserAsync(User user, string channelName)
     {
         if (_isMuting)
         {

@@ -12,76 +12,60 @@ ILogger<CloudinaryService> logger) : ICloudinaryService
 {
     public async Task<(string ImageUrl, string ThumbnailUrl)> UploadEphemeralPhotoAsync(byte[] imageBytes, string userId)
     {
-        try
+        var settings = options.Value;
+        var folder = settings.EphemeralFolder;
+        var expirationHours = settings.SignedUrlExpirationHours;
+        var publicId = $"{userId}/{Guid.NewGuid()}";
+
+        logger.LogInformation("Upload image vers Cloudinary: {PublicId}", publicId);
+
+        // Upload de l'image
+        using var stream = new MemoryStream(imageBytes);
+        var uploadParams = new ImageUploadParams
         {
-            var settings = options.Value;
-            var folder = settings.EphemeralFolder;
-            var expirationHours = settings.SignedUrlExpirationHours;
-            var publicId = $"{userId}/{Guid.NewGuid()}";
+            File = new FileDescription($"{publicId}.jpg", stream),
+            Folder = folder,
+            PublicId = publicId,
+            Overwrite = false,
+            Transformation = new Transformation()
+                .Width(1920).Height(1080).Crop("limit") // Max dimensions
+                .Quality("auto:good") // Compression auto
+                .FetchFormat("auto"), // Format optimal
+        };
 
-            logger.LogInformation("Upload image vers Cloudinary: {PublicId}", publicId);
+        var uploadResult = await cloudinaryWrapper.UploadAsync(uploadParams);
 
-            // Upload de l'image
-            using var stream = new MemoryStream(imageBytes);
-            var uploadParams = new ImageUploadParams
-            {
-                File = new FileDescription($"{publicId}.jpg", stream),
-                Folder = folder,
-                PublicId = publicId,
-                Overwrite = false,
-                Transformation = new Transformation()
-                    .Width(1920).Height(1080).Crop("limit") // Max dimensions
-                    .Quality("auto:good") // Compression auto
-                    .FetchFormat("auto"), // Format optimal
-            };
-
-            var uploadResult = await cloudinaryWrapper.UploadAsync(uploadParams);
-
-            if (uploadResult.StatusCode != System.Net.HttpStatusCode.OK)
-            {
-                logger.LogError("Erreur upload Cloudinary: {Error}", uploadResult.Error?.Message);
-                throw new InvalidOperationException($"Upload failed: {uploadResult.Error?.Message}");
-            }
-
-            // Générer les URLs signées
-            var imageUrl = GenerateSignedUrl(uploadResult.PublicId);
-            var thumbnailUrl = GenerateSignedUrl(
-                uploadResult.PublicId,
-                thumbnail: true);
-
-            logger.LogInformation(
-                "Image uploadée avec succès: {PublicId}, URLs générées (expire: {Hours}h)",
-                uploadResult.PublicId,
-                expirationHours);
-
-            return (imageUrl, thumbnailUrl);
-        }
-        catch (Exception ex)
+        if (uploadResult.StatusCode != System.Net.HttpStatusCode.OK)
         {
-            logger.LogError(ex, "Erreur lors de l'upload vers Cloudinary");
-            throw;
+            logger.LogError("Erreur upload Cloudinary: {Error}", uploadResult.Error?.Message);
+            throw new InvalidOperationException($"Upload failed: {uploadResult.Error?.Message}");
         }
+
+        // Générer les URLs signées
+        var imageUrl = GenerateSignedUrl(uploadResult.PublicId);
+        var thumbnailUrl = GenerateSignedUrl(
+            uploadResult.PublicId,
+            thumbnail: true);
+
+        logger.LogInformation(
+            "Image uploadée avec succès: {PublicId}, URLs générées (expire: {Hours}h)",
+            uploadResult.PublicId,
+            expirationHours);
+
+        return (imageUrl, thumbnailUrl);
     }
 
     public async Task<bool> DeleteImageAsync(string publicId)
     {
-        try
-        {
-            var deleteParams = new DeletionParams(publicId);
-            var result = await cloudinaryWrapper.DestroyAsync(deleteParams);
+        var deleteParams = new DeletionParams(publicId);
+        var result = await cloudinaryWrapper.DestroyAsync(deleteParams);
 
-            logger.LogInformation(
-                "Suppression image Cloudinary: {PublicId}, Result: {Result}",
-                publicId,
-                result.Result);
+        logger.LogInformation(
+            "Suppression image Cloudinary: {PublicId}, Result: {Result}",
+            publicId,
+            result.Result);
 
-            return result.Result == "ok";
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Erreur lors de la suppression de l'image {PublicId}", publicId);
-            return false;
-        }
+        return result.Result == "ok";
     }
 
     private string GenerateSignedUrl(string publicId, bool thumbnail = false)
