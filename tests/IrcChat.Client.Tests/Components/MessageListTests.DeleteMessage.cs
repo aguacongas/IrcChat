@@ -10,16 +10,16 @@ public partial class MessageListTests
     public void MessageList_WhenCanManageTrue_ShouldShowDeleteButton()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "otheruser",
-            Content = "Test message",
-            Timestamp = DateTime.UtcNow,
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "otheruser",
+                Content = "Test message",
+                Timestamp = DateTime.UtcNow,
+            },
+        };
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -36,16 +36,16 @@ public partial class MessageListTests
     public void MessageList_WhenCanManageFalse_ShouldNotShowDeleteButton()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "otheruser",
-            Content = "Test message",
-            Timestamp = DateTime.UtcNow,
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "otheruser",
+                Content = "Test message",
+                Timestamp = DateTime.UtcNow,
+            },
+        };
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -62,16 +62,16 @@ public partial class MessageListTests
     {
         // Arrange
         var messageId = Guid.NewGuid();
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = messageId,
-            Username = "otheruser",
-            Content = "Message to delete",
-            Timestamp = DateTime.UtcNow,
-        },
-    };
+            new Message
+            {
+                Id = messageId,
+                Username = "otheruser",
+                Content = "Message to delete",
+                Timestamp = DateTime.UtcNow,
+            },
+        };
 
         Guid? deletedId = null;
         var cut = Render<MessageList>(parameters => parameters
@@ -94,23 +94,23 @@ public partial class MessageListTests
         // Arrange
         var message1Id = Guid.NewGuid();
         var message2Id = Guid.NewGuid();
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = message1Id,
-            Username = "user1",
-            Content = "Message 1",
-            Timestamp = DateTime.UtcNow,
-        },
-        new()
-        {
-            Id = message2Id,
-            Username = "user2",
-            Content = "Message 2",
-            Timestamp = DateTime.UtcNow,
-        },
-    };
+            new Message
+            {
+                Id = message1Id,
+                Username = "user1",
+                Content = "Message 1",
+                Timestamp = DateTime.UtcNow,
+            },
+            new Message
+            {
+                Id = message2Id,
+                Username = "user2",
+                Content = "Message 2",
+                Timestamp = DateTime.UtcNow,
+            },
+        };
 
         Guid? deletedId = null;
         var cut = Render<MessageList>(parameters => parameters
@@ -131,7 +131,7 @@ public partial class MessageListTests
     public void MessageList_EmptyMessages_ShouldNotShowDeleteButtons()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -147,16 +147,16 @@ public partial class MessageListTests
     public void MessageList_DeleteButton_ShouldHaveCorrectTitle()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "otheruser",
-            Content = "Test message",
-            Timestamp = DateTime.UtcNow,
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "otheruser",
+                Content = "Test message",
+                Timestamp = DateTime.UtcNow,
+            },
+        };
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -174,16 +174,16 @@ public partial class MessageListTests
     {
         // Arrange
         var messageId = Guid.NewGuid();
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = messageId,
-            Username = "otheruser",
-            Content = "Test message",
-            Timestamp = DateTime.UtcNow,
-        },
-    };
+            new Message
+            {
+                Id = messageId,
+                Username = "otheruser",
+                Content = "Test message",
+                Timestamp = DateTime.UtcNow,
+            },
+        };
 
         var clickCount = 0;
         var cut = Render<MessageList>(parameters => parameters
@@ -206,16 +206,16 @@ public partial class MessageListTests
     public void MessageList_WhenCanManageChanges_ShouldUpdateDeleteButtonVisibility()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "otheruser",
-            Content = "Test message",
-            Timestamp = DateTime.UtcNow,
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "otheruser",
+                Content = "Test message",
+                Timestamp = DateTime.UtcNow,
+            },
+        };
 
         var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
@@ -238,16 +238,16 @@ public partial class MessageListTests
     public void MessageList_WithMentionedMessage_ShouldStillShowDeleteButton()
     {
         // Arrange
-        var messages = new List<Message>
-    {
-        new()
+        var messages = new List<IMessage>
         {
-            Id = Guid.NewGuid(),
-            Username = "otheruser",
-            Content = "Hey @currentuser, check this out!",
-            Timestamp = DateTime.UtcNow,
-        },
-    };
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                Username = "otheruser",
+                Content = "Hey @currentuser, check this out!",
+                Timestamp = DateTime.UtcNow,
+            },
+        };
 
         // Act
         var cut = Render<MessageList>(parameters => parameters

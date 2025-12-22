@@ -31,6 +31,7 @@ builder.Services.AddScoped(sp =>
     .AddScoped<IActiveChannelsService, ActiveChannelsService>()
     .AddScoped<IChannelUnreadCountService, ChannelUnreadCountService>()
     .AddScoped<INotificationSoundService, NotificationSoundService>()
+    .AddScoped<IEphemeralPhotoService, EphemeralPhotoService>()
     .AddSingleton<IRequestAuthenticationService, RequestAuthenticationService>()
     .AddSingleton<IEmojiService>(sp =>
     {

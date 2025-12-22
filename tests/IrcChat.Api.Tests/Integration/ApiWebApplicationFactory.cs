@@ -54,6 +54,12 @@ public class ApiWebApplicationFactory : WebApplicationFactory<ChatHub>
                     return mock.Object;
                 });
 
+                var cloudinaryMock = new Mock<ICloudinaryService>();
+                services.AddSingleton(cloudinaryMock.Object)
+                    .AddSingleton(cloudinaryMock);
+                var EphemeralPhotoServiceMock = new Mock<IEphemeralPhotoService>();
+                services.AddSingleton(EphemeralPhotoServiceMock.Object)
+                    .AddSingleton(EphemeralPhotoServiceMock);
                 // S'assurer que la base de données est créée
                 var sp = services.BuildServiceProvider();
                 using var scope = sp.CreateScope();

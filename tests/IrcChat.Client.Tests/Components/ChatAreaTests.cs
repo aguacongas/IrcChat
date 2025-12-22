@@ -12,6 +12,8 @@ public class ChatAreaTests : BunitContext
     private readonly MockHttpMessageHandler mockHttp;
     private readonly Mock<IIgnoredUsersService> ignoredUsersServiceMock;
     private readonly Mock<IEmojiService> emojiServiceMock;
+    private readonly Mock<IUnifiedAuthService> authServiceMock;
+    private readonly Mock<IEphemeralPhotoService> ephemeralPhotoServiceMock;
 
     public ChatAreaTests()
     {
@@ -23,12 +25,16 @@ public class ChatAreaTests : BunitContext
         emojiServiceMock.Setup(x => x.IsLoaded).Returns(true);
         emojiServiceMock.Setup(x => x.GetAllEmojis()).Returns([]);
         emojiServiceMock.Setup(x => x.GetCategories()).Returns([]);
+        authServiceMock = new Mock<IUnifiedAuthService>();
+        ephemeralPhotoServiceMock = new Mock<IEphemeralPhotoService>();
 
         var httpClient = mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
         Services.AddSingleton(httpClient);
         Services.AddSingleton(ignoredUsersServiceMock.Object);
         Services.AddSingleton(emojiServiceMock.Object);
+        Services.AddSingleton(authServiceMock.Object);
+        Services.AddSingleton(ephemeralPhotoServiceMock.Object);
 
         JSInterop.Mode = JSRuntimeMode.Loose;
     }
@@ -204,9 +210,9 @@ public class ChatAreaTests : BunitContext
     public void ChatArea_ShouldRenderMessageList()
     {
         // Arrange
-        var messages = new List<Message>
+        var messages = new List<IMessage>
         {
-            new()
+            new Message
             {
                 Id = Guid.NewGuid(),
                 Username = "User1",

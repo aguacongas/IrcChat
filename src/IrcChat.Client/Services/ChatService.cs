@@ -42,6 +42,8 @@ public class ChatService(IPrivateMessageService privateMessageService,
 
     public event Action? OnReconnected;
 
+    public event Action<EphemeralPhotoDto>? OnEphemeralPhotoReceived;
+
     public bool IsInitialized => _hubConnection != null && _hubConnection.State == HubConnectionState.Connected;
 
     public Func<HubConnection, IHubConnectionEvents> WrapConnectionEvents { get; set; } = connection => new HubConnectionEventWrapper(connection);
@@ -85,6 +87,13 @@ public class ChatService(IPrivateMessageService privateMessageService,
             => OnUserUnmuted?.Invoke(channel, userId, username, unmutedByUserId, unmutedByUsername));
 
         _hubConnection.On<Guid, string>("MessageDeleted", (messageId, channelName) => OnMessageDeleted?.Invoke(messageId, channelName));
+
+        _hubConnection!.On<EphemeralPhotoDto>("ReceiveEphemeralPhoto", photo =>
+        {
+            logger.LogInformation("Photo éphémère reçue de {Sender}", photo.SenderUsername);
+            OnEphemeralPhotoReceived?.Invoke(photo);
+        });
+
 
         _hubConnectionEvents = WrapConnectionEvents(_hubConnection);
 
@@ -134,6 +143,36 @@ public class ChatService(IPrivateMessageService privateMessageService,
         if (_hubConnection != null)
         {
             await _hubConnection.SendAsync("MarkPrivateMessagesAsRead", senderUserId);
+        }
+    }
+
+    /// <summary>
+    /// Envoie une photo éphémère via SignalR (avec URLs Cloudinary).
+    /// </summary>
+    public async Task SendEphemeralPhoto(
+        string channelOrUserId,
+        string imageUrl,
+        string thumbnailUrl,
+        bool isPrivate)
+    {
+        if (_hubConnection == null)
+        {
+            throw new InvalidOperationException("Hub non initialisé");
+        }
+
+        try
+        {
+            await _hubConnection.InvokeAsync(
+                "SendEphemeralPhoto",
+                channelOrUserId,
+                imageUrl,
+                thumbnailUrl,
+                isPrivate);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Erreur lors de l'envoi de la photo éphémère");
+            throw;
         }
     }
 

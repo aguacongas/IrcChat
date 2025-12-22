@@ -1,0 +1,228 @@
+@using IrcChat.Client.Services
+@implements IAsyncDisposable
+@inject IEphemeralPhotoService EphemeralPhotoService
+@inject ILogger<CameraModal> Logger
+
+@if (IsOpen)
+{
+    <div class="camera-modal-overlay" @onclick="HandleCancel">
+        <div class="camera-modal-content" @onclick:stopPropagation="true">
+            <div class="camera-modal-header">
+                <h3>📸 Prendre une photo</h3>
+                <button class="btn-close" @onclick="HandleCancel" title="Fermer">✕</button>
+            </div>
+
+            <div class="camera-modal-body">
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="camera-error">
+                        <span class="error-icon">⚠️</span>
+                        <p>@_errorMessage</p>
+                        <button class="btn-retry" @onclick="InitializeCameraAsync">Réessayer</button>
+                    </div>
+                }
+                else if (_isLoading)
+                {
+                    <div class="camera-loading">
+                        <div class="spinner"></div>
+                        <p>Démarrage de la caméra...</p>
+                    </div>
+                }
+                else if (_isCaptured && !string.IsNullOrEmpty(_capturedPhotoBase64))
+                {
+                    <div class="photo-preview">
+                        <img src="@_capturedPhotoBase64" alt="Photo capturée" class="captured-photo" />
+                        <div class="preview-actions">
+                            <button class="btn-send" @onclick="HandleSend" disabled="@_isSending">
+                                @if (_isSending)
+                                {
+                                    <span class="spinner-small"></span>
+                                    <span>Envoi...</span>
+                                }
+                                else
+                                {
+                                    <span>✓ Envoyer</span>
+                                }
+                            </button>
+                            <button class="btn-retake" @onclick="HandleRetake">↻ Reprendre</button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="camera-view">
+                        <video id="@VideoElementId" autoplay playsinline class="camera-video"></video>
+                        <button class="btn-capture" @onclick="HandleCapture" title="Capturer la photo">
+                            <span class="capture-icon"></span>
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnPhotoSent { get; set; }
+
+    private bool _isLoading = false;
+    private bool _isCaptured = false;
+    private bool _isSending = false;
+    private string? _errorMessage;
+    private string? _capturedPhotoBase64;
+    private static readonly string VideoElementId = "camera-video-preview";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsOpen && !_isLoading && !_isCaptured && string.IsNullOrEmpty(_errorMessage))
+        {
+            await InitializeCameraAsync();
+        }
+    }
+
+    private async Task InitializeCameraAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            // Vérifier disponibilité caméra
+            var isAvailable = await EphemeralPhotoService.IsCameraAvailableAsync();
+            if (!isAvailable)
+            {
+                _errorMessage = "Caméra non disponible sur cet appareil.";
+                _isLoading = false;
+                StateHasChanged();
+                return;
+            }
+
+            _isLoading = false;
+            StateHasChanged();
+
+            // Petit délai pour s'assurer que le DOM est rendu
+            await Task.Delay(100);
+
+            // Démarrer la caméra et attacher au video element
+            await EphemeralPhotoService.AttachCameraToVideoAsync(VideoElementId);
+
+            Logger.LogInformation("Caméra initialisée avec succès");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de l'initialisation de la caméra");
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleCapture()
+    {
+        try
+        {
+            Logger.LogInformation("Capture de la photo...");
+
+            // Capturer la photo depuis le video element
+            _capturedPhotoBase64 = await EphemeralPhotoService.CapturePhotoAsync(VideoElementId);
+
+            // Arrêter la caméra
+            await EphemeralPhotoService.StopCameraAsync();
+
+            _isCaptured = true;
+            StateHasChanged();
+
+            Logger.LogInformation("Photo capturée avec succès");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de la capture de la photo");
+            _errorMessage = "Erreur lors de la capture de la photo.";
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleRetake()
+    {
+        _isCaptured = false;
+        _capturedPhotoBase64 = null;
+        _errorMessage = null;
+        StateHasChanged();
+
+        await InitializeCameraAsync();
+    }
+
+    private async Task HandleSend()
+    {
+        if (string.IsNullOrEmpty(_capturedPhotoBase64))
+        {
+            return;
+        }
+
+        _isSending = true;
+        StateHasChanged();
+
+        try
+        {
+            await OnPhotoSent.InvokeAsync(_capturedPhotoBase64);
+            await CloseModalAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de l'envoi de la photo");
+            _errorMessage = "Erreur lors de l'envoi de la photo.";
+            _isSending = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleCancel()
+    {
+        await CloseModalAsync();
+    }
+
+    private async Task CloseModalAsync()
+    {
+        try
+        {
+            await EphemeralPhotoService.StopCameraAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Erreur lors de l'arrêt de la caméra");
+        }
+
+        _isCaptured = false;
+        _capturedPhotoBase64 = null;
+        _errorMessage = null;
+        _isLoading = false;
+        _isSending = false;
+
+        await OnClose.InvokeAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await EphemeralPhotoService.StopCameraAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Erreur lors du dispose de CameraModal");
+        }
+
+        GC.SuppressFinalize(this);
+    }
+}

@@ -2,6 +2,7 @@
 using IrcChat.Client.Models;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -2167,6 +2168,634 @@ public class ChatServiceTests : BunitContext
                 It.IsAny<CancellationToken>()),
             Times.AtLeast(2));
     }
+
+    // Tests à ajouter à la fin de la classe ChatServiceTests existante (après les tests Ping)
+
+    // ==================== TESTS SENDEPHEMERALPHOTO ====================
+
+    [Fact]
+    public async Task SendEphemeralPhoto_WhenConnectionNull_ShouldThrowInvalidOperationException()
+    {
+        // Arrange
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            NullLogger<ChatService>.Instance);
+
+        // Pas d'appel à InitializeAsync - connexion null
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.SendEphemeralPhoto("general", "imageUrl", "thumbUrl", false));
+
+        Assert.Contains("Hub non initialisé", ex.Message);
+    }
+
+    [Fact]
+    public async Task SendEphemeralPhoto_WhenConnectionExists_ShouldCallInvokeAsync()
+    {
+        // Arrange
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            NullLogger<ChatService>.Instance);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionMock.Setup(x => x.InvokeCoreAsync(
+            "SendEphemeralPhoto",
+            It.IsAny<Type>(),
+            It.IsAny<object[]>(),
+            It.IsAny<CancellationToken>()))
+            .Returns(Task.FromResult<object?>(null));
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        var channelOrUserId = "general";
+        var imageUrl = "https://cloudinary.com/images/photo123.jpg";
+        var thumbnailUrl = "https://cloudinary.com/images/photo123_thumb.jpg";
+        var isPrivate = false;
+
+        // Act
+        await service.SendEphemeralPhoto(channelOrUserId, imageUrl, thumbnailUrl, isPrivate);
+
+        // Assert
+        hubConnectionMock.Verify(
+            x => x.InvokeCoreAsync(
+                "SendEphemeralPhoto",
+                typeof(object),
+                It.Is<object[]>(args =>
+                    args.Length == 4 &&
+                    (string)args[0] == channelOrUserId &&
+                    (string)args[1] == imageUrl &&
+                    (string)args[2] == thumbnailUrl &&
+                    (bool)args[3] == isPrivate),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendEphemeralPhoto_PrivateMessage_ShouldPassPrivateTrue()
+    {
+        // Arrange
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            NullLogger<ChatService>.Instance);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionMock.Setup(x => x.InvokeCoreAsync(
+            "SendEphemeralPhoto",
+            It.IsAny<Type>(),
+            It.IsAny<object[]>(),
+            It.IsAny<CancellationToken>()))
+            .Returns(Task.FromResult<object?>(null));
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        var userId = "user123";
+        var imageUrl = "https://cloudinary.com/images/photo456.jpg";
+        var thumbnailUrl = "https://cloudinary.com/images/photo456_thumb.jpg";
+        var isPrivate = true;
+
+        // Act
+        await service.SendEphemeralPhoto(userId, imageUrl, thumbnailUrl, isPrivate);
+
+        // Assert
+        hubConnectionMock.Verify(
+            x => x.InvokeCoreAsync(
+                "SendEphemeralPhoto",
+                typeof(object),
+                It.Is<object[]>(args =>
+                    args.Length == 4 &&
+                    (string)args[0] == userId &&
+                    (bool)args[3] == true),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendEphemeralPhoto_ChannelMessage_ShouldPassPrivateFalse()
+    {
+        // Arrange
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            NullLogger<ChatService>.Instance);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionMock.Setup(x => x.InvokeCoreAsync(
+            "SendEphemeralPhoto",
+            It.IsAny<Type>(),
+            It.IsAny<object[]>(),
+            It.IsAny<CancellationToken>()))
+            .Returns(Task.FromResult<object?>(null));
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        var channel = "general";
+        var imageUrl = "https://cloudinary.com/images/photo.jpg";
+        var thumbnailUrl = "https://cloudinary.com/images/photo_thumb.jpg";
+        var isPrivate = false;
+
+        // Act
+        await service.SendEphemeralPhoto(channel, imageUrl, thumbnailUrl, isPrivate);
+
+        // Assert
+        hubConnectionMock.Verify(
+            x => x.InvokeCoreAsync(
+                "SendEphemeralPhoto",
+                typeof(object),
+                It.Is<object[]>(args =>
+                    args.Length == 4 &&
+                    (string)args[0] == channel &&
+                    (bool)args[3] == false),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendEphemeralPhoto_WhenInvokeFails_ShouldLogErrorAndRethrow()
+    {
+        // Arrange
+        var loggerMock = new Mock<ILogger<ChatService>>();
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            loggerMock.Object);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var hubException = new HubException("SignalR error");
+        hubConnectionMock.Setup(x => x.InvokeCoreAsync(
+            "SendEphemeralPhoto",
+            It.IsAny<Type>(),
+            It.IsAny<object[]>(),
+            It.IsAny<CancellationToken>()))
+            .ThrowsAsync(hubException);
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<HubException>(() =>
+            service.SendEphemeralPhoto("general", "imageUrl", "thumbUrl", false));
+
+        Assert.Equal("SignalR error", ex.Message);
+
+        // Vérifier que l'erreur est loggée
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Erreur lors de l'envoi de la photo éphémère")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendEphemeralPhoto_WithAllParameters_ShouldPassCorrectValues()
+    {
+        // Arrange
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            NullLogger<ChatService>.Instance);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        string? capturedChannel = null;
+        string? capturedImageUrl = null;
+        string? capturedThumbnailUrl = null;
+        bool? capturedIsPrivate = null;
+
+        hubConnectionMock.Setup(x => x.InvokeCoreAsync(
+            "SendEphemeralPhoto",
+            It.IsAny<Type>(),
+            It.IsAny<object[]>(),
+            It.IsAny<CancellationToken>()))
+            .Callback<string, Type, object[], CancellationToken>((method, returnType, args, ct) =>
+            {
+                capturedChannel = (string)args[0];
+                capturedImageUrl = (string)args[1];
+                capturedThumbnailUrl = (string)args[2];
+                capturedIsPrivate = (bool)args[3];
+            })
+            .Returns(Task.FromResult<object?>(null));
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        var channelOrUserId = "private-user-456";
+        var imageUrl = "https://res.cloudinary.com/mycloud/image/upload/v123/photo.jpg";
+        var thumbnailUrl = "https://res.cloudinary.com/mycloud/image/upload/c_thumb,w_200/v123/photo.jpg";
+        var isPrivate = true;
+
+        // Act
+        await service.SendEphemeralPhoto(channelOrUserId, imageUrl, thumbnailUrl, isPrivate);
+
+        // Assert
+        Assert.Equal(channelOrUserId, capturedChannel);
+        Assert.Equal(imageUrl, capturedImageUrl);
+        Assert.Equal(thumbnailUrl, capturedThumbnailUrl);
+        Assert.Equal(isPrivate, capturedIsPrivate);
+    }
+
+    // ==================== TESTS ONEPHEMERALPHOTOTORECEIVED ====================
+
+    [Fact]
+    public async Task OnEphemeralPhotoReceived_WhenPhotoReceived_ShouldTriggerEvent()
+    {
+        // Arrange
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            NullLogger<ChatService>.Instance);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        Func<object?[], object, Task>? onReceiveEphemeralPhoto = null;
+        object? onReceiveEphemeralPhotoState = null;
+
+        hubConnectionMock.Setup(x => x.On(
+            "ReceiveEphemeralPhoto",
+            It.IsAny<Type[]>(),
+            It.IsAny<Func<object?[], object, Task>>(),
+            It.IsAny<object>()))
+            .Callback<string, Type[], Func<object?[], object, Task>, object>((methodName, parameterTypes, handler, state) =>
+            {
+                onReceiveEphemeralPhoto = handler;
+                onReceiveEphemeralPhotoState = state;
+            })
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        var testPhoto = new EphemeralPhotoDto
+        {
+            Id = Guid.NewGuid(),
+            SenderId = "user123",
+            SenderUsername = "Alice",
+            ChannelId = "general",
+            RecipientId = null,
+            ImageUrl = "https://cloudinary.com/image.jpg",
+            ThumbnailUrl = "https://cloudinary.com/thumb.jpg",
+            Timestamp = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddSeconds(3)
+        };
+
+        // Act without subscription
+        await onReceiveEphemeralPhoto!([testPhoto], onReceiveEphemeralPhotoState!);
+
+        // Arrange with subscription
+        EphemeralPhotoDto? receivedPhoto = null;
+        service.OnEphemeralPhotoReceived += photo => receivedPhoto = photo;
+
+        // Act
+        await onReceiveEphemeralPhoto!([testPhoto], onReceiveEphemeralPhotoState!);
+
+        // Assert
+        Assert.NotNull(receivedPhoto);
+        Assert.Equal(testPhoto.Id, receivedPhoto.Id);
+        Assert.Equal(testPhoto.SenderUsername, receivedPhoto.SenderUsername);
+        Assert.Equal(testPhoto.ImageUrl, receivedPhoto.ImageUrl);
+        Assert.Equal(testPhoto.ThumbnailUrl, receivedPhoto.ThumbnailUrl);
+        Assert.Equal(testPhoto.ChannelId, receivedPhoto.ChannelId);
+    }
+
+    [Fact]
+    public async Task OnEphemeralPhotoReceived_WhenPhotoReceived_ShouldLogInformation()
+    {
+        // Arrange
+        var loggerMock = new Mock<ILogger<ChatService>>();
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            loggerMock.Object);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        Func<object?[], object, Task>? onReceiveEphemeralPhoto = null;
+        object? onReceiveEphemeralPhotoState = null;
+
+        hubConnectionMock.Setup(x => x.On(
+            "ReceiveEphemeralPhoto",
+            It.IsAny<Type[]>(),
+            It.IsAny<Func<object?[], object, Task>>(),
+            It.IsAny<object>()))
+            .Callback<string, Type[], Func<object?[], object, Task>, object>((methodName, parameterTypes, handler, state) =>
+            {
+                onReceiveEphemeralPhoto = handler;
+                onReceiveEphemeralPhotoState = state;
+            })
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        var testPhoto = new EphemeralPhotoDto
+        {
+            Id = Guid.NewGuid(),
+            SenderId = "user123",
+            SenderUsername = "Bob",
+            ChannelId = "general",
+            RecipientId = null,
+            ImageUrl = "https://cloudinary.com/image.jpg",
+            ThumbnailUrl = "https://cloudinary.com/thumb.jpg",
+            Timestamp = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddSeconds(3)
+        };
+
+        // Act
+        await onReceiveEphemeralPhoto!([testPhoto], onReceiveEphemeralPhotoState!);
+
+        // Assert
+        loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Photo éphémère reçue de Bob")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task OnEphemeralPhotoReceived_NoSubscribers_ShouldNotThrow()
+    {
+        // Arrange
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            NullLogger<ChatService>.Instance);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        Func<object?[], object, Task>? onReceiveEphemeralPhoto = null;
+        object? onReceiveEphemeralPhotoState = null;
+
+        hubConnectionMock.Setup(x => x.On(
+            "ReceiveEphemeralPhoto",
+            It.IsAny<Type[]>(),
+            It.IsAny<Func<object?[], object, Task>>(),
+            It.IsAny<object>()))
+            .Callback<string, Type[], Func<object?[], object, Task>, object>((methodName, parameterTypes, handler, state) =>
+            {
+                onReceiveEphemeralPhoto = handler;
+                onReceiveEphemeralPhotoState = state;
+            })
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        // Pas de souscription à OnEphemeralPhotoReceived
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        var testPhoto = new EphemeralPhotoDto
+        {
+            Id = Guid.NewGuid(),
+            SenderId = "user123",
+            SenderUsername = "Charlie",
+            ChannelId = "general",
+            RecipientId = null,
+            ImageUrl = "https://cloudinary.com/image.jpg",
+            ThumbnailUrl = "https://cloudinary.com/thumb.jpg",
+            Timestamp = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddSeconds(3)
+        };
+
+        // Act & Assert - Ne doit pas lever d'exception
+        await onReceiveEphemeralPhoto!([testPhoto], onReceiveEphemeralPhotoState!);
+        Assert.True(true);
+    }
+
+    [Fact]
+    public async Task OnEphemeralPhotoReceived_MultipleSubscribers_ShouldNotifyAll()
+    {
+        // Arrange
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            NullLogger<ChatService>.Instance);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        Func<object?[], object, Task>? onReceiveEphemeralPhoto = null;
+        object? onReceiveEphemeralPhotoState = null;
+
+        hubConnectionMock.Setup(x => x.On(
+            "ReceiveEphemeralPhoto",
+            It.IsAny<Type[]>(),
+            It.IsAny<Func<object?[], object, Task>>(),
+            It.IsAny<object>()))
+            .Callback<string, Type[], Func<object?[], object, Task>, object>((methodName, parameterTypes, handler, state) =>
+            {
+                onReceiveEphemeralPhoto = handler;
+                onReceiveEphemeralPhotoState = state;
+            })
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        var subscriber1Called = 0;
+        var subscriber2Called = 0;
+
+        service.OnEphemeralPhotoReceived += photo => subscriber1Called++;
+        service.OnEphemeralPhotoReceived += photo => subscriber2Called++;
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        var testPhoto = new EphemeralPhotoDto
+        {
+            Id = Guid.NewGuid(),
+            SenderId = "user123",
+            SenderUsername = "Dave",
+            ChannelId = "general",
+            RecipientId = null,
+            ImageUrl = "https://cloudinary.com/image.jpg",
+            ThumbnailUrl = "https://cloudinary.com/thumb.jpg",
+            Timestamp = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddSeconds(3)
+        };
+
+        // Act
+        await onReceiveEphemeralPhoto!([testPhoto], onReceiveEphemeralPhotoState!);
+
+        // Assert
+        Assert.Equal(1, subscriber1Called);
+        Assert.Equal(1, subscriber2Called);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_ShouldRegisterReceiveEphemeralPhotoHandler()
+    {
+        // Arrange
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            NullLogger<ChatService>.Instance);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        hubConnectionMock.Setup(x => x.On(
+            It.IsAny<string>(),
+            It.IsAny<Type[]>(),
+            It.IsAny<Func<object?[], object, Task>>(),
+            It.IsAny<object>()))
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        SetConnectedState(hubConnectionMock);
+
+        // Act
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        // Assert - Vérifier que le handler ReceiveEphemeralPhoto est enregistré
+        hubConnectionMock.Verify(
+            x => x.On(
+                "ReceiveEphemeralPhoto",
+                It.IsAny<Type[]>(),
+                It.IsAny<Func<object?[], object, Task>>(),
+                It.IsAny<object>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public void ChatService_OnEphemeralPhotoReceived_PropertyExists()
+    {
+        // Act & Assert - Vérifier que la propriété d'événement existe
+        var ephemeralPhotoEvent = typeof(ChatService).GetEvent("OnEphemeralPhotoReceived");
+
+        Assert.NotNull(ephemeralPhotoEvent);
+    }
+
+    [Fact]
+    public async Task OnEphemeralPhotoReceived_PrivatePhoto_ShouldTriggerEvent()
+    {
+        // Arrange
+        var service = new ChatService(
+            privateMessageServiceMock.Object,
+            unverifiedAuthServiceMock.Object,
+            requestAuthenticationService,
+            NullLogger<ChatService>.Instance);
+
+        var hubConnectionMock = new Mock<HubConnectionStub>();
+        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
+
+        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        Func<object?[], object, Task>? onReceiveEphemeralPhoto = null;
+        object? onReceiveEphemeralPhotoState = null;
+
+        hubConnectionMock.Setup(x => x.On(
+            "ReceiveEphemeralPhoto",
+            It.IsAny<Type[]>(),
+            It.IsAny<Func<object?[], object, Task>>(),
+            It.IsAny<object>()))
+            .Callback<string, Type[], Func<object?[], object, Task>, object>((methodName, parameterTypes, handler, state) =>
+            {
+                onReceiveEphemeralPhoto = handler;
+                onReceiveEphemeralPhotoState = state;
+            })
+            .Returns(Mock.Of<IDisposable>());
+
+        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
+
+        await service.InitializeAsync(hubConnectionBuilderMock.Object);
+
+        var testPhoto = new EphemeralPhotoDto
+        {
+            Id = Guid.NewGuid(),
+            SenderId = "sender123",
+            SenderUsername = "Alice",
+            ChannelId = null, // Photo privée - pas de canal
+            RecipientId = "recipient456", // Photo privée - destinataire spécifique
+            ImageUrl = "https://cloudinary.com/image.jpg",
+            ThumbnailUrl = "https://cloudinary.com/thumb.jpg",
+            Timestamp = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddSeconds(3)
+        };
+
+        EphemeralPhotoDto? receivedPhoto = null;
+        service.OnEphemeralPhotoReceived += photo => receivedPhoto = photo;
+
+        // Act
+        await onReceiveEphemeralPhoto!([testPhoto], onReceiveEphemeralPhotoState!);
+
+        // Assert
+        Assert.NotNull(receivedPhoto);
+        Assert.Null(receivedPhoto.ChannelId); // Pas de canal pour photo privée
+        Assert.Equal("recipient456", receivedPhoto.RecipientId); // Destinataire spécifique
+    }
+
     private static void SetConnectedState(Mock<HubConnectionStub> hubConnectionMock)
     {
         // Simuler l'état connecté

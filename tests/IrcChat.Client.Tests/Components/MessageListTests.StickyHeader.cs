@@ -2,6 +2,7 @@
 // Tests à ajouter pour le header sticky collapsible
 
 using IrcChat.Client.Components;
+using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,16 +11,21 @@ namespace IrcChat.Client.Tests.Components;
 
 public sealed class MessageListStickyHeaderTests : BunitContext
 {
+    private readonly Mock<IEphemeralPhotoService> _ephemeralPhotoServiceMock;
+
     public MessageListStickyHeaderTests()
     {
+        _ephemeralPhotoServiceMock = new Mock<IEphemeralPhotoService>();
+
         Services.AddLogging();
+        Services.AddSingleton(_ephemeralPhotoServiceMock.Object);
     }
 
     [Fact]
     public void MessageList_WithShowDescriptionTrue_ShouldDisplayHeader()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -38,7 +44,7 @@ public sealed class MessageListStickyHeaderTests : BunitContext
     public void MessageList_WithShowDescriptionFalse_ShouldNotDisplayHeader()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -56,7 +62,7 @@ public sealed class MessageListStickyHeaderTests : BunitContext
     public void MessageList_WithEmptyDescription_ShouldDisplayPlaceholder()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -75,7 +81,7 @@ public sealed class MessageListStickyHeaderTests : BunitContext
     public void MessageList_WithCanManage_ShouldDisplayEditButton()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -94,7 +100,7 @@ public sealed class MessageListStickyHeaderTests : BunitContext
     public void MessageList_WithoutCanManage_ShouldNotDisplayEditButton()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -112,7 +118,7 @@ public sealed class MessageListStickyHeaderTests : BunitContext
     public async Task MessageList_EditButton_WhenClicked_ShouldInvokeCallback()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
         var callbackInvoked = false;
 
         var cut = Render<MessageList>(parameters => parameters
@@ -135,7 +141,7 @@ public sealed class MessageListStickyHeaderTests : BunitContext
     public void MessageList_OnScrollPositionChanged_ShouldUpdateCollapsedState()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
@@ -157,7 +163,7 @@ public sealed class MessageListStickyHeaderTests : BunitContext
     public void MessageList_OnScrollPositionChanged_WithFalse_ShouldDisplayExpanded()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
@@ -180,7 +186,7 @@ public sealed class MessageListStickyHeaderTests : BunitContext
     public async Task MessageList_HeaderClick_ShouldToggleCollapse()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
@@ -208,7 +214,7 @@ public sealed class MessageListStickyHeaderTests : BunitContext
     public void MessageList_WithMultilineDescription_ShouldDisplayAllLines()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
         var multilineDescription = "Ligne 1\nLigne 2\nLigne 3";
 
         // Act
@@ -230,7 +236,7 @@ public sealed class MessageListStickyHeaderTests : BunitContext
     public void MessageList_CollapsedState_ShouldHaveCollapsedClass()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
@@ -251,7 +257,7 @@ public sealed class MessageListStickyHeaderTests : BunitContext
     public void MessageList_ExpandedState_ShouldHaveExpandedClass()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
@@ -272,7 +278,7 @@ public sealed class MessageListStickyHeaderTests : BunitContext
     public void MessageList_OnUserScroll_ShouldUpdateScrollingState()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         var cut = Render<MessageList>(parameters => parameters
             .Add(p => p.Messages, messages)
@@ -292,7 +298,7 @@ public sealed class MessageListStickyHeaderTests : BunitContext
     public void MessageList_WithLongDescription_ShouldNotOverflow()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
         var longDescription = new string('a', 500);
 
         // Act
@@ -312,7 +318,7 @@ public sealed class MessageListStickyHeaderTests : BunitContext
     public async Task MessageList_EditButtonClick_ShouldNotTriggerHeaderToggle()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
         var editClicked = false;
 
         var cut = Render<MessageList>(parameters => parameters
@@ -342,7 +348,7 @@ public sealed class MessageListStickyHeaderTests : BunitContext
     public void MessageList_InitialState_ShouldBeExpanded()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
 
         // Act
         var cut = Render<MessageList>(parameters => parameters
@@ -361,7 +367,7 @@ public sealed class MessageListStickyHeaderTests : BunitContext
     public void MessageList_WithSpecialCharacters_ShouldDisplayCorrectly()
     {
         // Arrange
-        var messages = new List<Message>();
+        var messages = new List<IMessage>();
         var specialDescription = "Description <avec> \"caractères\" spéciaux & symboles";
 
         // Act

@@ -8,6 +8,7 @@
 @using IrcChat.Client.Services
 @using IrcChat.Client.Components
 @using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Connections
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.Extensions.Options
 @using System.Net.Http.Headers
@@ -88,6 +89,7 @@ else
                       IsUserOnline="@isSelectedUserOnline"
                       GlobalFilterText="@globalFilterText"
                       OnMessageSent="@(isPrivateConversation ? SendPrivateMessage : SendMessage)"
+                      OnPhotoSent="HandleSendPhoto"
                       OnUserClicked="HandleUserClicked"
                       OnMuteStatusChanged="HandleMuteStatusChanged"
                       OnClosePrivateConversation="ClosePrivateChat"
@@ -95,7 +97,7 @@ else
                       OnUsersListToggle="HandleUsersListToggle"
                       OnChannelUpdated="HandleChannelUpdated"
                       OnGlobalFilterChanged="HandleGlobalFilterChanged"
-                      OnDeleteMessage="HandleDeleteMessage" />        
+                      OnDeleteMessage="HandleDeleteMessage" />
         }
     </div>
 
@@ -149,6 +151,7 @@ else
     private string currentUserId = string.Empty;
     private string? avatarUrl = null;
     private List<Message> messages = new();
+    private List<EphemeralPhotoDto> ephemeralPhotos = new();
     private List<Channel> channels = new();
     private List<User> users = new();
     private bool isInitialized = false;
@@ -330,7 +333,7 @@ else
         ChatService.OnUserMuted += OnUserMutedSignalR;
         ChatService.OnUserUnmuted += OnUserUnmutedSignalR;
         ChatService.OnMessageDeleted += OnMessageDeleted;
-
+        ChatService.OnEphemeralPhotoReceived += OnEphemeralPhotoReceived;
 
         PrivateMessageService.OnPrivateMessageReceived += OnPrivateMessageReceived;
         PrivateMessageService.OnPrivateMessageSent += OnPrivateMessageSent;
@@ -474,7 +477,7 @@ else
                 messages.Add(message);
                 StateHasChanged();
             }
-            
+
             if (Regex.IsMatch(message.Content, $@"\b{Regex.Escape(currentUsername)}\b", RegexOptions.IgnoreCase, timeout))
             {
                 await NotificationSoundService.PlaySoundAsync();
@@ -578,6 +581,7 @@ else
             if (!isPrivateConversation && channelName == currentChannel)
             {
                 messages = messages.Where(m => m.Id != messageId).ToList();
+                ephemeralPhotos = ephemeralPhotos.Where(p => p.Id != messageId).ToList();
                 Logger.LogInformation("Message {MessageId} supprimé dans {Channel}", messageId, channelName);
                 StateHasChanged();
             }
@@ -618,6 +622,20 @@ else
         }
 
         await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnEphemeralPhotoReceived(EphemeralPhotoDto ephemeralPhotoDto)
+    {
+        if (IgnoredUsersService.IsUserIgnored(ephemeralPhotoDto.SenderId))
+        {
+            return;
+        }
+
+        InvokeAsync(async () =>
+        {
+            ephemeralPhotos.Add(ephemeralPhotoDto);
+            StateHasChanged();
+        });
     }
 
     private Task HandleChannelDeleted(string channelName)
@@ -1031,7 +1049,7 @@ else
         }
         else
         {
-            privateMessages = await PrivateMessageService.GetPrivateMessagesAsync(currentUserId, userId);
+            privateMessages = [.. await PrivateMessageService.GetPrivateMessagesAsync(currentUserId, userId)];
         }
     }
 
@@ -1182,25 +1200,79 @@ else
         StateHasChanged();
     }
 
+    private async Task HandleSendPhoto((string ImageUrl, string ThumbnailUrl) photoUrls)
+    {
+        if (!IsConnected)
+        {
+            Logger.LogWarning("Tentative d'envoi de photo alors que déconnecté");
+            return;
+        }
+
+        try
+        {
+            var channelOrUserId = isPrivateConversation
+                ? selectedPrivateUser?.UserId ?? string.Empty
+                : currentChannel ?? string.Empty;
+
+            if (string.IsNullOrEmpty(channelOrUserId))
+            {
+                Logger.LogWarning("Impossible d'envoyer la photo : canal/user non défini");
+                return;
+            }
+
+            Logger.LogInformation(
+                "Envoi photo éphémère vers {Target} (privé: {IsPrivate})",
+                channelOrUserId,
+                isPrivateConversation);
+
+            // Envoyer via SignalR
+            await ChatService.SendEphemeralPhoto(
+                channelOrUserId,
+                photoUrls.ImageUrl,
+                photoUrls.ThumbnailUrl,
+                isPrivateConversation);
+
+            Logger.LogInformation("Photo éphémère envoyée avec succès");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de l'envoi de la photo éphémère");
+            muteNotification = "Erreur lors de l'envoi de la photo.";
+            StateHasChanged();
+            await Task.Delay(4000);
+            muteNotification = string.Empty;
+            StateHasChanged();
+        }
+    }
+
     private string? GetCurrentChannelOrUsername()
     {
         return isPrivateConversation ? selectedPrivateUser?.Username ?? string.Empty : currentChannel;
     }
 
-    private List<Message> GetCurrentMessages()
+    private List<IMessage> GetCurrentMessages()
     {
+        var list = new List<IMessage>();
         if (isPrivateConversation)
         {
-            // Convertir les PrivateMessage en Message pour l'affichage
-            return privateMessages.Select(pm => new Message
+            list = [..privateMessages.Select(pm => new Message
             {
                 Id = pm.Id,
                 Username = pm.SenderUsername,
                 Content = pm.Content,
                 Timestamp = pm.Timestamp
-            }).ToList();
+            })];
         }
-        return messages;
+        else
+        {
+            list = [.. messages];
+        }
+        ephemeralPhotos = ephemeralPhotos.Where(p => p.ImageUrl != null).ToList();
+        var photos = ephemeralPhotos.Where(p => (p.ChannelId != null && p.ChannelId == currentChannel) ||
+            (p.RecipientId != null && p.RecipientId == selectedPrivateUser?.UserId));
+        return list.Concat(photos)
+          .OrderBy(m => m.Timestamp)
+          .ToList();
     }
 
     private void NavigateToChannelRoute(string channel)
@@ -1354,7 +1426,7 @@ else
         ChatService.OnUserMuted -= OnUserMutedSignalR;
         ChatService.OnUserUnmuted -= OnUserUnmutedSignalR;
         ChatService.OnMessageDeleted -= OnMessageDeleted;
-
+        ChatService.OnEphemeralPhotoReceived -= OnEphemeralPhotoReceived;
 
         // Événements de connexion
         ChatService.OnDisconnected -= OnSignalRDisconnected;

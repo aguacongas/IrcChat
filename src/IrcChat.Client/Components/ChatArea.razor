@@ -32,7 +32,7 @@
                         <span class="status @(IsConnected ? "connected" : "disconnected")">
                             @(IsConnected ? "● Connecté" : "○ Déconnecté")
                         </span>
-                    </div>                                
+                    </div>
                 }
             </div>
             <div class="header-right">
@@ -79,7 +79,8 @@
                 <MessageInput @ref="messageInputRef"
                               IsConnected="IsConnected"
                               AvailableUsers="@Users"
-                              OnSendMessage="OnMessageSent" />
+                              OnSendMessage="OnMessageSent"
+                              OnSendPhoto="HandleSendPhoto" />
             </div>
 
             @if (Users != null)
@@ -121,7 +122,7 @@
     public bool IsConnected { get; set; }
 
     [Parameter]
-    public List<Message> Messages { get; set; } = new();
+    public List<IMessage> Messages { get; set; } = new();
 
     [Parameter]
     public List<User>? Users { get; set; }
@@ -146,6 +147,9 @@
 
     [Parameter]
     public EventCallback<string> OnMessageSent { get; set; }
+
+    [Parameter]
+    public EventCallback<(string ImageUrl, string ThumbnailUrl)> OnPhotoSent { get; set; }
 
     [Parameter]
     public EventCallback<User> OnUserClicked { get; set; }
@@ -184,13 +188,18 @@
         await OnGlobalFilterChanged.InvokeAsync(filterText);
     }
 
+    private async Task HandleSendPhoto((string ImageUrl, string ThumbnailUrl) photoUrls)
+    {
+        await OnPhotoSent.InvokeAsync(photoUrls);
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !string.IsNullOrEmpty(CurrentChannel) && IsConnected)
         {
             await FocusInputAsync();
         }
-    }    
+    }
 
     private async Task FocusInputAsync()
     {

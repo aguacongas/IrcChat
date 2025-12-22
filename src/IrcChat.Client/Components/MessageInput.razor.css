@@ -41,8 +41,10 @@
     color: #888;
   }
 
-/* Emoji button - à droite de l'input */
-.emoji-button {
+/* Boutons communs */
+.emoji-button,
+.photo-button,
+.camera-button {
   padding: 12px 14px;
   background: #1e1e1e;
   border: 1px solid #3e3e3e;
@@ -56,23 +58,53 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  order: 3;
 }
 
-  .emoji-button:hover:not(:disabled) {
+  .emoji-button:hover:not(:disabled),
+  .photo-button:hover:not(:disabled),
+  .camera-button:hover:not(:disabled) {
     background: #3e3e3e;
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(138, 180, 248, 0.3);
   }
 
-  .emoji-button:disabled {
+  .emoji-button:disabled,
+  .photo-button:disabled,
+  .camera-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
   }
 
+  /* Photo button - Couleur spécifique */
+  .photo-button:hover:not(:disabled) {
+    border-color: #9cc5ff;
+  }
+
+  /* Camera button - Couleur spécifique */
+  .camera-button:hover:not(:disabled) {
+    border-color: #68d391;
+  }
+
+/* Spinner dans les boutons */
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Send button */
-.input-area button:not(.emoji-button):not(.autocomplete-item) {
+.input-area button:not(.emoji-button):not(.photo-button):not(.camera-button):not(.autocomplete-item) {
   padding: 12px 30px;
   background: #8ab4f8;
   border: none;
@@ -84,19 +116,53 @@
   transition: all 0.2s;
   white-space: nowrap;
   flex-shrink: 0;
-  order: 2;
 }
 
-.input-area button:not(.emoji-button):hover:not(:disabled) {
+.input-area button:not(.emoji-button):not(.photo-button):not(.camera-button):hover:not(:disabled) {
   background: #9cc5ff;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(138, 180, 248, 0.3);
 }
 
-.input-area button:not(.emoji-button):disabled {
+.input-area button:not(.emoji-button):not(.photo-button):not(.camera-button):disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Upload error toast */
+.upload-error-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(252, 129, 129, 0.95);
+  color: #000;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  animation: slideUpFade 0.3s ease-out;
+  font-weight: 600;
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.upload-error-toast .error-icon {
+  font-size: 1.5rem;
 }
 
 /* Autocomplete dropdown (mentions ET emojis) */
@@ -202,7 +268,9 @@
     padding: 15px;
   }
 
-  .emoji-button {
+  .emoji-button,
+  .photo-button,
+  .camera-button {
     padding: 10px 12px;
     font-size: 18px;
   }
@@ -236,16 +304,31 @@
     order: 0;
   }
 
-  .input-area button:not(.emoji-button) {
+  .input-area button:not(.emoji-button):not(.photo-button):not(.camera-button) {
     flex: 1 1 auto;
-    order: 1;
+    order: 4;
   }
 
   .emoji-button {
-    padding: 8px 10px;
-    font-size: 16px;
+    order: 1;
+    flex: 0 0 auto;
+  }
+
+  .photo-button {
     order: 2;
     flex: 0 0 auto;
+  }
+
+  .camera-button {
+    order: 3;
+    flex: 0 0 auto;
+  }
+
+  .emoji-button,
+  .photo-button,
+  .camera-button {
+    padding: 8px 10px;
+    font-size: 16px;
   }
 
   .input-area input {
@@ -254,5 +337,11 @@
 
   .autocomplete-item {
     padding: 8px 10px;
+  }
+
+  .upload-error-toast {
+    bottom: 80px;
+    max-width: 90%;
+    font-size: 0.875rem;
   }
 }

@@ -1,7 +1,11 @@
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Components
 @using IrcChat.Client.Services
+@using Microsoft.AspNetCore.Components.Forms
 @inject IEmojiService EmojiService
+@inject IEphemeralPhotoService EphemeralPhotoService
+@inject IUnifiedAuthService Auth
+@inject ILogger<MessageInput> Logger
 
 <div class="input-area">
     <div class="input-wrapper">
@@ -12,7 +16,7 @@
                @onkeydown="HandleKeyDown"
                @onkeyup="HandleKeyUp"
                disabled="@(!IsConnected)" />
-        
+
         @if (showAutoComplete && filteredUsers.Any())
         {
             <div class="autocomplete-dropdown">
@@ -47,10 +51,39 @@
 
     <button class="emoji-button" @onclick="ToggleEmojiPicker" title="Insérer un emoji" disabled="@(!IsConnected)">
         😀
-    </button>    
+    </button>
+
+    <label for="fileInput" class="photo-button" title="Envoyer une photo éphémère" disabled="@(!IsConnected || _isUploadingPhoto)">
+          @if (_isUploadingPhoto)
+          {
+              <span class="spinner-small"></span>
+          }
+          else
+          {
+              <span>📷</span>
+          }
+    </label>
+    <InputFile id="fileInput" OnChange="HandleFileSelected" accept="image/jpeg,image/png,image/webp" style="display:none" />
+
+    <button class="camera-button" @onclick="HandleCameraClick" title="Prendre une photo" disabled="@(!IsConnected || _isUploadingPhoto)">
+        📸
+    </button>
+
 </div>
 
+
+
 <EmojiPicker @bind-IsOpen="isEmojiPickerOpen" OnEmojiSelected="InsertEmoji" />
+
+<CameraModal IsOpen="@isCameraModalOpen" OnClose="HandleCameraClose" OnPhotoSent="HandlePhotoFromCamera" />
+
+@if (!string.IsNullOrEmpty(_uploadError))
+{
+    <div class="upload-error-toast">
+        <span class="error-icon">⚠️</span>
+        <span>@_uploadError</span>
+    </div>
+}
 
 @code {
     private string messageInput = string.Empty;
@@ -71,6 +104,13 @@
     // Emoji picker
     private bool isEmojiPickerOpen = false;
 
+    // Photo upload
+    private bool _isUploadingPhoto = false;
+    private string? _uploadError;
+
+    // Camera modal
+    private bool isCameraModalOpen = false;
+
     [Parameter]
     public bool IsConnected { get; set; }
 
@@ -82,6 +122,9 @@
 
     [Parameter]
     public EventCallback<string> OnInsertUsername { get; set; }
+
+    [Parameter]
+    public EventCallback<(string ImageUrl, string ThumbnailUrl)> OnSendPhoto { get; set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -115,7 +158,7 @@
     }
 
     private async Task SendMessage()
-    {        
+    {
         if (!string.IsNullOrWhiteSpace(messageInput))
         {
             await OnSendMessage.InvokeAsync(messageInput.Trim());
@@ -125,15 +168,124 @@
         }
     }
 
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        _uploadError = null;
+        var file = e.File;
+
+        if (file == null)
+        {
+            return;
+        }
+
+        _isUploadingPhoto = true;
+        StateHasChanged();
+
+        try
+        {
+            // Validation
+            if (!await EphemeralPhotoService.ValidateImageFileAsync(file))
+            {
+                _uploadError = "Fichier invalide (type ou taille). Max 2MB, formats: JPEG, PNG, WebP.";
+                ShowErrorToast();
+                return;
+            }
+
+            // Lecture du fichier
+            using var stream = file.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var imageBytes = ms.ToArray();
+            var base64 = Convert.ToBase64String(imageBytes);
+
+            // Upload vers backend/Cloudinary
+            var userId = await Auth.GetClientUserIdAsync();
+            var (imageUrl, thumbnailUrl) = await EphemeralPhotoService.UploadImageAsync($"data:{file.ContentType};base64,{base64}", userId);
+
+            // Envoyer via SignalR
+            await OnSendPhoto.InvokeAsync((imageUrl, thumbnailUrl));
+
+            Logger.LogInformation("Photo éphémère envoyée avec succès");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de l'envoi de la photo");
+            _uploadError = "Erreur lors de l'envoi de la photo.";
+            ShowErrorToast();
+        }
+        finally
+        {
+            _isUploadingPhoto = false;
+            StateHasChanged();
+        }
+    }
+
+    // ========== Camera ==========
+
+    private void HandleCameraClick()
+    {
+        isCameraModalOpen = true;
+    }
+
+    private void HandleCameraClose()
+    {
+        isCameraModalOpen = false;
+    }
+
+    private async Task HandlePhotoFromCamera(string base64Photo)
+    {
+        _uploadError = null;
+        _isUploadingPhoto = true;
+        StateHasChanged();
+
+        try
+        {
+            // Upload vers backend/Cloudinary
+            var userId = await Auth.GetClientUserIdAsync();
+            var (imageUrl, thumbnailUrl) = await EphemeralPhotoService.UploadImageAsync(base64Photo, userId);
+
+            // Envoyer via SignalR
+            await OnSendPhoto.InvokeAsync((imageUrl, thumbnailUrl));
+
+            Logger.LogInformation("Photo éphémère depuis caméra envoyée avec succès");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de l'envoi de la photo depuis caméra");
+            _uploadError = "Erreur lors de l'envoi de la photo.";
+            ShowErrorToast();
+        }
+        finally
+        {
+            _isUploadingPhoto = false;
+            isCameraModalOpen = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowErrorToast()
+    {
+        StateHasChanged();
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(4000);
+            await InvokeAsync(() =>
+            {
+                _uploadError = null;
+                StateHasChanged();
+            });
+        });
+    }
+
+    // ========== Autocomplete (mentions et emojis) - INCHANGÉ ==========
+
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
-        // Priorité à l'autocomplétion emoji si active
         if (ManageEmojiAutocomplete(e))
         {
             return;
         }
 
-        // Ensuite l'autocomplétion des mentions
         if (showAutoComplete && filteredUsers.Any())
         {
             switch (e.Key)
@@ -193,7 +345,7 @@
         }
 
         return false;
-    } 
+    }
 
     private async Task HandleKeyUp(KeyboardEventArgs e)
     {
@@ -328,8 +480,8 @@
         if (matchingUser != null)
         {
             var beforeLastWord = string.Join(" ", words.Take(words.Length - 1));
-            messageInput = string.IsNullOrEmpty(beforeLastWord) 
-                ? matchingUser.Username 
+            messageInput = string.IsNullOrEmpty(beforeLastWord)
+                ? matchingUser.Username
                 : $"{beforeLastWord} {matchingUser.Username}";
             StateHasChanged();
         }

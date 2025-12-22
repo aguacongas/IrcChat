@@ -1,4 +1,5 @@
 using System.Text;
+using CloudinaryDotNet;
 using IrcChat.Api.Authorization;
 using IrcChat.Api.Data;
 using IrcChat.Api.Services;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
@@ -42,13 +44,25 @@ public static class ServiceCollectionExtensions
         services.Configure<ConnectionManagerOptions>(
                 configuration.GetSection(ConnectionManagerOptions.SectionName))
             .Configure<AutoMuteOptions>(
-                configuration.GetSection(AutoMuteOptions.SectionName));
+                configuration.GetSection(AutoMuteOptions.SectionName))
+            .Configure<CloudinaryOptions>(
+                configuration.GetSection(CloudinaryOptions.SectionName));
 
         services.AddScoped<OAuthService>()
+            .AddTransient(sp =>
+            {
+                var options = sp.GetRequiredService<IOptions<CloudinaryOptions>>().Value;
+                var account = new Account(options.CloudName, options.ApiKey, options.ApiSecret);
+                return new Cloudinary(account);
+            })
+            .AddTransient<ICloudinaryWrapper, CloudinaryWrapper>()
+            .AddTransient<ICloudinaryService, CloudinaryService>()
+            .AddTransient<IEphemeralPhotoService, EphemeralPhotoService>()
             .AddSignalR();
 
         services.AddHostedService<ConnectionManagerService>()
-            .AddHostedService<AutoMuteService>();
+            .AddHostedService<AutoMuteService>()
+            .AddHostedService<CloudinaryCleanupService>();
 
         return services;
     }

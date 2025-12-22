@@ -16,13 +16,13 @@ namespace IrcChat.Api.Tests.Integration;
 
 public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly HttpClient client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
     public async Task GetChannels_ShouldReturnChannelList()
     {
         // Act
-        var response = await client.GetAsync("/api/channels");
+        var response = await _client.GetAsync("/api/channels");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -65,7 +65,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         await db.SaveChangesAsync();
 
         // Act
-        var response = await client.GetAsync($"/api/channels/{channel}/users");
+        var response = await _client.GetAsync($"/api/channels/{channel}/users");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -99,7 +99,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(reservedUser);
-        client.DefaultRequestHeaders.Authorization =
+        _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
         var channel = new Channel
@@ -109,7 +109,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/channels", channel);
+        var response = await _client.PostAsJsonAsync("/api/channels", channel);
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -130,7 +130,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/channels", channel);
+        var response = await _client.PostAsJsonAsync("/api/channels", channel);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -169,7 +169,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(reservedUser);
-        client.DefaultRequestHeaders.Authorization =
+        _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
         var channel = new Channel
@@ -179,7 +179,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/channels", channel);
+        var response = await _client.PostAsJsonAsync("/api/channels", channel);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -211,7 +211,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(reservedUser);
-        client.DefaultRequestHeaders.Authorization =
+        _client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
         var channel = new Channel
@@ -221,7 +221,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/channels", channel);
+        var response = await _client.PostAsJsonAsync("/api/channels", channel);
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -234,7 +234,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
     public async Task GetConnectedUsers_EmptyChannel_ShouldReturnEmptyList()
     {
         // Act
-        var response = await client.GetAsync("/api/channels/empty-channel-no-users/users");
+        var response = await _client.GetAsync("/api/channels/empty-channel-no-users/users");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -275,12 +275,12 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(user);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel { Description = "Nouvelle description" };
 
         // Act
-        var response = await client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
+        var response = await _client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -315,12 +315,12 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(user);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel { Description = "Description" };
 
         // Act
-        var response = await client.PutAsJsonAsync("/api/channels/nonexistent", request);
+        var response = await _client.PutAsJsonAsync("/api/channels/nonexistent", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -333,7 +333,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         var request = new Channel { Description = "Description" };
 
         // Act
-        var response = await client.PutAsJsonAsync("/api/channels/test-channel", request);
+        var response = await _client.PutAsJsonAsync("/api/channels/test-channel", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -383,12 +383,12 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(otherUser);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel { Description = "Nouvelle description" };
 
         // Act
-        var response = await client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
+        var response = await _client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
@@ -427,7 +427,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(admin);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel
         {
@@ -435,7 +435,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         };
 
         // Act
-        var response = await client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
+        var response = await _client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -480,7 +480,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(user);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel
         {
@@ -488,7 +488,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         };
 
         // Act
-        var response = await client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
+        var response = await _client.PutAsJsonAsync($"/api/channels/{channel.Name}", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -523,7 +523,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(user);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel
         {
@@ -532,7 +532,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/channels", request);
+        var response = await _client.PostAsJsonAsync("/api/channels", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -577,7 +577,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(user);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel
         {
@@ -586,7 +586,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/channels", request);
+        var response = await _client.PostAsJsonAsync("/api/channels", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -641,7 +641,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(user);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel
         {
@@ -649,7 +649,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         };
 
         // Act
-        var response = await client.PutAsJsonAsync("/api/channels/tech", request);
+        var response = await _client.PutAsJsonAsync("/api/channels/tech", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -699,7 +699,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(user);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel
         {
@@ -707,7 +707,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         };
 
         // Act
-        var response = await client.PutAsJsonAsync("/api/channels/music", request);
+        var response = await _client.PutAsJsonAsync("/api/channels/music", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -757,7 +757,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         await db.SaveChangesAsync();
 
         var token = GenerateOAuthToken(user);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var request = new Channel
         {
@@ -765,7 +765,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         };
 
         // Act
-        var response = await client.PutAsJsonAsync("/api/channels/general", request);
+        var response = await _client.PutAsJsonAsync("/api/channels/general", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -818,7 +818,7 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         await db.SaveChangesAsync();
 
         // Act
-        var response = await client.GetAsync("/api/channels");
+        var response = await _client.GetAsync("/api/channels");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

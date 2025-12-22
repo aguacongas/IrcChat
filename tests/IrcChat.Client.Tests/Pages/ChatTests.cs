@@ -24,6 +24,7 @@ public partial class ChatTests : BunitContext
     private readonly Mock<IChannelUnreadCountService> channelUnreadCountServiceMock;
     private readonly Mock<INotificationSoundService> notificationSounServiceMock;
     private readonly Mock<IEmojiService> emojiServiceMock;
+    private readonly Mock<IEphemeralPhotoService> epheralPhotoServiceMock;
     private readonly MockHttpMessageHandler mockHttp;
     private readonly NavigationManager navManager;
 
@@ -38,6 +39,7 @@ public partial class ChatTests : BunitContext
         activeChannelsServiceMock = new Mock<IActiveChannelsService>();
         channelUnreadCountServiceMock = new Mock<IChannelUnreadCountService>();
         notificationSounServiceMock = new Mock<INotificationSoundService>();
+        epheralPhotoServiceMock = new Mock<IEphemeralPhotoService>();
         emojiServiceMock = new Mock<IEmojiService>();
         emojiServiceMock.Setup(x => x.IsLoaded).Returns(true);
         emojiServiceMock.Setup(x => x.GetAllEmojis()).Returns([]);
@@ -60,6 +62,7 @@ public partial class ChatTests : BunitContext
         Services.AddSingleton(channelUnreadCountServiceMock.Object);
         Services.AddSingleton(notificationSounServiceMock.Object);
         Services.AddSingleton(emojiServiceMock.Object);
+        Services.AddSingleton(epheralPhotoServiceMock.Object);
 
         Services.AddSingleton(httpClient);
         Services.Configure<ApiSettings>(s =>

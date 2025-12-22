@@ -53,7 +53,7 @@ namespace IrcChat.Api.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Channels");
+                    b.ToTable("Channels", (string)null);
                 });
 
             modelBuilder.Entity("IrcChat.Shared.Models.ConnectedUser", b =>
@@ -99,7 +99,7 @@ namespace IrcChat.Api.Migrations
                     b.HasIndex("Username", "Channel")
                         .IsUnique();
 
-                    b.ToTable("ConnectedUsers");
+                    b.ToTable("ConnectedUsers", (string)null);
                 });
 
             modelBuilder.Entity("IrcChat.Shared.Models.Message", b =>
@@ -136,7 +136,7 @@ namespace IrcChat.Api.Migrations
 
                     b.HasIndex("Timestamp");
 
-                    b.ToTable("Messages");
+                    b.ToTable("Messages", (string)null);
                 });
 
             modelBuilder.Entity("IrcChat.Shared.Models.MutedUser", b =>
@@ -171,7 +171,7 @@ namespace IrcChat.Api.Migrations
                     b.HasIndex("ChannelName", "UserId")
                         .IsUnique();
 
-                    b.ToTable("MutedUsers");
+                    b.ToTable("MutedUsers", (string)null);
                 });
 
             modelBuilder.Entity("IrcChat.Shared.Models.PrivateMessage", b =>
@@ -224,7 +224,7 @@ namespace IrcChat.Api.Migrations
 
                     b.HasIndex("SenderUserId", "IsDeletedBySender");
 
-                    b.ToTable("PrivateMessages");
+                    b.ToTable("PrivateMessages", (string)null);
                 });
 
             modelBuilder.Entity("IrcChat.Shared.Models.ReservedUsername", b =>
@@ -271,7 +271,7 @@ namespace IrcChat.Api.Migrations
                     b.HasIndex("Provider", "ExternalUserId")
                         .IsUnique();
 
-                    b.ToTable("ReservedUsernames");
+                    b.ToTable("ReservedUsernames", (string)null);
                 });
 #pragma warning restore 612, 618
         }

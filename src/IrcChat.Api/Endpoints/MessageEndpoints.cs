@@ -51,18 +51,16 @@ public static class MessageEndpoints
     {
         var message = await db.Messages.FindAsync(messageId);
 
-        if (message == null || message.Channel != channelName)
+        if (message != null && message.Channel == channelName)
         {
-            return Results.NotFound();
+            // Marquer le message comme supprimé
+            message.IsDeleted = true;
+            await db.SaveChangesAsync();
         }
-
-        // Marquer le message comme supprimé
-        message.IsDeleted = true;
-        await db.SaveChangesAsync();
 
         // Notifier tous les utilisateurs du canal
         await hubContext.Clients.Group(channelName)
-            .SendAsync("MessageDeleted", message.Id, channelName);
+            .SendAsync("MessageDeleted", messageId, channelName);
 
         logger.LogInformation(
             "Message {MessageId} supprimé dans {Channel} par {User}",

@@ -85,11 +85,8 @@ public sealed class ActiveChannelsService(IJSRuntime jsRuntime, ILogger<ActiveCh
             var removed = activeChannels.RemoveAll(c =>
                 c.Equals(channelName, StringComparison.OrdinalIgnoreCase));
 
-            if (removed > 0)
-            {
-                await SaveAsync();
-                logger.LogDebug("Salon {ChannelName} retiré des salons actifs", channelName);
-            }
+            await SaveAsync();
+            logger.LogDebug("Salon {ChannelName} retiré des salons actifs", channelName);
         }
         catch (Exception ex)
         {

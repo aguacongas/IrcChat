@@ -38,6 +38,8 @@ public interface IChatService : IAsyncDisposable
     /// </summary>
     event Action<Guid, string>? OnMessageDeleted;
 
+    event Action<EphemeralPhotoDto>? OnEphemeralPhotoReceived;
+
     // Événements pour l'état de la connexion SignalR
     event Action? OnDisconnected;
 
@@ -58,4 +60,10 @@ public interface IChatService : IAsyncDisposable
     Task SendPrivateMessage(SendPrivateMessageRequest request);
 
     Task MarkPrivateMessagesAsRead(string senderUserId);
+
+    /// <summary>
+    /// Envoie une photo éphémère.
+    /// </summary>
+    Task SendEphemeralPhoto(string channelOrUserId, string imageUrl, string thumbnailUrl, bool isPrivate);
+
 }
