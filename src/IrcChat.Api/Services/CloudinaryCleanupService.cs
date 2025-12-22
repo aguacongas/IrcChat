@@ -52,8 +52,6 @@ public class CloudinaryCleanupService(
             var folder = settings.EphemeralFolder;
             var cutoffDate = DateTime.UtcNow.AddHours(-1);
 
-            logger.LogInformation("Nettoyage des images Cloudinary de plus de 1h dans {Folder}", folder);
-
             // Lister les ressources du dossier
             var listParams = new ListResourcesByAssetFolderParams
             {

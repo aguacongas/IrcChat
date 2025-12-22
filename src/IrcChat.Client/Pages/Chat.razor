@@ -1252,7 +1252,7 @@ else
 
     private List<IMessage> GetCurrentMessages()
     {
-        var list = new List<IMessage>();
+        List<IMessage> list;
         if (isPrivateConversation)
         {
             list = [..privateMessages.Select(pm => new Message

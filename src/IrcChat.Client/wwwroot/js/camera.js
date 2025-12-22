@@ -85,7 +85,7 @@ Vérifie si l'API MediaDevices est disponible.
 @returns {boolean} True si disponible
 */
 export function isCameraAvailable() {
-  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  return !!(navigator.mediaDevices?.getUserMedia);
 }
 
 /**
