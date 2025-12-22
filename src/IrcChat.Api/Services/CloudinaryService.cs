@@ -57,15 +57,23 @@ ILogger<CloudinaryService> logger) : ICloudinaryService
 
     public async Task<bool> DeleteImageAsync(string publicId)
     {
-        var deleteParams = new DeletionParams(publicId);
-        var result = await cloudinaryWrapper.DestroyAsync(deleteParams);
+        try
+        {
+            var deleteParams = new DeletionParams(publicId);
+            var result = await cloudinaryWrapper.DestroyAsync(deleteParams);
 
-        logger.LogInformation(
-            "Suppression image Cloudinary: {PublicId}, Result: {Result}",
-            publicId,
-            result.Result);
+            logger.LogInformation(
+                "Suppression image Cloudinary: {PublicId}, Result: {Result}",
+                publicId,
+                result.Result);
 
-        return result.Result == "ok";
+            return result.Result == "ok";
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Erreur lors de la suppression de l'image {PublicId}", publicId);
+            return false;
+        }
     }
 
     private string GenerateSignedUrl(string publicId, bool thumbnail = false)

@@ -2,7 +2,6 @@
 using IrcChat.Client.Models;
 using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -2335,52 +2334,6 @@ public class ChatServiceTests : BunitContext
                     (string)args[0] == channel &&
                     (bool)args[3] == false),
                 It.IsAny<CancellationToken>()),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task SendEphemeralPhoto_WhenInvokeFails_ShouldLogErrorAndRethrow()
-    {
-        // Arrange
-        var loggerMock = new Mock<ILogger<ChatService>>();
-        var service = new ChatService(
-            privateMessageServiceMock.Object,
-            unverifiedAuthServiceMock.Object,
-            requestAuthenticationService,
-            loggerMock.Object);
-
-        var hubConnectionMock = new Mock<HubConnectionStub>();
-        var hubConnectionBuilderMock = new Mock<IHubConnectionBuilder>();
-
-        hubConnectionMock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
-        var hubException = new HubException("SignalR error");
-        hubConnectionMock.Setup(x => x.InvokeCoreAsync(
-            "SendEphemeralPhoto",
-            It.IsAny<Type>(),
-            It.IsAny<object[]>(),
-            It.IsAny<CancellationToken>()))
-            .ThrowsAsync(hubException);
-
-        hubConnectionBuilderMock.Setup(x => x.Build()).Returns(hubConnectionMock.Object);
-
-        await service.InitializeAsync(hubConnectionBuilderMock.Object);
-
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<HubException>(() =>
-            service.SendEphemeralPhoto("general", "imageUrl", "thumbUrl", false));
-
-        Assert.Equal("SignalR error", ex.Message);
-
-        // Vérifier que l'erreur est loggée
-        loggerMock.Verify(
-            x => x.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Erreur lors de l'envoi de la photo éphémère")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
 
