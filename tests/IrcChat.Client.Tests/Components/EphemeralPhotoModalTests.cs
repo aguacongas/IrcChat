@@ -82,7 +82,7 @@ public class EphemeralPhotoModalTests : BunitContext
         // Assert
         var img = cut.Find("img.ephemeral-photo");
         Assert.NotNull(img);
-        Assert.Contains(testPhoto.ImageUrl, img.GetAttribute("src"));
+        Assert.Contains(testPhoto.ImageUrl!, img.GetAttribute("src"));
         Assert.Equal("Photo éphémère", img.GetAttribute("alt"));
     }
 
