@@ -43,13 +43,13 @@
     private async Task ShowModalAsync()
     {
         const int displaySecond = 3;
+        _isVisible = true;
         try
         {
             // Activer la sécurité via le service
             await EphemeralPhotoService.BlockDevToolsAsync();
             await EphemeralPhotoService.DetectScreenshotAsync();
 
-            _isVisible = true;
             Logger.LogInformation("Modal photo éphémère ouverte");
 
             // Démarrer le countdown
