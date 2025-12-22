@@ -1,11 +1,4 @@
 name: Pull Request Checks
-
-permissions:
-  issues: write
-  pull-requests: write
-  contents: read
-  actions: read  
-  checks: write
   
 on:
   pull_request:
@@ -16,6 +9,12 @@ env:
 
 jobs:
   validate-pr:
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+      actions: read  
+      checks: write
     name: Validate PR
     runs-on: ubuntu-latest
     
@@ -127,6 +126,12 @@ jobs:
         scanMetadataReportFile: .sonarqube/out/.sonar/report-task.txt    
 
   check-migrations:
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+      actions: read  
+      checks: write
     name: Check Database Migrations
     runs-on: ubuntu-latest
     
@@ -171,6 +176,12 @@ jobs:
           --project src/IrcChat.Api/IrcChat.Api.csproj
 
   dependency-review:
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+      actions: read  
+      checks: write
     name: Dependency Review
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
@@ -185,6 +196,12 @@ jobs:
         fail-on-severity: moderate
 
   size-label:
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+      actions: read  
+      checks: write
     name: Auto Label PR Size
     runs-on: ubuntu-latest
     
