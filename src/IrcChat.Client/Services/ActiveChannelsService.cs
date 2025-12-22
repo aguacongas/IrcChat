@@ -82,7 +82,7 @@ public sealed class ActiveChannelsService(IJSRuntime jsRuntime, ILogger<ActiveCh
 
         try
         {
-            var removed = activeChannels.RemoveAll(c =>
+            activeChannels.RemoveAll(c =>
                 c.Equals(channelName, StringComparison.OrdinalIgnoreCase));
 
             await SaveAsync();

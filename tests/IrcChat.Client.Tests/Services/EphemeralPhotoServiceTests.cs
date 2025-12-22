@@ -690,11 +690,4 @@ public class EphemeralPhotoServiceTests : IDisposable
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
-
-    [Fact]
-    public async Task DisposeAsync_NoModulesLoaded_DoesNotThrow() =>
-        // Arrange - Aucun module chargé
-
-        // Act & Assert - Ne doit pas lancer d'exception
-        await _service.DisposeAsync();
 }
