@@ -243,6 +243,9 @@ public partial class OAuthEndpointsTests
         // Arrange
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+        // S'assurer qu'il n'y a pas d'utilisateurs
+        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
+        await db.SaveChangesAsync();
 
         var dateOfBirth = new DateTime(2000, 6, 15, 0, 0, 0, DateTimeKind.Utc);
         var userId = Guid.NewGuid();
