@@ -118,6 +118,8 @@ public class OAuthConnectTests : BunitContext
             .SetResult("test_verifier");
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
             .SetResult(userId.ToString());
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_dob")
+            .SetResult(DateTime.UtcNow.AddYears(-20).ToString());
 
         JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
 
@@ -185,6 +187,8 @@ public class OAuthConnectTests : BunitContext
             .SetResult("test_verifier");
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
             .SetResult(userId.ToString());
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_dob")
+            .SetResult(DateTime.UtcNow.AddYears(-20).ToString());
 
         JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
 
@@ -233,6 +237,8 @@ public class OAuthConnectTests : BunitContext
             .SetResult("test_verifier");
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
             .SetResult(null!); // 👈 UserId manquant
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_dob")
+            .SetResult(DateTime.UtcNow.AddYears(-20).ToString());
 
         JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
 
@@ -267,6 +273,8 @@ public class OAuthConnectTests : BunitContext
             .SetResult("test_verifier");
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
             .SetResult("not-a-guid"); // 👈 Format GUID invalide
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_dob")
+            .SetResult(DateTime.UtcNow.AddYears(-20).ToString());
 
         JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
 
@@ -449,7 +457,8 @@ public class OAuthConnectTests : BunitContext
             .SetResult(null!); // Pas de username stocké
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
             .SetResult(Guid.NewGuid().ToString());
-
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_dob")
+            .SetResult(DateTime.UtcNow.AddYears(-20).ToString());
         // Act
         navManager.NavigateTo(navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
@@ -491,7 +500,8 @@ public class OAuthConnectTests : BunitContext
             .SetResult("test_verifier");
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
             .SetResult(userId.ToString());
-
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_dob")
+            .SetResult(DateTime.UtcNow.AddYears(-20).ToString());
         JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
 
         var reserveResponse = new OAuthLoginResponse
@@ -519,6 +529,6 @@ public class OAuthConnectTests : BunitContext
         await Task.Delay(500);
 
         // Assert
-        JSInterop.VerifyInvoke("sessionStorage.removeItem", calledTimes: 6); // Vérifie que 5 items ont été supprimés
+        JSInterop.VerifyInvoke("sessionStorage.removeItem", calledTimes: 7); // Vérifie que 7 items ont été supprimés
     }
 }

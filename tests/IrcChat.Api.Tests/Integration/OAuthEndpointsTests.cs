@@ -14,10 +14,10 @@ using Xunit;
 
 namespace IrcChat.Api.Tests.Integration;
 
-public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
+public partial class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     : IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly HttpClient client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
     public async Task CheckUsername_WithAvailableUsername_ShouldReturnAvailable()
@@ -29,7 +29,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/check-username", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/check-username", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -67,7 +67,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/check-username", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/check-username", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -105,7 +105,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/check-username", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/check-username", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -143,7 +143,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/check-username", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/check-username", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -157,7 +157,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task GetProviderConfig_ForGoogle_ShouldReturnConfig()
     {
         // Act
-        var response = await client.GetAsync("/api/oauth/config/Google");
+        var response = await _client.GetAsync("/api/oauth/config/Google");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -172,7 +172,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task GetProviderConfig_ForMicrosoft_ShouldReturnConfig()
     {
         // Act
-        var response = await client.GetAsync("/api/oauth/config/Microsoft");
+        var response = await _client.GetAsync("/api/oauth/config/Microsoft");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -185,7 +185,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task GetProviderConfig_ForFacebook_ShouldReturnConfig()
     {
         // Act
-        var response = await client.GetAsync("/api/oauth/config/Facebook");
+        var response = await _client.GetAsync("/api/oauth/config/Facebook");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -217,10 +217,10 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         await db.SaveChangesAsync();
 
         var token = GenerateToken(userToForget);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await client.PostAsync("/api/oauth/forget-username", null);
+        var response = await _client.PostAsync("/api/oauth/forget-username", null);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -248,10 +248,10 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         };
 
         var token = GenerateToken(fakeUser);
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await client.PostAsync("/api/oauth/forget-username", null);
+        var response = await _client.PostAsync("/api/oauth/forget-username", null);
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -281,7 +281,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         var request = new UsernameCheckRequest { Username = "reserved_user" };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/check-username", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/check-username", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -329,7 +329,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         var request = new UsernameCheckRequest { Username = "active_user" };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/check-username", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/check-username", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -364,7 +364,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         var request = new UsernameCheckRequest { Username = "guest_user" };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/check-username", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/check-username", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -404,10 +404,11 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
             Code = "test_code",
             RedirectUri = "http://localhost/callback",
             CodeVerifier = "test_verifier",
+            DateOfBirth = DateTime.UtcNow.AddYears(-20)
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/reserve-username", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/reserve-username", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -419,7 +420,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task GetProviderConfig_WithValidProvider_ShouldReturnConfig()
     {
         // Act
-        var response = await client.GetAsync("/api/oauth/config/Google");
+        var response = await _client.GetAsync("/api/oauth/config/Google");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -431,7 +432,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task ForgetUsername_WithoutAuthentication_ShouldReturnUnauthorized()
     {
         // Act
-        var response = await client.PostAsync("/api/oauth/forget-username", null);
+        var response = await _client.PostAsync("/api/oauth/forget-username", null);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -459,11 +460,11 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         await db.SaveChangesAsync();
 
         var token = GenerateToken(userToForget);
-        client.DefaultRequestHeaders.Authorization =
+        _client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await client.PostAsync("/api/oauth/forget-username", null);
+        var response = await _client.PostAsync("/api/oauth/forget-username", null);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -491,11 +492,11 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         };
 
         var token = GenerateToken(fakeUser);
-        client.DefaultRequestHeaders.Authorization =
+        _client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
         // Act
-        var response = await client.PostAsync("/api/oauth/forget-username", null);
+        var response = await _client.PostAsync("/api/oauth/forget-username", null);
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -507,7 +508,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
-
+        // S'assurer qu'il n'y a pas d'utilisateurs
         db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
         await db.SaveChangesAsync();
 
@@ -519,10 +520,11 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
             Code = "valid_code",
             RedirectUri = "http://localhost/callback",
             CodeVerifier = "valid_verifier",
+            DateOfBirth = DateTime.UtcNow.AddYears(-20),
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/reserve-username", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/reserve-username", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -558,10 +560,11 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
             Code = "valid_code",
             RedirectUri = "http://localhost/callback",
             CodeVerifier = "valid_verifier",
+            DateOfBirth = DateTime.UtcNow.AddYears(-20)
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/reserve-username", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/reserve-username", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -590,6 +593,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
             IsAdmin = true,
+            DateOfBirth = DateTime.UtcNow.AddYears(-20)
         };
         db.ReservedUsernames.Add(firstUser);
         await db.SaveChangesAsync();
@@ -601,10 +605,11 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
             Code = "valid_code",
             RedirectUri = "http://localhost/callback",
             CodeVerifier = "valid_verifier",
+            DateOfBirth = DateTime.UtcNow.AddYears(-20)
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/reserve-username", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/reserve-username", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -639,10 +644,11 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
             Code = "valid_code", // Ce code retournera google-123 comme ExternalUserId
             RedirectUri = "http://localhost/callback",
             CodeVerifier = "valid_verifier",
+            DateOfBirth = DateTime.UtcNow.AddYears(-20)
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/reserve-username", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/reserve-username", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -668,10 +674,11 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
             Code = "invalid_code",
             RedirectUri = "http://localhost/callback",
             CodeVerifier = "invalid_verifier",
+            DateOfBirth = DateTime.UtcNow.AddYears(-20)
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/reserve-username", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/reserve-username", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -712,7 +719,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/login-reserved", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/login-reserved", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -742,7 +749,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/login-reserved", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/login-reserved", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -763,7 +770,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/login-reserved", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/login-reserved", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -803,7 +810,7 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/login-reserved", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/login-reserved", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -818,22 +825,29 @@ public class OAuthEndpointsTests(ApiWebApplicationFactory factory)
     public async Task ReserveUsername_ShouldTrimUsername()
     {
         // Arrange
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+        // S'assurer qu'il n'y a pas d'utilisateurs
+        db.ReservedUsernames.RemoveRange(db.ReservedUsernames);
+        await db.SaveChangesAsync();
+
         var request = new ReserveUsernameRequest
         {
-            Username = "  trimmed_user  ",
+            Username = $"  {Guid.NewGuid()}  ",
             Provider = ExternalAuthProvider.Google,
             Code = "valid_code",
             RedirectUri = "http://localhost/callback",
             CodeVerifier = "valid_verifier",
+            DateOfBirth = DateTime.UtcNow.AddYears(-20)
         };
 
         // Act
-        var response = await client.PostAsJsonAsync("/api/oauth/reserve-username", request);
+        var response = await _client.PostAsJsonAsync("/api/oauth/reserve-username", request);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var result = await response.Content.ReadFromJsonAsync<OAuthLoginResponse>();
-        Assert.Equal("trimmed_user", result!.Username);
+        Assert.Equal(request.Username.Trim(), result!.Username);
     }
 
     [SuppressMessage("Blocker Vulnerability", "S6781:JWT secret keys should not be disclosed", Justification = "It's a test")]

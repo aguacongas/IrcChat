@@ -89,9 +89,19 @@ else
     private bool isInitialized = false;
     private string errorMessage = string.Empty;
     private Guid? clientUserId;
+    private DateTime? dateOfBirth;
 
     [SupplyParameterFromQuery(Name = "username")]
     public string? UsernameParam { get; set; }
+
+    [SupplyParameterFromQuery(Name = "day")]
+    public int? DayParam { get; set; }
+
+    [SupplyParameterFromQuery(Name = "month")]
+    public int? MonthParam { get; set; }
+
+    [SupplyParameterFromQuery(Name = "year")]
+    public int? YearParam { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -107,7 +117,30 @@ else
                 return;
             }
 
-            // Récupérer le UserId du client
+            if (DayParam.HasValue && MonthParam.HasValue && YearParam.HasValue)
+            {
+                try
+                {
+                    dateOfBirth = new DateTime(YearParam.Value, MonthParam.Value, DayParam.Value, 0, 0, 0, DateTimeKind.Utc);
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    errorMessage = "La date de naissance fournie n'est pas valide";
+                    isInitialized = true;
+                    return;
+                }
+            }
+            else if (Auth.DateOfBirth.HasValue)
+            {
+                dateOfBirth = Auth.DateOfBirth.Value;
+            }
+            else
+            {
+                errorMessage = "Date de naissance manquante. Veuillez revenir à la page de connexion.";
+                isInitialized = true;
+                return;
+            }
+
             var clientUserIdStr = await Auth.GetClientUserIdAsync();
             if (string.IsNullOrEmpty(clientUserIdStr) || !Guid.TryParse(clientUserIdStr, out var parsedId))
             {
@@ -134,9 +167,15 @@ else
             return;
         }
 
-        // Sauvegarder le pseudo à réserver et le UserId
+        if (!dateOfBirth.HasValue)
+        {
+            errorMessage = "Date de naissance manquante";
+            return;
+        }
+
         await JS.InvokeVoidAsync("sessionStorage.setItem", "temp_username_to_reserve", usernameToReserve);
         await JS.InvokeVoidAsync("sessionStorage.setItem", "temp_user_id", clientUserId.ToString());
+        await JS.InvokeVoidAsync("sessionStorage.setItem", "temp_dob", dateOfBirth.Value.ToString("o"));
         Navigation.NavigateToRelative($"oauth-login?provider={provider}&mode=reserve");
     }
 }

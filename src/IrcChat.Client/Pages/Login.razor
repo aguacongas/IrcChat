@@ -22,6 +22,21 @@
         </div>
     </div>
 }
+else if (isAgeBlocked)
+{
+    <div class="login-fullscreen">
+        <div class="login-card">
+            <div class="age-blocked-message">
+                <div class="blocked-icon">⚠️</div>
+                <h2>Âge insuffisant</h2>
+                <p>Tu dois avoir au moins 13 ans pour utiliser ce service.</p>
+                <button class="btn-secondary" @onclick="ResetAgeBlock">
+                    ← Retour
+                </button>
+            </div>
+        </div>
+    </div>
+}
 else
 {
     <div class="login-fullscreen">
@@ -67,6 +82,35 @@ else
                     }
                     else if (usernameStatus.Available)
                     {
+                        <div class="dob-section">
+                            <label>Date de naissance</label>
+                            <div class="dob-dropdowns">
+                                <select id="day" @bind="selectedDay">
+                                    <option value="0">Jour</option>
+                                    @for (int i = 1; i <= 31; i++)
+                                    {
+                                        <option value="@i">@i</option>
+                                    }
+                                </select>
+
+                                <select id="month" @bind="selectedMonth">
+                                    <option value="0">Mois</option>
+                                    @for (int i = 1; i <= 12; i++)
+                                    {
+                                        <option value="@i">@i</option>
+                                    }
+                                </select>
+
+                                <select id="year" @bind="selectedYear">
+                                    <option value="0">Année</option>
+                                    @for (int i = DateTime.UtcNow.Year; i >= DateTime.UtcNow.Year - 120; i--)
+                                    {
+                                        <option value="@i">@i</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
                         <div class="status-actions">
                             <button class="btn-primary" @onclick="EnterAsGuest">
                                 Entrer en tant qu'invité
@@ -93,13 +137,13 @@ else
                     @if (Auth.IsReserved)
                     {
                         <span class="badge-reserved">🔒 Réservé</span>
-                        
+
                         @if (!Auth.IsAuthenticated)
-                        {                            
+                        {
                             <button class="btn-link" @onclick="UseAnotherUsername">
                                 Utiliser un autre pseudo
                             </button>
-                        }                        
+                        }
                     }
                 </div>
             }
@@ -112,26 +156,37 @@ else
     private string errorMessage = string.Empty;
     private bool isInitialized = false;
     private bool isChecking = false;
+    private bool isAgeBlocked = false;
     private UsernameCheckResponse? usernameStatus = null;
     private System.Threading.Timer? _debounceTimer;
+
+    private int selectedDay = 0;
+    private int selectedMonth = 0;
+    private int selectedYear = 0;
 
     protected override async Task OnInitializedAsync()
     {
         await Auth.InitializeAsync();
         isInitialized = true;
 
-        // Si déjà authentifié, aller au chat
         if (Auth.IsAuthenticated)
         {
             Navigation.NavigateToRelative("chat");
             return;
         }
 
-        // Pré-remplir avec le pseudo mémorisé
         if (Auth.HasUsername)
         {
             username = Auth.Username ?? string.Empty;
             await CheckUsername();
+        }
+
+        if (Auth.DateOfBirth.HasValue)
+        {
+            var dob = Auth.DateOfBirth.Value;
+            selectedDay = dob.Day;
+            selectedMonth = dob.Month;
+            selectedYear = dob.Year;
         }
     }
 
@@ -190,30 +245,92 @@ else
             return;
         }
 
-        await Auth.SetUsernameAsync(cleanUsername, isReserved: false);
-        Navigation.NavigateToRelative("chat");
+        if (selectedDay == 0 || selectedMonth == 0 || selectedYear == 0)
+        {
+            errorMessage = "Veuillez sélectionner votre date de naissance complète";
+            return;
+        }
+
+        try
+        {
+            var dateOfBirth = new DateTime(selectedYear, selectedMonth, selectedDay, 0, 0, 0, DateTimeKind.Utc);
+
+            if (!IsValidAge(dateOfBirth))
+            {
+                return;
+            }
+
+            await Auth.SetDateOfBirthAsync(dateOfBirth);
+            await Auth.SetUsernameAsync(cleanUsername, isReserved: false);
+            Navigation.NavigateToRelative("chat");
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            errorMessage = "La date saisie n'est pas valide (exemple: 31 février n'existe pas)";
+        }
+    }
+
+    private bool IsValidAge(DateTime dateOfBirth)
+    {
+        var age = CalculateAge(dateOfBirth);
+
+        if (age < 13)
+        {
+            isAgeBlocked = true;
+            StateHasChanged();
+            return false;
+        }
+
+        if (age > 120)
+        {
+            errorMessage = "La date de naissance saisie n'est pas valide.";
+            return false;
+        }
+
+        return true;
+    }
+
+    private static int CalculateAge(DateTime dateOfBirth)
+    {
+        var today = DateTime.UtcNow;
+        var age = today.Year - dateOfBirth.Year;
+
+        if (dateOfBirth.Date > today.AddYears(-age))
+        {
+            age--;
+        }
+
+        return age;
+    }
+
+    private void ResetAgeBlock()
+    {
+        isAgeBlocked = false;
+        selectedDay = 0;
+        selectedMonth = 0;
+        selectedYear = 0;
+        errorMessage = string.Empty;
+        StateHasChanged();
     }
 
     private async Task LoginWithProvider(ExternalAuthProvider provider)
     {
-        // Sauvegarder temporairement le username pour après l'OAuth
         await JS.InvokeVoidAsync("sessionStorage.setItem", "temp_username_for_login", username);
         Navigation.NavigateToRelative($"oauth-login?provider={provider}&mode=login");
     }
 
-    // Le code de la méthode ForgetUsername() a été supprimé.
-
     private async Task UseAnotherUsername()
     {
-        // Permet de saisir un autre pseudo sans oublier le réservé
-        // Nettoie juste l'affichage temporaire
         await Auth.ClearAllAsync();
         username = string.Empty;
         usernameStatus = null;
         errorMessage = string.Empty;
+        selectedDay = 0;
+        selectedMonth = 0;
+        selectedYear = 0;
         StateHasChanged();
     }
-    
+
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
         if (e.Key == "Enter" && usernameStatus?.Available == true)
@@ -224,8 +341,28 @@ else
 
     private void NavigateToReserve()
     {
-        var url = $"reserve?username={Uri.EscapeDataString(username)}";
-        Navigation.NavigateToRelative(url);
+        if (selectedDay == 0 || selectedMonth == 0 || selectedYear == 0)
+        {
+            errorMessage = "Veuillez sélectionner votre date de naissance avant de réserver";
+            return;
+        }
+
+        try
+        {
+            var dateOfBirth = new DateTime(selectedYear, selectedMonth, selectedDay, 0, 0, 0, DateTimeKind.Utc);
+
+            if (!IsValidAge(dateOfBirth))
+            {
+                return;
+            }
+
+            var url = $"reserve?username={Uri.EscapeDataString(username)}&day={selectedDay}&month={selectedMonth}&year={selectedYear}";
+            Navigation.NavigateToRelative(url);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            errorMessage = "La date saisie n'est pas valide (exemple: 31 février n'existe pas)";
+        }
     }
 
     public void Dispose()

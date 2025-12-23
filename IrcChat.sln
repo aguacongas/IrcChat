@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IrcChat.Api.Tests", "tests\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IrcChat.Client.Tests", "tests\IrcChat.Client.Tests\IrcChat.Client.Tests.csproj", "{46BAF546-354E-0BB3-CD6F-CFD31B28B315}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IrcChat.Shared.Tests", "tests\IrcChat.Shared.Tests\IrcChat.Shared.Tests.csproj", "{2A8B8139-961C-4541-B81B-23C3A2942A25}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +89,18 @@ Global
 		{46BAF546-354E-0BB3-CD6F-CFD31B28B315}.Release|x64.Build.0 = Release|Any CPU
 		{46BAF546-354E-0BB3-CD6F-CFD31B28B315}.Release|x86.ActiveCfg = Release|Any CPU
 		{46BAF546-354E-0BB3-CD6F-CFD31B28B315}.Release|x86.Build.0 = Release|Any CPU
+		{2A8B8139-961C-4541-B81B-23C3A2942A25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2A8B8139-961C-4541-B81B-23C3A2942A25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2A8B8139-961C-4541-B81B-23C3A2942A25}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2A8B8139-961C-4541-B81B-23C3A2942A25}.Debug|x64.Build.0 = Debug|Any CPU
+		{2A8B8139-961C-4541-B81B-23C3A2942A25}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2A8B8139-961C-4541-B81B-23C3A2942A25}.Debug|x86.Build.0 = Debug|Any CPU
+		{2A8B8139-961C-4541-B81B-23C3A2942A25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2A8B8139-961C-4541-B81B-23C3A2942A25}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2A8B8139-961C-4541-B81B-23C3A2942A25}.Release|x64.ActiveCfg = Release|Any CPU
+		{2A8B8139-961C-4541-B81B-23C3A2942A25}.Release|x64.Build.0 = Release|Any CPU
+		{2A8B8139-961C-4541-B81B-23C3A2942A25}.Release|x86.ActiveCfg = Release|Any CPU
+		{2A8B8139-961C-4541-B81B-23C3A2942A25}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -97,6 +111,7 @@ Global
 		{03BB476B-8569-4EC1-BE7A-D31FD6252A09} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{3100076F-CE9C-D257-7142-AFF1068A0BD0} = {092950B0-B713-42CA-A718-F67754A3AC26}
 		{46BAF546-354E-0BB3-CD6F-CFD31B28B315} = {092950B0-B713-42CA-A718-F67754A3AC26}
+		{2A8B8139-961C-4541-B81B-23C3A2942A25} = {092950B0-B713-42CA-A718-F67754A3AC26}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6177A4A9-C33A-4467-BA67-63BFACEB32AD}

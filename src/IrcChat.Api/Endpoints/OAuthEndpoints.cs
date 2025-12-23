@@ -3,15 +3,17 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using IrcChat.Api.Data;
+using IrcChat.Api.Filter;
 using IrcChat.Api.Services;
 using IrcChat.Shared.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace IrcChat.Api.Endpoints;
 
 [SuppressMessage("Performance", "CA1862", Justification = "Not needed in SQL")]
-[SuppressMessage("Performance", "CA1873:Avoid potentially expensive logging", Justification = "Accepatle")]
+[SuppressMessage("Performance", "CA1873:Avoid potentially expensive logging", Justification = "Acceptable")]
 public static class OAuthEndpoints
 {
     public static WebApplication MapOAuthEndpoints(this WebApplication app)
@@ -23,7 +25,8 @@ public static class OAuthEndpoints
             .WithName("CheckUsername");
 
         oauth.MapPost("/reserve-username", ReserveUsernameAsync)
-            .WithName("ReserveUsername");
+            .WithName("ReserveUsername")
+            .AddEndpointFilter<DataAnnotationsValidationFilter<ReserveUsernameRequest>>();
 
         oauth.MapPost("/login-reserved", LoginReservedAsync)
             .WithName("LoginReserved");
@@ -60,10 +63,11 @@ public static class OAuthEndpoints
     }
 
     private static async Task<IResult> ReserveUsernameAsync(
-        ReserveUsernameRequest request,
+        [FromBody] ReserveUsernameRequest request,
         ChatDbContext context,
         OAuthService oauthService,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ILogger<Program> logger)
     {
         var exists = await context.ReservedUsernames
             .AnyAsync(r => r.Username.ToLower() == request.Username.ToLower());
@@ -115,6 +119,7 @@ public static class OAuthEndpoints
             Email = userInfo.Email,
             DisplayName = userInfo.Name,
             AvatarUrl = userInfo.AvatarUrl,
+            DateOfBirth = request.DateOfBirth.ToUniversalTime(),
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
             IsAdmin = isFirstUser,
@@ -122,6 +127,14 @@ public static class OAuthEndpoints
 
         context.ReservedUsernames.Add(user);
         await context.SaveChangesAsync();
+
+        var age = CalculateAge(user.DateOfBirth);
+        logger.LogInformation(
+            "Username {Username} reserved by user {UserId} with provider {Provider}. Age: {Age}",
+            user.Username,
+            user.Id,
+            user.Provider,
+            age);
 
         var token = GenerateJwtToken(user, configuration);
 
@@ -224,7 +237,7 @@ public static class OAuthEndpoints
         }
 
         var userToDelete = await db.ReservedUsernames
-            .FirstOrDefaultAsync(r => r.Username.ToLower() == username);
+            .FirstOrDefaultAsync(r => r.Username.ToLower() == username.ToLower());
 
         if (userToDelete == null)
         {
@@ -263,5 +276,18 @@ public static class OAuthEndpoints
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private static int CalculateAge(DateTime dateOfBirth)
+    {
+        var today = DateTime.UtcNow;
+        var age = today.Year - dateOfBirth.Year;
+
+        if (dateOfBirth.Date > today.AddYears(-age))
+        {
+            age--;
+        }
+
+        return age;
     }
 }
