@@ -1,20 +1,20 @@
-// src/IrcChat.Client/Services/UnifiedAuthService.cs
 using System.Text.Json;
 using IrcChat.Shared.Models;
 using Microsoft.JSInterop;
 
 namespace IrcChat.Client.Services;
 
-public class UnifiedAuthService(ILocalStorageService localStorage,
+public class UnifiedAuthService(
+    ILocalStorageService localStorage,
     HttpClient httpClient,
     IJSRuntime jsRuntime,
     IRequestAuthenticationService requestAuthService,
     ILogger<UnifiedAuthService> logger) : IUnifiedAuthService
 {
     private static readonly string AuthKey = "ircchat_unified_auth";
-    private bool isInitialized = false;
-    private IJSObjectReference? userIdModule;
-    private string? clientUserId;
+    private bool _isInitialized = false;
+    private IJSObjectReference? _userIdModule;
+    private string? _clientUserId;
 
     public event Action? OnAuthStateChanged;
 
@@ -42,16 +42,18 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
 
     public bool IsNoPvMode { get; private set; }
 
+    public DateTime? DateOfBirth { get; private set; }
+
     public async Task InitializeAsync()
     {
-        if (isInitialized)
+        if (_isInitialized)
         {
             return;
         }
 
         await RestoreFromLocalStorageAsync();
 
-        isInitialized = true;
+        _isInitialized = true;
     }
 
     public async Task SetUsernameAsync(string username, bool isReserved = false, ExternalAuthProvider? provider = null)
@@ -109,6 +111,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
         UserId = null;
         IsAdmin = false;
         IsNoPvMode = false;
+        DateOfBirth = null;
 
         OnAuthStateChanged?.Invoke();
     }
@@ -136,6 +139,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
         UserId = null;
         IsAdmin = false;
         IsNoPvMode = false;
+        DateOfBirth = null;
 
         await ClearLocalStorageAsync();
         OnAuthStateChanged?.Invoke();
@@ -143,23 +147,23 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
 
     public async Task<string> GetClientUserIdAsync()
     {
-        if (!string.IsNullOrEmpty(clientUserId))
+        if (!string.IsNullOrEmpty(_clientUserId))
         {
-            return clientUserId;
+            return _clientUserId;
         }
 
-        if (userIdModule == null)
+        if (_userIdModule == null)
         {
             try
             {
-                userIdModule = await jsRuntime.InvokeAsync<IJSObjectReference>(
+                _userIdModule = await jsRuntime.InvokeAsync<IJSObjectReference>(
                     "import", "./js/userIdManager.js");
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Erreur lors du chargement du module userIdManager");
-                clientUserId = Guid.NewGuid().ToString();
-                return clientUserId;
+                _clientUserId = Guid.NewGuid().ToString();
+                return _clientUserId;
             }
         }
 
@@ -170,25 +174,32 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
 
         try
         {
-            clientUserId = await userIdModule.InvokeAsync<string>("getUserId");
+            _clientUserId = await _userIdModule.InvokeAsync<string>("getUserId");
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Erreur lors de la récupération du UserId depuis IndexedDB");
-            clientUserId = Guid.NewGuid().ToString();
+            _clientUserId = Guid.NewGuid().ToString();
         }
 
         logger.LogInformation(
             "ClientUserId récupéré: {UserId} (IsReserved: {IsReserved})",
-            clientUserId,
+            _clientUserId,
             IsReserved);
 
-        return clientUserId;
+        return _clientUserId;
     }
 
     public async Task SetNoPvModeAsync(bool enabled)
     {
         IsNoPvMode = enabled;
+        await SaveToLocalStorageAsync();
+        OnAuthStateChanged?.Invoke();
+    }
+
+    public async Task SetDateOfBirthAsync(DateTime dateOfBirth)
+    {
+        DateOfBirth = dateOfBirth.ToUniversalTime();
         await SaveToLocalStorageAsync();
         OnAuthStateChanged?.Invoke();
     }
@@ -206,6 +217,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
             UserId = UserId,
             IsAdmin = IsAdmin,
             IsNoPvMode = IsNoPvMode,
+            DateOfBirth = DateOfBirth,
         };
 
         var json = JsonSerializer.Serialize(authData);
@@ -231,6 +243,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
                     UserId = authData.UserId;
                     IsAdmin = authData.IsAdmin;
                     IsNoPvMode = authData.IsNoPvMode;
+                    DateOfBirth = authData.DateOfBirth;
                 }
             }
         }
@@ -261,5 +274,7 @@ public class UnifiedAuthService(ILocalStorageService localStorage,
         public bool IsAdmin { get; set; }
 
         public bool IsNoPvMode { get; set; }
+
+        public DateTime? DateOfBirth { get; set; }
     }
 }

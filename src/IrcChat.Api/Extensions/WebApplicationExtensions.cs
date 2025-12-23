@@ -46,10 +46,10 @@ public static class WebApplicationExtensions
             });
         }
 
-        app.UseCors("AllowBlazor");
-        app.UseHttpsRedirection();
-        app.UseAuthentication();
-        app.UseAuthorization();
+        app.UseCors("AllowBlazor")
+            .UseHttpsRedirection()
+            .UseAuthentication()
+            .UseAuthorization();
 
         return app;
     }

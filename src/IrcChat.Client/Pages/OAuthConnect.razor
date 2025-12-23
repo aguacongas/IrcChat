@@ -135,6 +135,7 @@
 
         var usernameToReserve = await JS.InvokeAsync<string>("sessionStorage.getItem", "temp_username_to_reserve");
         var userIdStr = await JS.InvokeAsync<string>("sessionStorage.getItem", "temp_user_id");
+        var dobStr = await JS.InvokeAsync<string>("sessionStorage.getItem", "temp_dob");
 
         if (string.IsNullOrEmpty(usernameToReserve))
         {
@@ -146,6 +147,13 @@
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
         {
             errorMessage = "Identifiant utilisateur invalide";
+            loadingMessage = string.Empty;
+            return;
+        }
+
+        if (string.IsNullOrEmpty(dobStr) || !DateTime.TryParse(dobStr, out var dateOfBirth))
+        {
+            errorMessage = "Date de naissance invalide";
             loadingMessage = string.Empty;
             return;
         }
@@ -167,7 +175,8 @@
             Code = CodeParam!,
             RedirectUri = redirectUri,
             CodeVerifier = codeVerifier,
-            UserId = userId // 👈 Passer le UserId de l'invité
+            UserId = userId,
+            DateOfBirth = dateOfBirth.ToUniversalTime(),
         };
 
         var response = await Http.PostAsJsonAsync("/api/oauth/reserve-username", request);
@@ -188,6 +197,7 @@
 
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "temp_username_to_reserve");
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "temp_user_id");
+                await JS.InvokeVoidAsync("sessionStorage.removeItem", "temp_dob");
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_mode");
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_state");
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_code_verifier");
