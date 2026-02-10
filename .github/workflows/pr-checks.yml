@@ -171,12 +171,14 @@ jobs:
       run: |
         dotnet ef database update \
           --project src/IrcChat.Api/IrcChat.Api.csproj \
+          --no-build \
           --connection "Host=localhost;Database=ircchat_test;Username=postgres;Password=postgres"
 
     - name: ✅ Verify Database State
       run: |
         dotnet ef migrations has-pending-model-changes \
-          --project src/IrcChat.Api/IrcChat.Api.csproj
+          --project src/IrcChat.Api/IrcChat.Api.csproj \
+          --no-build
 
   dependency-review:
     permissions:
