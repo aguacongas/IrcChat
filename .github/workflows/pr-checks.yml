@@ -163,17 +163,24 @@ jobs:
 
     - name: 📦 Restore dependencies
       run: dotnet restore
+    
+    - name: 🏗️ Build
+      run: dotnet build --configuration Release --no-restore
       
     - name: 🗄️ Test Migrations
       run: |
         dotnet ef database update \
           --project src/IrcChat.Api/IrcChat.Api.csproj \
+          --configuration Release \
+          --no-build \
           --connection "Host=localhost;Database=ircchat_test;Username=postgres;Password=postgres"
 
     - name: ✅ Verify Database State
       run: |
         dotnet ef migrations has-pending-model-changes \
-          --project src/IrcChat.Api/IrcChat.Api.csproj
+          --project src/IrcChat.Api/IrcChat.Api.csproj \
+          --configuration Release \
+          --no-build
 
   dependency-review:
     permissions:

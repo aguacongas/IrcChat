@@ -28,7 +28,9 @@ public class DataAnnotationsValidationFilter<T> : IEndpointFilter where T : clas
                     g => g.Select(v => v.ErrorMessage).ToArray()
                 );
 
+#pragma warning disable CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
             return Results.ValidationProblem(errors);
+#pragma warning restore CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
         }
 
         return await next(context);
