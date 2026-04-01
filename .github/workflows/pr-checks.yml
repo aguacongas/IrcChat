@@ -103,7 +103,7 @@ jobs:
         ls -R ./TestResults || echo "TestResults not found"
 
     - name: 🧪 Report test results to PR
-      uses: dorny/test-reporter@b082adf0eced0765477756c2a610396589b8c637
+      uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2
       if: always()
       with:
         name: Unit Tests
