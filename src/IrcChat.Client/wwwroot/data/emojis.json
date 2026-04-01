@@ -1,6 +1,6 @@
 {
   "version": "15.1",
-  "generatedAt": "2025-12-08T16:20:54.712Z",
+  "generatedAt": "2026-04-01T06:43:08.501Z",
   "emojis": [
     {
       "emoji": "!",
@@ -277,6 +277,205 @@
         ":slash:"
       ],
       "unicode": "U+002F",
+      "version": "6.0"
+    },
+    {
+      "emoji": "0⃣",
+      "code": ":keycap_0:",
+      "name": "touches : 0",
+      "nameEn": "keycap: 0",
+      "category": "Symbols",
+      "subcategory": "",
+      "keywords": [
+        "0",
+        "touches",
+        "zéro",
+        "keycap",
+        "zero"
+      ],
+      "aliases": [
+        ":keycap_0:"
+      ],
+      "unicode": "U+0030 U+20E3",
+      "version": "6.0"
+    },
+    {
+      "emoji": "1⃣",
+      "code": ":keycap_1:",
+      "name": "touches : 1",
+      "nameEn": "keycap: 1",
+      "category": "Symbols",
+      "subcategory": "",
+      "keywords": [
+        "1",
+        "touches",
+        "un",
+        "keycap",
+        "one"
+      ],
+      "aliases": [
+        ":keycap_1:"
+      ],
+      "unicode": "U+0031 U+20E3",
+      "version": "6.0"
+    },
+    {
+      "emoji": "2⃣",
+      "code": ":keycap_2:",
+      "name": "touches : 2",
+      "nameEn": "keycap: 2",
+      "category": "Symbols",
+      "subcategory": "",
+      "keywords": [
+        "2",
+        "deux",
+        "touches",
+        "keycap",
+        "two"
+      ],
+      "aliases": [
+        ":keycap_2:"
+      ],
+      "unicode": "U+0032 U+20E3",
+      "version": "6.0"
+    },
+    {
+      "emoji": "3⃣",
+      "code": ":keycap_3:",
+      "name": "touches : 3",
+      "nameEn": "keycap: 3",
+      "category": "Symbols",
+      "subcategory": "",
+      "keywords": [
+        "3",
+        "touches",
+        "trois",
+        "keycap",
+        "three"
+      ],
+      "aliases": [
+        ":keycap_3:"
+      ],
+      "unicode": "U+0033 U+20E3",
+      "version": "6.0"
+    },
+    {
+      "emoji": "4⃣",
+      "code": ":keycap_4:",
+      "name": "touches : 4",
+      "nameEn": "keycap: 4",
+      "category": "Symbols",
+      "subcategory": "",
+      "keywords": [
+        "4",
+        "quatre",
+        "touches",
+        "four",
+        "keycap"
+      ],
+      "aliases": [
+        ":keycap_4:"
+      ],
+      "unicode": "U+0034 U+20E3",
+      "version": "6.0"
+    },
+    {
+      "emoji": "5⃣",
+      "code": ":keycap_5:",
+      "name": "touches : 5",
+      "nameEn": "keycap: 5",
+      "category": "Symbols",
+      "subcategory": "",
+      "keywords": [
+        "5",
+        "cinq",
+        "touches",
+        "five",
+        "keycap"
+      ],
+      "aliases": [
+        ":keycap_5:"
+      ],
+      "unicode": "U+0035 U+20E3",
+      "version": "6.0"
+    },
+    {
+      "emoji": "6⃣",
+      "code": ":keycap_6:",
+      "name": "touches : 6",
+      "nameEn": "keycap: 6",
+      "category": "Symbols",
+      "subcategory": "",
+      "keywords": [
+        "6",
+        "six",
+        "touches",
+        "keycap"
+      ],
+      "aliases": [
+        ":keycap_6:"
+      ],
+      "unicode": "U+0036 U+20E3",
+      "version": "6.0"
+    },
+    {
+      "emoji": "7⃣",
+      "code": ":keycap_7:",
+      "name": "touches : 7",
+      "nameEn": "keycap: 7",
+      "category": "Symbols",
+      "subcategory": "",
+      "keywords": [
+        "7",
+        "sept",
+        "touches",
+        "keycap",
+        "seven"
+      ],
+      "aliases": [
+        ":keycap_7:"
+      ],
+      "unicode": "U+0037 U+20E3",
+      "version": "6.0"
+    },
+    {
+      "emoji": "8⃣",
+      "code": ":keycap_8:",
+      "name": "touches : 8",
+      "nameEn": "keycap: 8",
+      "category": "Symbols",
+      "subcategory": "",
+      "keywords": [
+        "8",
+        "huit",
+        "touches",
+        "eight",
+        "keycap"
+      ],
+      "aliases": [
+        ":keycap_8:"
+      ],
+      "unicode": "U+0038 U+20E3",
+      "version": "6.0"
+    },
+    {
+      "emoji": "9⃣",
+      "code": ":keycap_9:",
+      "name": "touches : 9",
+      "nameEn": "keycap: 9",
+      "category": "Symbols",
+      "subcategory": "",
+      "keywords": [
+        "9",
+        "neuf",
+        "touches",
+        "keycap",
+        "nine"
+      ],
+      "aliases": [
+        ":keycap_9:"
+      ],
+      "unicode": "U+0039 U+20E3",
       "version": "6.0"
     },
     {
@@ -2141,22 +2340,16 @@
       "subcategory": "",
       "keywords": [
         "arc-en-ciel",
-        "bisexuel",
         "bisexuelle",
-        "gay",
         "Gay Pride",
-        "homosexuel",
         "homosexuelle",
         "lesbienne",
-        "LGBT",
-        "LGBTQ",
         "LGBTQIA",
         "météo",
         "nature",
-        "orgueil",
         "pluie",
-        "trans",
         "transgenre",
+        "gay",
         "genderqueer",
         "glbt",
         "glbtq",
@@ -2168,6 +2361,7 @@
         "queer",
         "rain",
         "rainbow",
+        "trans",
         "transgender",
         "weather"
       ],
@@ -2729,7 +2923,6 @@
       "keywords": [
         "chaleur",
         "chaud",
-        "éclat",
         "éclatant",
         "ensoleillé",
         "jour",
@@ -15105,7 +15298,6 @@
       "category": "Animals & Nature",
       "subcategory": "",
       "keywords": [
-        "bande dessinée",
         "BD",
         "eau",
         "froid",
@@ -15115,7 +15307,6 @@
         "météo",
         "nature",
         "pluie",
-        "sueur",
         "sueurs froides",
         "tristesse",
         "cold",
@@ -16383,7 +16574,6 @@
         "lecture",
         "lire",
         "littérature",
-        "livre",
         "livre ouvert",
         "manuel scolaire",
         "roman",
@@ -16514,7 +16704,6 @@
         "lecture",
         "lire",
         "littérature",
-        "livre",
         "livres",
         "manuels scolaires",
         "roman",
@@ -21007,7 +21196,6 @@
         "rire",
         "sourire",
         "sourire mignon",
-        "visage",
         "visage avec la bouche ouverte et les yeux souriants",
         "visage très souriant aux yeux rieurs",
         "eye",
@@ -21126,9 +21314,7 @@
         "paix",
         "sourire",
         "spirituel",
-        "visage",
         "visage souriant avec auréole",
-        "visage souriant avec une auréole",
         "angel",
         "angelic",
         "angels",
@@ -21755,7 +21941,6 @@
         "amour",
         "baiser",
         "bise",
-        "bisou",
         "bisou et cœur",
         "bonjour",
         "bonne nuit",
@@ -21968,7 +22153,6 @@
         "omd",
         "on ne vit qu’une fois",
         "peu importe",
-        "visage",
         "visage qui tire la langue et ferme les yeux",
         "visage qui tire la langue les yeux plissés",
         "yeux fermés",
@@ -22113,7 +22297,6 @@
         "rouge",
         "rouge de colère",
         "sourcils froncés",
-        "visage",
         "visage boudeur",
         "anger",
         "angry",
@@ -22330,7 +22513,6 @@
         "stressé",
         "surpris",
         "terrifié",
-        "visage",
         "visage angoissé",
         "anguished",
         "face",
@@ -22602,7 +22784,6 @@
         "chuchoter",
         "découragé",
         "déçu",
-        "ennuyé",
         "expiration",
         "exténué",
         "fatigué",
@@ -22677,19 +22858,15 @@
       "keywords": [
         "aah",
         "bleu",
-        "bouche",
         "bouche bée",
         "effrayé",
         "émoticône",
         "froid",
         "mince",
         "nerveux",
-        "peur",
         "peur bleue",
-        "sueur",
         "sueurs froides",
         "terrifié",
-        "visage",
         "visage anxieux avec goutte de sueur",
         "visage en sueur bouche ouverte",
         "anxious",
@@ -22794,15 +22971,11 @@
         "émoticône",
         "étonné",
         "gêné",
-        "hébété",
         "impressionné",
         "incrédule",
         "incroyable",
         "quoi",
         "rouge",
-        "rougissant",
-        "stupéfait",
-        "visage",
         "visage qui rougit",
         "amazed",
         "awkward",
@@ -22952,7 +23125,6 @@
         "secret",
         "silence",
         "sourdine",
-        "visage",
         "visage sans bouche",
         "awkward",
         "blank",
@@ -26458,7 +26630,7 @@
         "hindou",
         "pagode",
         "religion",
-        "stūpa",
+        "stupa",
         "temple",
         "temple bouddhiste",
         "hindu"
@@ -26519,6 +26691,34 @@
         ":elevator:"
       ],
       "unicode": "U+1F6D7",
+      "version": "7.0"
+    },
+    {
+      "emoji": "🛘",
+      "code": ":landslide:",
+      "name": "éboulement",
+      "nameEn": "landslide",
+      "category": "Travel & Places",
+      "subcategory": "",
+      "keywords": [
+        "avalanche",
+        "catastrophe",
+        "coulée de boue",
+        "danger",
+        "glissement de terrain",
+        "montagne",
+        "rochers",
+        "tremblement de terre",
+        "disaster",
+        "earthquake",
+        "mountain",
+        "mudslide",
+        "rocks"
+      ],
+      "aliases": [
+        ":landslide:"
+      ],
+      "unicode": "U+1F6D8",
       "version": "7.0"
     },
     {
@@ -27594,7 +27794,6 @@
         "ringard",
         "surdoué",
         "tronche",
-        "visage",
         "visage de geek",
         "brainy",
         "clever",
@@ -28234,7 +28433,6 @@
         "mouchoir",
         "rhume",
         "se moucher",
-        "visage",
         "visage qui éternue",
         "face",
         "fever",
@@ -30092,11 +30290,11 @@
         "dumpling",
         "empanada",
         "gyoza",
-        "gyōza",
         "jiaozi",
         "pierogi",
         "potsticker",
-        "ravioli"
+        "ravioli",
+        "gyōza"
       ],
       "aliases": [
         ":dumpling:"
@@ -30512,15 +30710,11 @@
         "adorer",
         "aimer",
         "amour",
-        "amoureuse",
-        "amoureux",
         "béguin",
         "coeur",
-        "coeurs",
         "cœurs",
         "j’adore",
         "Je t’aime",
-        "romance",
         "smiley avec 3 coeurs",
         "sourire",
         "visage souriant avec cœurs",
@@ -30532,6 +30726,7 @@
         "hearts",
         "ily",
         "love",
+        "romance",
         "smile",
         "smiling",
         "you"
@@ -30626,7 +30821,6 @@
       "keywords": [
         "anniversaire",
         "célébration",
-        "chapeau",
         "chapeau pointu",
         "émoticône",
         "fête",
@@ -30711,7 +30905,6 @@
         "toute rouge",
         "transpiration",
         "trop chaud",
-        "visage",
         "visage rouge et chaud",
         "visage tout rouge",
         "dying",
@@ -31011,7 +31204,6 @@
       "subcategory": "",
       "keywords": [
         "camping",
-        "chaussure",
         "chaussure de marche",
         "chaussure de randonnée",
         "chaussures de chantier",
@@ -33833,6 +34025,26 @@
       "version": "11.0"
     },
     {
+      "emoji": "🧑‍🩰",
+      "code": ":ballet_dancer:",
+      "name": "danseuse de ballet",
+      "nameEn": "ballet dancer",
+      "category": "Smileys & Emotion",
+      "subcategory": "",
+      "keywords": [
+        "ballerine",
+        "ballet",
+        "danse classique",
+        "danseuse",
+        "dancer"
+      ],
+      "aliases": [
+        ":ballet_dancer:"
+      ],
+      "unicode": "U+1F9D1 U+200D U+1FA70",
+      "version": "11.0"
+    },
+    {
       "emoji": "🧑‍⚕",
       "code": ":health_worker:",
       "name": "professionnel de la santé (tous genres)",
@@ -35377,6 +35589,35 @@
       "version": "11.0"
     },
     {
+      "emoji": "🧲",
+      "code": ":magnet:",
+      "name": "aimant",
+      "nameEn": "magnet",
+      "category": "Smileys & Emotion",
+      "subcategory": "",
+      "keywords": [
+        "aimant",
+        "aimanter",
+        "attirer",
+        "attraction",
+        "fer à cheval",
+        "magnet",
+        "magnétique",
+        "positif négatif",
+        "horseshoe",
+        "magnetic",
+        "negative",
+        "positive",
+        "shape",
+        "u"
+      ],
+      "aliases": [
+        ":magnet:"
+      ],
+      "unicode": "U+1F9F2",
+      "version": "11.0"
+    },
+    {
       "emoji": "🧳",
       "code": ":luggage:",
       "name": "bagage",
@@ -35882,8 +36123,6 @@
         "amour",
         "bleu ciel",
         "bleu clair",
-        "bleu sarcelle",
-        "cœur",
         "cœur bleu clair",
         "cyan",
         "émotion",
@@ -36386,6 +36625,61 @@
         ":harp:"
       ],
       "unicode": "U+1FA89",
+      "version": "13.0"
+    },
+    {
+      "emoji": "🪊",
+      "code": ":trombone:",
+      "name": "trombone à coulisse",
+      "nameEn": "trombone",
+      "category": "Objects",
+      "subcategory": "",
+      "keywords": [
+        "instrument",
+        "musique",
+        "trombone",
+        "brass",
+        "jazz",
+        "music",
+        "sad",
+        "slide"
+      ],
+      "aliases": [
+        ":trombone:"
+      ],
+      "unicode": "U+1FA8A",
+      "version": "13.0"
+    },
+    {
+      "emoji": "🪎",
+      "code": ":treasure_chest:",
+      "name": "coffre au trésor",
+      "nameEn": "treasure chest",
+      "category": "Objects",
+      "subcategory": "",
+      "keywords": [
+        "argent",
+        "argenterie",
+        "bijoux",
+        "butin",
+        "objets de valeur",
+        "or",
+        "pierre précieuse",
+        "richesse",
+        "gem",
+        "gold",
+        "jewels",
+        "loot",
+        "money",
+        "prize",
+        "silver",
+        "valuables",
+        "wealth"
+      ],
+      "aliases": [
+        ":treasure_chest:"
+      ],
+      "unicode": "U+1FA8E",
       "version": "13.0"
     },
     {
@@ -37993,6 +38287,56 @@
       "version": "13.0"
     },
     {
+      "emoji": "🫈",
+      "code": ":hairy_creature:",
+      "name": "créature velue",
+      "nameEn": "hairy creature",
+      "category": "Objects",
+      "subcategory": "",
+      "keywords": [
+        "bigfoot",
+        "cryptide",
+        "forêt",
+        "géant",
+        "homme sauvage",
+        "poilu",
+        "sasquatch",
+        "yéti",
+        "cryptid",
+        "forest",
+        "giant",
+        "hairy",
+        "woodwose",
+        "yeti"
+      ],
+      "aliases": [
+        ":hairy_creature:"
+      ],
+      "unicode": "U+1FAC8",
+      "version": "13.0"
+    },
+    {
+      "emoji": "🫍",
+      "code": ":orca:",
+      "name": "orque",
+      "nameEn": "orca",
+      "category": "Objects",
+      "subcategory": "",
+      "keywords": [
+        "baleine",
+        "marin",
+        "océan",
+        "marine",
+        "ocean",
+        "whale"
+      ],
+      "aliases": [
+        ":orca:"
+      ],
+      "unicode": "U+1FACD",
+      "version": "13.0"
+    },
+    {
       "emoji": "🫎",
       "code": ":moose:",
       "name": "élan",
@@ -38776,6 +39120,63 @@
         ":face_with_bags_under_eyes:"
       ],
       "unicode": "U+1FAE9",
+      "version": "13.0"
+    },
+    {
+      "emoji": "🫪",
+      "code": ":distorted_face:",
+      "name": "visage déformé",
+      "nameEn": "distorted face",
+      "category": "Objects",
+      "subcategory": "",
+      "keywords": [
+        "anxiété",
+        "bouffi",
+        "choc",
+        "gonflé",
+        "panique",
+        "surprise",
+        "vulnérabilité",
+        "anxiety",
+        "bloated",
+        "panic",
+        "shocked",
+        "surprised",
+        "vulnerable"
+      ],
+      "aliases": [
+        ":distorted_face:"
+      ],
+      "unicode": "U+1FAEA",
+      "version": "13.0"
+    },
+    {
+      "emoji": "🫯",
+      "code": ":fight_cloud:",
+      "name": "nuage de colère",
+      "nameEn": "fight cloud",
+      "category": "Objects",
+      "subcategory": "",
+      "keywords": [
+        "bagarre",
+        "combat",
+        "désaccord",
+        "discussion",
+        "dispute",
+        "grabuge",
+        "lutte",
+        "argument",
+        "brawl",
+        "debate",
+        "disagreement",
+        "fight",
+        "ruckus",
+        "wrestle"
+      ],
+      "aliases": [
+        ":fight_cloud:"
+      ],
+      "unicode": "U+1FAEF",
       "version": "13.0"
     },
     {
@@ -42658,6 +43059,26 @@
         ":all_equal:"
       ],
       "unicode": "U+224C",
+      "version": "6.0"
+    },
+    {
+      "emoji": "≒",
+      "code": ":approximately_equal_the_image:",
+      "name": "approximativement égal à ou image de",
+      "nameEn": "approximately equal the image",
+      "category": "Symbols",
+      "subcategory": "",
+      "keywords": [
+        "approximativement égal à ou image de",
+        "approximately",
+        "equal",
+        "image",
+        "the"
+      ],
+      "aliases": [
+        ":approximately_equal_the_image:"
+      ],
+      "unicode": "U+2252",
       "version": "6.0"
     },
     {
@@ -47194,29 +47615,6 @@
       "version": "6.0"
     },
     {
-      "emoji": "⚰",
-      "code": ":coffin:",
-      "name": "cercueil",
-      "nameEn": "coffin",
-      "category": "Symbols",
-      "subcategory": "",
-      "keywords": [
-        "cercueil",
-        "enterrement",
-        "mort",
-        "obsèques",
-        "vampire",
-        "coffin",
-        "dead",
-        "death"
-      ],
-      "aliases": [
-        ":coffin:"
-      ],
-      "unicode": "U+26B0",
-      "version": "6.0"
-    },
-    {
       "emoji": "⚱",
       "code": ":funeral_urn:",
       "name": "urne funéraire",
@@ -49618,7 +50016,7 @@
       "id": "smileys-and-emotion",
       "name": "Smileys & Emotion",
       "icon": "😀",
-      "count": 411,
+      "count": 413,
       "order": 1
     },
     {
@@ -49632,21 +50030,21 @@
       "id": "travel-and-places",
       "name": "Travel & Places",
       "icon": "🌍",
-      "count": 113,
+      "count": 114,
       "order": 5
     },
     {
       "id": "objects",
       "name": "Objects",
       "icon": "💡",
-      "count": 114,
+      "count": 120,
       "order": 7
     },
     {
       "id": "symbols",
       "name": "Symbols",
       "icon": "🔣",
-      "count": 588,
+      "count": 598,
       "order": 8
     }
   ]
