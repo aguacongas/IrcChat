@@ -149,6 +149,15 @@ else
                                           class="input-textarea"></textarea>
                                 <div class="char-counter">@(newChannelDescription?.Length ?? 0) / 200</div>
                             </div>
+                            <div class="form-group">
+                                <label for="channel-minimum-age">Âge minimum (0 = aucune restriction)</label>
+                                <input id="channel-minimum-age"
+                                       type="number"
+                                       @bind="newChannelMinimumAge"
+                                       @bind:event="oninput"
+                                       min="0"
+                                       class="input-text input-number" />
+                            </div>
                             <button @onclick="CreateChannel"
                                     disabled="@string.IsNullOrWhiteSpace(newChannelName)"
                                     class="btn btn-primary btn-create">
@@ -249,6 +258,7 @@ else
     private bool isInitialized = false;
     private string newChannelName = string.Empty;
     private string newChannelDescription = string.Empty;
+    private int newChannelMinimumAge = 0;
     private string channelMessage = string.Empty;
     private bool channelError = false;
     private bool showForgetModal = false;
@@ -307,7 +317,8 @@ else
             Description = string.IsNullOrWhiteSpace(newChannelDescription)
                 ? null
                 : newChannelDescription.Trim(),
-            CreatedBy = Auth.Username ?? string.Empty
+            CreatedBy = Auth.Username ?? string.Empty,
+            MinimumAge = newChannelMinimumAge < 0 ? 0 : newChannelMinimumAge,
         };
 
         try
@@ -323,6 +334,7 @@ else
                 var channelToJoin = createdChannel?.Name ?? newChannelName.Trim();
                 newChannelName = string.Empty;
                 newChannelDescription = string.Empty;
+                newChannelMinimumAge = 0;
 
                 await Task.Delay(500);
                 Navigation.NavigateToRelative($"chat/channel/{Uri.EscapeDataString(channelToJoin)}");
@@ -337,6 +349,10 @@ else
             else if (errorContent.Contains("missing_channel_name"))
             {
                 channelMessage = "✗ Le nom du salon est requis";
+            }
+            else if (errorContent.Contains("invalid_minimum_age"))
+            {
+                channelMessage = "✗ L'âge minimum ne peut pas être négatif";
             }
             else
             {

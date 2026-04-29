@@ -177,6 +177,12 @@ public static class ChannelEndpoints
             return Results.BadRequest(new { error = "missing_channel_name", message = "Le nom du canal est requis" });
         }
 
+        if (request.MinimumAge < 0)
+        {
+            logger.LogWarning("Tentative de création de salon avec un âge minimum négatif: {MinimumAge}", request.MinimumAge);
+            return Results.BadRequest(new { error = "invalid_minimum_age", message = "L'âge minimum ne peut pas être négatif" });
+        }
+
         var username = context.User.Claims
             .FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value ?? string.Empty;
 
@@ -198,6 +204,7 @@ public static class ChannelEndpoints
             CreatedAt = DateTime.UtcNow,
             ActiveManager = username,
             IsMuted = false,
+            MinimumAge = request.MinimumAge,
             ConnectedUsersCount = 0,
         };
 
@@ -260,6 +267,7 @@ public static class ChannelEndpoints
             createdAt = channel.CreatedAt,
             isMuted = channel.IsMuted,
             activeManager = channel.ActiveManager,
+            minimumAge = channel.MinimumAge,
             message = "Le canal a été modifié avec succès",
         });
     }

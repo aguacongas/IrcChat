@@ -1,6 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
 using IrcChat.Client.Components;
+using IrcChat.Client.Services;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,16 +10,20 @@ using RichardSzalay.MockHttp;
 
 namespace IrcChat.Client.Tests.Components;
 
+[SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Not our rule")]
 public class ChannelListTests : BunitContext
 {
     private readonly MockHttpMessageHandler mockHttp;
+    private readonly Mock<IUnifiedAuthService> authServiceMock;
 
     public ChannelListTests()
     {
         mockHttp = new MockHttpMessageHandler();
+        authServiceMock = new Mock<IUnifiedAuthService>();
         var httpClient = mockHttp.ToHttpClient();
         httpClient.BaseAddress = new Uri("https://localhost:7000");
         Services.AddSingleton(httpClient);
+        Services.AddSingleton(authServiceMock.Object);
     }
 
     [Fact]
@@ -290,5 +296,165 @@ public class ChannelListTests : BunitContext
 
         // Assert
         Assert.Contains("Muet", cut.Markup);
+    }
+
+    [Fact]
+    public void ChannelList_WhenMinorUser_ShouldNotDisplayAgeRestrictedChannels()
+    {
+        // Arrange
+        var channels = new List<Channel>
+    {
+        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "admin", CreatedAt = DateTime.UtcNow, MinimumAge = 0 },
+        new() { Id = Guid.NewGuid(), Name = "gaming", CreatedBy = "admin", CreatedAt = DateTime.UtcNow, MinimumAge = 0 },
+        new() { Id = Guid.NewGuid(), Name = "adult-lounge", CreatedBy = "admin", CreatedAt = DateTime.UtcNow, MinimumAge = 18 },
+    };
+
+        var getChannelsRequest = mockHttp
+            .When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        authServiceMock.Setup(a => a.GetAge()).Returns(15);
+
+        // Act
+        var cut = Render<ChannelList>();
+        cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+        cut.Render();
+
+        // Assert — salon adulte non visible
+        Assert.DoesNotContain("adult-lounge", cut.Markup);
+        Assert.Contains("general", cut.Markup);
+        Assert.Contains("gaming", cut.Markup);
+
+        Assert.Equal(1, mockHttp.GetMatchCount(getChannelsRequest));
+    }
+
+    [Fact]
+    public void ChannelList_WhenAdultUser_ShouldDisplayAllChannels()
+    {
+        // Arrange
+        var channels = new List<Channel>
+    {
+        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "admin", CreatedAt = DateTime.UtcNow, MinimumAge = 0 },
+        new() { Id = Guid.NewGuid(), Name = "adult-lounge", CreatedBy = "admin", CreatedAt = DateTime.UtcNow, MinimumAge = 18 },
+    };
+
+        mockHttp
+            .When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        authServiceMock.Setup(a => a.GetAge()).Returns(25);
+
+        // Act
+        var cut = Render<ChannelList>();
+        cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+        cut.Render();
+
+        // Assert — tous les salons visibles
+        Assert.Contains("general", cut.Markup);
+        Assert.Contains("adult-lounge", cut.Markup);
+    }
+
+    [Fact]
+    public void ChannelList_WhenUserAgeEqualsMinimumAge_ShouldDisplayChannel()
+    {
+        // Arrange
+        var channels = new List<Channel>
+    {
+        new() { Id = Guid.NewGuid(), Name = "adult-lounge", CreatedBy = "admin", CreatedAt = DateTime.UtcNow, MinimumAge = 18 },
+    };
+
+        mockHttp
+            .When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        authServiceMock.Setup(a => a.GetAge()).Returns(18); // exactement 18 ans
+
+        // Act
+        var cut = Render<ChannelList>();
+        cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+        cut.Render();
+
+        // Assert
+        Assert.Contains("adult-lounge", cut.Markup);
+    }
+
+    [Fact]
+    public void ChannelList_WhenUserAgeBelowMinimumByOne_ShouldNotDisplayChannel()
+    {
+        // Arrange
+        var channels = new List<Channel>
+    {
+        new() { Id = Guid.NewGuid(), Name = "adult-lounge", CreatedBy = "admin", CreatedAt = DateTime.UtcNow, MinimumAge = 18 },
+    };
+
+        mockHttp
+            .When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        authServiceMock.Setup(a => a.GetAge()).Returns(17); // 17 ans = refusé
+
+        // Act
+        var cut = Render<ChannelList>();
+        cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+        cut.Render();
+
+        // Assert
+        Assert.DoesNotContain("adult-lounge", cut.Markup);
+    }
+
+    [Fact]
+    public void ChannelList_WhenSearchQueryWithMinorUser_ShouldFilterBothByNameAndAge()
+    {
+        // Arrange
+        var channels = new List<Channel>
+    {
+        new() { Id = Guid.NewGuid(), Name = "adult-chat", CreatedBy = "admin", CreatedAt = DateTime.UtcNow, MinimumAge = 18 },
+        new() { Id = Guid.NewGuid(), Name = "general-chat", CreatedBy = "admin", CreatedAt = DateTime.UtcNow, MinimumAge = 0 },
+    };
+
+        mockHttp
+            .When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        authServiceMock.Setup(a => a.GetAge()).Returns(15);
+
+        // Act
+        var cut = Render<ChannelList>();
+        cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+        cut.Render();
+
+        // Saisir "chat" dans la recherche
+        var searchInput = cut.Find("input.search-input");
+        searchInput.Input("chat");
+
+        // Assert — "adult-chat" ne doit pas apparaître malgré la recherche "chat"
+        Assert.DoesNotContain("adult-chat", cut.Markup);
+        Assert.Contains("general-chat", cut.Markup);
+    }
+
+    [Fact]
+    public void ChannelList_WhenNoAgeSet_ShouldUseAgeZeroAndHideRestrictedChannels()
+    {
+        // Arrange — utilisateur sans date de naissance (GetAge retourne 0)
+        var channels = new List<Channel>
+    {
+        new() { Id = Guid.NewGuid(), Name = "general", CreatedBy = "admin", CreatedAt = DateTime.UtcNow, MinimumAge = 0 },
+        new() { Id = Guid.NewGuid(), Name = "adult-lounge", CreatedBy = "admin", CreatedAt = DateTime.UtcNow, MinimumAge = 18 },
+    };
+
+        mockHttp
+            .When(HttpMethod.Get, "*/api/channels")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(channels));
+
+        authServiceMock.Setup(a => a.GetAge()).Returns(0);
+
+        // Act
+        var cut = Render<ChannelList>();
+        cut.WaitForState(() => !cut.Markup.Contains("Chargement"), TimeSpan.FromSeconds(2));
+        cut.Render();
+
+        // Assert — salon restreint masqué, salon ouvert visible
+        Assert.Contains("general", cut.Markup);
+        Assert.DoesNotContain("adult-lounge", cut.Markup);
     }
 }

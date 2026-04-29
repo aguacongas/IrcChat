@@ -12,7 +12,6 @@ public partial class UnifiedAuthServiceTests
 {
     private readonly Mock<ILocalStorageService> _localStorageMock;
     private readonly Mock<IJSRuntime> _jsRuntimeMock;
-    private readonly LocalStorageService _localStorageService;
     private readonly Mock<IRequestAuthenticationService> _requestAuthMock;
     private readonly IRequestAuthenticationService _requestAuthenticationService;
     private readonly Mock<ILogger<UnifiedAuthService>> _loggerMock;
@@ -24,7 +23,6 @@ public partial class UnifiedAuthServiceTests
     {
         _localStorageMock = new Mock<ILocalStorageService>();
         _jsRuntimeMock = new Mock<IJSRuntime>(MockBehavior.Strict);
-        _localStorageService = new LocalStorageService(_jsRuntimeMock.Object);
         _mockHttp = new MockHttpMessageHandler();
         _httpClient = _mockHttp.ToHttpClient();
         _httpClient.BaseAddress = new Uri("https://localhost:7000");
@@ -1509,5 +1507,99 @@ public partial class UnifiedAuthServiceTests
 
         // Assert
         Assert.False(_service.IsNoPvMode); // Valeur par défaut
+    }
+
+    [Fact]
+    public async Task GetAge_WhenDateOfBirthIsNull_ShouldReturnZero()
+    {
+        // Arrange
+        await _service.ClearAllAsync();
+
+        // Act
+        var age = _service.GetAge();
+
+        // Assert
+        Assert.Equal(0, age);
+    }
+
+    [Fact]
+    public async Task GetAge_WithValidDateOfBirth_ShouldReturnCorrectAge()
+    {
+        // Arrange
+        var birthDate = DateTime.UtcNow.AddYears(-25).AddDays(-1); // 25 ans révolus
+        await _service.SetDateOfBirthAsync(birthDate);
+
+        // Act
+        var age = _service.GetAge();
+
+        // Assert
+        Assert.Equal(25, age);
+    }
+
+    [Fact]
+    public async Task GetAge_WithDateOfBirthInFuture_ShouldReturnZero()
+    {
+        // Arrange
+        var futureBirthDate = DateTime.UtcNow.AddYears(1);
+        await _service.SetDateOfBirthAsync(futureBirthDate);
+
+        // Act
+        var age = _service.GetAge();
+
+        // Assert
+        Assert.Equal(0, age);
+    }
+
+    [Fact]
+    public async Task GetAge_WhenBirthdayNotYetPassedThisYear_ShouldReturnAgeMinusOne()
+    {
+        // Arrange — anniversaire dans le futur cette année → pas encore fêté
+        var today = DateTime.UtcNow;
+        var birthdayThisYear = new DateTime(today.Year, today.Month, today.Day, 0, 0, 0, DateTimeKind.Utc)
+            .AddDays(1); // demain
+        var birthDate = birthdayThisYear.AddYears(-18); // aura 18 ans demain
+
+        await _service.SetDateOfBirthAsync(birthDate);
+
+        // Act
+        var age = _service.GetAge();
+
+        // Assert — pas encore 18 ans aujourd'hui
+        Assert.Equal(17, age);
+    }
+
+    [Fact]
+    public async Task GetAge_WhenBirthdayIsToday_ShouldReturnCorrectAge()
+    {
+        // Arrange — anniversaire aujourd'hui
+        var today = DateTime.UtcNow;
+        var birthDate = new DateTime(today.Year - 18, today.Month, today.Day, 0, 0, 0, DateTimeKind.Utc);
+
+        await _service.SetDateOfBirthAsync(birthDate);
+
+        // Act
+        var age = _service.GetAge();
+
+        // Assert — 18 ans aujourd'hui
+        Assert.Equal(18, age);
+    }
+
+    [Fact]
+    public async Task GetAge_WithLeapYearBirthday_ShouldReturnCorrectAge()
+    {
+        // Arrange — né le 29 février (année bissextile)
+        // 2000 était bissextile, utilisons cette date
+        var birthDate = new DateTime(2000, 2, 29, 0, 0, 0, DateTimeKind.Utc);
+
+        await _service.SetDateOfBirthAsync(birthDate);
+
+        // Act
+        var age = _service.GetAge();
+
+        // Assert — âge calculé par rapport à l'année courante
+        var expectedAge = DateTime.UtcNow.Year - 2000;
+        // Ajuster si l'anniversaire n'est pas encore passé cette année
+        // (en année non bissextile, le 29/02 n'existe pas, donc le calcul est basé sur le 28/02)
+        Assert.True(age >= expectedAge - 1 && age <= expectedAge);
     }
 }

@@ -138,7 +138,7 @@ public class ChatHubTests : IAsyncDisposable
         await _db.SaveChangesAsync();
 
         // Act
-        await _hub.JoinChannel(channel);
+        await _hub.JoinChannel(channel, 25);
 
         // Assert
         var connectedUser = await _db.ConnectedUsers
@@ -176,7 +176,7 @@ public class ChatHubTests : IAsyncDisposable
         await _db.SaveChangesAsync();
 
         // Act
-        await _hub.JoinChannel(channel);
+        await _hub.JoinChannel(channel, 25);
 
         // Assert
         _callerMock.Verify(
@@ -218,7 +218,7 @@ public class ChatHubTests : IAsyncDisposable
         await _db.SaveChangesAsync();
 
         // Act
-        await _hub.JoinChannel(channel);
+        await _hub.JoinChannel(channel, 25);
 
         // Assert
         _groupManagerMock.Verify(
@@ -1738,7 +1738,7 @@ public class ChatHubTests : IAsyncDisposable
         await _db.SaveChangesAsync();
 
         // Act
-        await _hub.JoinChannel(channel);
+        await _hub.JoinChannel(channel, 25);
 
         // Assert
         var userInChannel = await _db.ConnectedUsers
@@ -2005,5 +2005,86 @@ public class ChatHubTests : IAsyncDisposable
     {
         await _db.DisposeAsync();
         GC.SuppressFinalize(this);
+    }
+
+    [Fact]
+    public async Task JoinChannel_WithUnderageUser_ShouldBlockWithError()
+    {
+        // Arrange
+        var username = "underageuser";
+        var channel = "adults";
+        var minAge = 18;
+        var userAge = 15;
+
+        var channelEntity = new Channel
+        {
+            Id = Guid.NewGuid(),
+            Name = channel,
+            CreatedBy = "admin",
+            CreatedAt = DateTime.UtcNow,
+            IsMuted = false,
+            MinimumAge = minAge
+        };
+        _db.Channels.Add(channelEntity);
+        var user = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid().ToString(),
+            Username = username,
+            Channel = null,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+        };
+        _db.ConnectedUsers.Add(user);
+        await _db.SaveChangesAsync();
+
+        // Act
+        await _hub.JoinChannel(channel, userAge);
+
+        // Assert
+        _callerMock.Verify(
+            c => c.SendCoreAsync(
+                "Error",
+                It.Is<object[]>(args => args.Length == 1 && ((string)args[0]).Contains($"au moins {minAge} ans")),
+                default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendEphemeralPhoto_ToMutedChannel_CreatorCanSend()
+    {
+        // Arrange
+        var creator = CreateTestUser("creator");
+        var channel = CreateTestChannel(createdBy: creator.Username, isMuted: true);
+        var creatorConnected = CreateConnectedUser(creator, channel.Name);
+
+        _db.ReservedUsernames.Add(creator);
+        _db.Channels.Add(channel);
+        _db.ConnectedUsers.Add(creatorConnected);
+        await _db.SaveChangesAsync();
+
+        _contextMock.Setup(c => c.ConnectionId).Returns(creatorConnected.ConnectionId);
+
+        var imageUrl = "https://cloudinary.com/image.jpg";
+        var thumbnailUrl = "https://cloudinary.com/thumb.jpg";
+
+        // Act
+        await _hub.SendEphemeralPhoto(channel.Name, imageUrl, thumbnailUrl, isPrivate: false);
+
+        // Assert
+        _groupMock.Verify(
+            c => c.SendCoreAsync(
+                "ReceiveEphemeralPhoto",
+                It.Is<object[]>(args => args.Length == 1 && args[0] is EphemeralPhotoDto),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        _callerMock.Verify(
+            c => c.SendCoreAsync(
+                "MessageBlocked",
+                It.IsAny<object[]>(),
+                default),
+            Times.Never);
     }
 }

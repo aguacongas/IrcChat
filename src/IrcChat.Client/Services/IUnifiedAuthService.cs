@@ -133,4 +133,10 @@ public interface IUnifiedAuthService
     /// </summary>
     /// <param name="dateOfBirth">The date of birth.</param>
     Task SetDateOfBirthAsync(DateTime dateOfBirth);
+
+    /// <summary>
+    /// Calculates the user's current age from their date of birth.
+    /// Returns 0 if DateOfBirth is null or in the future.
+    /// </summary>
+    int GetAge();
 }

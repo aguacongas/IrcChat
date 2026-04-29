@@ -834,6 +834,111 @@ public class ChannelEndpointsTests(ApiWebApplicationFactory factory) : IClassFix
         Assert.Null(musicChannel.Description);
     }
 
+    [Fact]
+    public async Task CreateChannel_WithNegativeMinimumAge_ShouldReturnBadRequest()
+    {
+        // Arrange
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+        var user = new ReservedUsername
+        {
+            Id = Guid.NewGuid(),
+            Username = "minage_test_user",
+            Provider = ExternalAuthProvider.Google,
+            ExternalUserId = "google-minage-123",
+            Email = "minage@example.com",
+            CreatedAt = DateTime.UtcNow,
+            LastLoginAt = DateTime.UtcNow,
+            IsAdmin = false,
+        };
+        db.ReservedUsernames.Add(user);
+        await db.SaveChangesAsync();
+        var token = GenerateOAuthToken(user);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var channel = new Channel
+        {
+            Name = Guid.NewGuid().ToString(),
+            CreatedBy = user.Username,
+            MinimumAge = -1
+        };
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/channels", channel);
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+        Assert.NotNull(error);
+        Assert.Equal("invalid_minimum_age", error.Error);
+    }
+
+    [Fact]
+    public async Task CreateChannel_WithMinimumAge_ShouldPersistValue()
+    {
+        // Arrange
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+        var user = new ReservedUsername
+        {
+            Id = Guid.NewGuid(),
+            Username = "minage_persist_user",
+            Provider = ExternalAuthProvider.Google,
+            ExternalUserId = "google-minage-456",
+            Email = "minage2@example.com",
+            CreatedAt = DateTime.UtcNow,
+            LastLoginAt = DateTime.UtcNow,
+            IsAdmin = false,
+        };
+        db.ReservedUsernames.Add(user);
+        await db.SaveChangesAsync();
+        var token = GenerateOAuthToken(user);
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var channel = new Channel
+        {
+            Name = Guid.NewGuid().ToString(),
+            CreatedBy = user.Username,
+            MinimumAge = 21
+        };
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/channels", channel);
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var created = await response.Content.ReadFromJsonAsync<Channel>();
+        Assert.NotNull(created);
+        Assert.Equal(21, created.MinimumAge);
+        // Vérifier en base
+        using var verifyScope = factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<ChatDbContext>();
+        var saved = await verifyDb.Channels.FirstOrDefaultAsync(c => c.Name == channel.Name);
+        Assert.NotNull(saved);
+        Assert.Equal(21, saved.MinimumAge);
+    }
+
+    [Fact]
+    public async Task GetChannels_ShouldReturnMinimumAge()
+    {
+        // Arrange
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+        var channel = new Channel
+        {
+            Id = Guid.NewGuid(),
+            Name = "minage-list",
+            CreatedBy = "user",
+            CreatedAt = DateTime.UtcNow,
+            MinimumAge = 42
+        };
+        db.Channels.Add(channel);
+        await db.SaveChangesAsync();
+        // Act
+        var response = await _client.GetAsync("/api/channels");
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var channels = await response.Content.ReadFromJsonAsync<List<Channel>>();
+        Assert.NotNull(channels);
+        var found = channels.FirstOrDefault(c => c.Name == "minage-list");
+        Assert.NotNull(found);
+        Assert.Equal(42, found.MinimumAge);
+    }
+
     [SuppressMessage("Blocker Vulnerability", "S6781:JWT secret keys should not be disclosed", Justification = "That's tests")]
     private static string GenerateOAuthToken(ReservedUsername user)
     {
