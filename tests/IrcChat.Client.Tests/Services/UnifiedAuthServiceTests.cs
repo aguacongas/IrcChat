@@ -1526,7 +1526,7 @@ public partial class UnifiedAuthServiceTests
     public async Task GetAge_WithValidDateOfBirth_ShouldReturnCorrectAge()
     {
         // Arrange
-        var birthDate = DateTime.UtcNow.AddYears(-25).AddDays(1); // 25 ans révolus
+        var birthDate = DateTime.UtcNow.AddYears(-25).AddDays(-1); // 25 ans révolus
         await _service.SetDateOfBirthAsync(birthDate);
 
         // Act

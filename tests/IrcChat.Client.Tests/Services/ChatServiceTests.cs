@@ -626,7 +626,7 @@ public class ChatServiceTests : BunitContext
             x => x.SendCoreAsync(
                 "JoinChannel",
                 It.Is<object?[]>(args =>
-                    args.Length == 1 &&
+                    args.Length == 2 &&
                     args[0]!.ToString() == "testChannel"),
                 It.IsAny<CancellationToken>()),
             Times.Once);
