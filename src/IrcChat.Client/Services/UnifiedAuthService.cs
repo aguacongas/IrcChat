@@ -44,6 +44,31 @@ public class UnifiedAuthService(
 
     public DateTime? DateOfBirth { get; private set; }
 
+    public int GetAge()
+    {
+        if (DateOfBirth == null)
+        {
+            return 0;
+        }
+
+        var dob = DateOfBirth.Value;
+        var today = DateTime.UtcNow;
+
+        if (dob > today)
+        {
+            return 0;
+        }
+
+        var age = today.Year - dob.Year;
+
+        if (today.Month < dob.Month || (today.Month == dob.Month && today.Day < dob.Day))
+        {
+            age--;
+        }
+
+        return age;
+    }
+
     public async Task InitializeAsync()
     {
         if (_isInitialized)

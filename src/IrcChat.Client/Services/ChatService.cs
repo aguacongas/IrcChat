@@ -110,7 +110,7 @@ public class ChatService(IPrivateMessageService privateMessageService,
     {
         if (_hubConnection != null)
         {
-            await _hubConnection.SendAsync("JoinChannel", channel);
+            await _hubConnection.SendAsync("JoinChannel", channel, authService.GetAge());
         }
     }
 

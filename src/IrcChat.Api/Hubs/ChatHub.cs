@@ -16,19 +16,35 @@ public class ChatHub(
     ILogger<ChatHub> logger) : Hub
 {
     [SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Constante")]
+    private readonly string Error = "Error";
+    [SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Constante")]
     private static readonly string UserStatusChangedMethod = "UserStatusChanged";
+    [SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Constante")]
     private static readonly string ReceiveEphemeralPhoto = "ReceiveEphemeralPhoto";
     private readonly string _instanceId = options.Value.GetInstanceId();
 
-    public async Task JoinChannel(string channel)
+    public async Task JoinChannel(string channel, int userAge)
     {
-        var channelExists = await db.Channels
-            .AnyAsync(c => c.Name == channel);
+        var channelEntity = await db.Channels
+            .FirstOrDefaultAsync(c => c.Name == channel);
 
-        if (!channelExists)
+        if (channelEntity == null)
         {
             logger.LogWarning("Tentative de connexion à un salon inexistant: {Channel}", channel);
             await Clients.Caller.SendAsync("ChannelNotFound", channel);
+            return;
+        }
+
+        if (channelEntity.MinimumAge > 0 && userAge < channelEntity.MinimumAge)
+        {
+            logger.LogWarning(
+                "Accès refusé au salon {Channel}: âge requis {MinimumAge}, âge fourni {UserAge}",
+                channel,
+                channelEntity.MinimumAge,
+                userAge);
+            await Clients.Caller.SendAsync(
+                Error,
+                $"Accès refusé : vous devez avoir au moins {channelEntity.MinimumAge} ans");
             return;
         }
 
@@ -38,7 +54,7 @@ public class ChatHub(
         if (user == null)
         {
             logger.LogWarning("Tentative de connexion à un salon sans utilisateur enregistré");
-            await Clients.Caller.SendAsync("Error", "Utilisateur non identifié");
+            await Clients.Caller.SendAsync(Error, "Utilisateur non identifié");
             return;
         }
 
@@ -104,7 +120,7 @@ public class ChatHub(
         if (connectedUser == null)
         {
             logger.LogWarning("Tentative d'envoi de message sans utilisateur identifié dans {Channel}", request.Channel);
-            await Clients.Caller.SendAsync("Error", "Utilisateur non identifié");
+            await Clients.Caller.SendAsync(Error, "Utilisateur non identifié");
             return;
         }
 
@@ -157,7 +173,7 @@ public class ChatHub(
         if (sender == null)
         {
             logger.LogWarning("Tentative d'envoi de message privé sans expéditeur identifié");
-            await Clients.Caller.SendAsync("Error", "Utilisateur non identifié");
+            await Clients.Caller.SendAsync(Error, "Utilisateur non identifié");
             return;
         }
 

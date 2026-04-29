@@ -23,6 +23,11 @@ public class Channel
 
     public string? Description { get; set; }
 
+    /// <summary>
+    /// Gets or sets l'âge minimum requis pour accéder à ce salon (0 = pas de restriction).
+    /// </summary>
+    public int MinimumAge { get; set; } = 0;
+
     [NotMapped]
     public int ConnectedUsersCount { get; set; }
 }

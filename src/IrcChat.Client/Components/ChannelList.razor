@@ -1,6 +1,8 @@
+@using IrcChat.Client.Services
 @using IrcChat.Shared.Models
 @inject HttpClient Http
 @inject ILogger<ChannelList> Logger
+@inject IUnifiedAuthService Auth
 
 <div class="channel-list-container">
     <div class="channel-list-header">
@@ -115,9 +117,9 @@
             var result = await Http.GetFromJsonAsync<List<Channel>>("/api/channels");
             if (result != null)
             {
-                channels = result;
+                channels = GetAccessibleChannels(result);
                 filteredChannels = channels;
-                Logger.LogInformation("Chargement de {ChannelCount} salons réussi", channels.Count);
+                Logger.LogInformation("Chargement de {ChannelCount} salons réussi ({Total} au total)", channels.Count, result.Count);
             }
         }
         catch (Exception ex)
@@ -130,6 +132,14 @@
             isLoading = false;
             StateHasChanged();
         }
+    }
+
+    private List<Channel> GetAccessibleChannels(List<Channel> allChannels)
+    {
+        var userAge = Auth.GetAge();
+        return allChannels
+            .Where(c => c.MinimumAge == 0 || userAge >= c.MinimumAge)
+            .ToList();
     }
 
     private void FilterChannels()

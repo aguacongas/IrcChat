@@ -13,6 +13,7 @@ using RichardSzalay.MockHttp;
 
 namespace IrcChat.Client.Tests.Pages;
 
+[SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Not our rule")]
 public partial class ChatTests : BunitContext
 {
     private readonly Mock<IChatService> chatServiceMock;
