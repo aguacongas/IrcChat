@@ -16,7 +16,9 @@ public class ChatHub(
     ILogger<ChatHub> logger) : Hub
 {
     [SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Constante")]
-    private readonly string Error = "Error";
+    private static readonly string UserNotIdentified = "Utilisateur non identifié";
+    [SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Constante")]
+    private static readonly string Error = "Error";
     [SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Constante")]
     private static readonly string UserStatusChangedMethod = "UserStatusChanged";
     [SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Constante")]
@@ -54,7 +56,7 @@ public class ChatHub(
         if (user == null)
         {
             logger.LogWarning("Tentative de connexion à un salon sans utilisateur enregistré");
-            await Clients.Caller.SendAsync(Error, "Utilisateur non identifié");
+            await Clients.Caller.SendAsync(Error, UserNotIdentified);
             return;
         }
 
@@ -120,7 +122,7 @@ public class ChatHub(
         if (connectedUser == null)
         {
             logger.LogWarning("Tentative d'envoi de message sans utilisateur identifié dans {Channel}", request.Channel);
-            await Clients.Caller.SendAsync(Error, "Utilisateur non identifié");
+            await Clients.Caller.SendAsync(Error, UserNotIdentified);
             return;
         }
 
@@ -173,7 +175,7 @@ public class ChatHub(
         if (sender == null)
         {
             logger.LogWarning("Tentative d'envoi de message privé sans expéditeur identifié");
-            await Clients.Caller.SendAsync(Error, "Utilisateur non identifié");
+            await Clients.Caller.SendAsync(Error, UserNotIdentified);
             return;
         }
 
@@ -317,7 +319,7 @@ public class ChatHub(
         if (currentUser == null)
         {
             logger.LogWarning("Tentative de réaction sans utilisateur enregistré");
-            await Clients.Caller.SendAsync(Error, "Utilisateur non identifié");
+            await Clients.Caller.SendAsync(Error, UserNotIdentified);
             return;
         }
 
