@@ -1,0 +1,129 @@
+@* src/IrcChat.Client/Components/EmojiPickerButton.razor *@
+
+<div class="picker-container">
+    <button class="add-reaction-btn @(IsOpen ? "active" : string.Empty)"
+            @onclick="TogglePicker"
+            @onclick:stopPropagation="true"
+            title="Ajouter une réaction"
+            aria-label="Ajouter une réaction">
+        😊
+    </button>
+
+    @if (IsOpen)
+    {
+        <div class="emoji-picker" @onclick:stopPropagation="true">
+            @* Accès rapide *@
+            <div class="quick-emojis">
+                @foreach (var emoji in QuickEmojis)
+                {
+                    <button class="quick-emoji-btn"
+                            @onclick="() => SelectEmoji(emoji)"
+                            title="@emoji"
+                            aria-label="Réagir avec @emoji">
+                        @emoji
+                    </button>
+                }
+            </div>
+
+            @* Séparateur *@
+            <div class="picker-separator"></div>
+
+            @* Picker complet *@
+            <div class="full-picker">
+                <div class="picker-categories">
+                    @foreach (var category in EmojiCategories)
+                    {
+                        <button class="category-btn @(selectedCategory == category.Key ? "active" : string.Empty)"
+                                @onclick="() => SelectCategory(category.Key)"
+                                title="@category.Key">
+                            @category.Value[0]
+                        </button>
+                    }
+                </div>
+                <div class="picker-emojis">
+                    @foreach (var emoji in GetCurrentCategoryEmojis())
+                    {
+                        <button class="full-emoji-btn"
+                                @onclick="() => SelectEmoji(emoji)"
+                                aria-label="@emoji">
+                            @emoji
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Guid MessageId { get; set; }
+
+    /// <summary>
+    /// L'état ouvert/fermé est géré par le parent via ce paramètre.
+    /// </summary>
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    /// <summary>
+    /// Callback levé quand l'utilisateur clique sur le bouton 😊.
+    /// Le parent décide d'ouvrir ou fermer en mettant à jour IsOpen.
+    /// </summary>
+    [Parameter]
+    public EventCallback<Guid> OnToggle { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnReact { get; set; }
+
+    private string selectedCategory = "Smileys";
+
+    private static readonly string[] QuickEmojis = ["👍", "❤️", "😂", "😮", "😢", "😡"];
+
+    private static readonly Dictionary<string, string[]> EmojiCategories = new()
+    {
+        ["Smileys"] = ["😀", "😁", "😂", "🤣", "😃", "😄", "😅", "😆", "😉", "😊",
+                       "😋", "😎", "😍", "🥰", "😘", "😗", "😙", "😚", "🙂", "🤗",
+                       "🤩", "🤔", "🤨", "😐", "😑", "😶", "🙄", "😏", "😣", "😥",
+                       "😮", "🤐", "😯", "😪", "😫", "🥱", "😴", "😌", "😛", "😜",
+                       "😝", "🤤", "😒", "😓", "😔", "😕", "🙃", "🤑", "😲", "☹️",
+                       "🙁", "😖", "😞", "😟", "😤", "😢", "😭", "😦", "😧", "😨",
+                       "😩", "🤯", "😬", "😰", "😱", "🥵", "🥶", "😳", "🤪", "😵",
+                       "😡", "😠", "🤬", "😷", "🤒", "🤕", "🤢", "🤮", "🥴", "😇"],
+        ["Gestes"] = ["👍", "👎", "👊", "✊", "🤛", "🤜", "🤞", "✌️", "🤟", "🤘",
+                      "👌", "🤏", "👈", "👉", "👆", "👇", "☝️", "✋", "🤚", "🖐️",
+                      "🖖", "👋", "🤙", "💪", "🦾", "🤝", "🙌", "👐", "🤲", "🙏",
+                      "✍️", "💅", "🤳", "💃", "🕺", "👏", "🫶", "🫂"],
+        ["Cœurs"] = ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔",
+                     "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "♥️",
+                     "❤️‍🔥", "❤️‍🩹", "🩷", "🩵", "🩶"],
+        ["Objets"] = ["🎉", "🎊", "🎈", "🎁", "🏆", "🥇", "🥈", "🥉", "🎯", "⭐",
+                      "🌟", "✨", "💫", "🔥", "💥", "🌈", "☀️", "🌙", "⚡", "❄️",
+                      "🎵", "🎶", "🎸", "🎹", "🎺", "🥁", "🎮", "🕹️", "🎲", "🃏",
+                      "🍕", "🍔", "🍟", "🌮", "🌯", "🍜", "🍣", "🍦", "🍰", "🎂",
+                      "☕", "🍺", "🥂", "🍾", "🚀", "✈️", "🚗", "🏠", "💻", "📱"],
+        ["Animaux"] = ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯",
+                       "🦁", "🐮", "🐷", "🐸", "🐵", "🙈", "🙉", "🙊", "🐔", "🐧",
+                       "🐦", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴", "🦄", "🐝",
+                       "🐛", "🦋", "🐌", "🐞", "🐜", "🦟", "🦗", "🕷️", "🦂", "🐢"],
+    };
+
+    private async Task TogglePicker()
+    {
+        await OnToggle.InvokeAsync(MessageId);
+    }
+
+    private async Task SelectEmoji(string emoji)
+    {
+        // Fermer le picker via le parent
+        await OnToggle.InvokeAsync(MessageId);
+        await OnReact.InvokeAsync(emoji);
+    }
+
+    private void SelectCategory(string category)
+    {
+        selectedCategory = category;
+    }
+
+    private string[] GetCurrentCategoryEmojis()
+        => EmojiCategories.TryGetValue(selectedCategory, out var emojis) ? emojis : [];
+}

@@ -854,7 +854,6 @@ public class ChatHubTests : IAsyncDisposable
         _contextMock.Setup(c => c.ConnectionId).Returns(connectionId);
         _contextMock.Setup(c => c.User).Returns(claimsPrincipal);
 
-        // Ajouter l'utilisateur connecté
         var connectedUser = new ConnectedUser
         {
             Id = Guid.NewGuid(),
@@ -874,12 +873,10 @@ public class ChatHubTests : IAsyncDisposable
         await _hub.OnDisconnectedAsync(null);
 
         // Assert
-        // Vérifier que l'utilisateur a été supprimé de ConnectedUsers
         var userExists = await _db.ConnectedUsers
             .AnyAsync(u => u.ConnectionId == connectionId);
         Assert.False(userExists);
 
-        // Vérifier que la notification offline a été envoyée
         _allClientsMock.Verify(
             c => c.SendCoreAsync(
                 "UserStatusChanged",
@@ -887,7 +884,6 @@ public class ChatHubTests : IAsyncDisposable
                 default),
             Times.Once);
 
-        // Vérifier que UserLeft a été appelé pour le canal
         _groupMock.Verify(
             c => c.SendCoreAsync(
                 "UserLeft",
@@ -914,7 +910,6 @@ public class ChatHubTests : IAsyncDisposable
         _contextMock.Setup(c => c.ConnectionId).Returns(connectionId1);
         _contextMock.Setup(c => c.User).Returns(claimsPrincipal);
 
-        // Ajouter deux connexions pour le même utilisateur
         _db.ConnectedUsers.AddRange(
             new ConnectedUser
             {
@@ -943,7 +938,6 @@ public class ChatHubTests : IAsyncDisposable
         await _hub.OnDisconnectedAsync(null);
 
         // Assert
-        // La notification offline ne doit PAS être envoyée car il reste une autre connexion
         _allClientsMock.Verify(
             c => c.SendCoreAsync(
                 "UserStatusChanged",
@@ -951,7 +945,6 @@ public class ChatHubTests : IAsyncDisposable
                 default),
             Times.Never);
 
-        // Vérifier qu'il reste une connexion
         var remainingConnections = await _db.ConnectedUsers
             .CountAsync(u => u.Username == username);
         Assert.Equal(1, remainingConnections);
@@ -974,14 +967,13 @@ public class ChatHubTests : IAsyncDisposable
         _contextMock.Setup(c => c.ConnectionId).Returns(connectionId);
         _contextMock.Setup(c => c.User).Returns(claimsPrincipal);
 
-        // Ajouter l'utilisateur sans canal (pas encore rejoint de canal)
         var connectedUser = new ConnectedUser
         {
             Id = Guid.NewGuid(),
             UserId = Guid.NewGuid().ToString(),
             Username = username,
             ConnectionId = connectionId,
-            Channel = null, // Pas de canal
+            Channel = null,
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
             ServerInstanceId = "server-1",
@@ -1001,7 +993,6 @@ public class ChatHubTests : IAsyncDisposable
                 default),
             Times.Once);
 
-        // UserLeft ne doit PAS être appelé car il n'y avait pas de canal
         _groupMock.Verify(
             c => c.SendCoreAsync(
                 "UserLeft",
@@ -1015,7 +1006,7 @@ public class ChatHubTests : IAsyncDisposable
     {
         // Arrange
         var connectionId = "conn-123";
-        var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity()); // Pas de claims
+        var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity());
 
         _contextMock.Setup(c => c.ConnectionId).Returns(connectionId);
         _contextMock.Setup(c => c.User).Returns(claimsPrincipal);
@@ -1061,7 +1052,6 @@ public class ChatHubTests : IAsyncDisposable
         };
         _db.ConnectedUsers.Add(connectedUser);
 
-        // Muter l'utilisateur
         var mute = new MutedUser
         {
             Id = Guid.NewGuid(),
@@ -1084,7 +1074,6 @@ public class ChatHubTests : IAsyncDisposable
         await _hub.SendMessage(messageRequest);
 
         // Assert
-        // Vérifier que le message est bien sauvegardé en BDD
         var message = await _db.Messages
             .FirstOrDefaultAsync(m => m.UserId == connectedUser.UserId && m.Content == messageRequest.Content);
 
@@ -1092,12 +1081,10 @@ public class ChatHubTests : IAsyncDisposable
         Assert.Equal(messageRequest.Channel, message!.Channel);
         Assert.True(message.IsDeleted);
 
-        // Vérifier qu'AUCUN message n'a été envoyé au groupe
         _groupMock.Verify(
             g => g.SendCoreAsync("ReceiveMessage", It.IsAny<object[]>(), default),
             Times.Never);
 
-        // Vérifier qu'UN message a été envoyé à l'appelant
         _callerMock.Verify(
             c => c.SendCoreAsync("ReceiveMessage", It.IsAny<object[]>(), default),
             Times.Once);
@@ -1132,7 +1119,6 @@ public class ChatHubTests : IAsyncDisposable
         };
         _db.ConnectedUsers.Add(connectedUser);
 
-        // Muter l'utilisateur
         var mute = new MutedUser
         {
             Id = Guid.NewGuid(),
@@ -1154,7 +1140,6 @@ public class ChatHubTests : IAsyncDisposable
         await _hub.SendMessage(messageRequest);
 
         // Assert
-        // Vérifier que le message est bien sauvegardé en BDD
         var message = await _db.Messages
             .FirstOrDefaultAsync(m => m.UserId == connectedUser.UserId && m.Content == messageRequest.Content);
 
@@ -1162,12 +1147,10 @@ public class ChatHubTests : IAsyncDisposable
         Assert.Equal(messageRequest.Channel, message!.Channel);
         Assert.True(message.IsDeleted);
 
-        // Vérifier qu'AUCUN message n'a été envoyé au groupe
         _groupMock.Verify(
             g => g.SendCoreAsync("ReceiveMessage", It.IsAny<object[]>(), default),
             Times.Never);
 
-        // Vérifier qu'UN message a été envoyé à l'appelant
         _callerMock.Verify(
             c => c.SendCoreAsync("ReceiveMessage", It.IsAny<object[]>(), default),
             Times.Once);
@@ -1213,12 +1196,10 @@ public class ChatHubTests : IAsyncDisposable
         await _hub.SendMessage(messageRequest);
 
         // Assert
-        // Message sauvegardé
         var message = await _db.Messages
             .FirstOrDefaultAsync(m => m.UserId == connectedUser.UserId);
         Assert.NotNull(message);
 
-        // Message diffusé au groupe
         _groupMock.Verify(
             g => g.SendCoreAsync("ReceiveMessage", It.Is<object[]>(args => args.Length == 1), default),
             Times.Once);
@@ -1253,7 +1234,6 @@ public class ChatHubTests : IAsyncDisposable
         };
         _db.ConnectedUsers.Add(connectedUser);
 
-        // Muter puis démuter
         var mute = new MutedUser
         {
             Id = Guid.NewGuid(),
@@ -1265,7 +1245,6 @@ public class ChatHubTests : IAsyncDisposable
         _db.MutedUsers.Add(mute);
         await _db.SaveChangesAsync();
 
-        // Premier message (mute)
         var firstMessage = new SendMessageRequest
         {
             Content = "First message while muted",
@@ -1273,16 +1252,13 @@ public class ChatHubTests : IAsyncDisposable
         };
         await _hub.SendMessage(firstMessage);
 
-        // Vérifier pas de broadcast
         _groupMock.Verify(
             g => g.SendCoreAsync("ReceiveMessage", It.IsAny<object[]>(), default),
             Times.Never);
 
-        // Démuter
         _db.MutedUsers.Remove(mute);
         await _db.SaveChangesAsync();
 
-        // Deuxième message (non mute)
         var secondMessage = new SendMessageRequest
         {
             Content = "Second message after unmute",
@@ -1291,13 +1267,11 @@ public class ChatHubTests : IAsyncDisposable
         await _hub.SendMessage(secondMessage);
 
         // Assert
-        // Les deux messages sont en BDD
         var messages = await _db.Messages
             .Where(m => m.UserId == connectedUser.UserId)
             .ToListAsync();
         Assert.Equal(2, messages.Count);
 
-        // Le deuxième message a été diffusé
         _groupMock.Verify(
             g => g.SendCoreAsync("ReceiveMessage", It.Is<object[]>(args => args.Length == 1), default),
             Times.Once);
@@ -1345,7 +1319,6 @@ public class ChatHubTests : IAsyncDisposable
         };
         _db.ConnectedUsers.Add(connectedUser);
 
-        // Admin mute individuellement (rare mais possible)
         var mute = new MutedUser
         {
             Id = Guid.NewGuid(),
@@ -1367,13 +1340,10 @@ public class ChatHubTests : IAsyncDisposable
         await _hub.SendMessage(messageRequest);
 
         // Assert
-        // Message sauvegardé
         var message = await _db.Messages
             .FirstOrDefaultAsync(m => m.UserId == connectedUser.UserId);
         Assert.NotNull(message);
 
-        // Pas de broadcast car l'utilisateur est mute individuellement
-        // (le mute individuel prend le dessus sur le statut admin)
         _groupMock.Verify(
             g => g.SendCoreAsync("ReceiveMessage", It.IsAny<object[]>(), default),
             Times.Never);
@@ -1458,7 +1428,7 @@ public class ChatHubTests : IAsyncDisposable
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance",
-            IsNoPvMode = true, // Mode no PV activé
+            IsNoPvMode = true,
         };
 
         _db.ConnectedUsers.AddRange(sender, recipient);
@@ -1475,13 +1445,11 @@ public class ChatHubTests : IAsyncDisposable
         await _hub.SendPrivateMessage(messageRequest);
 
         // Assert
-        // Vérifier qu'aucun message n'a été sauvegardé
         var message = await _db.PrivateMessages
             .FirstOrDefaultAsync(m => m.SenderUserId == sender.UserId && m.RecipientUserId == recipient.UserId);
 
         Assert.Null(message);
 
-        // Vérifier que l'appelant a reçu un message de blocage
         _callerMock.Verify(
             c => c.SendCoreAsync(
                 "MessageBlocked",
@@ -1519,12 +1487,11 @@ public class ChatHubTests : IAsyncDisposable
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance",
-            IsNoPvMode = true, // Mode no PV activé
+            IsNoPvMode = true,
         };
 
         _db.ConnectedUsers.AddRange(sender, recipient);
 
-        // Message existant du destinataire vers l'expéditeur (conversation active)
         var existingMessage = new PrivateMessage
         {
             Id = Guid.NewGuid(),
@@ -1553,7 +1520,6 @@ public class ChatHubTests : IAsyncDisposable
         await _hub.SendPrivateMessage(messageRequest);
 
         // Assert
-        // Vérifier que le message a été sauvegardé
         var message = await _db.PrivateMessages
             .FirstOrDefaultAsync(m =>
                 m.SenderUserId == sender.UserId &&
@@ -1563,7 +1529,6 @@ public class ChatHubTests : IAsyncDisposable
         Assert.NotNull(message);
         Assert.Equal(messageRequest.Content, message!.Content);
 
-        // Vérifier qu'aucun message de blocage n'a été envoyé
         _callerMock.Verify(
             c => c.SendCoreAsync("MessageBlocked", It.IsAny<object[]>(), default),
             Times.Never);
@@ -1601,7 +1566,6 @@ public class ChatHubTests : IAsyncDisposable
 
         _db.ConnectedUsers.AddRange(sender, recipient);
 
-        // Message existant mais supprimé par le destinataire
         var existingMessage = new PrivateMessage
         {
             Id = Guid.NewGuid(),
@@ -1612,7 +1576,7 @@ public class ChatHubTests : IAsyncDisposable
             Content = "Message précédent",
             Timestamp = DateTime.UtcNow.AddMinutes(-10),
             IsRead = true,
-            IsDeletedBySender = true, // Supprimé par l'expéditeur (le destinataire du nouveau message)
+            IsDeletedBySender = true,
             IsDeletedByRecipient = false,
         };
 
@@ -1673,7 +1637,7 @@ public class ChatHubTests : IAsyncDisposable
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance",
-            IsNoPvMode = false, // Mode no PV désactivé
+            IsNoPvMode = false,
         };
 
         _db.ConnectedUsers.AddRange(sender, recipient);
@@ -1709,7 +1673,6 @@ public class ChatHubTests : IAsyncDisposable
         var userId = "user-123";
         var channel = "general";
 
-        // Créer le canal
         var channelEntity = new Channel
         {
             Id = Guid.NewGuid(),
@@ -1720,7 +1683,6 @@ public class ChatHubTests : IAsyncDisposable
         };
         _db.Channels.Add(channelEntity);
 
-        // Créer l'utilisateur de base avec IsNoPvMode = true
         var baseUser = new ConnectedUser
         {
             Id = Guid.NewGuid(),
@@ -1731,7 +1693,7 @@ public class ChatHubTests : IAsyncDisposable
             ConnectedAt = DateTime.UtcNow,
             LastActivity = DateTime.UtcNow,
             ServerInstanceId = "test-instance",
-            IsNoPvMode = true, // Mode no PV activé
+            IsNoPvMode = true,
         };
 
         _db.ConnectedUsers.Add(baseUser);
@@ -1745,7 +1707,7 @@ public class ChatHubTests : IAsyncDisposable
             .FirstOrDefaultAsync(u => u.Username == username && u.Channel == channel);
 
         Assert.NotNull(userInChannel);
-        Assert.True(userInChannel!.IsNoPvMode); // Doit avoir copié le mode no PV
+        Assert.True(userInChannel!.IsNoPvMode);
     }
 
     [Fact]
@@ -1767,8 +1729,6 @@ public class ChatHubTests : IAsyncDisposable
 
         _db.ConnectedUsers.Add(sender);
 
-        // Recipient offline mais avait IsNoPvMode = true
-        // On simule avec un ConnectedUser qui existe mais pas actif
         var recipientOldConnection = new ConnectedUser
         {
             Id = Guid.NewGuid(),
@@ -1795,7 +1755,7 @@ public class ChatHubTests : IAsyncDisposable
         // Act
         await _hub.SendPrivateMessage(messageRequest);
 
-        // Assert - Le message devrait être bloqué car IsNoPvMode = true
+        // Assert
         var message = await _db.PrivateMessages
             .FirstOrDefaultAsync(m => m.SenderUserId == sender.UserId && m.RecipientUserId == "recipient-id");
 
@@ -1876,7 +1836,6 @@ public class ChatHubTests : IAsyncDisposable
                 default),
             Times.Once);
 
-        // L'expéditeur reçoit aussi une copie
         _callerMock.Verify(
             c => c.SendCoreAsync(
                 "ReceiveEphemeralPhoto",
@@ -1914,7 +1873,7 @@ public class ChatHubTests : IAsyncDisposable
         // Act
         await _hub.SendEphemeralPhoto(channel.Name, imageUrl, thumbnailUrl, isPrivate: false);
 
-        // Assert - Envoyé seulement au caller, pas au groupe
+        // Assert
         _callerMock.Verify(
             c => c.SendCoreAsync(
                 "ReceiveEphemeralPhoto", It.Is<object[]>(args => args.Length == 1 && args[0] is EphemeralPhotoDto),
@@ -1951,7 +1910,7 @@ public class ChatHubTests : IAsyncDisposable
         // Act
         await _hub.SendEphemeralPhoto(channel.Name, imageUrl, thumbnailUrl, isPrivate: false);
 
-        // Assert - Message bloqué, pas de broadcast
+        // Assert
         _callerMock.Verify(
             c => c.SendCoreAsync(
                 "MessageBlocked",
@@ -1967,13 +1926,391 @@ public class ChatHubTests : IAsyncDisposable
             Times.Never);
     }
 
+    // ===== TESTS ReactToMessage =====
+
+    [Fact]
+    public async Task ReactToMessage_WithNewReaction_ShouldSaveAndBroadcast()
+    {
+        // Arrange
+        var channel = "general";
+        var user = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-1",
+            Username = "alice",
+            Channel = channel,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+        };
+        var message = new Message
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-2",
+            Username = "bob",
+            Content = "Hello!",
+            Channel = channel,
+            Timestamp = DateTime.UtcNow,
+            IsDeleted = false,
+        };
+
+        _db.ConnectedUsers.Add(user);
+        _db.Messages.Add(message);
+        await _db.SaveChangesAsync();
+
+        // Act
+        await _hub.ReactToMessage(message.Id, "👍");
+
+        // Assert — réaction sauvegardée en BDD
+        using var verifyScope = _db;
+        var reaction = await _db.MessageReactions
+            .FirstOrDefaultAsync(r => r.MessageId == message.Id && r.UserId == user.UserId);
+
+        Assert.NotNull(reaction);
+        Assert.Equal("👍", reaction!.Emoji);
+        Assert.Equal(user.Username, reaction.Username);
+
+        // Assert — broadcast au groupe
+        _groupMock.Verify(
+            g => g.SendCoreAsync(
+                "MessageReactionUpdated",
+                It.Is<object[]>(args =>
+                    args.Length == 2 &&
+                    (Guid)args[0] == message.Id),
+                default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ReactToMessage_WithSameEmoji_ShouldRemoveReaction()
+    {
+        // Arrange
+        var channel = "general";
+        var user = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-1",
+            Username = "alice",
+            Channel = channel,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+        };
+        var message = new Message
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-2",
+            Username = "bob",
+            Content = "Hello!",
+            Channel = channel,
+            Timestamp = DateTime.UtcNow,
+            IsDeleted = false,
+        };
+        var existingReaction = new MessageReaction
+        {
+            Id = Guid.NewGuid(),
+            MessageId = message.Id,
+            UserId = user.UserId,
+            Username = user.Username,
+            Emoji = "👍",
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        _db.ConnectedUsers.Add(user);
+        _db.Messages.Add(message);
+        _db.MessageReactions.Add(existingReaction);
+        await _db.SaveChangesAsync();
+
+        // Act — même emoji = toggle off
+        await _hub.ReactToMessage(message.Id, "👍");
+
+        // Assert — réaction supprimée
+        var reaction = await _db.MessageReactions
+            .FirstOrDefaultAsync(r => r.MessageId == message.Id && r.UserId == user.UserId);
+
+        Assert.Null(reaction);
+
+        // Assert — broadcast toujours envoyé (liste vide)
+        _groupMock.Verify(
+            g => g.SendCoreAsync(
+                "MessageReactionUpdated",
+                It.Is<object[]>(args => args.Length == 2 && (Guid)args[0] == message.Id),
+                default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ReactToMessage_WithDifferentEmoji_ShouldReplaceReaction()
+    {
+        // Arrange
+        var channel = "general";
+        var user = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-1",
+            Username = "alice",
+            Channel = channel,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+        };
+        var message = new Message
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-2",
+            Username = "bob",
+            Content = "Hello!",
+            Channel = channel,
+            Timestamp = DateTime.UtcNow,
+            IsDeleted = false,
+        };
+        var existingReaction = new MessageReaction
+        {
+            Id = Guid.NewGuid(),
+            MessageId = message.Id,
+            UserId = user.UserId,
+            Username = user.Username,
+            Emoji = "👍",
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        _db.ConnectedUsers.Add(user);
+        _db.Messages.Add(message);
+        _db.MessageReactions.Add(existingReaction);
+        await _db.SaveChangesAsync();
+
+        // Act — emoji différent = remplacement
+        await _hub.ReactToMessage(message.Id, "❤️");
+
+        // Assert — réaction mise à jour
+        var reaction = await _db.MessageReactions
+            .FirstOrDefaultAsync(r => r.MessageId == message.Id && r.UserId == user.UserId);
+
+        Assert.NotNull(reaction);
+        Assert.Equal("❤️", reaction!.Emoji);
+
+        // Un seul enregistrement pour cet utilisateur
+        var count = await _db.MessageReactions
+            .CountAsync(r => r.MessageId == message.Id && r.UserId == user.UserId);
+        Assert.Equal(1, count);
+
+        _groupMock.Verify(
+            g => g.SendCoreAsync(
+                "MessageReactionUpdated",
+                It.Is<object[]>(args => args.Length == 2 && (Guid)args[0] == message.Id),
+                default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ReactToMessage_WithoutIdentifiedUser_ShouldSendError()
+    {
+        // Arrange — aucun ConnectedUser pour ce connectionId
+        var messageId = Guid.NewGuid();
+
+        // Act
+        await _hub.ReactToMessage(messageId, "👍");
+
+        // Assert
+        _callerMock.Verify(
+            c => c.SendCoreAsync(
+                "Error",
+                It.Is<object[]>(args => args.Length == 1 && (string)args[0] == "Utilisateur non identifié"),
+                default),
+            Times.Once);
+
+        // Aucun broadcast
+        _groupMock.Verify(
+            g => g.SendCoreAsync("MessageReactionUpdated", It.IsAny<object[]>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ReactToMessage_OnNonExistentMessage_ShouldDoNothing()
+    {
+        // Arrange
+        var user = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-1",
+            Username = "alice",
+            Channel = "general",
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+        };
+        _db.ConnectedUsers.Add(user);
+        await _db.SaveChangesAsync();
+
+        // Act — message inexistant
+        await _hub.ReactToMessage(Guid.NewGuid(), "👍");
+
+        // Assert — pas de réaction en BDD, pas de broadcast
+        var reactionCount = await _db.MessageReactions.CountAsync();
+        Assert.Equal(0, reactionCount);
+
+        _groupMock.Verify(
+            g => g.SendCoreAsync("MessageReactionUpdated", It.IsAny<object[]>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ReactToMessage_OnDeletedMessage_ShouldDoNothing()
+    {
+        // Arrange
+        var channel = "general";
+        var user = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-1",
+            Username = "alice",
+            Channel = channel,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+        };
+        var deletedMessage = new Message
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-2",
+            Username = "bob",
+            Content = "Deleted",
+            Channel = channel,
+            Timestamp = DateTime.UtcNow,
+            IsDeleted = true,
+        };
+
+        _db.ConnectedUsers.Add(user);
+        _db.Messages.Add(deletedMessage);
+        await _db.SaveChangesAsync();
+
+        // Act
+        await _hub.ReactToMessage(deletedMessage.Id, "👍");
+
+        // Assert — pas de réaction, pas de broadcast
+        var reactionCount = await _db.MessageReactions.CountAsync();
+        Assert.Equal(0, reactionCount);
+
+        _groupMock.Verify(
+            g => g.SendCoreAsync("MessageReactionUpdated", It.IsAny<object[]>(), default),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ReactToMessage_MultipleUsersReacting_ShouldAggregateCorrectly()
+    {
+        // Arrange
+        var channel = "general";
+        var message = new Message
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-3",
+            Username = "charlie",
+            Content = "Hello!",
+            Channel = channel,
+            Timestamp = DateTime.UtcNow,
+            IsDeleted = false,
+        };
+
+        var user1 = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-1",
+            Username = "alice",
+            Channel = channel,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+        };
+
+        // Réactions existantes d'autres utilisateurs
+        var reaction2 = new MessageReaction
+        {
+            Id = Guid.NewGuid(),
+            MessageId = message.Id,
+            UserId = "user-2",
+            Username = "bob",
+            Emoji = "👍",
+            CreatedAt = DateTime.UtcNow,
+        };
+
+        _db.Messages.Add(message);
+        _db.ConnectedUsers.Add(user1);
+        _db.MessageReactions.Add(reaction2);
+        await _db.SaveChangesAsync();
+
+        // Act — alice réagit aussi avec 👍
+        await _hub.ReactToMessage(message.Id, "👍");
+
+        // Assert — 2 réactions 👍 en BDD
+        var thumbsUpCount = await _db.MessageReactions
+            .CountAsync(r => r.MessageId == message.Id && r.Emoji == "👍");
+        Assert.Equal(2, thumbsUpCount);
+
+        // Broadcast doit contenir la liste agrégée avec Count=2
+        _groupMock.Verify(
+            g => g.SendCoreAsync(
+                "MessageReactionUpdated",
+                It.Is<object[]>(args =>
+                    args.Length == 2 &&
+                    (Guid)args[0] == message.Id),
+                default),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ReactToMessage_BroadcastsToCorrectChannel()
+    {
+        // Arrange — vérifier que le broadcast se fait au bon groupe (channel du message)
+        var channel = "specific-channel";
+        var user = new ConnectedUser
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-1",
+            Username = "alice",
+            Channel = channel,
+            ConnectionId = _testConnectionId,
+            ConnectedAt = DateTime.UtcNow,
+            LastActivity = DateTime.UtcNow,
+            ServerInstanceId = "test-instance",
+        };
+        var message = new Message
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-2",
+            Username = "bob",
+            Content = "Hello!",
+            Channel = channel,
+            Timestamp = DateTime.UtcNow,
+            IsDeleted = false,
+        };
+
+        _db.ConnectedUsers.Add(user);
+        _db.Messages.Add(message);
+        await _db.SaveChangesAsync();
+
+        // Act
+        await _hub.ReactToMessage(message.Id, "😂");
+
+        // Assert — Group() appelé avec le bon channel
+        _clientsMock.Verify(
+            c => c.Group(channel),
+            Times.Once);
+    }
+
+    // ========== Helpers ==========
+
     private static ReservedUsername CreateTestUser(string name) => new()
     {
         Id = Guid.NewGuid(),
         Username = name
     };
-
-    // ========== Helpers (si pas déjà présents) ==========
 
     private static Channel CreateTestChannel(string name = "general", string createdBy = "testuser", bool isMuted = false)
     {

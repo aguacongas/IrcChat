@@ -11,6 +11,7 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
     public DbSet<ReservedUsername> ReservedUsernames { get; set; }
     public DbSet<PrivateMessage> PrivateMessages { get; set; }
     public DbSet<MutedUser> MutedUsers { get; set; }
+    public DbSet<MessageReaction> MessageReactions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -19,6 +20,7 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Channel);
             entity.HasIndex(e => e.Timestamp);
+            entity.Ignore(e => e.Reactions);
         });
 
         modelBuilder.Entity<Channel>(entity =>
@@ -60,6 +62,13 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
             entity.HasIndex(e => e.ChannelName);
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => new { e.ChannelName, e.UserId }).IsUnique();
+        });
+
+        modelBuilder.Entity<MessageReaction>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.MessageId);
+            entity.HasIndex(e => new { e.MessageId, e.UserId }).IsUnique();
         });
     }
 }

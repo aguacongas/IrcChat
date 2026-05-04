@@ -19,7 +19,7 @@
                         @line
                         <br />
                     }
-                </div>                
+                </div>
             }
             else
             {
@@ -42,7 +42,8 @@
         </div>
     </div>
 }
-<div class="messages" @ref="messagesContainer">
+
+<div class="messages" @ref="messagesContainer" @onclick="CloseAllPickers">
     @foreach (var item in Messages)
     {
         if (item is EphemeralPhotoDto photo)
@@ -60,7 +61,7 @@
                             @if (photo.ImageUrl != null)
                             {
                                 <span class="photo-hint">Cliquer pour voir (3s)</span>
-                            }                            
+                            }
                         </div>
                     </div>
                     @if (CanManage)
@@ -81,13 +82,46 @@
                 <span class="username" @onclick="() => OnUsernameClick(msg.Username)">@msg.Username</span>
                 <span class="time">@msg.Timestamp.ToLocalTime().ToMessageTimeString()</span>
                 <span class="content">@((MarkupString)HighlightMention(msg.Content, CurrentUsername))</span>
-                @if (CanManage)
+
+                @* Badges de réactions existantes — sous le contenu du message *@
+                @if (ShowReactions && msg.Reactions.Count > 0)
                 {
-                    <button class="btn-delete-message"
-                            @onclick="() => OnDeleteMessage.InvokeAsync(msg.Id)"
-                            title="Supprimer ce message">
-                        🗑️
-                    </button>
+                    <div class="reactions-list">
+                        @foreach (var reaction in msg.Reactions)
+                        {
+                            var isOwn = reaction.UserIds.Contains(CurrentUserId);
+                            var tooltip = string.Join(", ", reaction.Usernames);
+                            <button class="reaction-badge @(isOwn ? "own" : string.Empty)"
+                                    @onclick="() => OnReact.InvokeAsync((msg.Id, reaction.Emoji))"
+                                    title="@tooltip"
+                                    aria-label="@reaction.Emoji @reaction.Count réactions">
+                                <span class="reaction-emoji">@reaction.Emoji</span>
+                                <span class="reaction-count">@reaction.Count</span>
+                            </button>
+                        }
+                    </div>
+                }
+
+                @* Boutons d'action : 😊 (picker) + 🗑️ (suppression) sur la même ligne en haut à droite *@
+                @if (ShowReactions || CanManage)
+                {
+                    <div class="message-actions">
+                        @if (ShowReactions)
+                        {
+                            <EmojiPickerButton MessageId="@msg.Id"
+                                               IsOpen="@(openPickerMessageId == msg.Id)"
+                                               OnToggle="@(id => HandlePickerToggle(id))"
+                                               OnReact="@(emoji => OnReact.InvokeAsync((msg.Id, emoji)))" />
+                        }
+                        @if (CanManage)
+                        {
+                            <button class="btn-delete-message"
+                                    @onclick="() => OnDeleteMessage.InvokeAsync(msg.Id)"
+                                    title="Supprimer ce message">
+                                🗑️
+                            </button>
+                        }
+                    </div>
                 }
             </div>
         }
@@ -106,6 +140,20 @@
     private List<IMessage> messages = new();
     private EphemeralPhotoDto? selectedPhoto;
 
+    // Id du picker actuellement ouvert (null = tous fermés)
+    private Guid? openPickerMessageId = null;
+
+    private void HandlePickerToggle(Guid messageId)
+    {
+        // Si le picker cliqué est déjà ouvert → fermer, sinon ouvrir celui-là
+        openPickerMessageId = openPickerMessageId == messageId ? null : messageId;
+    }
+
+    private void CloseAllPickers()
+    {
+        openPickerMessageId = null;
+    }
+
     [Parameter]
     [SuppressMessage("Blazor", "BL0007", Justification = "Reset previous message count on set")]
     public List<IMessage> Messages
@@ -122,6 +170,9 @@
     public string CurrentUsername { get; set; } = string.Empty;
 
     [Parameter]
+    public string CurrentUserId { get; set; } = string.Empty;
+
+    [Parameter]
     public string? ChannelDescription { get; set; }
 
     [Parameter]
@@ -129,6 +180,12 @@
 
     [Parameter]
     public bool CanManage { get; set; }
+
+    /// <summary>
+    /// Active l'affichage des réactions (salons publics uniquement).
+    /// </summary>
+    [Parameter]
+    public bool ShowReactions { get; set; }
 
     [Parameter]
     public EventCallback OnEditDescription { get; set; }
@@ -139,9 +196,15 @@
     [Parameter]
     public EventCallback<Guid> OnDeleteMessage { get; set; }
 
+    /// <summary>
+    /// Événement levé quand l'utilisateur sélectionne un emoji pour un message.
+    /// Paramètres : (messageId, emoji).
+    /// </summary>
+    [Parameter]
+    public EventCallback<(Guid MessageId, string Emoji)> OnReact { get; set; }
+
     private async Task OnUsernameClick(string username)
     {
-        // Ne pas mentionner son propre pseudo
         if (username == CurrentUsername)
         {
             return;
@@ -153,30 +216,28 @@
     private static bool IsMentioned(string content, string username)
     {
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(content))
+        {
             return false;
+        }
 
-        // Vérifier si le pseudo est présent dans le contenu (insensible à la casse)
         return content.Contains(username, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string HighlightMention(string content, string username)
     {
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(content))
+        {
             return System.Net.WebUtility.HtmlEncode(content);
+        }
 
-        // Échapper le HTML pour éviter les injections XSS
         var escapedContent = System.Net.WebUtility.HtmlEncode(content);
         var escapedUsername = System.Text.RegularExpressions.Regex.Escape(username);
 
-        // Créer un pattern regex pour trouver le pseudo (insensible à la casse)
         var pattern = $@"\b({escapedUsername})\b";
         var regex = new Regex(pattern, RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
 
-        // Remplacer toutes les occurrences par une version mise en évidence
-        var highlighted = regex.Replace(escapedContent,
+        return regex.Replace(escapedContent,
             match => $"<span class=\"mention-highlight\">{match.Value}</span>");
-
-        return highlighted;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -188,14 +249,11 @@
                 scrollModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
                     "import", "./js/scroll-helper.js");
 
-                // Créer une référence .NET pour les callbacks JS
                 dotNetReference = DotNetObjectReference.Create(this);
 
-                // Attacher le listener de scroll pour détecter le scroll manuel
                 await scrollModule.InvokeVoidAsync("attachScrollListener",
                     messagesContainer,
                     dotNetReference);
-
             }
             catch (Exception ex)
             {
@@ -203,12 +261,10 @@
             }
         }
 
-        // Auto-scroll uniquement si de nouveaux messages arrivent ET que l'utilisateur n'est pas en train de scroller
         if (Messages.Count > previousMessageCount)
         {
             previousMessageCount = Messages.Count;
 
-            // Ne scroll que si l'utilisateur n'a pas scrollé manuellement vers le haut
             if (!isUserScrolling)
             {
                 await ScrollToBottomAsync();
@@ -232,26 +288,17 @@
     }
 
     private Task HandleEditClick()
-    => OnEditDescription.InvokeAsync();
+        => OnEditDescription.InvokeAsync();
 
-    /// <summary>
-    /// Méthode appelée par JavaScript quand l'utilisateur scroll
-    /// </summary>
     [JSInvokable]
     public void OnUserScroll(bool isAtBottom)
     {
-        // Si l'utilisateur est en bas, on réactive le scroll automatique
-        // Sinon, on le désactive (il est en train de lire des messages plus anciens)
         isUserScrolling = !isAtBottom;
     }
 
-    /// <summary>
-    /// Méthode appelée par JavaScript pour gérer le collapse du header
-    /// </summary>
     [JSInvokable]
     public void OnScrollPositionChanged(bool shouldCollapse)
     {
-        // Ne pas changer l'état si l'utilisateur a forcé l'expansion
         if (isHeaderCollapsed != shouldCollapse)
         {
             isHeaderCollapsed = shouldCollapse;
@@ -290,7 +337,6 @@
             }
         }
 
-        // Libérer la référence .NET
         dotNetReference?.Dispose();
 
         GC.SuppressFinalize(this);

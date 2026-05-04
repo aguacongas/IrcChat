@@ -44,6 +44,8 @@ public class ChatService(IPrivateMessageService privateMessageService,
 
     public event Action<EphemeralPhotoDto>? OnEphemeralPhotoReceived;
 
+    public event Action<Guid, List<MessageReactionDto>>? OnMessageReactionUpdated;
+
     public bool IsInitialized => _hubConnection != null && _hubConnection.State == HubConnectionState.Connected;
 
     public Func<HubConnection, IHubConnectionEvents> WrapConnectionEvents { get; set; } = connection => new HubConnectionEventWrapper(connection);
@@ -88,12 +90,17 @@ public class ChatService(IPrivateMessageService privateMessageService,
 
         _hubConnection.On<Guid, string>("MessageDeleted", (messageId, channelName) => OnMessageDeleted?.Invoke(messageId, channelName));
 
-        _hubConnection!.On<EphemeralPhotoDto>("ReceiveEphemeralPhoto", photo =>
+        _hubConnection.On<EphemeralPhotoDto>("ReceiveEphemeralPhoto", photo =>
         {
             logger.LogInformation("Photo éphémère reçue de {Sender}", photo.SenderUsername);
             OnEphemeralPhotoReceived?.Invoke(photo);
         });
 
+        _hubConnection.On<Guid, List<MessageReactionDto>>("MessageReactionUpdated", (messageId, reactions) =>
+        {
+            logger.LogInformation("Réactions mises à jour pour le message {MessageId}", messageId);
+            OnMessageReactionUpdated?.Invoke(messageId, reactions);
+        });
 
         _hubConnectionEvents = WrapConnectionEvents(_hubConnection);
 
@@ -166,6 +173,19 @@ public class ChatService(IPrivateMessageService privateMessageService,
             imageUrl,
             thumbnailUrl,
             isPrivate);
+    }
+
+    /// <summary>
+    /// Envoie une réaction emoji sur un message via SignalR.
+    /// </summary>
+    public async Task ReactToMessage(Guid messageId, string emoji)
+    {
+        if (_hubConnection == null)
+        {
+            throw new InvalidOperationException("Hub non initialisé");
+        }
+
+        await _hubConnection.SendAsync("ReactToMessage", messageId, emoji);
     }
 
     public async ValueTask DisposeAsync()

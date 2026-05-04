@@ -15,4 +15,9 @@ public class Message : IMessage
     public bool IsDeleted { get; set; }
 
     public string UserId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Réactions agrégées par emoji pour ce message.
+    /// </summary>
+    public List<MessageReactionDto> Reactions { get; set; } = [];
 }

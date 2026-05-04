@@ -16,7 +16,9 @@ public class ChatHub(
     ILogger<ChatHub> logger) : Hub
 {
     [SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Constante")]
-    private readonly string Error = "Error";
+    private static readonly string UserNotIdentified = "Utilisateur non identifié";
+    [SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Constante")]
+    private static readonly string Error = "Error";
     [SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Constante")]
     private static readonly string UserStatusChangedMethod = "UserStatusChanged";
     [SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Constante")]
@@ -54,7 +56,7 @@ public class ChatHub(
         if (user == null)
         {
             logger.LogWarning("Tentative de connexion à un salon sans utilisateur enregistré");
-            await Clients.Caller.SendAsync(Error, "Utilisateur non identifié");
+            await Clients.Caller.SendAsync(Error, UserNotIdentified);
             return;
         }
 
@@ -120,7 +122,7 @@ public class ChatHub(
         if (connectedUser == null)
         {
             logger.LogWarning("Tentative d'envoi de message sans utilisateur identifié dans {Channel}", request.Channel);
-            await Clients.Caller.SendAsync(Error, "Utilisateur non identifié");
+            await Clients.Caller.SendAsync(Error, UserNotIdentified);
             return;
         }
 
@@ -173,11 +175,10 @@ public class ChatHub(
         if (sender == null)
         {
             logger.LogWarning("Tentative d'envoi de message privé sans expéditeur identifié");
-            await Clients.Caller.SendAsync(Error, "Utilisateur non identifié");
+            await Clients.Caller.SendAsync(Error, UserNotIdentified);
             return;
         }
 
-        // Vérifier si le destinataire est en mode no PV
         var recipient = await db.ConnectedUsers
             .Where(u => u.UserId == request.RecipientUserId)
             .OrderByDescending(u => u.LastActivity)
@@ -301,6 +302,101 @@ public class ChatHub(
         await db.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Réagit à un message par un emoji.
+    /// - Si l'utilisateur n'a pas encore réagi : ajoute la réaction.
+    /// - Si l'utilisateur a réagi avec le même emoji : retire la réaction (toggle).
+    /// - Si l'utilisateur a réagi avec un emoji différent : remplace la réaction.
+    /// Broadcast MessageReactionUpdated à tout le groupe du salon.
+    /// </summary>
+    /// <param name="messageId">Identifiant du message.</param>
+    /// <param name="emoji">L'emoji choisi.</param>
+    public async Task ReactToMessage(Guid messageId, string emoji)
+    {
+        var currentUser = await db.ConnectedUsers
+            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
+
+        if (currentUser == null)
+        {
+            logger.LogWarning("Tentative de réaction sans utilisateur enregistré");
+            await Clients.Caller.SendAsync(Error, UserNotIdentified);
+            return;
+        }
+
+        var message = await db.Messages.FindAsync(messageId);
+        if (message == null || message.IsDeleted)
+        {
+            logger.LogWarning("Tentative de réaction sur un message inexistant ou supprimé: {MessageId}", messageId);
+            return;
+        }
+
+        // Vérifier l'existence d'une réaction existante de cet utilisateur
+        var existingReaction = await db.MessageReactions
+            .FirstOrDefaultAsync(r => r.MessageId == messageId && r.UserId == currentUser.UserId);
+
+        if (existingReaction != null)
+        {
+            if (existingReaction.Emoji == emoji)
+            {
+                // Même emoji : retrait de la réaction (toggle off)
+                db.MessageReactions.Remove(existingReaction);
+                logger.LogInformation(
+                    "Réaction {Emoji} retirée par {Username} sur le message {MessageId}",
+                    emoji,
+                    currentUser.Username,
+                    messageId);
+            }
+            else
+            {
+                // Emoji différent : remplacement
+                existingReaction.Emoji = emoji;
+                existingReaction.CreatedAt = DateTime.UtcNow;
+                logger.LogInformation(
+                    "Réaction remplacée par {Emoji} pour {Username} sur le message {MessageId}",
+                    emoji,
+                    currentUser.Username,
+                    messageId);
+            }
+        }
+        else
+        {
+            // Nouvelle réaction
+            var reaction = new MessageReaction
+            {
+                Id = Guid.NewGuid(),
+                MessageId = messageId,
+                UserId = currentUser.UserId,
+                Username = currentUser.Username,
+                Emoji = emoji,
+                CreatedAt = DateTime.UtcNow,
+            };
+            db.MessageReactions.Add(reaction);
+            logger.LogInformation(
+                "Réaction {Emoji} ajoutée par {Username} sur le message {MessageId}",
+                emoji,
+                currentUser.Username,
+                messageId);
+        }
+
+        await db.SaveChangesAsync();
+
+        // Recalculer les réactions agrégées pour ce message
+        var updatedReactions = await db.MessageReactions
+            .Where(r => r.MessageId == messageId)
+            .GroupBy(r => r.Emoji)
+            .Select(g => new MessageReactionDto
+            {
+                Emoji = g.Key,
+                Count = g.Count(),
+                UserIds = g.Select(r => r.UserId).ToList(),
+                Usernames = g.Select(r => r.Username).ToList(),
+            })
+            .ToListAsync();
+
+        // Broadcast au groupe du salon
+        await Clients.Group(message.Channel)
+            .SendAsync("MessageReactionUpdated", messageId, updatedReactions);
+    }
 
     /// <summary>
     /// Envoie une photo éphémère (3 secondes d'affichage) avec URL Cloudinary.
@@ -328,7 +424,6 @@ public class ChatHub(
         logger.LogInformation("Envoi photo éphémère de {Username} pour {Target} (privé: {IsPrivate})",
                 currentUser.Username, channelOrUserId, isPrivate);
 
-        // Créer le DTO
         var ephemeralPhoto = new EphemeralPhotoDto
         {
             Id = Guid.NewGuid(),
@@ -342,7 +437,6 @@ public class ChatHub(
             ExpiresAt = DateTime.UtcNow.AddSeconds(3)
         };
 
-        // Broadcast selon le contexte
         if (isPrivate)
         {
             await SendPrivateEphemeralPhoto(channelOrUserId, currentUser, ephemeralPhoto);
@@ -371,7 +465,6 @@ public class ChatHub(
             return;
         }
 
-        // Canal public : broadcast à tous les utilisateurs du canal
         await Clients.Group(channelOrUserId).SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto);
         logger.LogInformation("Photo éphémère diffusée dans le canal {Channel}", channelOrUserId);
     }
@@ -414,7 +507,6 @@ public class ChatHub(
 
     private async Task SendPrivateEphemeralPhoto(string channelOrUserId, ConnectedUser currentUser, EphemeralPhotoDto ephemeralPhoto)
     {
-        // Message privé : envoyer au destinataire uniquement
         var recipient = await db.ConnectedUsers
             .Where(u => u.UserId == channelOrUserId)
             .OrderByDescending(u => u.LastActivity)
@@ -430,14 +522,12 @@ public class ChatHub(
                 && (m.UserId == currentUser.UserId || m.UserId == recipient!.UserId))
             .AnyAsync();
 
-
         if (!isGlobalyMute)
         {
             await Clients.Client(recipient!.ConnectionId).SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto);
             logger.LogInformation("Photo éphémère envoyée en privé à {Recipient}", channelOrUserId);
         }
 
-        // Envoyer aussi à l'expéditeur (confirmation)
         await Clients.Caller.SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto);
     }
 
@@ -454,7 +544,6 @@ public class ChatHub(
             return true;
         }
 
-        // Si destinataire en mode no PV, vérifier s'il existe une conversation
         var hasConversation = await db.PrivateMessages
             .AnyAsync(m =>
                 ((m.SenderUserId == recipient.UserId && m.RecipientUserId == sender.UserId) ||
