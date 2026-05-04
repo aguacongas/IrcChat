@@ -76,6 +76,7 @@ else
         {
             <ChatArea @key="@GetChatAreaKey()"
                       Username="@currentUsername"
+                      CurrentUserId="@currentUserId"
                       CurrentContactUserId="@selectedPrivateUser?.UserId"
                       CurrentChannel="@GetCurrentChannelOrUsername()"
                       ChannelDescription="@currentChannelDescription"
@@ -97,7 +98,8 @@ else
                       OnUsersListToggle="HandleUsersListToggle"
                       OnChannelUpdated="HandleChannelUpdated"
                       OnGlobalFilterChanged="HandleGlobalFilterChanged"
-                      OnDeleteMessage="HandleDeleteMessage" />
+                      OnDeleteMessage="HandleDeleteMessage"
+                      OnReact="HandleReact" />
         }
     </div>
 
@@ -202,7 +204,6 @@ else
         currentUserId = await Auth.GetClientUserIdAsync();
         avatarUrl = Auth.AvatarUrl;
 
-        // Déterminer l'état initial de la liste des utilisateurs selon la taille d'écran
         usersListOpen = !await DeviceDetector.IsMobileDeviceAsync();
 
         if (!string.IsNullOrEmpty(currentUsername))
@@ -221,7 +222,6 @@ else
             await ApplyRouteStateAsync();
         }
     }
-
 
     protected override async Task OnParametersSetAsync()
     {
@@ -302,10 +302,8 @@ else
         Logger.LogInformation("Restauration de {Count} salons actifs: {Channels}",
             activeChannels.Count, string.Join(", ", activeChannels));
 
-        // Rejoindre tous les salons actifs
         foreach (var channelName in activeChannels)
         {
-            // Vérifier que le salon existe encore
             if (existingChannels.Any(c => c.Name.Equals(channelName, StringComparison.OrdinalIgnoreCase)))
             {
                 await ChatService.JoinChannel(channelName);
@@ -314,7 +312,6 @@ else
             }
             else
             {
-                // Le salon n'existe plus, le retirer de la liste
                 await ActiveChannels.RemoveChannelAsync(channelName);
                 Logger.LogDebug("Salon {ChannelName} n'existe plus, retiré des actifs", channelName);
             }
@@ -334,13 +331,13 @@ else
         ChatService.OnUserUnmuted += OnUserUnmutedSignalR;
         ChatService.OnMessageDeleted += OnMessageDeleted;
         ChatService.OnEphemeralPhotoReceived += OnEphemeralPhotoReceived;
+        ChatService.OnMessageReactionUpdated += OnMessageReactionUpdated;
 
         PrivateMessageService.OnPrivateMessageReceived += OnPrivateMessageReceived;
         PrivateMessageService.OnPrivateMessageSent += OnPrivateMessageSent;
         PrivateMessageService.OnUnreadCountChanged += OnUnreadCountChanged;
         PrivateMessageService.OnConversationDeleted += OnConversationDeleted;
 
-        // Événements de connexion
         ChatService.OnDisconnected += OnSignalRDisconnected;
         ChatService.OnReconnecting += OnSignalRReconnecting;
         ChatService.OnReconnected += OnSignalRReconnected;
@@ -377,6 +374,34 @@ else
         }
     }
 
+    // Handler SignalR — réactions mises à jour
+    private void OnMessageReactionUpdated(Guid messageId, List<MessageReactionDto> reactions)
+    {
+        InvokeAsync(() =>
+        {
+            var message = messages.FirstOrDefault(m => m.Id == messageId);
+            if (message != null)
+            {
+                message.Reactions = reactions;
+                StateHasChanged();
+            }
+        });
+    }
+
+    // Handler du composant ChatArea — l'utilisateur a sélectionné un emoji
+    private async Task HandleReact((Guid MessageId, string Emoji) reaction)
+    {
+        try
+        {
+            await ChatService.ReactToMessage(reaction.MessageId, reaction.Emoji);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erreur lors de l'envoi de la réaction {Emoji} sur le message {MessageId}",
+                reaction.Emoji, reaction.MessageId);
+        }
+    }
+
     // Handlers pour les événements de connexion SignalR
     private void OnSignalRDisconnected()
     {
@@ -405,7 +430,6 @@ else
         {
             ShowConnectionNotification("Reconnexion réussie !", ConnectionNotificationType.Reconnected);
 
-            // Recharger les données après reconnexion
             await RestoreActiveChannels();
             if (!isPrivateConversation && !string.IsNullOrEmpty(currentChannel))
             {
@@ -439,7 +463,6 @@ else
 
         if (!persistent)
         {
-            // Auto-masquer après 4 secondes (sauf pour "Reconnecting" qui est persistant)
             _ = Task.Run(async () =>
             {
                 await Task.Delay(4000);
@@ -463,7 +486,6 @@ else
 
         InvokeAsync(async () =>
         {
-            // Incrémenter le compteur si le message est reçu sur un salon non-actif
             if (!isPrivateConversation &&
                 !string.IsNullOrEmpty(message.Channel) &&
                 message.Channel != currentChannel)
@@ -471,8 +493,7 @@ else
                 await UnreadCountService.IncrementCountAsync(message.Channel);
             }
 
-            if (message.Channel == currentChannel &&
-              !isPrivateConversation)
+            if (message.Channel == currentChannel && !isPrivateConversation)
             {
                 messages.Add(message);
                 StateHasChanged();
@@ -530,7 +551,6 @@ else
         {
             Logger.LogInformation("Utilisateur {Username} rendu mute dans {Channel} par {MutedBy}", username, channel, mutedByUsername);
 
-            // Actualiser la liste des utilisateurs si c'est le salon courant
             if (channel == currentChannel && !isPrivateConversation)
             {
                 await LoadUsers();
@@ -546,7 +566,6 @@ else
         {
             Logger.LogInformation("Utilisateur {Username} reçoit la parole dans {Channel} par {UnmutedBy}", username, channel, unmutedByUsername);
 
-            // Actualiser la liste des utilisateurs si c'est le salon courant
             if (channel == currentChannel && !isPrivateConversation)
             {
                 await LoadUsers();
@@ -608,14 +627,12 @@ else
 
     private async void OnUserStatusChanged(string username, bool isOnline)
     {
-        // Mettre à jour le statut dans les conversations
         var conversation = privateConversations.FirstOrDefault(c => c.OtherUser?.Username == username);
         if (conversation != null)
         {
             conversation.IsOnline = isOnline;
         }
 
-        // Mettre à jour le statut de l'utilisateur sélectionné
         if (isPrivateConversation && selectedPrivateUser?.Username == username)
         {
             isSelectedUserOnline = isOnline;
@@ -652,21 +669,17 @@ else
 
     private void HandleBrowseChannels()
     {
-        // Fermer toute conversation privée
         if (isPrivateConversation)
         {
             ClosePrivateChatState();
         }
 
-        // Quitter le salon actuel (visuellement, pas via SignalR)
         currentChannel = string.Empty;
         messages.Clear();
         users.Clear();
 
-        // Fermer la sidebar sur mobile
         sidebarOpen = false;
 
-        // Naviguer vers la route de base /chat pour afficher ChannelList
         NavigateToRelativeIfNeeded("chat");
 
         StateHasChanged();
@@ -683,26 +696,21 @@ else
         {
             Logger.LogInformation("Quitter le salon {Channel}", channelName);
 
-            // Appeler SignalR pour quitter le salon
             await ChatService.LeaveChannel(channelName);
             await ActiveChannels.RemoveChannelAsync(channelName);
             await UnreadCountService.ResetCountAsync(channelName);
 
-            // Recharger la liste des salons connectés
             channels = channels.Where(c => c.Name != channelName).ToList();
 
-            // Si c'est le salon actuel, basculer vers un autre ou afficher ChannelList
             if (currentChannel == channelName && !isPrivateConversation)
             {
                 var otherChannel = channels.FirstOrDefault(c => c.Name != channelName);
                 if (otherChannel != null)
                 {
-                    // Basculer vers un autre salon
                     NavigateToChannelRoute(otherChannel.Name);
                 }
                 else
                 {
-                    // Plus de salons connectés, afficher ChannelList
                     currentChannel = null;
                     currentChannelDescription = null;
                     messages.Clear();
@@ -822,7 +830,6 @@ else
     {
         InvokeAsync(async () =>
         {
-            // Recharger les messages privés si une conversation est ouverte
             if (isPrivateConversation && selectedPrivateUser != null)
             {
                 await OpenPrivateChatInternal(selectedPrivateUser);
@@ -850,19 +857,15 @@ else
             return;
         }
 
-        // Vérifier si déjà connecté
         var alreadyConnected = channels.Any(c => c.Name.Equals(channel, StringComparison.OrdinalIgnoreCase));
 
         if (!alreadyConnected)
         {
-            // Joindre le salon via SignalR
             await ChatService.JoinChannel(channel);
         }
 
-        // Réinitialiser le compteur de messages non lus pour ce salon
         await UnreadCountService.ResetCountAsync(channel);
 
-        // Charger les données du salon
         isPrivateConversation = false;
         selectedPrivateUser = null;
         privateMessages.Clear();
@@ -885,10 +888,8 @@ else
 
         await ActiveChannels.AddChannelAsync(channelInfo.Name);
 
-        // Fermer la sidebar sur mobile
         sidebarOpen = false;
 
-        // Ouvrir la liste des utilisateurs sur desktop, fermer sur mobile
         usersListOpen = !await DeviceDetector.IsMobileDeviceAsync();
 
         StateHasChanged();
@@ -898,7 +899,6 @@ else
     {
         try
         {
-            // Charger UNIQUEMENT les salons sur lesquels l'utilisateur est connecté
             var result = await Http.GetFromJsonAsync<List<Channel>>(
                 $"/api/my-channels?username={Uri.EscapeDataString(currentUsername)}");
 
@@ -996,7 +996,6 @@ else
         return Task.CompletedTask;
     }
 
-    // Méthodes pour messages privés
     private async Task LoadPrivateConversations()
     {
         var conversations = await PrivateMessageService.GetConversationsAsync(currentUserId);
@@ -1027,7 +1026,6 @@ else
         await ChatService.MarkPrivateMessagesAsRead(user.UserId);
         await LoadPrivateConversations();
 
-        // Charger le statut de connexion de l'utilisateur
         await UpdateSelectedUserStatus(user.Username);
 
         sidebarOpen = false;
@@ -1162,7 +1160,10 @@ else
         }
 
         var channel = channels.FirstOrDefault(c => c.Name == currentChannel);
-        if (channel == null) return false;
+        if (channel == null)
+        {
+            return false;
+        }
 
         bool isCreator = channel.CreatedBy.Equals(currentUsername, StringComparison.OrdinalIgnoreCase);
         bool isAdmin = Auth.IsAdmin;
@@ -1186,7 +1187,6 @@ else
     {
         await LoadMyChannels();
 
-        // Mettre à jour la description du canal actuel
         if (!string.IsNullOrEmpty(currentChannel) && !isPrivateConversation)
         {
             var channelInfo = channels.FirstOrDefault(c =>
@@ -1225,7 +1225,6 @@ else
                 channelOrUserId,
                 isPrivateConversation);
 
-            // Envoyer via SignalR
             await ChatService.SendEphemeralPhoto(
                 channelOrUserId,
                 photoUrls.ImageUrl,
@@ -1246,9 +1245,7 @@ else
     }
 
     private string? GetCurrentChannelOrUsername()
-    {
-        return isPrivateConversation ? selectedPrivateUser?.Username ?? string.Empty : currentChannel;
-    }
+        => isPrivateConversation ? selectedPrivateUser?.Username ?? string.Empty : currentChannel;
 
     private List<IMessage> GetCurrentMessages()
     {
@@ -1362,7 +1359,6 @@ else
         return "chat-area-default";
     }
 
-    // Méthode de filtrage pour les salons
     private List<Channel> FilterChannels(List<Channel> channelList)
     {
         if (string.IsNullOrWhiteSpace(globalFilterText))
@@ -1376,7 +1372,6 @@ else
             .ToList();
     }
 
-    // Méthode de filtrage pour les utilisateurs
     private List<User> FilterUsers(List<User> userList)
     {
         if (string.IsNullOrWhiteSpace(globalFilterText))
@@ -1390,7 +1385,6 @@ else
             .ToList();
     }
 
-    // Méthode de filtrage pour les conversations privées
     private List<PrivateConversation> FilterConversations(List<PrivateConversation> conversationList)
     {
         if (string.IsNullOrWhiteSpace(globalFilterText))
@@ -1405,7 +1399,6 @@ else
             .ToList();
     }
 
-    // Handler pour le changement de filtre
     private void HandleGlobalFilterChanged(string filterText)
     {
         globalFilterText = filterText;
@@ -1427,8 +1420,8 @@ else
         ChatService.OnUserUnmuted -= OnUserUnmutedSignalR;
         ChatService.OnMessageDeleted -= OnMessageDeleted;
         ChatService.OnEphemeralPhotoReceived -= OnEphemeralPhotoReceived;
+        ChatService.OnMessageReactionUpdated -= OnMessageReactionUpdated;
 
-        // Événements de connexion
         ChatService.OnDisconnected -= OnSignalRDisconnected;
         ChatService.OnReconnecting -= OnSignalRReconnecting;
         ChatService.OnReconnected -= OnSignalRReconnected;

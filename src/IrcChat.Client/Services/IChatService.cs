@@ -40,6 +40,12 @@ public interface IChatService : IAsyncDisposable
 
     event Action<EphemeralPhotoDto>? OnEphemeralPhotoReceived;
 
+    /// <summary>
+    /// Événement levé quand les réactions d'un message sont mises à jour.
+    /// Paramètres : messageId, liste des réactions agrégées mises à jour.
+    /// </summary>
+    event Action<Guid, List<MessageReactionDto>>? OnMessageReactionUpdated;
+
     // Événements pour l'état de la connexion SignalR
     event Action? OnDisconnected;
 
@@ -66,4 +72,9 @@ public interface IChatService : IAsyncDisposable
     /// </summary>
     Task SendEphemeralPhoto(string channelOrUserId, string imageUrl, string thumbnailUrl, bool isPrivate);
 
+    /// <summary>
+    /// Réagit à un message par un emoji.
+    /// Toggle : même emoji = retrait, emoji différent = remplacement.
+    /// </summary>
+    Task ReactToMessage(Guid messageId, string emoji);
 }
