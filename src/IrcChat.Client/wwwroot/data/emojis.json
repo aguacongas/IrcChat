@@ -1,6 +1,6 @@
 {
   "version": "15.1",
-  "generatedAt": "2026-04-01T06:43:08.501Z",
+  "generatedAt": "2026-05-01T05:41:19.543Z",
   "emojis": [
     {
       "emoji": "!",
@@ -45985,24 +45985,6 @@
       "version": "6.0"
     },
     {
-      "emoji": "◦",
-      "code": ":hollow_bullet:",
-      "name": "puce creuse",
-      "nameEn": "hollow bullet",
-      "category": "Symbols",
-      "subcategory": "",
-      "keywords": [
-        "puce creuse",
-        "bullet",
-        "hollow"
-      ],
-      "aliases": [
-        ":hollow_bullet:"
-      ],
-      "unicode": "U+25E6",
-      "version": "6.0"
-    },
-    {
       "emoji": "◯",
       "code": ":large_hollow_circle:",
       "name": "grand cercle vide",
@@ -50008,6 +49990,28 @@
         ":rial:"
       ],
       "unicode": "U+FDFC",
+      "version": "6.0"
+    },
+    {
+      "emoji": "��",
+      "code": ":hollow_bullet:",
+      "name": "cercueil",
+      "nameEn": "hollow bullet",
+      "category": "Symbols",
+      "subcategory": "",
+      "keywords": [
+        "cercueil",
+        "enterrement",
+        "mort",
+        "obsèques",
+        "vampire",
+        "bullet",
+        "hollow"
+      ],
+      "aliases": [
+        ":hollow_bullet:"
+      ],
+      "unicode": "U+FFFD U+FFFD",
       "version": "6.0"
     }
   ],
