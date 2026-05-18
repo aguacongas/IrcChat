@@ -7,6 +7,7 @@ on:
 
 env:
   DOTNET_VERSION: '10.0.x'
+  SixLaborsLicenseKey: ${{ secrets.SIXLABORS_LICENSE_KEY }}
 
 jobs:
   create-release:
