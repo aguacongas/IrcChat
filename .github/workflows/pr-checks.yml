@@ -73,6 +73,8 @@ jobs:
           /d:sonar.issue.ignore.multicriteria.e1.resourceKey="src/**/Migrations/**/*.cs"
 
     - name: 🏗️ Build
+      env:
+        SixLaborsLicenseKey: ${{ secrets.SIXLABORS_LICENSE_KEY }}
       run: dotnet build --configuration Release --no-restore
 
     - name: 🧪 Run Unit Tests
