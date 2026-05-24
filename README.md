@@ -80,6 +80,7 @@ Application de chat IRC moderne développée avec .NET 10, Blazor WebAssembly et
 - [PostgreSQL 16+](https://www.postgresql.org/download/)
 - [Visual Studio 2022](https://visualstudio.microsoft.com/) ou [VS Code](https://code.visualstudio.com/)
 - [Node.js](https://nodejs.org/) (optionnel, pour Tailwind)
+- Une clé de licence [Six Labors](https://sixlabors.com/pricing/) (requise pour la compilation)
 
 ## 🚀 Démarrage rapide
 
@@ -101,14 +102,65 @@ cd src/IrcChat.Api
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Database=ircchat;Username=postgres;Password=votre_password"
 ```
 
-### 3. Appliquer les migrations
+### 3. Configuration de la licence Six Labors
+
+Ce projet utilise [SixLabors.ImageSharp](https://sixlabors.com/products/imagesharp/), qui nécessite une licence valide pour la compilation. La licence est vérifiée à la compilation via la propriété MSBuild `SixLaborsLicenseKey`.
+
+> ℹ️ Six Labors est gratuit pour les projets open source. Consultez [sixlabors.com/pricing](https://sixlabors.com/pricing/) pour les détails.
+
+**Option A — Variable d'environnement (recommandée)**
+
+Définissez la variable d'environnement `SIXLABORS_LICENSE_KEY` puis buildez normalement :
+
+```bash
+# Linux / macOS
+export SIXLABORS_LICENSE_KEY="votre-clé-de-licence"
+dotnet build
+
+# Windows (PowerShell)
+$env:SIXLABORS_LICENSE_KEY = "votre-clé-de-licence"
+dotnet build
+```
+
+Pour persister la variable entre les sessions, ajoutez-la à votre profil shell (`~/.bashrc`, `~/.zshrc`, ou le profil PowerShell).
+
+**Option B — Propriété MSBuild en argument CLI**
+
+```bash
+# Linux / macOS
+dotnet build -p:SixLaborsLicenseKey="$SIXLABORS_LICENSE_KEY"
+dotnet publish -p:SixLaborsLicenseKey="$SIXLABORS_LICENSE_KEY"
+
+# Windows (PowerShell)
+dotnet build -p:SixLaborsLicenseKey="$env:SIXLABORS_LICENSE_KEY"
+dotnet publish -p:SixLaborsLicenseKey="$env:SIXLABORS_LICENSE_KEY"
+```
+
+**Option C — Fichier de licence**
+
+Placez le fichier `sixlabors.lic` fourni par Six Labors à la racine du repository ou dans `src/IrcChat.Api/`. Le build le détectera automatiquement.
+
+> ⚠️ **Ne commitez jamais** votre clé de licence ou le fichier `sixlabors.lic` dans le repository. Ajoutez `sixlabors.lic` à votre `.gitignore` local.
+
+**Docker**
+
+Passez la clé comme argument de build :
+
+```bash
+docker build \
+  --build-arg SIXLABORS_LICENSE_KEY="$SIXLABORS_LICENSE_KEY" \
+  -t ircchat-api \
+  src/IrcChat.Api
+```
+
+### 4. Appliquer les migrations
 
 ```bash
 cd src/IrcChat.Api
 dotnet ef database update
 ```
 
-### 4. Configuration OAuth (optionnel)
+### 5. Configuration OAuth (optionnel)
 
 Pour configurer OAuth 2.0 avec Google, Microsoft et Facebook, suivre le guide complet :
 
@@ -132,7 +184,7 @@ dotnet user-secrets set "OAuth:Facebook:AppSecret" "YOUR_APP_SECRET"
 
 > ℹ️ Pour obtenir ces identifiants, consulter le [guide OAuth 2.0](docs/OAUTH_SETUP.md) qui explique comment les générer pour chaque provider.
 
-### 5. Lancer l'application
+### 6. Lancer l'application
 
 ```bash
 # Terminal 1 - API
