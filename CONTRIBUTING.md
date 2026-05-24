@@ -56,6 +56,7 @@ Si vous souhaitez contribuer du code directement :
 - ✅ Fork du repository
 - ✅ .NET 10 SDK installé
 - ✅ PostgreSQL 16+ installé
+- ✅ Une clé de licence [Six Labors](https://sixlabors.com/pricing/) (requise pour la compilation)
 
 #### Workflow de contribution
 
@@ -66,60 +67,74 @@ Si vous souhaitez contribuer du code directement :
    git checkout -b feature/ma-fonctionnalite
    ```
 
-2. **Configuration**
+2. **Configuration de la licence Six Labors**
+
+   Ce projet utilise SixLabors.ImageSharp, qui nécessite une licence valide pour compiler. Configurez votre clé avant de builder :
+
    ```bash
-   # Restaurer les packages
-   dotnet restore
-   
-   # Configurer la base de données
+   # Linux / macOS — à ajouter dans ~/.bashrc ou ~/.zshrc pour persister
+   export SIXLABORS_LICENSE_KEY="votre-clé-de-licence"
+
+   # Windows (PowerShell) — à ajouter dans $PROFILE pour persister
+   $env:SIXLABORS_LICENSE_KEY = "votre-clé-de-licence"
+   ```
+
+   Le build lit automatiquement cette variable via la propriété MSBuild `SixLaborsLicenseKey`.  
+   Voir le [README](README.md#3-configuration-de-la-licence-six-labors) pour toutes les options (fichier `.lic`, argument CLI, Docker).
+
+   > ⚠️ **Ne commitez jamais** votre clé de licence dans le repository.
+
+3. **Configuration de la base de données**
+   ```bash
+   # Configurer la connection string via user secrets
    dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Database=ircchat_dev;Username=postgres;Password=postgres"
-   
+
    # Appliquer les migrations
    cd src/IrcChat.Api
    dotnet ef database update
    ```
 
-3. **Développement**
-   
+4. **Développement**
+
    ⚠️ **IMPORTANT** : Respecter les conventions C# :
-   
+
    ```csharp
    // ✅ Constructeurs primaires
    public class MyService(ILogger<MyService> logger)
    {
        public void Method() => logger.LogInformation("Hello");
    }
-   
+
    // ✅ Accolades obligatoires
    if (condition)
    {
        DoSomething();
    }
-   
+
    // ✅ Expression-bodied members
    public string GetName() => $"{FirstName} {LastName}";
-   
+
    // ✅ API fluente
    services
        .AddDatabaseServices(configuration)
        .AddApplicationServices(configuration);
    ```
 
-4. **Tests obligatoires**
-   
+5. **Tests obligatoires**
+
    Pour **chaque** fonctionnalité, créer :
-   
+
    ```bash
    # Tests unitaires
    tests/IrcChat.Api.Tests/Services/MonServiceTests.cs
-   
+
    # Tests d'intégration (si endpoint API)
    tests/IrcChat.Api.Tests/Integration/MonEndpointTests.cs
-   
+
    # Tests de composants (si UI)
    tests/IrcChat.Client.Tests/Components/MonComposantTests.cs
    ```
-   
+
    **Exigences** :
    - ✅ Couverture ≥ 80%
    - ✅ Tous les tests passent
@@ -127,33 +142,33 @@ Si vous souhaitez contribuer du code directement :
    - ✅ Naming : `MethodName_Scenario_ExpectedBehavior`
    - ✅ Utilisation des assertions xUnit natives
 
-5. **Vérifications locales**
-   
+6. **Vérifications locales**
+
    ```bash
-   # Build
+   # Build (la variable SIXLABORS_LICENSE_KEY doit être définie)
    dotnet build
-   
+
    # Tests
    dotnet test
-   
+
    # Couverture
    dotnet test --collect:"XPlat Code Coverage"
-   
+
    # Format
    dotnet format
    ```
 
-6. **Commit**
-   
+7. **Commit**
+
    Utiliser les [Conventional Commits](https://www.conventionalcommits.org/) :
-   
+
    ```bash
    git commit -m "feat(api): add user ban endpoint"
    git commit -m "fix(client): correct message display bug"
    git commit -m "test(api): add user service tests"
    git commit -m "docs(readme): update installation guide"
    ```
-   
+
    Types autorisés :
    - `feat`: Nouvelle fonctionnalité
    - `fix`: Correction de bug
@@ -164,12 +179,12 @@ Si vous souhaitez contribuer du code directement :
    - `perf`: Amélioration de performance
    - `chore`: Tâches diverses
 
-7. **Pull Request**
-   
+8. **Pull Request**
+
    ```bash
    git push origin feature/ma-fonctionnalite
    ```
-   
+
    Puis créer une PR en remplissant le template :
    - ✅ Description claire
    - ✅ Type de changement coché
@@ -362,6 +377,7 @@ Voir `.claude/project-config.md` pour tous les détails du processus.
 - [SignalR Documentation](https://learn.microsoft.com/en-us/aspnet/core/signalr/)
 - [Entity Framework Core](https://learn.microsoft.com/en-us/ef/core/)
 - [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [Six Labors Licensing](https://sixlabors.com/pricing/)
 
 ### Outils
 - [xUnit Documentation](https://xunit.net/)

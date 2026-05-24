@@ -5,12 +5,19 @@ ARG DOTNET_SDK_VERSION=10.0
 FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_SDK_VERSION}${DOTNET_OS_VERSION} AS build
 WORKDIR /src
 
+# Six Labors license key — pass at build time:
+# docker build --build-arg SIXLABORS_LICENSE_KEY="<your-key>" ...
+ARG SIXLABORS_LICENSE_KEY
+
 # copy everything
 COPY . ./
 # restore as distinct layers
 RUN dotnet restore
 # build and publish a release
-RUN dotnet publish /src/src/IrcChat.Api/IrcChat.Api.csproj  -c Release -o /app
+RUN dotnet publish /src/src/IrcChat.Api/IrcChat.Api.csproj \
+    -c Release \
+    -o /app \
+    /p:SixLaborsLicenseKey="${SIXLABORS_LICENSE_KEY}"
 
 # final stage/image
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_SDK_VERSION}
