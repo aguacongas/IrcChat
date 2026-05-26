@@ -80,7 +80,7 @@ Application de chat IRC moderne développée avec .NET 10, Blazor WebAssembly et
 - [PostgreSQL 16+](https://www.postgresql.org/download/)
 - [Visual Studio 2022](https://visualstudio.microsoft.com/) ou [VS Code](https://code.visualstudio.com/)
 - [Node.js](https://nodejs.org/) (optionnel, pour Tailwind)
-- Une clé de licence [Six Labors](https://sixlabors.com/pricing/) (requise pour la compilation)
+- Un fichier de licence [Six Labors](https://sixlabors.com/pricing/) (`sixlabors.lic`, requis pour la compilation)
 
 ## 🚀 Démarrage rapide
 
@@ -104,54 +104,25 @@ dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Da
 
 ### 3. Configuration de la licence Six Labors
 
-Ce projet utilise [SixLabors.ImageSharp](https://sixlabors.com/products/imagesharp/), qui nécessite une licence valide pour la compilation. La licence est vérifiée à la compilation via la propriété MSBuild `SixLaborsLicenseKey`.
+Ce projet utilise [SixLabors.ImageSharp](https://sixlabors.com/products/imagesharp/), qui nécessite une licence valide pour la compilation.
 
-> ℹ️ Six Labors est gratuit pour les projets open source. Consultez [sixlabors.com/pricing](https://sixlabors.com/pricing/) pour les détails.
+> ℹ️ Six Labors propose des licences gratuites pour les projets open source. Consultez [sixlabors.com/pricing](https://sixlabors.com/pricing/) pour les détails.
 
-**Option A — Variable d'environnement (recommandée)**
+Placez votre fichier `sixlabors.lic` dans `src/IrcChat.Api/` :
 
-Définissez la variable d'environnement `SIXLABORS_LICENSE_KEY` puis buildez normalement :
-
-```bash
-# Linux / macOS
-export SIXLABORS_LICENSE_KEY="votre-clé-de-licence"
-dotnet build
-
-# Windows (PowerShell)
-$env:SIXLABORS_LICENSE_KEY = "votre-clé-de-licence"
-dotnet build
+```
+src/IrcChat.Api/
+├── sixlabors.lic   ← ici
+├── IrcChat.Api.csproj
+└── ...
 ```
 
-Pour persister la variable entre les sessions, ajoutez-la à votre profil shell (`~/.bashrc`, `~/.zshrc`, ou le profil PowerShell).
+SixLabors.ImageSharp détecte automatiquement le fichier au même niveau que le `.csproj` — aucun argument supplémentaire n'est nécessaire pour les commandes `dotnet build`, `dotnet test` ou `dotnet run`.
 
-**Option B — Propriété MSBuild en argument CLI**
-
-```bash
-# Linux / macOS
-dotnet build -p:SixLaborsLicenseKey="$SIXLABORS_LICENSE_KEY"
-dotnet publish -p:SixLaborsLicenseKey="$SIXLABORS_LICENSE_KEY"
-
-# Windows (PowerShell)
-dotnet build -p:SixLaborsLicenseKey="$env:SIXLABORS_LICENSE_KEY"
-dotnet publish -p:SixLaborsLicenseKey="$env:SIXLABORS_LICENSE_KEY"
-```
-
-**Option C — Fichier de licence**
-
-Placez le fichier `sixlabors.lic` fourni par Six Labors à la racine du repository ou dans `src/IrcChat.Api/`. Le build le détectera automatiquement.
-
-> ⚠️ **Ne commitez jamais** votre clé de licence ou le fichier `sixlabors.lic` dans le repository. Ajoutez `sixlabors.lic` à votre `.gitignore` local.
-
-**Docker**
-
-Passez la clé comme argument de build :
-
-```bash
-docker build \
-  --build-arg SIXLABORS_LICENSE_KEY="$SIXLABORS_LICENSE_KEY" \
-  -t ircchat-api \
-  src/IrcChat.Api
-```
+> ⚠️ **Ne commitez jamais** `sixlabors.lic`. Ajoutez cette ligne à votre `.gitignore` local :
+> ```
+> **/sixlabors.lic
+> ```
 
 ### 4. Appliquer les migrations
 
@@ -199,6 +170,57 @@ dotnet run
 L'application sera accessible sur :
 - **API** : https://localhost:7001
 - **Client** : https://localhost:7002
+
+## 🔑 Configuration des secrets CI/CD
+
+### GitHub Actions
+
+Créez les secrets suivants dans **Settings → Secrets and variables → Actions** :
+
+| Secret | Description |
+|--------|-------------|
+| `SIXLABORS_LICENSE_FILE` | Contenu complet du fichier `sixlabors.lic` |
+| `SONAR_TOKEN` | Token SonarCloud |
+
+### Render.com
+
+Dans **Environment → Build Environment Variables** :
+
+| Variable | Description |
+|----------|-------------|
+| `SIXLABORS_LICENSE_FILE` | Contenu complet du fichier `sixlabors.lic` |
+
+Le Dockerfile écrit le fichier à la volée dans le stage de build uniquement — il ne transite pas dans l'image finale.
+
+### Build Docker local
+
+Pour construire et lancer l'image Docker de l'API en local, passez le contenu du fichier `sixlabors.lic` comme argument de build :
+
+```bash
+# Linux / macOS
+docker build \
+  --build-arg SIXLABORS_LICENSE_FILE="$(cat src/IrcChat.Api/sixlabors.lic)" \
+  -t ircchat-api \
+  -f src/IrcChat.Api/Dockerfile \
+  .
+
+# Windows (PowerShell)
+docker build `
+  --build-arg SIXLABORS_LICENSE_FILE="$(Get-Content src/IrcChat.Api/sixlabors.lic -Raw)" `
+  -t ircchat-api `
+  -f src/IrcChat.Api/Dockerfile `
+  .
+```
+
+Puis lancer le conteneur :
+
+```bash
+docker run -p 8080:8080 \
+  -e ConnectionStrings__DefaultConnection="Host=host.docker.internal;Database=ircchat;Username=postgres;Password=votre_password" \
+  ircchat-api
+```
+
+> ℹ️ Sur Linux, remplacez `host.docker.internal` par l'IP de votre machine hôte (ex: `172.17.0.1`) si PostgreSQL tourne en dehors de Docker.
 
 ## 🧪 Tests
 
@@ -351,7 +373,6 @@ Voir [.claude/project-config.md](.claude/project-config.md) pour plus de détail
 
 [![Developed with Claude](https://img.shields.io/badge/Developed%20with-Claude-5A67D8?style=flat-square&logo=anthropic)](https://www.anthropic.com/claude)
 [![Socratic Mode](https://img.shields.io/badge/Mode-Socratic-orange?style=flat-square)](.claude/project-config.md)
-
 
 ## 📜 Licence
 
