@@ -72,7 +72,9 @@ jobs:
           /d:sonar.issue.ignore.multicriteria.e1.resourceKey="src/**/Migrations/**/*.cs"
 
     - name: 🔑 Write Six Labors license
-      run: printf '%s' "${{ secrets.SIXLABORS_LICENSE_FILE }}" > "$GITHUB_WORKSPACE/sixlabors.lic"
+      env:
+        SIXLABORS_LICENSE_FILE: ${{ secrets.SIXLABORS_LICENSE_FILE }}
+      run: printf '%s' "$SIXLABORS_LICENSE_FILE" > "$GITHUB_WORKSPACE/sixlabors.lic"
 
     - name: 🏗️ Build
       run: dotnet build --configuration Release --no-restore -p:SixLaborsLicenseFile="$GITHUB_WORKSPACE/sixlabors.lic"
