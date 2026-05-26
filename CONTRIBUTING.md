@@ -56,7 +56,7 @@ Si vous souhaitez contribuer du code directement :
 - ✅ Fork du repository
 - ✅ .NET 10 SDK installé
 - ✅ PostgreSQL 16+ installé
-- ✅ Une clé de licence [Six Labors](https://sixlabors.com/pricing/) (requise pour la compilation)
+- ✅ Un fichier de licence [Six Labors](https://sixlabors.com/pricing/) (`sixlabors.lic`)
 
 #### Workflow de contribution
 
@@ -69,27 +69,28 @@ Si vous souhaitez contribuer du code directement :
 
 2. **Configuration de la licence Six Labors**
 
-   Ce projet utilise SixLabors.ImageSharp, qui nécessite une licence valide pour compiler. Configurez votre clé avant de builder :
+   Placez votre fichier `sixlabors.lic` dans `src/IrcChat.Api/` :
 
-   ```bash
-   # Linux / macOS — à ajouter dans ~/.bashrc ou ~/.zshrc pour persister
-   export SIXLABORS_LICENSE_KEY="votre-clé-de-licence"
-
-   # Windows (PowerShell) — à ajouter dans $PROFILE pour persister
-   $env:SIXLABORS_LICENSE_KEY = "votre-clé-de-licence"
+   ```
+   src/IrcChat.Api/
+   ├── sixlabors.lic   ← ici
+   ├── IrcChat.Api.csproj
+   └── ...
    ```
 
-   Le build lit automatiquement cette variable via la propriété MSBuild `SixLaborsLicenseKey`.  
-   Voir le [README](README.md#3-configuration-de-la-licence-six-labors) pour toutes les options (fichier `.lic`, argument CLI, Docker).
+   SixLabors.ImageSharp détecte automatiquement le fichier au même niveau que le `.csproj` — aucun argument supplémentaire n'est nécessaire pour les commandes `dotnet`.
 
-   > ⚠️ **Ne commitez jamais** votre clé de licence dans le repository.
+   > ⚠️ **Ne commitez jamais** `sixlabors.lic`. Vérifiez qu'il figure dans votre `.gitignore` local :
+   > ```
+   > **/sixlabors.lic
+   > ```
 
 3. **Configuration de la base de données**
    ```bash
-   # Configurer la connection string via user secrets
-   dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Database=ircchat_dev;Username=postgres;Password=postgres"
+   dotnet user-secrets set "ConnectionStrings:DefaultConnection" \
+     "Host=localhost;Database=ircchat_dev;Username=postgres;Password=postgres" \
+     --project src/IrcChat.Api
 
-   # Appliquer les migrations
    cd src/IrcChat.Api
    dotnet ef database update
    ```
@@ -145,7 +146,7 @@ Si vous souhaitez contribuer du code directement :
 6. **Vérifications locales**
 
    ```bash
-   # Build (la variable SIXLABORS_LICENSE_KEY doit être définie)
+   # Build
    dotnet build
 
    # Tests
@@ -233,6 +234,7 @@ Si vous souhaitez contribuer du code directement :
 - ❌ Code diminuant la couverture globale
 - ❌ Code sans documentation
 - ❌ Commits mal formatés
+- ❌ Fichier `sixlabors.lic` commité dans le repository
 
 ## 📊 Quality Gates
 
