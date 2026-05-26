@@ -7,7 +7,6 @@ on:
 
 env:
   DOTNET_VERSION: '10.0.x'
-  SixLaborsLicenseKey: ${{ secrets.SIXLABORS_LICENSE_KEY }}
 
 jobs:
   create-release:
@@ -30,8 +29,13 @@ jobs:
     - name: 📦 Restore dependencies
       run: dotnet restore
 
+    - name: 🔑 Write Six Labors license
+      env:
+        SIXLABORS_LICENSE_FILE: ${{ secrets.SIXLABORS_LICENSE_FILE }}
+      run: printf '%s' "$SIXLABORS_LICENSE_FILE" > "$GITHUB_WORKSPACE/sixlabors.lic"
+
     - name: 🗃️ Build Release
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build --configuration Release --no-restore -p:SixLaborsLicenseFile="$GITHUB_WORKSPACE/sixlabors.lic"
 
     - name: 🧪 Run Tests
       run: |
@@ -48,6 +52,7 @@ jobs:
         dotnet publish src/IrcChat.Api/IrcChat.Api.csproj \
           -c Release \
           -o release/api \
+          -p:SixLaborsLicenseFile="$GITHUB_WORKSPACE/sixlabors.lic" \
           /p:PublishSingleFile=true \
           /p:PublishTrimmed=true \
           /p:IncludeNativeLibrariesForSelfExtract=true
@@ -58,6 +63,10 @@ jobs:
           -c Release \
           -o release/client \
           /p:BlazorEnableCompression=true
+
+    - name: 🧹 Remove Six Labors license
+      if: always()
+      run: rm -f "$GITHUB_WORKSPACE/sixlabors.lic"
 
     - name: 📋 Extract version from tag
       id: version
