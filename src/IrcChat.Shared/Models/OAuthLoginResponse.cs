@@ -16,4 +16,6 @@ public class OAuthLoginResponse
     public bool IsNewUser { get; set; }
 
     public bool IsAdmin { get; set; }
+
+    public DateTime DateOfBirth { get; set; }
 }

@@ -1,4 +1,3 @@
-// tests/IrcChat.Client.Tests/Pages/OAuthConnectTests.cs
 using System.Net;
 using System.Net.Http.Json;
 using IrcChat.Client.Pages;
@@ -107,6 +106,8 @@ public class OAuthConnectTests : BunitContext
             It.IsAny<ExternalAuthProvider>(),
             It.IsAny<bool>()))
             .Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.SetDateOfBirthAsync(It.IsAny<DateTime>()))
+            .Returns(Task.CompletedTask);
 
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
             .SetResult("reserve");
@@ -131,6 +132,7 @@ public class OAuthConnectTests : BunitContext
             UserId = userId,
             IsNewUser = true,
             IsAdmin = false,
+            DateOfBirth = DateTime.UtcNow.AddYears(-20),
         };
 
         mockHttp.When(HttpMethod.Post, "*/api/oauth/reserve-username")
@@ -162,6 +164,110 @@ public class OAuthConnectTests : BunitContext
     }
 
     [Fact]
+    public async Task OAuthConnect_HandleCallback_Reserve_ShouldSetDateOfBirth()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var dateOfBirth = new DateTime(1995, 4, 12, 0, 0, 0, DateTimeKind.Utc);
+
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.SetAuthStateAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<ExternalAuthProvider>(),
+            It.IsAny<bool>()))
+            .Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.SetDateOfBirthAsync(It.IsAny<DateTime>()))
+            .Returns(Task.CompletedTask);
+
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode").SetResult("reserve");
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_username_to_reserve").SetResult("TestUser");
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_provider").SetResult("Google");
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_code_verifier").SetResult("test_verifier");
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id").SetResult(userId.ToString());
+        JSInterop.Setup<string>("sessionStorage.getItem", "temp_dob").SetResult(dateOfBirth.ToString("O"));
+        JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
+
+        var reserveResponse = new OAuthLoginResponse
+        {
+            Token = "test-token",
+            Username = "TestUser",
+            Email = "test@example.com",
+            UserId = userId,
+            IsNewUser = true,
+            IsAdmin = false,
+            DateOfBirth = dateOfBirth,
+        };
+
+        mockHttp.When(HttpMethod.Post, "*/api/oauth/reserve-username")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(reserveResponse));
+
+        // Act
+        navManager.NavigateTo(navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["code"] = "auth_code_123",
+            ["state"] = "random_state",
+        }));
+
+        Render<OAuthConnect>();
+        await Task.Delay(500);
+
+        // Assert
+        authServiceMock.Verify(
+            x => x.SetDateOfBirthAsync(dateOfBirth),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task OAuthConnect_HandleCallback_Login_ShouldSetDateOfBirth()
+    {
+        // Arrange
+        var dateOfBirth = new DateTime(1988, 11, 3, 0, 0, 0, DateTimeKind.Utc);
+
+        authServiceMock.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.SetAuthStateAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<ExternalAuthProvider>(),
+            It.IsAny<bool>()))
+            .Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.SetDateOfBirthAsync(It.IsAny<DateTime>()))
+            .Returns(Task.CompletedTask);
+
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode").SetResult("login");
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_provider").SetResult("Microsoft");
+        JSInterop.Setup<string>("sessionStorage.getItem", "oauth_code_verifier").SetResult("test_verifier");
+        JSInterop.SetupVoid("sessionStorage.removeItem", _ => true).SetVoidResult();
+
+        var loginResponse = new OAuthLoginResponse
+        {
+            Token = "login-token",
+            Username = "ExistingUser",
+            Email = "existing@example.com",
+            UserId = Guid.NewGuid(),
+            IsNewUser = false,
+            IsAdmin = false,
+            DateOfBirth = dateOfBirth,
+        };
+
+        mockHttp.When(HttpMethod.Post, "*/api/oauth/login-reserved")
+            .Respond(HttpStatusCode.OK, JsonContent.Create(loginResponse));
+
+        // Act
+        navManager.NavigateTo(navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["code"] = "auth_code_456",
+            ["state"] = "xyz123",
+        }));
+
+        Render<OAuthConnect>();
+        await Task.Delay(500);
+
+        // Assert
+        authServiceMock.Verify(
+            x => x.SetDateOfBirthAsync(dateOfBirth),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task OAuthConnect_HandleCallback_Reserve_ShouldPassUserIdToEndpoint()
     {
         // Arrange
@@ -175,6 +281,8 @@ public class OAuthConnectTests : BunitContext
             It.IsAny<Guid>(),
             It.IsAny<ExternalAuthProvider>(),
             It.IsAny<bool>()))
+            .Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.SetDateOfBirthAsync(It.IsAny<DateTime>()))
             .Returns(Task.CompletedTask);
 
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
@@ -200,6 +308,7 @@ public class OAuthConnectTests : BunitContext
             UserId = userId,
             IsNewUser = true,
             IsAdmin = false,
+            DateOfBirth = DateTime.UtcNow.AddYears(-20),
         };
 
         var reserveRequest = mockHttp.When(HttpMethod.Post, "*/api/oauth/reserve-username")
@@ -236,7 +345,7 @@ public class OAuthConnectTests : BunitContext
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_code_verifier")
             .SetResult("test_verifier");
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
-            .SetResult(null!); // 👈 UserId manquant
+            .SetResult(null!);
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_dob")
             .SetResult(DateTime.UtcNow.AddYears(-20).ToString());
 
@@ -272,7 +381,7 @@ public class OAuthConnectTests : BunitContext
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_code_verifier")
             .SetResult("test_verifier");
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
-            .SetResult("not-a-guid"); // 👈 Format GUID invalide
+            .SetResult("not-a-guid");
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_dob")
             .SetResult(DateTime.UtcNow.AddYears(-20).ToString());
 
@@ -307,6 +416,8 @@ public class OAuthConnectTests : BunitContext
             It.IsAny<ExternalAuthProvider>(),
             It.IsAny<bool>()))
             .Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.SetDateOfBirthAsync(It.IsAny<DateTime>()))
+            .Returns(Task.CompletedTask);
 
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
             .SetResult("login");
@@ -325,6 +436,7 @@ public class OAuthConnectTests : BunitContext
             UserId = Guid.NewGuid(),
             IsNewUser = false,
             IsAdmin = true,
+            DateOfBirth = DateTime.UtcNow.AddYears(-30),
         };
 
         mockHttp.When(HttpMethod.Post, "*/api/oauth/login-reserved")
@@ -454,11 +566,12 @@ public class OAuthConnectTests : BunitContext
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
             .SetResult("reserve");
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_username_to_reserve")
-            .SetResult(null!); // Pas de username stocké
+            .SetResult(null!);
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_user_id")
             .SetResult(Guid.NewGuid().ToString());
         JSInterop.Setup<string>("sessionStorage.getItem", "temp_dob")
             .SetResult(DateTime.UtcNow.AddYears(-20).ToString());
+
         // Act
         navManager.NavigateTo(navManager.GetUriWithQueryParameters(new Dictionary<string, object?>
         {
@@ -489,6 +602,8 @@ public class OAuthConnectTests : BunitContext
             It.IsAny<ExternalAuthProvider>(),
             It.IsAny<bool>()))
             .Returns(Task.CompletedTask);
+        authServiceMock.Setup(x => x.SetDateOfBirthAsync(It.IsAny<DateTime>()))
+            .Returns(Task.CompletedTask);
 
         JSInterop.Setup<string>("sessionStorage.getItem", "oauth_mode")
             .SetResult("reserve");
@@ -512,6 +627,7 @@ public class OAuthConnectTests : BunitContext
             UserId = userId,
             IsNewUser = true,
             IsAdmin = false,
+            DateOfBirth = DateTime.UtcNow.AddYears(-20),
         };
 
         mockHttp.When(HttpMethod.Post, "*/api/oauth/reserve-username")
@@ -529,6 +645,6 @@ public class OAuthConnectTests : BunitContext
         await Task.Delay(500);
 
         // Assert
-        JSInterop.VerifyInvoke("sessionStorage.removeItem", calledTimes: 7); // Vérifie que 7 items ont été supprimés
+        JSInterop.VerifyInvoke("sessionStorage.removeItem", calledTimes: 7);
     }
 }

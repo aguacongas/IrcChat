@@ -195,6 +195,8 @@
                     provider,
                     result.IsAdmin);
 
+                await Auth.SetDateOfBirthAsync(result.DateOfBirth);
+
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "temp_username_to_reserve");
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "temp_user_id");
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "temp_dob");
@@ -252,6 +254,8 @@
                     result.UserId,
                     provider,
                     result.IsAdmin);
+
+                await Auth.SetDateOfBirthAsync(result.DateOfBirth);
 
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_mode");
                 await JS.InvokeVoidAsync("sessionStorage.removeItem", "oauth_state");
