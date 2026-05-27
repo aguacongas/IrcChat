@@ -147,6 +147,7 @@ public static class OAuthEndpoints
             UserId = user.Id,
             IsNewUser = true,
             IsAdmin = user.IsAdmin,
+            DateOfBirth = user.DateOfBirth
         });
     }
 
@@ -197,6 +198,7 @@ public static class OAuthEndpoints
             UserId = user.Id,
             IsNewUser = false,
             IsAdmin = user.IsAdmin,
+            DateOfBirth = user.DateOfBirth
         });
     }
 
