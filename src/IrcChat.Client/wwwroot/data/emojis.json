@@ -1,6 +1,6 @@
 {
   "version": "15.1",
-  "generatedAt": "2026-05-01T05:41:19.543Z",
+  "generatedAt": "2026-06-01T06:55:26.240Z",
   "emojis": [
     {
       "emoji": "!",
@@ -45985,6 +45985,24 @@
       "version": "6.0"
     },
     {
+      "emoji": "◦",
+      "code": ":hollow_bullet:",
+      "name": "puce creuse",
+      "nameEn": "hollow bullet",
+      "category": "Symbols",
+      "subcategory": "",
+      "keywords": [
+        "puce creuse",
+        "bullet",
+        "hollow"
+      ],
+      "aliases": [
+        ":hollow_bullet:"
+      ],
+      "unicode": "U+25E6",
+      "version": "6.0"
+    },
+    {
       "emoji": "◯",
       "code": ":large_hollow_circle:",
       "name": "grand cercle vide",
@@ -47594,6 +47612,29 @@
         ":black_circle:"
       ],
       "unicode": "U+26AB",
+      "version": "6.0"
+    },
+    {
+      "emoji": "⚰",
+      "code": ":coffin:",
+      "name": "cercueil",
+      "nameEn": "coffin",
+      "category": "Symbols",
+      "subcategory": "",
+      "keywords": [
+        "cercueil",
+        "enterrement",
+        "mort",
+        "obsèques",
+        "vampire",
+        "coffin",
+        "dead",
+        "death"
+      ],
+      "aliases": [
+        ":coffin:"
+      ],
+      "unicode": "U+26B0",
       "version": "6.0"
     },
     {
@@ -49991,28 +50032,6 @@
       ],
       "unicode": "U+FDFC",
       "version": "6.0"
-    },
-    {
-      "emoji": "��",
-      "code": ":hollow_bullet:",
-      "name": "cercueil",
-      "nameEn": "hollow bullet",
-      "category": "Symbols",
-      "subcategory": "",
-      "keywords": [
-        "cercueil",
-        "enterrement",
-        "mort",
-        "obsèques",
-        "vampire",
-        "bullet",
-        "hollow"
-      ],
-      "aliases": [
-        ":hollow_bullet:"
-      ],
-      "unicode": "U+FFFD U+FFFD",
-      "version": "6.0"
     }
   ],
   "categories": [
@@ -50048,7 +50067,7 @@
       "id": "symbols",
       "name": "Symbols",
       "icon": "🔣",
-      "count": 598,
+      "count": 599,
       "order": 8
     }
   ]
