@@ -1,6 +1,6 @@
 {
   "version": "15.1",
-  "generatedAt": "2026-07-01T06:26:12.611Z",
+  "generatedAt": "2026-08-01T05:26:35.510Z",
   "emojis": [
     {
       "emoji": "!",
@@ -47615,29 +47615,6 @@
       "version": "6.0"
     },
     {
-      "emoji": "⚰",
-      "code": ":coffin:",
-      "name": "cercueil",
-      "nameEn": "coffin",
-      "category": "Symbols",
-      "subcategory": "",
-      "keywords": [
-        "cercueil",
-        "enterrement",
-        "mort",
-        "obsèques",
-        "vampire",
-        "coffin",
-        "dead",
-        "death"
-      ],
-      "aliases": [
-        ":coffin:"
-      ],
-      "unicode": "U+26B0",
-      "version": "6.0"
-    },
-    {
       "emoji": "⚱",
       "code": ":funeral_urn:",
       "name": "urne funéraire",
@@ -50067,7 +50044,7 @@
       "id": "symbols",
       "name": "Symbols",
       "icon": "🔣",
-      "count": 599,
+      "count": 598,
       "order": 8
     }
   ]
