@@ -28,7 +28,7 @@
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="RichardSzalay.MockHttp" Version="7.1.0" />
     <PackageReference Include="bunit" Version="2.9.0" />
-
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\IrcChat.Client\IrcChat.Client.csproj" />
     <ProjectReference Include="..\..\src\IrcChat.Shared\IrcChat.Shared.csproj" />
