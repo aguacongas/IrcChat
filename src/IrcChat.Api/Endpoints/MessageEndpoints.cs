@@ -51,7 +51,7 @@ public static class MessageEndpoints
         ILogger<ChatHub> logger,
         CancellationToken cancellationToken)
     {
-        var message = await db.Messages.FindAsync(messageId, cancellationToken);
+        var message = await db.Messages.FindAsync([messageId], cancellationToken: cancellationToken);
 
         if (message != null && message.Channel == channelName)
         {
