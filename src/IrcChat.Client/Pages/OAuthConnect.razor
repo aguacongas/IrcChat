@@ -1,4 +1,5 @@
 @page "/oauth-login"
+@using System.Globalization
 @using IrcChat.Client.Extensions
 @using IrcChat.Shared.Models
 @using IrcChat.Client.Services
@@ -151,7 +152,7 @@
             return;
         }
 
-        if (string.IsNullOrEmpty(dobStr) || !DateTime.TryParse(dobStr, out var dateOfBirth))
+        if (string.IsNullOrEmpty(dobStr) || !DateTime.TryParse(dobStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dateOfBirth))
         {
             errorMessage = "Date de naissance invalide";
             loadingMessage = string.Empty;

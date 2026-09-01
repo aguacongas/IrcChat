@@ -207,10 +207,9 @@ public static class OAuthEndpoints
         });
     }
 
-    private static async Task<IResult> GetProviderConfigAsync(
+    private static IResult GetProviderConfigAsync(
         ExternalAuthProvider provider,
-        OAuthService oauthService,
-        CancellationToken cancellationToken)
+        OAuthService oauthService)
     {
         try
         {
