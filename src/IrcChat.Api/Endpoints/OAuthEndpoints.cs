@@ -43,15 +43,16 @@ public static class OAuthEndpoints
 
     private static async Task<IResult> CheckUsernameAsync(
         UsernameCheckRequest request,
-        ChatDbContext context)
+        ChatDbContext context,
+        CancellationToken cancellationToken)
     {
         var username = request.Username.ToLower();
 
         var reservedUser = await context.ReservedUsernames
-            .FirstOrDefaultAsync(r => r.Username.ToLower() == username);
+            .FirstOrDefaultAsync(r => r.Username.ToLower() == username, cancellationToken);
 
         var currentlyUsed = await context.ConnectedUsers
-            .AnyAsync(u => u.Username.ToLower() == username);
+            .AnyAsync(u => u.Username.ToLower() == username, cancellationToken);
 
         return Results.Ok(new UsernameCheckResponse
         {
@@ -67,10 +68,11 @@ public static class OAuthEndpoints
         ChatDbContext context,
         OAuthService oauthService,
         IConfiguration configuration,
-        ILogger<Program> logger)
+        ILogger<Program> logger,
+        CancellationToken cancellationToken)
     {
         var exists = await context.ReservedUsernames
-            .AnyAsync(r => r.Username.ToLower() == request.Username.ToLower());
+            .AnyAsync(r => r.Username.ToLower() == request.Username.ToLower(), cancellationToken);
 
         if (exists)
         {
@@ -81,14 +83,15 @@ public static class OAuthEndpoints
             request.Provider,
             request.Code,
             request.RedirectUri,
-            request.CodeVerifier);
+            request.CodeVerifier,
+            cancellationToken);
 
         if (tokenResponse == null)
         {
             return Results.Unauthorized();
         }
 
-        var userInfo = await oauthService.GetUserInfoAsync(request.Provider, tokenResponse.AccessToken);
+        var userInfo = await oauthService.GetUserInfoAsync(request.Provider, tokenResponse.AccessToken, cancellationToken);
 
         if (userInfo == null)
         {
@@ -96,7 +99,7 @@ public static class OAuthEndpoints
         }
 
         var existingUser = await context.ReservedUsernames
-            .FirstOrDefaultAsync(r => r.Provider == request.Provider && r.ExternalUserId == userInfo.Id);
+            .FirstOrDefaultAsync(r => r.Provider == request.Provider && r.ExternalUserId == userInfo.Id, cancellationToken);
 
         if (existingUser != null)
         {
@@ -108,7 +111,7 @@ public static class OAuthEndpoints
             });
         }
 
-        var isFirstUser = !await context.ReservedUsernames.AnyAsync();
+        var isFirstUser = !await context.ReservedUsernames.AnyAsync(cancellationToken);
 
         var user = new ReservedUsername
         {
@@ -126,7 +129,7 @@ public static class OAuthEndpoints
         };
 
         context.ReservedUsernames.Add(user);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(cancellationToken);
 
         var age = CalculateAge(user.DateOfBirth);
         logger.LogInformation(
@@ -155,20 +158,22 @@ public static class OAuthEndpoints
         OAuthTokenRequest request,
         ChatDbContext context,
         OAuthService oauthService,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        CancellationToken cancellationToken)
     {
         var tokenResponse = await oauthService.ExchangeCodeForTokenAsync(
             request.Provider,
             request.Code,
             request.RedirectUri,
-            request.CodeVerifier);
+            request.CodeVerifier,
+            cancellationToken);
 
         if (tokenResponse == null)
         {
             return Results.Unauthorized();
         }
 
-        var userInfo = await oauthService.GetUserInfoAsync(request.Provider, tokenResponse.AccessToken);
+        var userInfo = await oauthService.GetUserInfoAsync(request.Provider, tokenResponse.AccessToken, cancellationToken);
 
         if (userInfo == null)
         {
@@ -176,7 +181,7 @@ public static class OAuthEndpoints
         }
 
         var user = await context.ReservedUsernames
-            .FirstOrDefaultAsync(r => r.Provider == request.Provider && r.ExternalUserId == userInfo.Id);
+            .FirstOrDefaultAsync(r => r.Provider == request.Provider && r.ExternalUserId == userInfo.Id, cancellationToken);
 
         if (user == null)
         {
@@ -185,7 +190,7 @@ public static class OAuthEndpoints
 
         user.LastLoginAt = DateTime.UtcNow;
         user.AvatarUrl = userInfo.AvatarUrl;
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(cancellationToken);
 
         var token = GenerateJwtToken(user, configuration);
 
@@ -202,9 +207,10 @@ public static class OAuthEndpoints
         });
     }
 
-    private static IResult GetProviderConfigAsync(
+    private static async Task<IResult> GetProviderConfigAsync(
         ExternalAuthProvider provider,
-        OAuthService oauthService)
+        OAuthService oauthService,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -239,7 +245,7 @@ public static class OAuthEndpoints
         }
 
         var userToDelete = await db.ReservedUsernames
-            .FirstOrDefaultAsync(r => r.Username.ToLower() == username.ToLower());
+            .FirstOrDefaultAsync(r => r.Username.ToLower() == username.ToLower(), context.RequestAborted);
 
         if (userToDelete == null)
         {
@@ -249,7 +255,7 @@ public static class OAuthEndpoints
         db.ReservedUsernames.Remove(userToDelete);
         logger.LogInformation("Utilisateur réservé {Username} supprimé de la BDD.", username);
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(context.RequestAborted);
 
         return Results.Ok();
     }

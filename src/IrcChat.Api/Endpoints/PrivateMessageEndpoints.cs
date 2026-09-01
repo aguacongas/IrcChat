@@ -49,7 +49,8 @@ public static class PrivateMessageEndpoints
     private static async Task<IResult> GetConversationsAsync(
         string userId,
         ChatDbContext db,
-        ILogger<Program> logger)
+        ILogger<Program> logger,
+        CancellationToken cancellationToken)
     {
         logger.LogInformation("Récupération des conversations pour UserId {UserId}", userId);
 
@@ -70,7 +71,7 @@ public static class PrivateMessageEndpoints
                 LastMessage = g.OrderByDescending(m => m.Timestamp).First(),
                 UnreadCount = g.Count(m => m.RecipientUserId == userId && !m.IsRead),
             })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         // Récupérer les statuts de connexion
         var usernames = conversations.Select(c => c.OtherUsername).ToList();
@@ -78,7 +79,7 @@ public static class PrivateMessageEndpoints
             .Where(u => usernames.Contains(u.Username))
             .Select(u => u.Username)
             .Distinct()
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         var result = conversations.Select(c => new PrivateConversation
         {
@@ -105,7 +106,8 @@ public static class PrivateMessageEndpoints
         string userId,
         string otherUserId,
         ChatDbContext db,
-        ILogger<Program> logger)
+        ILogger<Program> logger,
+        CancellationToken cancellationToken)
     {
         logger.LogInformation(
             "Récupération des messages entre UserId {UserId} et {OtherUserId}",
@@ -119,7 +121,7 @@ public static class PrivateMessageEndpoints
                      && !(m.SenderUserId == userId && m.IsDeletedBySender)
                      && !(m.RecipientUserId == userId && m.IsDeletedByRecipient))
             .OrderBy(m => m.Timestamp)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         logger.LogInformation("Trouvé {Count} messages", messages.Count);
 
@@ -133,13 +135,14 @@ public static class PrivateMessageEndpoints
     private static async Task<IResult> GetUnreadCountAsync(
         string userId,
         ChatDbContext db,
-        ILogger<Program> logger)
+        ILogger<Program> logger,
+        CancellationToken cancellationToken)
     {
         // Compter directement par userId et exclure les messages supprimés
         var count = await db.PrivateMessages
             .CountAsync(m => m.RecipientUserId == userId
                           && !m.IsRead
-                          && !m.IsDeletedByRecipient);
+                          && !m.IsDeletedByRecipient, cancellationToken);
 
         logger.LogInformation(
             "Nombre de messages non lus pour UserId {UserId}: {Count}",
@@ -157,7 +160,8 @@ public static class PrivateMessageEndpoints
         string userId,
         string otherUserId,
         ChatDbContext db,
-        ILogger<Program> logger)
+        ILogger<Program> logger,
+        CancellationToken cancellationToken)
     {
         // Récupérer tous les messages de la conversation
         var messages = await db.PrivateMessages
@@ -165,7 +169,7 @@ public static class PrivateMessageEndpoints
                         (m.SenderUserId == otherUserId && m.RecipientUserId == userId))
                      && !(m.SenderUserId == userId && m.IsDeletedBySender)
                      && !(m.RecipientUserId == userId && m.IsDeletedByRecipient))
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         if (messages.Count == 0)
         {
@@ -189,7 +193,7 @@ public static class PrivateMessageEndpoints
             }
         }
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation(
             "Suppression de {Count} messages entre {UserId} et {OtherUserId} pour {CallerUserId} uniquement",
@@ -203,10 +207,11 @@ public static class PrivateMessageEndpoints
 
     private static async Task<IResult> GetUserStatusAsync(
         string username,
-        ChatDbContext db)
+        ChatDbContext db,
+        CancellationToken cancellationToken)
     {
         var isOnline = await db.ConnectedUsers
-            .AnyAsync(u => u.Username == username);
+            .AnyAsync(u => u.Username == username, cancellationToken);
 
         return Results.Ok(new { Username = username, IsOnline = isOnline });
     }

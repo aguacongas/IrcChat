@@ -13,8 +13,11 @@ namespace IrcChat.Api.Hubs;
 public class ChatHub(
     ChatDbContext db,
     IOptions<ConnectionManagerOptions> options,
-    ILogger<ChatHub> logger) : Hub
+    ILogger<ChatHub> logger,
+    IHttpContextAccessor httpContextAccessor) : Hub
 {
+    private CancellationToken RequestToken => httpContextAccessor.HttpContext?.RequestAborted ?? CancellationToken.None;
+
     [SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Constante")]
     private static readonly string UserNotIdentified = "Utilisateur non identifié";
     [SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Constante")]
@@ -28,12 +31,12 @@ public class ChatHub(
     public async Task JoinChannel(string channel, int userAge)
     {
         var channelEntity = await db.Channels
-            .FirstOrDefaultAsync(c => c.Name == channel);
+            .FirstOrDefaultAsync(c => c.Name == channel, RequestToken);
 
         if (channelEntity == null)
         {
             logger.LogWarning("Tentative de connexion à un salon inexistant: {Channel}", channel);
-            await Clients.Caller.SendAsync("ChannelNotFound", channel);
+            await Clients.Caller.SendAsync("ChannelNotFound", channel, RequestToken);
             return;
         }
 
@@ -46,22 +49,23 @@ public class ChatHub(
                 userAge);
             await Clients.Caller.SendAsync(
                 Error,
-                $"Accès refusé : vous devez avoir au moins {channelEntity.MinimumAge} ans");
+                $"Accès refusé : vous devez avoir au moins {channelEntity.MinimumAge} ans",
+                RequestToken);
             return;
         }
 
         var user = await db.ConnectedUsers
-            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
+            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId, RequestToken);
 
         if (user == null)
         {
             logger.LogWarning("Tentative de connexion à un salon sans utilisateur enregistré");
-            await Clients.Caller.SendAsync(Error, UserNotIdentified);
+            await Clients.Caller.SendAsync(Error, UserNotIdentified, RequestToken);
             return;
         }
 
         var userInChannel = await db.ConnectedUsers
-            .FirstOrDefaultAsync(u => u.Username == user.Username && u.Channel == channel);
+            .FirstOrDefaultAsync(u => u.Username == user.Username && u.Channel == channel, RequestToken);
 
         if (userInChannel != null)
         {
@@ -84,10 +88,10 @@ public class ChatHub(
 
         user.LastActivity = DateTime.UtcNow;
         db.ConnectedUsers.Add(userInChannel);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(RequestToken);
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, channel);
-        await Clients.Group(channel).SendAsync("UserJoined", user.Username, user.UserId, channel);
+        await Groups.AddToGroupAsync(Context.ConnectionId, channel, RequestToken);
+        await Clients.Group(channel).SendAsync("UserJoined", user.Username, user.UserId, channel, RequestToken);
 
         logger.LogInformation("Utilisateur {Username} a rejoint {Channel}", user.Username, channel);
     }
@@ -95,7 +99,7 @@ public class ChatHub(
     public async Task LeaveChannel(string channel)
     {
         var userInChannel = await db.ConnectedUsers
-            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId && u.Channel == channel);
+            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId && u.Channel == channel, RequestToken);
 
         if (userInChannel == null)
         {
@@ -105,10 +109,10 @@ public class ChatHub(
 
         db.ConnectedUsers.Remove(userInChannel);
         userInChannel.LastActivity = DateTime.UtcNow;
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(RequestToken);
 
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, channel);
-        await Clients.Group(channel).SendAsync("UserLeft", userInChannel.Username, userInChannel.UserId, channel);
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, channel, RequestToken);
+        await Clients.Group(channel).SendAsync("UserLeft", userInChannel.Username, userInChannel.UserId, channel, RequestToken);
 
         logger.LogInformation("Utilisateur {Username} a quitté {Channel}", userInChannel.Username, channel);
     }
@@ -117,28 +121,28 @@ public class ChatHub(
     public async Task SendMessage(SendMessageRequest request)
     {
         var connectedUser = await db.ConnectedUsers
-            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId && u.Channel == request.Channel);
+            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId && u.Channel == request.Channel, RequestToken);
 
         if (connectedUser == null)
         {
             logger.LogWarning("Tentative d'envoi de message sans utilisateur identifié dans {Channel}", request.Channel);
-            await Clients.Caller.SendAsync(Error, UserNotIdentified);
+            await Clients.Caller.SendAsync(Error, UserNotIdentified, RequestToken);
             return;
         }
 
         connectedUser.LastActivity = DateTime.UtcNow;
 
         var channel = await db.Channels
-            .FirstOrDefaultAsync(c => c.Name.ToLower() == request.Channel.ToLower());
+            .FirstOrDefaultAsync(c => c.Name.ToLower() == request.Channel.ToLower(), RequestToken);
 
-        if (!await CanSendToChannelAsync(connectedUser, channel))
+        if (!await CanSendToChannelAsync(connectedUser, channel, RequestToken))
         {
             return;
         }
 
         var isMuted = await db.MutedUsers
             .AnyAsync(m => m.ChannelName == null || (m.ChannelName.ToLower() == request.Channel.ToLower()
-                        && m.UserId == connectedUser.UserId));
+                        && m.UserId == connectedUser.UserId), RequestToken);
 
         var message = new Message
         {
@@ -152,7 +156,7 @@ public class ChatHub(
         };
 
         db.Messages.Add(message);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(RequestToken);
 
         if (isMuted)
         {
@@ -160,31 +164,31 @@ public class ChatHub(
                 "Message de l'utilisateur mute {UserId} sauvegardé mais non diffusé dans {Channel}",
                 connectedUser.UserId,
                 request.Channel);
-            await Clients.Caller.SendAsync("ReceiveMessage", message);
+            await Clients.Caller.SendAsync("ReceiveMessage", message, RequestToken);
             return;
         }
 
-        await Clients.Group(request.Channel).SendAsync("ReceiveMessage", message);
+        await Clients.Group(request.Channel).SendAsync("ReceiveMessage", message, RequestToken);
     }
 
     public async Task SendPrivateMessage(SendPrivateMessageRequest request)
     {
         var sender = await db.ConnectedUsers
-            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
+            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId, RequestToken);
 
         if (sender == null)
         {
             logger.LogWarning("Tentative d'envoi de message privé sans expéditeur identifié");
-            await Clients.Caller.SendAsync(Error, UserNotIdentified);
+            await Clients.Caller.SendAsync(Error, UserNotIdentified, RequestToken);
             return;
         }
 
         var recipient = await db.ConnectedUsers
             .Where(u => u.UserId == request.RecipientUserId)
             .OrderByDescending(u => u.LastActivity)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(RequestToken);
 
-        var flowControl = await CanSendMessageToRecipientAsync(recipient, sender);
+        var flowControl = await CanSendMessageToRecipientAsync(recipient, sender, RequestToken);
         if (!flowControl)
         {
             return;
@@ -193,7 +197,7 @@ public class ChatHub(
         var isGlobalyMute = await db.MutedUsers
             .Where(m => m.ChannelName == null
                 && (m.UserId == sender.UserId || m.UserId == request.RecipientUserId))
-            .AnyAsync();
+            .AnyAsync(RequestToken);
 
         var privateMessage = new PrivateMessage
         {
@@ -209,7 +213,7 @@ public class ChatHub(
         sender.LastActivity = DateTime.UtcNow;
 
         db.PrivateMessages.Add(privateMessage);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(RequestToken);
 
         logger.LogInformation(
             "Message privé envoyé de {Sender} (UserId: {SenderUserId}) à {Recipient} (UserId: {RecipientUserId})",
@@ -220,16 +224,16 @@ public class ChatHub(
 
         if (!isGlobalyMute)
         {
-            await Clients.Client(recipient!.ConnectionId).SendAsync("ReceivePrivateMessage", privateMessage);
+            await Clients.Client(recipient!.ConnectionId).SendAsync("ReceivePrivateMessage", privateMessage, RequestToken);
         }
 
-        await Clients.Caller.SendAsync("PrivateMessageSent", privateMessage);
+        await Clients.Caller.SendAsync("PrivateMessageSent", privateMessage, RequestToken);
     }
 
     public async Task MarkPrivateMessagesAsRead(string senderUserId)
     {
         var currentUser = await db.ConnectedUsers
-            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
+            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId, RequestToken);
 
         if (currentUser == null)
         {
@@ -241,7 +245,7 @@ public class ChatHub(
             .Where(m => m.RecipientUserId == currentUser.UserId
                      && m.SenderUserId == senderUserId
                      && !m.IsRead)
-            .ToListAsync();
+            .ToListAsync(RequestToken);
 
         foreach (var message in unreadMessages)
         {
@@ -249,17 +253,17 @@ public class ChatHub(
         }
 
         currentUser.LastActivity = DateTime.UtcNow;
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(RequestToken);
 
         var senderConnection = await db.ConnectedUsers
             .Where(u => u.UserId == senderUserId)
             .Select(u => u.ConnectionId)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(RequestToken);
 
         if (senderConnection != null)
         {
             await Clients.Client(senderConnection)
-                .SendAsync("PrivateMessagesRead", currentUser.Username, unreadMessages.Select(m => m.Id).ToList());
+                .SendAsync("PrivateMessagesRead", currentUser.Username, unreadMessages.Select(m => m.Id).ToList(), RequestToken);
         }
     }
 
@@ -267,7 +271,7 @@ public class ChatHub(
     {
         var user = await db.ConnectedUsers
             .OrderByDescending(u => u.LastActivity)
-            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
+            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId, RequestToken);
 
         if (user == null)
         {
@@ -284,7 +288,7 @@ public class ChatHub(
                 IsNoPvMode = isNoPvMode,
             };
 
-            await Clients.All.SendAsync(UserStatusChangedMethod, username, userId, true);
+            await Clients.All.SendAsync(UserStatusChangedMethod, username, userId, true, RequestToken);
             db.ConnectedUsers.Add(user);
             logger.LogInformation(
                 "Utilisateur {Username} enregistré via Ping avec UserId {UserId}, IsNoPvMode={IsNoPvMode}",
@@ -299,7 +303,7 @@ public class ChatHub(
             user.IsNoPvMode = isNoPvMode;
         }
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(RequestToken);
     }
 
     /// <summary>
@@ -314,16 +318,16 @@ public class ChatHub(
     public async Task ReactToMessage(Guid messageId, string emoji)
     {
         var currentUser = await db.ConnectedUsers
-            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
+            .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId, RequestToken);
 
         if (currentUser == null)
         {
             logger.LogWarning("Tentative de réaction sans utilisateur enregistré");
-            await Clients.Caller.SendAsync(Error, UserNotIdentified);
+            await Clients.Caller.SendAsync(Error, UserNotIdentified, RequestToken);
             return;
         }
 
-        var message = await db.Messages.FindAsync(messageId);
+        var message = await db.Messages.FindAsync(messageId, RequestToken);
         if (message == null || message.IsDeleted)
         {
             logger.LogWarning("Tentative de réaction sur un message inexistant ou supprimé: {MessageId}", messageId);
@@ -332,7 +336,7 @@ public class ChatHub(
 
         // Vérifier l'existence d'une réaction existante de cet utilisateur
         var existingReaction = await db.MessageReactions
-            .FirstOrDefaultAsync(r => r.MessageId == messageId && r.UserId == currentUser.UserId);
+            .FirstOrDefaultAsync(r => r.MessageId == messageId && r.UserId == currentUser.UserId, RequestToken);
 
         if (existingReaction != null)
         {
@@ -378,7 +382,7 @@ public class ChatHub(
                 messageId);
         }
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(RequestToken);
 
         // Recalculer les réactions agrégées pour ce message
         var updatedReactions = await db.MessageReactions
@@ -391,11 +395,11 @@ public class ChatHub(
                 UserIds = g.Select(r => r.UserId).ToList(),
                 Usernames = g.Select(r => r.Username).ToList(),
             })
-            .ToListAsync();
+            .ToListAsync(RequestToken);
 
         // Broadcast au groupe du salon
         await Clients.Group(message.Channel)
-            .SendAsync("MessageReactionUpdated", messageId, updatedReactions);
+            .SendAsync("MessageReactionUpdated", messageId, updatedReactions, RequestToken);
     }
 
     /// <summary>
@@ -408,7 +412,7 @@ public class ChatHub(
     public async Task SendEphemeralPhoto(string channelOrUserId, string imageUrl, string thumbnailUrl, bool isPrivate)
     {
         var currentUser = await db.ConnectedUsers
-                   .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId);
+                   .FirstOrDefaultAsync(u => u.ConnectionId == Context.ConnectionId, RequestToken);
         if (currentUser == null)
         {
             logger.LogWarning("Tentative d'envoi de photo éphémère sans utilisateur enregistré");
@@ -416,7 +420,7 @@ public class ChatHub(
         }
 
         currentUser.LastActivity = DateTime.UtcNow;
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(RequestToken);
 
         var userId = currentUser.UserId;
         var userName = currentUser.Username;
@@ -439,21 +443,21 @@ public class ChatHub(
 
         if (isPrivate)
         {
-            await SendPrivateEphemeralPhoto(channelOrUserId, currentUser, ephemeralPhoto);
+            await SendPrivateEphemeralPhoto(channelOrUserId, currentUser, ephemeralPhoto, RequestToken);
             return;
         }
 
         var channel = await db.Channels
-            .FirstOrDefaultAsync(c => c.Name.ToLower() == channelOrUserId.ToLower());
+            .FirstOrDefaultAsync(c => c.Name.ToLower() == channelOrUserId.ToLower(), RequestToken);
 
-        if (!await CanSendToChannelAsync(currentUser, channel))
+        if (!await CanSendToChannelAsync(currentUser, channel, RequestToken))
         {
             return;
         }
 
         var isMuted = await db.MutedUsers
             .AnyAsync(m => m.ChannelName == null || (m.ChannelName.ToLower() == channelOrUserId.ToLower()
-                        && m.UserId == currentUser.UserId));
+                        && m.UserId == currentUser.UserId), RequestToken);
 
         if (isMuted)
         {
@@ -461,11 +465,11 @@ public class ChatHub(
                 "Photo de l'utilisateur muté {UserId} non diffusée dans {Channel}",
                 currentUser.UserId,
                 channelOrUserId);
-            await Clients.Caller.SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto);
+            await Clients.Caller.SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto, RequestToken);
             return;
         }
 
-        await Clients.Group(channelOrUserId).SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto);
+        await Clients.Group(channelOrUserId).SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto, RequestToken);
         logger.LogInformation("Photo éphémère diffusée dans le canal {Channel}", channelOrUserId);
     }
 
@@ -474,7 +478,7 @@ public class ChatHub(
         var connectionId = Context.ConnectionId;
         var usersInChannels = await db.ConnectedUsers
             .Where(u => u.ConnectionId == connectionId)
-            .ToListAsync();
+            .ToListAsync(RequestToken);
 
         if (usersInChannels.Count != 0)
         {
@@ -484,20 +488,20 @@ public class ChatHub(
                                           where !string.IsNullOrEmpty(userInChannel.Channel)
                                           select userInChannel.Channel)
             {
-                await Groups.RemoveFromGroupAsync(connectionId, userInChannel);
+                await Groups.RemoveFromGroupAsync(connectionId, userInChannel, RequestToken);
                 await Clients.Group(userInChannel)
-                                    .SendAsync("UserLeft", username, userId, userInChannel);
+                                    .SendAsync("UserLeft", username, userId, userInChannel, RequestToken);
             }
 
             db.ConnectedUsers.RemoveRange(usersInChannels);
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(RequestToken);
 
             var hasOtherConnections = await db.ConnectedUsers
-                .AnyAsync(u => u.Username == username);
+                .AnyAsync(u => u.Username == username, RequestToken);
 
             if (!hasOtherConnections)
             {
-                await Clients.All.SendAsync(UserStatusChangedMethod, username, userId, false);
+                await Clients.All.SendAsync(UserStatusChangedMethod, username, userId, false, RequestToken);
                 logger.LogInformation("Utilisateur {Username} complètement déconnecté", username);
             }
         }
@@ -505,14 +509,14 @@ public class ChatHub(
         await base.OnDisconnectedAsync(exception);
     }
 
-    private async Task SendPrivateEphemeralPhoto(string channelOrUserId, ConnectedUser currentUser, EphemeralPhotoDto ephemeralPhoto)
+    private async Task SendPrivateEphemeralPhoto(string channelOrUserId, ConnectedUser currentUser, EphemeralPhotoDto ephemeralPhoto, CancellationToken cancellationToken)
     {
         var recipient = await db.ConnectedUsers
             .Where(u => u.UserId == channelOrUserId)
             .OrderByDescending(u => u.LastActivity)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (!await CanSendMessageToRecipientAsync(recipient, currentUser))
+        if (!await CanSendMessageToRecipientAsync(recipient, currentUser, cancellationToken))
         {
             return;
         }
@@ -520,18 +524,18 @@ public class ChatHub(
         var isGlobalyMute = await db.MutedUsers
             .Where(m => m.ChannelName == null
                 && (m.UserId == currentUser.UserId || m.UserId == recipient!.UserId))
-            .AnyAsync();
+            .AnyAsync(cancellationToken);
 
         if (!isGlobalyMute)
         {
-            await Clients.Client(recipient!.ConnectionId).SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto);
+            await Clients.Client(recipient!.ConnectionId).SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto, cancellationToken);
             logger.LogInformation("Photo éphémère envoyée en privé à {Recipient}", channelOrUserId);
         }
 
-        await Clients.Caller.SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto);
+        await Clients.Caller.SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto, cancellationToken);
     }
 
-    private async Task<bool> CanSendMessageToRecipientAsync(ConnectedUser? recipient, ConnectedUser sender)
+    private async Task<bool> CanSendMessageToRecipientAsync(ConnectedUser? recipient, ConnectedUser sender, CancellationToken cancellationToken)
     {
         if (recipient?.ConnectionId == null)
         {
@@ -549,7 +553,7 @@ public class ChatHub(
                 ((m.SenderUserId == recipient.UserId && m.RecipientUserId == sender.UserId) ||
                     (m.SenderUserId == sender.UserId && m.RecipientUserId == recipient.UserId))
                 && !(m.SenderUserId == recipient.UserId && m.IsDeletedBySender)
-                && !(m.RecipientUserId == recipient.UserId && m.IsDeletedByRecipient));
+                && !(m.RecipientUserId == recipient.UserId && m.IsDeletedByRecipient), cancellationToken);
 
         if (!hasConversation)
         {
@@ -560,19 +564,20 @@ public class ChatHub(
 
             await Clients.Caller.SendAsync(
                 "MessageBlocked",
-                "Cet utilisateur ne reçoit pas de messages privés non sollicités.");
+                "Cet utilisateur ne reçoit pas de messages privés non sollicités.",
+                cancellationToken);
             return false;
         }
 
         return true;
     }
 
-    private async Task<bool> CanSendToChannelAsync(ConnectedUser connectedUser, Channel? channel)
+    private async Task<bool> CanSendToChannelAsync(ConnectedUser connectedUser, Channel? channel, CancellationToken cancellationToken)
     {
         if (channel != null && channel.IsMuted)
         {
             var user = await db.ReservedUsernames
-                .FirstOrDefaultAsync(u => u.Username.ToLower() == connectedUser.Username.ToLower());
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == connectedUser.Username.ToLower(), cancellationToken);
 
             var isCreator = channel.CreatedBy.Equals(connectedUser.Username, StringComparison.OrdinalIgnoreCase);
             var isAdmin = user?.IsAdmin ?? false;
@@ -581,7 +586,8 @@ public class ChatHub(
             {
                 await Clients.Caller.SendAsync(
                     "MessageBlocked",
-                    "Ce salon est actuellement muet. Seul le créateur ou un administrateur peut envoyer des messages.");
+                    "Ce salon est actuellement muet. Seul le créateur ou un administrateur peut envoyer des messages.",
+                    cancellationToken);
                 return false;
             }
         }

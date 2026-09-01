@@ -12,7 +12,7 @@ namespace IrcChat.Api.Authorization;
 /// Si le canal n'existe pas, le handler réussit pour laisser l'endpoint retourner NotFound.
 /// </summary>
 [SuppressMessage("Performance", "CA1862", Justification = "Not needed in SQL")]
-public class ChannelModificationHandler(ChatDbContext db, ILogger<ChannelModificationHandler> logger)
+public class ChannelModificationHandler(ChatDbContext db, ILogger<ChannelModificationHandler> logger, IHttpContextAccessor httpContextAccessor)
     : AuthorizationHandler<ChannelModificationRequirement>
 {
     protected override async Task HandleRequirementAsync(
@@ -32,7 +32,7 @@ public class ChannelModificationHandler(ChatDbContext db, ILogger<ChannelModific
 
         // Vérifier que le canal existe
         var channel = await db.Channels
-            .FirstOrDefaultAsync(c => c.Name.ToLower() == requirement.ChannelName.ToLower());
+            .FirstOrDefaultAsync(c => c.Name.ToLower() == requirement.ChannelName.ToLower(), httpContextAccessor.HttpContext?.RequestAborted ?? CancellationToken.None);
 
         if (channel == null)
         {
@@ -60,7 +60,7 @@ public class ChannelModificationHandler(ChatDbContext db, ILogger<ChannelModific
 
         // Vérifier si l'utilisateur est admin
         var user = await db.ReservedUsernames
-            .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+            .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower(), httpContextAccessor.HttpContext?.RequestAborted ?? CancellationToken.None);
 
         if (user?.IsAdmin == true)
         {

@@ -30,12 +30,13 @@ public static class GlobalMuteEndpoints
     }
 
     private static async Task<IResult> GetGloballyMutedUsersAsync(
-        ChatDbContext db)
+        ChatDbContext db,
+        CancellationToken cancellationToken)
     {
         var globallyMutedUsers = await db.MutedUsers
             .Where(m => m.ChannelName == null)
             .OrderBy(m => m.MutedAt)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         var userIds = globallyMutedUsers.Select(m => m.UserId).ToList();
         var mutedByIds = globallyMutedUsers.Select(m => m.MutedByUserId).ToList();
@@ -44,7 +45,7 @@ public static class GlobalMuteEndpoints
         var userInfos = await db.ReservedUsernames
             .Where(u => allIds.Contains(u.Id.ToString()))
             .Select(u => new { UserId = u.Id.ToString(), u.Username })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         var userInfoDict = userInfos.ToDictionary(u => u.UserId, u => u.Username);
 
@@ -76,7 +77,7 @@ public static class GlobalMuteEndpoints
         }
 
         var existingGlobalMute = await db.MutedUsers
-            .FirstOrDefaultAsync(m => m.ChannelName == null && m.UserId == userId);
+            .FirstOrDefaultAsync(m => m.ChannelName == null && m.UserId == userId, context.RequestAborted);
 
         if (existingGlobalMute != null)
         {
@@ -94,7 +95,7 @@ public static class GlobalMuteEndpoints
         };
 
         db.MutedUsers.Add(globalMute);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(context.RequestAborted);
 
         var currentUserName = context.User.Claims
             .FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
@@ -124,7 +125,7 @@ public static class GlobalMuteEndpoints
         }
 
         var globalMute = await db.MutedUsers
-            .FirstOrDefaultAsync(m => m.ChannelName == null && m.UserId == userId);
+            .FirstOrDefaultAsync(m => m.ChannelName == null && m.UserId == userId, context.RequestAborted);
 
         if (globalMute == null)
         {
@@ -132,10 +133,10 @@ public static class GlobalMuteEndpoints
         }
 
         var targetUser = await db.ReservedUsernames
-            .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
+            .FirstOrDefaultAsync(u => u.Id.ToString() == userId, context.RequestAborted);
 
         db.MutedUsers.Remove(globalMute);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(context.RequestAborted);
 
         var currentUserName = context.User.Claims
             .FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
@@ -151,10 +152,11 @@ public static class GlobalMuteEndpoints
 
     private static async Task<IResult> IsUserGloballyMutedAsync(
         string userId,
-        ChatDbContext db)
+        ChatDbContext db,
+        CancellationToken cancellationToken)
     {
         var isGloballyMuted = await db.MutedUsers
-            .AnyAsync(m => m.ChannelName == null && m.UserId == userId);
+            .AnyAsync(m => m.ChannelName == null && m.UserId == userId, cancellationToken);
 
         return Results.Ok(new MuteStatusResponse { UserId = userId, IsGloballyMuted = isGloballyMuted });
     }

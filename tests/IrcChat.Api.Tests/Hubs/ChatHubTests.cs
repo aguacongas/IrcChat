@@ -3,6 +3,7 @@ using IrcChat.Api.Data;
 using IrcChat.Api.Hubs;
 using IrcChat.Api.Services;
 using IrcChat.Shared.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -23,6 +24,7 @@ public class ChatHubTests : IAsyncDisposable
     private readonly Mock<HubCallerContext> _contextMock;
     private readonly Mock<IGroupManager> _groupManagerMock;
     private readonly Mock<ILogger<ChatHub>> _loggerMock;
+    private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
     private readonly ChatHub _hub;
     private readonly string _testConnectionId = "test-connection-id";
 
@@ -49,6 +51,7 @@ public class ChatHubTests : IAsyncDisposable
         _contextMock = new Mock<HubCallerContext>();
         _groupManagerMock = new Mock<IGroupManager>();
         _loggerMock = new Mock<ILogger<ChatHub>>();
+        _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
 
         _clientsMock.Setup(c => c.Caller).Returns(_callerMock.Object);
         _clientsMock.Setup(c => c.All).Returns(_allClientsMock.Object);
@@ -57,7 +60,7 @@ public class ChatHubTests : IAsyncDisposable
 
         _contextMock.Setup(c => c.ConnectionId).Returns(_testConnectionId);
 
-        _hub = new ChatHub(_db, connectionManagerOptions, _loggerMock.Object)
+        _hub = new ChatHub(_db, connectionManagerOptions, _loggerMock.Object, _httpContextAccessorMock.Object)
         {
             Clients = _clientsMock.Object,
             Context = _contextMock.Object,

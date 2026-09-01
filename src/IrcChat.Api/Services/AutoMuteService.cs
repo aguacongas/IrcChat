@@ -27,7 +27,7 @@ public class AutoMuteService(
         {
             try
             {
-                await CheckAndApplyAutoMute();
+                await CheckAndApplyAutoMute(stoppingToken);
                 await Task.Delay(
                     TimeSpan.FromSeconds(options.CheckIntervalSeconds),
                     stoppingToken);
@@ -40,14 +40,14 @@ public class AutoMuteService(
     }
 
     [SuppressMessage("Performance", "CA1862:Use the 'StringComparison' method overloads to perform case-insensitive string comparisons", Justification = "Can't be translated as SQL")]
-    private async Task CheckAndApplyAutoMute()
+    private async Task CheckAndApplyAutoMute(CancellationToken cancellationToken)
     {
-        await using var db = await dbContextFactory.CreateDbContextAsync();
+        await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         // Récupérer tous les canaux non mutés
         var activeChannels = await db.Channels
             .Where(c => !c.IsMuted)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         foreach (var channel in activeChannels)
         {
@@ -58,7 +58,7 @@ public class AutoMuteService(
             var managerConnection = await db.ConnectedUsers
                 .Where(u => u.Username.ToLower() == managerUsername.ToLower())
                 .OrderByDescending(u => u.LastActivity)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             var shouldMute = false;
 
@@ -80,7 +80,7 @@ public class AutoMuteService(
             if (shouldMute)
             {
                 channel.IsMuted = true;
-                await db.SaveChangesAsync();
+                await db.SaveChangesAsync(cancellationToken);
 
                 logger.LogInformation(
                     "Canal #{Channel} muté automatiquement (manager {Manager} inactif depuis {Minutes}min)",
@@ -90,7 +90,7 @@ public class AutoMuteService(
 
                 // Notifier tous les utilisateurs du canal
                 await hubContext.Clients.Group(channel.Name)
-                    .SendAsync("ChannelMuteStatusChanged", channel.Name, true);
+                    .SendAsync("ChannelMuteStatusChanged", channel.Name, true, cancellationToken);
             }
         }
     }

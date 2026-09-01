@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace IrcChat.Api.Authorization;
 
 [SuppressMessage("Performance", "CA1862", Justification = "Not needed in SQL")]
-public class IsAdminHandler(ChatDbContext db, ILogger<IsAdminHandler> logger)
+public class IsAdminHandler(ChatDbContext db, ILogger<IsAdminHandler> logger, IHttpContextAccessor httpContextAccessor)
     : AuthorizationHandler<IsAdminRequirement>
 {
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, IsAdminRequirement requirement)
@@ -17,7 +17,7 @@ public class IsAdminHandler(ChatDbContext db, ILogger<IsAdminHandler> logger)
 
         // Vérifier si l'utilisateur est admin
         var user = await db.ReservedUsernames
-            .FirstOrDefaultAsync(u => username != null && u.Username.ToLower() == username.ToLower());
+            .FirstOrDefaultAsync(u => username != null && u.Username.ToLower() == username.ToLower(), httpContextAccessor.HttpContext?.RequestAborted ?? CancellationToken.None);
 
         if (user is null || !user.IsAdmin)
         {
