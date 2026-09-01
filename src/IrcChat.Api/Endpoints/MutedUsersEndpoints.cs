@@ -40,12 +40,13 @@ public static class MutedUsersEndpoints
 
     private static async Task<IResult> GetMutedUsersAsync(
         string channelName,
-        ChatDbContext db)
+        ChatDbContext db,
+        CancellationToken cancellationToken)
     {
         var mutedUsers = await db.MutedUsers
             .Where(m => m.ChannelName == null || m.ChannelName.ToLower() == channelName.ToLower())
             .OrderBy(m => m.MutedAt)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         // Enrichir avec les informations des utilisateurs
         var userIds = mutedUsers.Select(m => m.UserId).ToList();
@@ -55,7 +56,7 @@ public static class MutedUsersEndpoints
         var userInfos = await db.ConnectedUsers
             .Where(u => allIds.Contains(u.UserId))
             .Select(u => new { u.UserId, u.Username })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         var userInfoDict = userInfos.ToDictionary(u => u.UserId, u => u.Username);
 
@@ -82,7 +83,7 @@ public static class MutedUsersEndpoints
     {
         // Vérifier que le salon existe
         var channel = await db.Channels
-            .FirstOrDefaultAsync(c => c.Name.ToLower() == channelName.ToLower());
+            .FirstOrDefaultAsync(c => c.Name.ToLower() == channelName.ToLower(), context.RequestAborted);
 
         if (channel == null)
         {
@@ -106,7 +107,7 @@ public static class MutedUsersEndpoints
         // Vérifier si l'utilisateur est déjà mute
         var existingMute = await db.MutedUsers
             .FirstOrDefaultAsync(m => m.ChannelName == null || (m.ChannelName.ToLower() == channelName.ToLower()
-                                   && m.UserId == userId));
+                                   && m.UserId == userId), context.RequestAborted);
 
         if (existingMute != null)
         {
@@ -125,23 +126,23 @@ public static class MutedUsersEndpoints
         };
 
         db.MutedUsers.Add(mutedUser);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(context.RequestAborted);
 
         // Récupérer les usernames pour les logs et notifications
         var targetUser = await db.ConnectedUsers
             .Where(u => u.UserId == userId)
             .Select(u => u.Username)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(context.RequestAborted);
 
         var currentUser = await db.ReservedUsernames
             .Where(u => u.Id.ToString() == currentUserId)
             .Select(u => u.Username)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(context.RequestAborted);
 
         // Notifier tous les clients du salon SAUF l'utilisateur mute
         // L'utilisateur mute ne doit pas savoir qu'il est mute
-        await hubContext.Clients.GroupExcept(channelName, GetUserConnectionIds(db, userId).Result)
-            .SendAsync("UserMuted", channelName, userId, targetUser, currentUserId, currentUser);
+        await hubContext.Clients.GroupExcept(channelName, await GetUserConnectionIds(db, userId, context.RequestAborted))
+            .SendAsync("UserMuted", channelName, userId, targetUser, currentUserId, currentUser, context.RequestAborted);
 
         return Results.Ok(new
         {
@@ -172,7 +173,7 @@ public static class MutedUsersEndpoints
 
         var mutedUser = await db.MutedUsers
             .FirstOrDefaultAsync(m => m.ChannelName != null && m.ChannelName.ToLower() == channelName.ToLower()
-                                   && m.UserId == userId);
+                                   && m.UserId == userId, context.RequestAborted);
 
         if (mutedUser == null)
         {
@@ -186,22 +187,22 @@ public static class MutedUsersEndpoints
         }
 
         db.MutedUsers.Remove(mutedUser);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(context.RequestAborted);
 
         // Récupérer les usernames pour les notifications
         var targetUser = await db.ReservedUsernames
             .Where(u => u.Id.ToString() == userId)
             .Select(u => u.Username)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(context.RequestAborted);
 
         var currentUser = await db.ReservedUsernames
             .Where(u => u.Id.ToString() == currentUserId)
             .Select(u => u.Username)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(context.RequestAborted);
 
         // Notifier tous les clients du salon
         await hubContext.Clients.Group(channelName)
-            .SendAsync("UserUnmuted", channelName, userId, targetUser, currentUserId, currentUser);
+            .SendAsync("UserUnmuted", channelName, userId, targetUser, currentUserId, currentUser, context.RequestAborted);
 
         return Results.Ok(new
         {
@@ -216,11 +217,12 @@ public static class MutedUsersEndpoints
     private static async Task<IResult> IsUserMutedAsync(
         string channelName,
         string userId,
-        ChatDbContext db)
+        ChatDbContext db,
+        CancellationToken cancellationToken)
     {
         var isMuted = await db.MutedUsers
             .AnyAsync(m => m.ChannelName == null || (m.ChannelName.ToLower() == channelName.ToLower()
-                        && m.UserId == userId));
+                        && m.UserId == userId), cancellationToken);
 
         return Results.Ok(new { userId, channelName, isMuted });
     }
@@ -228,11 +230,11 @@ public static class MutedUsersEndpoints
     /// <summary>
     /// Récupère tous les ConnectionIds d'un utilisateur (peut avoir plusieurs connexions).
     /// </summary>
-    private static async Task<List<string>> GetUserConnectionIds(ChatDbContext db, string userId)
+    private static async Task<List<string>> GetUserConnectionIds(ChatDbContext db, string userId, CancellationToken cancellationToken)
     {
         return await db.ConnectedUsers
             .Where(u => u.UserId == userId)
             .Select(u => u.ConnectionId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 }

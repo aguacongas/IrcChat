@@ -41,7 +41,7 @@ public static class AdminManagementEndpoints
             return Results.Ok(new { isAdmin = false });
         }
 
-        var currentUser = await db.ReservedUsernames.FindAsync(currentUserId);
+        var currentUser = await db.ReservedUsernames.FindAsync(currentUserId, context.RequestAborted);
         return Results.Ok(new { isAdmin = currentUser?.IsAdmin ?? false });
     }
 
@@ -54,7 +54,7 @@ public static class AdminManagementEndpoints
             return Results.Unauthorized();
         }
 
-        var currentUser = await db.ReservedUsernames.FindAsync(currentUserId);
+        var currentUser = await db.ReservedUsernames.FindAsync(currentUserId, context.RequestAborted);
         if (currentUser == null || !currentUser.IsAdmin)
         {
             return Results.Forbid();
@@ -67,7 +67,7 @@ public static class AdminManagementEndpoints
         }
 
         // Trouver l'utilisateur à révoquer
-        var targetUser = await db.ReservedUsernames.FindAsync(userId);
+        var targetUser = await db.ReservedUsernames.FindAsync(userId, context.RequestAborted);
         if (targetUser == null)
         {
             return Results.NotFound(new { error = "user_not_found" });
@@ -79,14 +79,14 @@ public static class AdminManagementEndpoints
         }
 
         // Vérifier qu'il reste au moins un admin
-        var adminCount = await db.ReservedUsernames.CountAsync(u => u.IsAdmin);
+        var adminCount = await db.ReservedUsernames.CountAsync(u => u.IsAdmin, context.RequestAborted);
         if (adminCount <= 1)
         {
             return Results.BadRequest(new { error = "last_admin", message = "Impossible de révoquer le dernier administrateur" });
         }
 
         targetUser.IsAdmin = false;
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(context.RequestAborted);
 
         return Results.Ok(new { success = true, username = targetUser.Username });
     }
@@ -100,14 +100,14 @@ public static class AdminManagementEndpoints
             return Results.Unauthorized();
         }
 
-        var currentUser = await db.ReservedUsernames.FindAsync(currentUserId);
+        var currentUser = await db.ReservedUsernames.FindAsync(currentUserId, context.RequestAborted);
         if (currentUser == null || !currentUser.IsAdmin)
         {
             return Results.Forbid();
         }
 
         // Trouver l'utilisateur à promouvoir
-        var targetUser = await db.ReservedUsernames.FindAsync(userId);
+        var targetUser = await db.ReservedUsernames.FindAsync(userId, context.RequestAborted);
         if (targetUser == null)
         {
             return Results.NotFound(new { error = "user_not_found" });
@@ -119,7 +119,7 @@ public static class AdminManagementEndpoints
         }
 
         targetUser.IsAdmin = true;
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(context.RequestAborted);
 
         return Results.Ok(new { success = true, username = targetUser.Username });
     }
@@ -133,7 +133,7 @@ public static class AdminManagementEndpoints
             return Results.Unauthorized();
         }
 
-        var currentUser = await db.ReservedUsernames.FindAsync(currentUserId);
+        var currentUser = await db.ReservedUsernames.FindAsync(currentUserId, context.RequestAborted);
         if (currentUser == null || !currentUser.IsAdmin)
         {
             return Results.Forbid();
@@ -152,7 +152,7 @@ public static class AdminManagementEndpoints
                 u.LastLoginAt,
                 u.AvatarUrl,
             })
-            .ToListAsync();
+            .ToListAsync(context.RequestAborted);
 
         return Results.Ok(users);
     }

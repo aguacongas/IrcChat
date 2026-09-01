@@ -3,6 +3,7 @@ using IrcChat.Api.Authorization;
 using IrcChat.Api.Data;
 using IrcChat.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -14,6 +15,7 @@ public class ChannelModificationHandlerTests
 {
     private readonly ChatDbContext db;
     private readonly Mock<ILogger<ChannelModificationHandler>> loggerMock;
+    private readonly Mock<IHttpContextAccessor> httpContextAccessorMock;
     private readonly ChannelModificationHandler handler;
 
     public ChannelModificationHandlerTests()
@@ -24,7 +26,8 @@ public class ChannelModificationHandlerTests
 
         db = new ChatDbContext(options);
         loggerMock = new Mock<ILogger<ChannelModificationHandler>>();
-        handler = new ChannelModificationHandler(db, loggerMock.Object);
+        httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+        handler = new ChannelModificationHandler(db, loggerMock.Object, httpContextAccessorMock.Object);
     }
 
     [Fact]

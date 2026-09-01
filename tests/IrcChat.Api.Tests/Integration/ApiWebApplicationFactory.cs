@@ -41,14 +41,14 @@ public class ApiWebApplicationFactory : WebApplicationFactory<ChatHub>
                     var mock = new Mock<OAuthServiceStub>();
 
                     // Cas nominal
-                    mock.Setup(x => x.ExchangeCodeForTokenAsync(It.IsAny<ExternalAuthProvider>(), "valid_code", It.IsAny<string>(), It.IsAny<string>()))
+                    mock.Setup(x => x.ExchangeCodeForTokenAsync(It.IsAny<ExternalAuthProvider>(), "valid_code", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                         .ReturnsAsync(new OAuthTokenResponse { AccessToken = "token" });
 
-                    mock.Setup(x => x.GetUserInfoAsync(It.IsAny<ExternalAuthProvider>(), "token"))
+                    mock.Setup(x => x.GetUserInfoAsync(It.IsAny<ExternalAuthProvider>(), "token", It.IsAny<CancellationToken>()))
                         .ReturnsAsync(new ExternalUserInfo { Id = "google-123", Name = "google-123" });
 
                     // Cas échec
-                    mock.Setup(x => x.ExchangeCodeForTokenAsync(It.IsAny<ExternalAuthProvider>(), "invalid_code", It.IsAny<string>(), It.IsAny<string>()))
+                    mock.Setup(x => x.ExchangeCodeForTokenAsync(It.IsAny<ExternalAuthProvider>(), "invalid_code", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                         .ReturnsAsync((OAuthTokenResponse?)null);
 
                     return mock.Object;
@@ -60,6 +60,8 @@ public class ApiWebApplicationFactory : WebApplicationFactory<ChatHub>
                 var EphemeralPhotoServiceMock = new Mock<IEphemeralPhotoService>();
                 services.AddSingleton(EphemeralPhotoServiceMock.Object)
                     .AddSingleton(EphemeralPhotoServiceMock);
+
+                services.AddHttpContextAccessor();
                 // S'assurer que la base de données est créée
                 var sp = services.BuildServiceProvider();
                 using var scope = sp.CreateScope();

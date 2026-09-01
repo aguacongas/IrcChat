@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace IrcChat.Api.Authorization;
 
 [SuppressMessage("Performance", "CA1862", Justification = "Not needed in SQL")]
-public class IsReservedHandler(ChatDbContext db, ILogger<IsReservedHandler> logger)
+public class IsReservedHandler(ChatDbContext db, ILogger<IsReservedHandler> logger, IHttpContextAccessor httpContextAccessor)
     : AuthorizationHandler<IsReservedRequirement>
 {
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, IsReservedRequirement requirement)
@@ -17,7 +17,7 @@ public class IsReservedHandler(ChatDbContext db, ILogger<IsReservedHandler> logg
 
         // Vérifier si l'utilisateur est Reserved
         var user = await db.ReservedUsernames
-            .FirstOrDefaultAsync(u => username != null && u.Username.ToLower() == username.ToLower());
+            .FirstOrDefaultAsync(u => username != null && u.Username.ToLower() == username.ToLower(), httpContextAccessor.HttpContext?.RequestAborted ?? CancellationToken.None);
 
         if (user is null)
         {

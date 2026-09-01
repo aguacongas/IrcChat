@@ -60,7 +60,7 @@ public static class ChannelEndpoints
     // ========================================================================
     // GET ENDPOINTS
     // ========================================================================
-    private static async Task<IResult> GetChannelsAsync(ChatDbContext db, ILogger<Program> logger)
+    private static async Task<IResult> GetChannelsAsync(ChatDbContext db, ILogger<Program> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -80,7 +80,7 @@ public static class ChannelEndpoints
                     })
                 .OrderByDescending(c => c.ConnectedUsersCount)
                 .ThenBy(c => c.Channel.Name)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             logger.LogInformation("Récupération de tous les salons: {ChannelCount} salons trouvés", channels.Count);
             return Results.Ok(channels.Select(channelInfo =>
@@ -100,7 +100,8 @@ public static class ChannelEndpoints
     private static async Task<IResult> GetMyChannelsAsync(
         string? username,
         ChatDbContext db,
-        ILogger<Program> logger)
+        ILogger<Program> logger,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(username))
         {
@@ -120,7 +121,7 @@ public static class ChannelEndpoints
                     channel => channel.Name,
                     (channelName, channel) => channel)
                 .OrderBy(x => x.CreatedAt)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             logger.LogInformation("Récupération des salons pour l'utilisateur {Username}: {ChannelCount} salons", username, channels.Count);
             return Results.Ok(channels);
@@ -135,7 +136,8 @@ public static class ChannelEndpoints
     private static async Task<IResult> GetConnectedUsersAsync(
         string channelName,
         ChatDbContext db,
-        ILogger<Program> logger)
+        ILogger<Program> logger,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -149,7 +151,7 @@ public static class ChannelEndpoints
                     ConnectedAt = u.ConnectedAt,
                 })
                 .Distinct()
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             logger.LogInformation("Récupération des utilisateurs du salon {Channel}: {UserCount} utilisateurs", channelName, users.Count);
             return Results.Ok(users);
@@ -187,7 +189,7 @@ public static class ChannelEndpoints
             .FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value ?? string.Empty;
 
         var channelExists = await db.Channels
-            .AnyAsync(c => c.Name.ToLower() == request.Name.ToLower());
+            .AnyAsync(c => c.Name.ToLower() == request.Name.ToLower(), context.RequestAborted);
 
         if (channelExists)
         {
@@ -209,10 +211,10 @@ public static class ChannelEndpoints
         };
 
         db.Channels.Add(channel);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(context.RequestAborted);
 
         await hubContext.Clients.All
-            .SendAsync("ChannelListUpdated");
+            .SendAsync("ChannelListUpdated", context.RequestAborted);
 
         logger.LogInformation(
             "Nouveau salon créé: {ChannelName} par {Username} avec description: {Description}",
@@ -234,7 +236,7 @@ public static class ChannelEndpoints
         ILogger<Program> logger)
     {
         var channel = await db.Channels
-            .FirstOrDefaultAsync(c => c.Name.ToLower() == channelName.ToLower());
+            .FirstOrDefaultAsync(c => c.Name.ToLower() == channelName.ToLower(), context.RequestAborted);
 
         if (channel == null)
         {
@@ -249,7 +251,7 @@ public static class ChannelEndpoints
 
         channel.Description = request.Description?.Trim();
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(context.RequestAborted);
 
         logger.LogInformation(
             "Salon {ChannelName} modifié par {Username}. Description: {OldDescription} -> {NewDescription}",
@@ -283,7 +285,7 @@ public static class ChannelEndpoints
         ILogger<Program> logger)
     {
         var channel = await db.Channels
-            .FirstOrDefaultAsync(c => c.Name.ToLower() == channelName.ToLower());
+            .FirstOrDefaultAsync(c => c.Name.ToLower() == channelName.ToLower(), context.RequestAborted);
 
         if (channel == null)
         {
@@ -293,13 +295,13 @@ public static class ChannelEndpoints
 
         var connectedUsers = await db.ConnectedUsers
             .Where(u => u.Channel!.ToLower() == channelName.ToLower())
-            .ToListAsync();
+            .ToListAsync(context.RequestAborted);
 
         db.ConnectedUsers.RemoveRange(connectedUsers);
 
         var messages = await db.Messages
             .Where(m => m.Channel.ToLower() == channelName.ToLower())
-            .ToListAsync();
+            .ToListAsync(context.RequestAborted);
 
         foreach (var message in messages)
         {
@@ -307,23 +309,23 @@ public static class ChannelEndpoints
         }
 
         db.Channels.Remove(channel);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(context.RequestAborted);
 
         var username = context.User.Claims
             .FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value ?? string.Empty;
 
         // Notifier tous les clients
         await hubContext.Clients.Group(channelName)
-            .SendAsync("ChannelDeleted", channelName, username);
+            .SendAsync("ChannelDeleted", channelName, username, context.RequestAborted);
 
         // Supprimer tout les clients du groupe du canal supprimé
         foreach (var connectedUser in connectedUsers)
         {
-            await hubContext.Groups.RemoveFromGroupAsync(connectedUser.ConnectionId, channelName);
+            await hubContext.Groups.RemoveFromGroupAsync(connectedUser.ConnectionId, channelName, context.RequestAborted);
         }
 
         await hubContext.Clients.All
-            .SendAsync("ChannelListUpdated");
+            .SendAsync("ChannelListUpdated", context.RequestAborted);
 
         logger.LogInformation(
             "Salon {ChannelName} supprimé par {Username}. Messages affectés: {MessageCount}, Utilisateurs déconnectés: {UserCount}",
@@ -352,7 +354,7 @@ public static class ChannelEndpoints
         ILogger<Program> logger)
     {
         var channel = await db.Channels
-            .FirstOrDefaultAsync(c => c.Name.ToLower() == channelName.ToLower());
+            .FirstOrDefaultAsync(c => c.Name.ToLower() == channelName.ToLower(), context.RequestAborted);
 
         if (channel == null)
         {
@@ -370,10 +372,10 @@ public static class ChannelEndpoints
             channel.ActiveManager = username;
         }
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(context.RequestAborted);
 
         await hubContext.Clients.Group(channelName)
-            .SendAsync("ChannelMuteStatusChanged", channelName, channel.IsMuted);
+            .SendAsync("ChannelMuteStatusChanged", channelName, channel.IsMuted, context.RequestAborted);
 
         logger.LogInformation(
             "Mode muet du salon {ChannelName} modifié par {Username}. Nouveau statut: {IsMuted}",

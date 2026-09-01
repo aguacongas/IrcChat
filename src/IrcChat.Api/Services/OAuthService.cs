@@ -49,7 +49,8 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
         ExternalAuthProvider provider,
         string code,
         string redirectUri,
-        string codeVerifier)
+        string codeVerifier,
+        CancellationToken cancellationToken = default)
     {
         var config = GetProviderConfig(provider);
 
@@ -66,16 +67,16 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
         try
         {
             var content = new FormUrlEncodedContent(parameters);
-            var response = await httpClient.PostAsync(config.TokenEndpoint, content);
+            var response = await httpClient.PostAsync(config.TokenEndpoint, content, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
-                var error = await response.Content.ReadAsStringAsync();
+                var error = await response.Content.ReadAsStringAsync(cancellationToken);
                 logger.LogError("Token exchange failed for {Provider}: {Error}", provider, error);
                 return null;
             }
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
             var tokenData = JsonSerializer.Deserialize<JsonElement>(json);
 
             return new OAuthTokenResponse
@@ -101,15 +102,16 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
 
     public virtual async Task<ExternalUserInfo?> GetUserInfoAsync(
         ExternalAuthProvider provider,
-        string accessToken)
+        string accessToken,
+        CancellationToken cancellationToken = default)
     {
         try
         {
             return provider switch
             {
-                ExternalAuthProvider.Google => await GetGoogleUserInfo(accessToken),
-                ExternalAuthProvider.Facebook => await GetFacebookUserInfo(accessToken),
-                ExternalAuthProvider.Microsoft => await GetMicrosoftUserInfo(accessToken),
+                ExternalAuthProvider.Google => await GetGoogleUserInfo(accessToken, cancellationToken),
+                ExternalAuthProvider.Facebook => await GetFacebookUserInfo(accessToken, cancellationToken),
+                ExternalAuthProvider.Microsoft => await GetMicrosoftUserInfo(accessToken, cancellationToken),
                 _ => null,
             };
         }
@@ -120,19 +122,19 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
         }
     }
 
-    private async Task<ExternalUserInfo?> GetGoogleUserInfo(string accessToken)
+    private async Task<ExternalUserInfo?> GetGoogleUserInfo(string accessToken, CancellationToken cancellationToken)
     {
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken);
 
-        var response = await httpClient.GetAsync("https://www.googleapis.com/oauth2/v2/userinfo");
+        var response = await httpClient.GetAsync("https://www.googleapis.com/oauth2/v2/userinfo", cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
             return null;
         }
 
-        var json = await response.Content.ReadAsStringAsync();
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         var data = JsonSerializer.Deserialize<JsonElement>(json);
 
         return new ExternalUserInfo
@@ -144,17 +146,17 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
         };
     }
 
-    private async Task<ExternalUserInfo?> GetFacebookUserInfo(string accessToken)
+    private async Task<ExternalUserInfo?> GetFacebookUserInfo(string accessToken, CancellationToken cancellationToken)
     {
         var response = await httpClient.GetAsync(
-            $"https://graph.facebook.com/me?fields=id,name,email,picture&access_token={accessToken}");
+            $"https://graph.facebook.com/me?fields=id,name,email,picture&access_token={accessToken}", cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
             return null;
         }
 
-        var json = await response.Content.ReadAsStringAsync();
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         var data = JsonSerializer.Deserialize<JsonElement>(json);
 
         return new ExternalUserInfo
@@ -168,19 +170,19 @@ public class OAuthService(HttpClient httpClient, IConfiguration configuration, I
         };
     }
 
-    private async Task<ExternalUserInfo?> GetMicrosoftUserInfo(string accessToken)
+    private async Task<ExternalUserInfo?> GetMicrosoftUserInfo(string accessToken, CancellationToken cancellationToken)
     {
         httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue(Bearer, accessToken);
 
-        var response = await httpClient.GetAsync("https://graph.microsoft.com/v1.0/me");
+        var response = await httpClient.GetAsync("https://graph.microsoft.com/v1.0/me", cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
             return null;
         }
 
-        var json = await response.Content.ReadAsStringAsync();
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         var data = JsonSerializer.Deserialize<JsonElement>(json);
 
         return new ExternalUserInfo

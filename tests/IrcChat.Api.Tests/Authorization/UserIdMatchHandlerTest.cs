@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using IrcChat.Api.Authorization;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Moq;
 using Xunit;
 
 namespace IrcChat.Api.Tests.Authorization;
@@ -20,7 +22,8 @@ public class UserIdMatchHandlerTest
         var identity = new ClaimsIdentity(claims, "TestAuthType");
         var user = new ClaimsPrincipal(identity);
         var context = new AuthorizationHandlerContext([requirement], user, null);
-        var sut = new UserIdMatchHandler(null!);
+        var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+        var sut = new UserIdMatchHandler(null!, httpContextAccessorMock.Object);
 
         // Act
         await sut.HandleAsync(context);
@@ -42,7 +45,8 @@ public class UserIdMatchHandlerTest
         var identity = new ClaimsIdentity(claims, "TestAuthType");
         var user = new ClaimsPrincipal(identity);
         var context = new AuthorizationHandlerContext([requirement], user, null);
-        var sut = new UserIdMatchHandler(null!);
+        var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+        var sut = new UserIdMatchHandler(null!, httpContextAccessorMock.Object);
 
         // Act
         await sut.HandleAsync(context);

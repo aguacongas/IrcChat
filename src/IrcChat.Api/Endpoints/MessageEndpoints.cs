@@ -27,7 +27,8 @@ public static class MessageEndpoints
 
     private static async Task<IResult> GetMessagesAsync(
         string channelName,
-        ChatDbContext db)
+        ChatDbContext db,
+        CancellationToken cancellationToken)
     {
         // Récupérer tous les messages non supprimés du salon des utilisateurs non mutés
         var messages = await db.Messages
@@ -36,7 +37,7 @@ public static class MessageEndpoints
             .OrderByDescending(m => m.Timestamp)
             .Take(100)
             .OrderBy(m => m.Timestamp)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return Results.Ok(messages);
     }
@@ -47,20 +48,21 @@ public static class MessageEndpoints
         ChatDbContext db,
         IHubContext<ChatHub> hubContext,
         ClaimsPrincipal user,
-        ILogger<ChatHub> logger)
+        ILogger<ChatHub> logger,
+        CancellationToken cancellationToken)
     {
-        var message = await db.Messages.FindAsync(messageId);
+        var message = await db.Messages.FindAsync(messageId, cancellationToken);
 
         if (message != null && message.Channel == channelName)
         {
             // Marquer le message comme supprimé
             message.IsDeleted = true;
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(cancellationToken);
         }
 
         // Notifier tous les utilisateurs du canal
         await hubContext.Clients.Group(channelName)
-            .SendAsync("MessageDeleted", messageId, channelName);
+            .SendAsync("MessageDeleted", messageId, channelName, cancellationToken);
 
         logger.LogInformation(
             "Message {MessageId} supprimé dans {Channel} par {User}",
