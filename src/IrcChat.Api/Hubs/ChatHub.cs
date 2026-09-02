@@ -224,7 +224,7 @@ public class ChatHub(
 
         if (!isGlobalyMute)
         {
-            await Clients.Client(recipient.ConnectionId).SendAsync("ReceivePrivateMessage", privateMessage, RequestToken);
+            await Clients.Client(recipient!.ConnectionId).SendAsync("ReceivePrivateMessage", privateMessage, RequestToken);
         }
 
         await Clients.Caller.SendAsync("PrivateMessageSent", privateMessage, RequestToken);
@@ -523,12 +523,12 @@ public class ChatHub(
 
         var isGlobalyMute = await db.MutedUsers
             .Where(m => m.ChannelName == null
-                && (m.UserId == currentUser.UserId || m.UserId == recipient.UserId))
+                && (m.UserId == currentUser.UserId || m.UserId == recipient!.UserId))
             .AnyAsync(cancellationToken);
 
         if (!isGlobalyMute)
         {
-            await Clients.Client(recipient.ConnectionId).SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto, cancellationToken);
+            await Clients.Client(recipient!.ConnectionId).SendAsync(ReceiveEphemeralPhoto, ephemeralPhoto, cancellationToken);
             logger.LogInformation("Photo éphémère envoyée en privé à {Recipient}", channelOrUserId);
         }
 

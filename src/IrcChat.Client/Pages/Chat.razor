@@ -200,7 +200,7 @@ else
             return;
         }
 
-        currentUsername = Auth.Username;
+        currentUsername = Auth.Username!;
         currentUserId = await Auth.GetClientUserIdAsync();
         avatarUrl = Auth.AvatarUrl;
 
