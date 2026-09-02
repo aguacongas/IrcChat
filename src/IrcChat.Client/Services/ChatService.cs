@@ -197,9 +197,9 @@ public class ChatService(IPrivateMessageService privateMessageService,
 
         if (_hubConnection != null)
         {
-            _hubConnectionEvents!.Closed -= OnConnectionClosed;
-            _hubConnectionEvents!.Reconnecting -= OnConnectionReconnecting;
-            _hubConnectionEvents!.Reconnected -= OnConnectionReconnected;
+            _hubConnectionEvents?.Closed -= OnConnectionClosed;
+            _hubConnectionEvents?.Reconnecting -= OnConnectionReconnecting;
+            _hubConnectionEvents?.Reconnected -= OnConnectionReconnected;
 
             await _hubConnection.DisposeAsync();
         }

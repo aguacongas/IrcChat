@@ -113,7 +113,7 @@ public static class ChannelEndpoints
         {
             var channels = await db.ConnectedUsers
                 .Where(u => u.Username == username && !string.IsNullOrEmpty(u.Channel))
-                .Select(u => u.Channel!)
+                .Select(u => u.Channel)
                 .Distinct()
                 .Join(
                     db.Channels,

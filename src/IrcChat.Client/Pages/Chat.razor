@@ -778,7 +778,7 @@ else
 
                 if (message.SenderUserId == selectedPrivateUser?.UserId)
                 {
-                    _ = ChatService.MarkPrivateMessagesAsRead(selectedPrivateUser!.UserId);
+                    _ = ChatService.MarkPrivateMessagesAsRead(selectedPrivateUser.UserId);
                 }
             }
 
