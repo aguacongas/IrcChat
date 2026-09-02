@@ -11,7 +11,7 @@
     {
         <h4>Utilisateurs (@Users.Count)</h4>
         <ul class="users-list">
-            @foreach (var user in Users!)
+            @foreach (var user in Users)
             {
                 <li class="user-item @(IgnoredUsersService.IsUserIgnored(user.UserId) ? "ignored" : string.Empty) @(user.Username == Username ? "current" : string.Empty)"
                     @onclick="() => OnUserClicked.InvokeAsync(user)">
