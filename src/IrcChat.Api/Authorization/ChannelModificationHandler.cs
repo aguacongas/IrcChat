@@ -53,7 +53,7 @@ public class ChannelModificationHandler(ChatDbContext db, ILogger<ChannelModific
             logger.LogInformation(
                 "Utilisateur {Username} autorisé en tant que créateur du canal {ChannelName}",
                 username,
-                channel!.Name);
+                channel.Name);
             context.Succeed(requirement);
             return;
         }
