@@ -5,6 +5,7 @@
 ## 🤖 Génération
 
 - [ ] Code généré par Claude (Anthropic)
+- [ ] Code généré par opencode (assistant)
 - [ ] Code review effectué
 - [ ] Tests générés automatiquement
 
