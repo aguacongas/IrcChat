@@ -173,7 +173,7 @@
         {
             Username = usernameToReserve,
             Provider = provider,
-            Code = CodeParam!,
+            Code = CodeParam ?? string.Empty,
             RedirectUri = redirectUri,
             CodeVerifier = codeVerifier,
             UserId = userId,
@@ -235,7 +235,7 @@
         var request = new OAuthTokenRequest
         {
             Provider = provider,
-            Code = CodeParam!,
+            Code = CodeParam ?? string.Empty,
             RedirectUri = redirectUri,
             CodeVerifier = codeVerifier
         };

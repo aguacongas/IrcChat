@@ -200,7 +200,7 @@ else
             return;
         }
 
-        currentUsername = Auth.Username!;
+        currentUsername = Auth.Username ?? string.Empty;
         currentUserId = await Auth.GetClientUserIdAsync();
         avatarUrl = Auth.AvatarUrl;
 
@@ -967,7 +967,7 @@ else
         var req = new SendMessageRequest
         {
             Content = content,
-            Channel = currentChannel!
+            Channel = currentChannel ?? string.Empty
         };
 
         try
@@ -1002,7 +1002,8 @@ else
         privateConversations = [];
         foreach (var conversation in conversations)
         {
-            if (IgnoredUsersService.IsUserIgnored(conversation.OtherUser!.UserId))
+            var otherUser = conversation.OtherUser;
+            if (otherUser == null || IgnoredUsersService.IsUserIgnored(otherUser.UserId))
             {
                 continue;
             }
