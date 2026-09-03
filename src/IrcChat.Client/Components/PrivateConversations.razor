@@ -37,7 +37,7 @@
                         </div>
                     </div>
                     <button class="delete-conversation-btn"
-                            @onclick="async () => { if (conv.OtherUser != null) await DeleteConversation(conv.OtherUser); }"
+                            @onclick="async () => await DeleteConversation(conv.OtherUser)"
                             @onclick:stopPropagation="true"
                             title="Supprimer la conversation">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -97,8 +97,13 @@
         return time.ToLocalTime().ToString("dd/MM");
     }
 
-    private async Task DeleteConversation(User user)
+    private async Task DeleteConversation(User? user)
     {
+        if (user is null)
+        {
+            return;
+        }
+
         await OnConversationDeleted.InvokeAsync(user);
     }
 }
