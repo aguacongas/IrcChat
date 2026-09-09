@@ -2,110 +2,55 @@
 version: 2
 
 updates:
-  # Mise à jour des packages NuGet pour l'API
+  # 1. Mise à jour de toutes les dépendances NuGet (1 seule PR)
   - package-ecosystem: "nuget"
-    directory: "/src/IrcChat.Api"
+    directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
       time: "09:00"
-    open-pull-requests-limit: 10
+    groups:
+      all-nuget-dependencies:
+        patterns:
+          - "*"
     labels:
       - "dependencies"
       - "nuget"
-      - "api"
     commit-message:
-      prefix: "chore(api)"
-      include: "scope"
+      prefix: "chore(deps)"
 
-  # Mise à jour des packages NuGet pour le Client
-  - package-ecosystem: "nuget"
-    directory: "/src/IrcChat.Client"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "nuget"
-      - "client"
-    commit-message:
-      prefix: "chore(client)"
-      include: "scope"
-
-  # Mise à jour des packages NuGet pour Shared
-  - package-ecosystem: "nuget"
-    directory: "/src/IrcChat.Shared"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "nuget"
-      - "shared"
-    commit-message:
-      prefix: "chore(shared)"
-      include: "scope"
-
-  # Mise à jour des packages de test API
-  - package-ecosystem: "nuget"
-    directory: "/tests/IrcChat.Api.Tests"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "nuget"
-      - "tests"
-    commit-message:
-      prefix: "chore(tests)"
-
-  # Mise à jour des packages de test Client
-  - package-ecosystem: "nuget"
-    directory: "/tests/IrcChat.Client.Tests"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "nuget"
-      - "tests"
-    commit-message:
-      prefix: "chore(tests)"
-
-  # Mise à jour des GitHub Actions
+  # 2. Mise à jour de toutes les GitHub Actions (1 seule PR)
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
       time: "10:00"
-    open-pull-requests-limit: 5
-    reviewers:
-      - "votre-username"
+    groups:
+      actions-deps:
+        patterns:
+          - "*"
+    assignees:
+      - "olivier lefebvre"
     labels:
       - "dependencies"
       - "github-actions"
     commit-message:
       prefix: "chore(ci)"
 
-  # Mise à jour du Dockerfile
+  # 3. Mise à jour des images Docker (1 seule PR)
   - package-ecosystem: "docker"
     directory: "/src/IrcChat.Api"
     schedule:
       interval: "weekly"
       day: "monday"
       time: "11:00"
-    open-pull-requests-limit: 3
-    reviewers:
-      - "votre-username"
+    groups:
+      docker-deps:
+        patterns:
+          - "*"
+    assignees:
+      - "olivier lefebvre"
     labels:
       - "dependencies"
       - "docker"
