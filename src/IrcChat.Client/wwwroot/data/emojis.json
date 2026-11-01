@@ -1,6 +1,6 @@
 {
   "version": "15.1",
-  "generatedAt": "2026-10-01T08:20:59.269Z",
+  "generatedAt": "2026-11-01T08:45:08.921Z",
   "emojis": [
     {
       "emoji": "!",
@@ -9057,31 +9057,6 @@
       "version": "6.0"
     },
     {
-      "emoji": "🐎",
-      "code": ":horse:",
-      "name": "cheval",
-      "nameEn": "horse",
-      "category": "Animals & Nature",
-      "subcategory": "",
-      "keywords": [
-        "animal",
-        "cheval",
-        "course hippique",
-        "hippodrome",
-        "tiercé",
-        "equestrian",
-        "farm",
-        "horse",
-        "racehorse",
-        "racing"
-      ],
-      "aliases": [
-        ":horse:"
-      ],
-      "unicode": "U+1F40E",
-      "version": "6.0"
-    },
-    {
       "emoji": "🐏",
       "code": ":ram:",
       "name": "bélier",
@@ -10851,20 +10826,15 @@
       "category": "Animals & Nature",
       "subcategory": "",
       "keywords": [
+        "+1",
         "bien",
         "compris",
         "d’accord",
         "génial",
         "haut",
-        "main",
-        "moi aussi",
         "OK",
         "oui",
-        "pouce levé",
-        "pouce vers le haut",
         "super",
-        "top",
-        "+1",
         "good",
         "hand",
         "like",
@@ -26722,6 +26692,34 @@
       "version": "7.0"
     },
     {
+      "emoji": "🛙",
+      "code": ":lighthouse:",
+      "name": "phare",
+      "nameEn": "lighthouse",
+      "category": "Travel & Places",
+      "subcategory": "",
+      "keywords": [
+        "lumière",
+        "mer",
+        "navigation",
+        "repère",
+        "signal",
+        "tour",
+        "beacon",
+        "enlightenment",
+        "guidance",
+        "hope",
+        "light",
+        "maritime",
+        "sea"
+      ],
+      "aliases": [
+        ":lighthouse:"
+      ],
+      "unicode": "U+1F6D9",
+      "version": "7.0"
+    },
+    {
       "emoji": "🛜",
       "code": ":wireless:",
       "name": "sans fil",
@@ -35642,35 +35640,6 @@
       "version": "11.0"
     },
     {
-      "emoji": "🧴",
-      "code": ":lotion_bottle:",
-      "name": "bouteille de lotion",
-      "nameEn": "lotion bottle",
-      "category": "Smileys & Emotion",
-      "subcategory": "",
-      "keywords": [
-        "après-shampoing",
-        "bouteille de lotion",
-        "crème hydratante",
-        "crème pour le corps",
-        "crème solaire",
-        "flacon",
-        "hydratant",
-        "lotion",
-        "shampoing",
-        "shampooing",
-        "bottle",
-        "moisturizer",
-        "shampoo",
-        "sunscreen"
-      ],
-      "aliases": [
-        ":lotion_bottle:"
-      ],
-      "unicode": "U+1F9F4",
-      "version": "11.0"
-    },
-    {
       "emoji": "🧵",
       "code": ":thread:",
       "name": "bobine de fil",
@@ -36635,11 +36604,11 @@
       "category": "Objects",
       "subcategory": "",
       "keywords": [
+        "cuivre",
         "instrument",
-        "musique",
-        "trombone",
-        "brass",
         "jazz",
+        "musique",
+        "brass",
         "music",
         "sad",
         "slide"
@@ -36648,6 +36617,88 @@
         ":trombone:"
       ],
       "unicode": "U+1FA8A",
+      "version": "13.0"
+    },
+    {
+      "emoji": "🪋",
+      "code": ":meteor:",
+      "name": "météorite",
+      "nameEn": "meteor",
+      "category": "Objects",
+      "subcategory": "",
+      "keywords": [
+        "apocalypse",
+        "boule de feu",
+        "chute",
+        "espace",
+        "étoile",
+        "gravité",
+        "roche",
+        "falling",
+        "fireball",
+        "gravity",
+        "rock",
+        "space",
+        "star"
+      ],
+      "aliases": [
+        ":meteor:"
+      ],
+      "unicode": "U+1FA8B",
+      "version": "13.0"
+    },
+    {
+      "emoji": "🪌",
+      "code": ":eraser:",
+      "name": "gomme",
+      "nameEn": "eraser",
+      "category": "Objects",
+      "subcategory": "",
+      "keywords": [
+        "annuler",
+        "dessin",
+        "effacer",
+        "erreur",
+        "oups",
+        "supprimer",
+        "correction",
+        "delete",
+        "drawing",
+        "erase",
+        "error",
+        "mistake",
+        "remove",
+        "rub",
+        "undo",
+        "writing"
+      ],
+      "aliases": [
+        ":eraser:"
+      ],
+      "unicode": "U+1FA8C",
+      "version": "13.0"
+    },
+    {
+      "emoji": "🪍",
+      "code": ":net_with_handle:",
+      "name": "filet avec manche",
+      "nameEn": "net with handle",
+      "category": "Objects",
+      "subcategory": "",
+      "keywords": [
+        "attraper",
+        "capturer",
+        "épuisette",
+        "piège",
+        "catch",
+        "collect",
+        "mesh",
+        "trap"
+      ],
+      "aliases": [
+        ":net_with_handle:"
+      ],
+      "unicode": "U+1FA8D",
       "version": "13.0"
     },
     {
@@ -38316,6 +38367,33 @@
       "version": "13.0"
     },
     {
+      "emoji": "🫌",
+      "code": ":monarch_butterfly:",
+      "name": "monarque",
+      "nameEn": "monarch butterfly",
+      "category": "Objects",
+      "subcategory": "",
+      "keywords": [
+        "chenille",
+        "fragile",
+        "insecte",
+        "métamorphose",
+        "papillon",
+        "caterpillar",
+        "change",
+        "hope",
+        "insect",
+        "metamorphosis",
+        "migration",
+        "transformation"
+      ],
+      "aliases": [
+        ":monarch_butterfly:"
+      ],
+      "unicode": "U+1FACC",
+      "version": "13.0"
+    },
+    {
       "emoji": "🫍",
       "code": ":orca:",
       "name": "orque",
@@ -38754,6 +38832,31 @@
       "version": "13.0"
     },
     {
+      "emoji": "🫝",
+      "code": ":pickle:",
+      "name": "cornichon",
+      "nameEn": "pickle",
+      "category": "Objects",
+      "subcategory": "",
+      "keywords": [
+        "condiment",
+        "pickle",
+        "saumure",
+        "vinaigre",
+        "brine",
+        "cucumber",
+        "ferment",
+        "gherkin",
+        "relish",
+        "trouble"
+      ],
+      "aliases": [
+        ":pickle:"
+      ],
+      "unicode": "U+1FADD",
+      "version": "13.0"
+    },
+    {
       "emoji": "🫟",
       "code": ":splatter:",
       "name": "éclaboussure",
@@ -39151,6 +39254,33 @@
       "version": "13.0"
     },
     {
+      "emoji": "🫫",
+      "code": ":cracking_face:",
+      "name": "visage craquelé",
+      "nameEn": "cracking face",
+      "category": "Objects",
+      "subcategory": "",
+      "keywords": [
+        "craquer",
+        "effondrement",
+        "masquer",
+        "résilience",
+        "révéler",
+        "tension",
+        "transformation",
+        "breaking",
+        "crumbling",
+        "masking",
+        "resilience",
+        "reveal"
+      ],
+      "aliases": [
+        ":cracking_face:"
+      ],
+      "unicode": "U+1FAEB",
+      "version": "13.0"
+    },
+    {
       "emoji": "🫯",
       "code": ":fight_cloud:",
       "name": "nuage de colère",
@@ -39460,6 +39590,58 @@
         ":rightwards_pushing_hand:"
       ],
       "unicode": "U+1FAF8",
+      "version": "13.0"
+    },
+    {
+      "emoji": "🫹",
+      "code": ":leftwards_thumb_sign:",
+      "name": "pouce vers la gauche",
+      "nameEn": "leftwards thumb sign",
+      "category": "Objects",
+      "subcategory": "",
+      "keywords": [
+        "ça",
+        "gauche",
+        "neutre",
+        "poing",
+        "stop",
+        "grip",
+        "left",
+        "neutral",
+        "point",
+        "that",
+        "this"
+      ],
+      "aliases": [
+        ":leftwards_thumb_sign:"
+      ],
+      "unicode": "U+1FAF9",
+      "version": "13.0"
+    },
+    {
+      "emoji": "🫺",
+      "code": ":rightwards_thumb_sign:",
+      "name": "pouce vers la droite",
+      "nameEn": "rightwards thumb sign",
+      "category": "Objects",
+      "subcategory": "",
+      "keywords": [
+        "ça",
+        "droite",
+        "neutre",
+        "poing",
+        "stop",
+        "grip",
+        "neutral",
+        "point",
+        "right",
+        "that",
+        "this"
+      ],
+      "aliases": [
+        ":rightwards_thumb_sign:"
+      ],
+      "unicode": "U+1FAFA",
       "version": "13.0"
     },
     {
@@ -43062,26 +43244,6 @@
       "version": "6.0"
     },
     {
-      "emoji": "≒",
-      "code": ":approximately_equal_the_image:",
-      "name": "approximativement égal à ou image de",
-      "nameEn": "approximately equal the image",
-      "category": "Symbols",
-      "subcategory": "",
-      "keywords": [
-        "approximativement égal à ou image de",
-        "approximately",
-        "equal",
-        "image",
-        "the"
-      ],
-      "aliases": [
-        ":approximately_equal_the_image:"
-      ],
-      "unicode": "U+2252",
-      "version": "6.0"
-    },
-    {
       "emoji": "≖",
       "code": ":ring_in_equal:",
       "name": "rond dans égal",
@@ -45785,16 +45947,19 @@
     {
       "emoji": "◜",
       "code": ":upper_left_quadrant_circular_arc:",
-      "name": "arc de cercle dans le quadrant supérieur gauche",
+      "name": "arc de cercle quadrant supérieur gauche",
       "nameEn": "upper left quadrant circular arc",
       "category": "Symbols",
       "subcategory": "",
       "keywords": [
-        "arc de cercle dans le quadrant supérieur gauche",
+        "circulaire",
+        "gauche",
+        "haut",
+        "quadrant",
+        "rond",
         "arc",
         "circular",
         "left",
-        "quadrant",
         "upper"
       ],
       "aliases": [
@@ -45806,15 +45971,18 @@
     {
       "emoji": "◝",
       "code": ":upper_right_quadrant_circular_arc:",
-      "name": "arc de cercle dans le quadrant supérieur droit",
+      "name": "arc de cercle quadrant supérieur droit",
       "nameEn": "upper right quadrant circular arc",
       "category": "Symbols",
       "subcategory": "",
       "keywords": [
-        "arc de cercle dans le quadrant supérieur droit",
+        "circulaire",
+        "droit",
+        "haut",
+        "quadrant",
+        "rond",
         "arc",
         "circular",
-        "quadrant",
         "right",
         "upper"
       ],
@@ -45827,16 +45995,19 @@
     {
       "emoji": "◞",
       "code": ":lower_right_quadrant_circular_arc:",
-      "name": "arc de cercle dans le quadrant inférieur droit",
+      "name": "arc de cercle quadrant inférieur droit",
       "nameEn": "lower right quadrant circular arc",
       "category": "Symbols",
       "subcategory": "",
       "keywords": [
-        "arc de cercle dans le quadrant inférieur droit",
+        "bas",
+        "circulaire",
+        "droite",
+        "quadrant",
+        "rond",
         "arc",
         "circular",
         "lower",
-        "quadrant",
         "right"
       ],
       "aliases": [
@@ -45848,17 +46019,20 @@
     {
       "emoji": "◟",
       "code": ":lower_left_quadrant_circular_arc:",
-      "name": "arc de cercle dans le quadrant inférieur gauche",
+      "name": "arc de cercle quadrant inférieur gauche",
       "nameEn": "lower left quadrant circular arc",
       "category": "Symbols",
       "subcategory": "",
       "keywords": [
-        "arc de cercle dans le quadrant inférieur gauche",
+        "bas",
+        "circulaire",
+        "gauche",
+        "quadrant",
+        "rond",
         "arc",
         "circular",
         "left",
-        "lower",
-        "quadrant"
+        "lower"
       ],
       "aliases": [
         ":lower_left_quadrant_circular_arc:"
@@ -48891,6 +49065,7 @@
         "point d’exclamation blanc",
         "ponctuation",
         "surprise",
+        "bang",
         "mark",
         "outlined",
         "punctuation",
@@ -48915,6 +49090,7 @@
         "point d’exclamation",
         "point d’exclamation rouge",
         "ponctuation",
+        "bang",
         "mark",
         "punctuation",
         "red"
@@ -48938,6 +49114,7 @@
         "cœur point d’exclamation",
         "exclamation",
         "ponctuation",
+        "bang",
         "heart",
         "heavy",
         "mark",
@@ -50032,6 +50209,28 @@
       ],
       "unicode": "U+FDFC",
       "version": "6.0"
+    },
+    {
+      "emoji": "���",
+      "code": ":horse:",
+      "name": "approximativement égal à ou image de",
+      "nameEn": "horse",
+      "category": "Symbols",
+      "subcategory": "",
+      "keywords": [
+        "approximativement égal à ou image de",
+        "animal",
+        "equestrian",
+        "farm",
+        "horse",
+        "racehorse",
+        "racing"
+      ],
+      "aliases": [
+        ":horse:"
+      ],
+      "unicode": "U+FFFD U+FFFD U+FFFD",
+      "version": "6.0"
     }
   ],
   "categories": [
@@ -50039,28 +50238,28 @@
       "id": "smileys-and-emotion",
       "name": "Smileys & Emotion",
       "icon": "😀",
-      "count": 413,
+      "count": 412,
       "order": 1
     },
     {
       "id": "animals-and-nature",
       "name": "Animals & Nature",
       "icon": "🐵",
-      "count": 719,
+      "count": 718,
       "order": 3
     },
     {
       "id": "travel-and-places",
       "name": "Travel & Places",
       "icon": "🌍",
-      "count": 114,
+      "count": 115,
       "order": 5
     },
     {
       "id": "objects",
       "name": "Objects",
       "icon": "💡",
-      "count": 120,
+      "count": 128,
       "order": 7
     },
     {
